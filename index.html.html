@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cobranzas — Distribuidora del Palacio S.A.</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --rojo:#C0392B;--rojo-l:#FADBD8;--rojo-m:#E74C3C;
+  --azul:#1A5276;--azul-l:#D6EAF8;--azul-m:#2980B9;
+  --verde:#1E8449;--verde-l:#D5F5E3;--verde-m:#27AE60;
+  --naranja:#D35400;--naranja-l:#FAE5D3;
+  --amarillo-l:#FEF9E7;--amarillo-b:#F7DC6F;--amarillo-t:#9A7D0A;
+  --violeta-l:#F4ECF7;--violeta-b:#C39BD3;--violeta-t:#7D3C98;
+  --bg:#F2F3F4;--card:#fff;--borde:#E5E8EA;
+  --txt:#2C3E50;--txt-s:#7F8C8D;--txt-ss:#BDC3C7;
+  --negro:#1A252F;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);font-size:13px;line-height:1.5}
+
+/* HEADER */
+.header{background:var(--negro);padding:0 2rem}
+.header-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:54px;gap:16px}
+.logo{width:30px;height:30px;background:var(--rojo-m);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.h-title{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.02em}
+.h-sub{font-size:10px;color:#7F8C8D;margin-top:1px}
+.h-badges{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.hb{font-size:10px;font-weight:600;padding:3px 9px;border-radius:5px}
+.hb-fecha{background:rgba(255,255,255,.08);color:#A9CCE3}
+.hb-excl{background:rgba(231,76,60,.15);color:#F1948A;border:1px solid rgba(231,76,60,.3)}
+
+/* ALERT BANNER */
+.alert-banner{display:none;padding:.7rem 2rem;font-size:12px;font-weight:600;align-items:center;gap:10px;border-left:4px solid transparent}
+.alert-banner.show{display:flex}
+.alert-ok{background:#EAF7EE;color:#1A6B35;border-bottom:2px solid #A9DFBF;border-left-color:#1E8449}
+.alert-warn{background:#FEF3E2;color:#7D4A00;border-bottom:2px solid #F0A500;border-left-color:#E67E00}
+.alert-banner svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
+
+/* IMPORT BAR */
+.import-bar{background:#fff;border-bottom:2px solid var(--borde);padding:.55rem 2rem}
+.import-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-import{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;padding:7px 15px;border-radius:7px;background:var(--negro);color:#fff;cursor:pointer;border:none;letter-spacing:.02em;transition:background .15s;white-space:nowrap}
+.btn-import:hover{background:#2C3E50}
+.btn-import svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
+.btn-download{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;padding:7px 15px;border-radius:7px;background:#1E8449;color:#fff;cursor:pointer;border:none;letter-spacing:.02em;transition:background .15s;white-space:nowrap}
+.btn-download:hover{background:#166534}
+.btn-download svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;flex-shrink:0}
+.btn-download:disabled{background:#95A5A6;cursor:not-allowed}
+#fileInput{display:none}
+.import-hint{font-size:11px;color:var(--txt-s)}
+.imp-st{font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px}
+.imp-ok{background:var(--verde-l);color:var(--verde)}
+.imp-err{background:var(--rojo-l);color:var(--rojo)}
+.imp-loading{background:var(--azul-l);color:var(--azul)}
+
+/* TABS NAV */
+.tabs-nav{background:#fff;border-bottom:2px solid var(--borde);padding:0 2rem}
+.tabs-nav-inner{max-width:1440px;margin:0 auto;display:flex;gap:0}
+.tnav{font-size:12px;font-weight:700;padding:.75rem 1.25rem;border-bottom:3px solid transparent;cursor:pointer;color:var(--txt-s);letter-spacing:.02em;text-transform:uppercase;transition:all .15s;white-space:nowrap;margin-bottom:-2px}
+.tnav:hover{color:var(--txt)}
+.tnav.active{color:var(--rojo-m);border-bottom-color:var(--rojo-m)}
+
+/* WRAP */
+.wrap{max-width:1440px;margin:0 auto;padding:1.5rem 2rem 3rem}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* SECTION HEADER */
+.sec-hdr{display:flex;align-items:center;gap:10px;margin:1.75rem 0 .85rem}
+.sec-stripe{width:4px;height:20px;border-radius:2px}
+.s-rojo{background:var(--rojo-m)}.s-azul{background:var(--azul-m)}.s-verde{background:var(--verde-m)}
+.sec-hdr h2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em}
+.sec-hdr span{font-size:11px;color:var(--txt-s);margin-left:auto}
+
+/* SEARCH BAR */
+.search-bar{position:relative;margin-bottom:1rem}
+.search-bar input{width:100%;padding:9px 14px 9px 38px;font-size:13px;border:1.5px solid var(--borde);border-radius:8px;background:#fff;color:var(--txt);outline:none;transition:border .15s}
+.search-bar input:focus{border-color:var(--azul-m)}
+.search-bar svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--txt-ss);fill:none;stroke-width:2;pointer-events:none}
+.search-bar .clear-search{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--txt-ss);font-size:16px;line-height:1;display:none;padding:2px}
+.search-bar .clear-search.show{display:block}
+
+/* FILTERS */
+.filters-card{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:.85rem 1.25rem;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:1rem}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:9px;font-weight:800;color:#5D6D7E;text-transform:uppercase;letter-spacing:.12em}
+.f-input{font-size:12px;padding:6px 9px;border:1.5px solid var(--borde);border-radius:7px;background:#fff;color:var(--txt);min-width:130px;outline:none;transition:border .15s;font-family:var(--font)}
+.f-input:focus{border-color:var(--azul-m);box-shadow:0 0 0 2px rgba(41,128,185,.1)}
+.f-input::placeholder{color:#AAB7C4}
+.btn-reset{font-size:11px;font-weight:600;padding:7px 12px;border:1.5px solid var(--borde);border-radius:7px;background:#fff;color:var(--txt-s);cursor:pointer;transition:all .15s}
+.btn-reset:hover{background:var(--bg);border-color:var(--txt-s)}
+.f-info{font-size:11px;font-weight:700;color:var(--azul-m)}
+
+/* KPI */
+.kpi-row{display:grid;gap:10px;margin-bottom:10px}
+.kpi-r3{grid-template-columns:repeat(3,1fr)}
+.kpi-r5{grid-template-columns:repeat(5,1fr)}
+.kpi-r2{grid-template-columns:repeat(2,1fr)}
+.kpi{border-radius:10px;padding:.9rem 1.1rem;border:1px solid transparent;position:relative}
+.kpi-deuda-main{background:var(--rojo);border-color:var(--rojo)}
+.kpi-deuda-main .kl{color:rgba(255,255,255,.7)}.kpi-deuda-main .kv{color:#fff}
+.kpi-deuda{background:linear-gradient(135deg,#FDEDEC,#FDFEFE);border-color:var(--rojo-l)}
+.kpi-antig{background:#fff;border-color:var(--borde)}
+.kpi-acr-main{background:var(--azul);border-color:var(--azul)}
+.kpi-acr-main .kl{color:rgba(255,255,255,.7)}.kpi-acr-main .kv{color:#fff}
+.kpi-acr{background:linear-gradient(135deg,#EBF5FB,#FDFEFE);border-color:var(--azul-l)}
+.kl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#5D6D7E;margin-bottom:6px}
+.kv{font-size:21px;font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--txt)}
+.kv.rojo{color:var(--rojo)}.kv.azul{color:var(--azul)}.kv.verde{color:var(--verde)}.kv.naranja{color:var(--naranja)}
+.k-bar{height:3px;border-radius:2px;margin-top:7px;background:var(--borde);overflow:hidden}
+.k-bar-f{height:100%;border-radius:2px}
+.k-note{font-size:10px;color:#5D6D7E;margin-top:4px}
+.divider{border:none;border-top:2px dashed var(--borde);margin:1.5rem 0}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chart-card{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:1.1rem 1.25rem}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#4A5568;margin-bottom:.9rem}
+.donut-wrap{position:relative;display:flex;align-items:center;gap:1.5rem}
+.donut-legend{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.dl-item{display:flex;align-items:center;gap:7px;font-size:11px}
+.dl-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.dl-name{color:#4A5568;white-space:nowrap}
+.dl-val{font-weight:700;color:var(--txt);margin-left:auto;padding-left:12px}
+
+/* TABLES */
+.table-card{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:12px}
+.tc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px}
+.tc-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#4A5568}
+.tc-actions{display:flex;align-items:center;gap:8px}
+.vtabs{display:flex;gap:4px}
+.vtab{font-size:10px;font-weight:700;padding:5px 11px;border:1.5px solid var(--borde);border-radius:6px;cursor:pointer;background:#fff;color:var(--txt-s);letter-spacing:.04em;text-transform:uppercase;transition:all .15s}
+.vtab.active{background:var(--negro);color:#fff;border-color:var(--negro)}
+.btn-exp{font-size:10px;font-weight:700;padding:5px 11px;border:1.5px solid var(--borde);border-radius:6px;background:#fff;color:var(--txt-s);cursor:pointer;letter-spacing:.04em;text-transform:uppercase;transition:all .15s}
+.btn-exp:hover{background:var(--bg)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-size:9px;font-weight:800;color:#5D6D7E;text-align:left;padding:7px 10px;border-bottom:2px solid var(--borde);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;background:#FAFBFC;cursor:pointer;user-select:none}
+th:hover{color:var(--txt)}
+td{padding:7px 10px;border-bottom:1px solid #F2F3F4;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFBFC}
+.td-cli{font-weight:700;color:var(--negro);max-width:240px}
+.td-cod{font-family:'SFMono-Regular',Consolas,monospace;font-size:11px;font-weight:600;color:var(--azul);background:var(--azul-l);padding:2px 6px;border-radius:4px}
+.td-r{color:var(--rojo);font-weight:700;font-size:13px}
+.td-b{color:var(--azul);font-weight:700;font-size:13px}
+.td-dim{color:#4A5568;font-size:11px}
+.a-ok{color:var(--verde);font-weight:600}
+.a-warn{color:var(--naranja);font-weight:700}
+.a-danger{color:var(--rojo);font-weight:700}
+.no-results{text-align:center;padding:2rem;color:var(--txt-ss);font-size:13px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:.03em;white-space:nowrap;vertical-align:middle}
+.b-alto{background:var(--rojo-l);color:var(--rojo)}
+.b-medio{background:var(--naranja-l);color:var(--naranja)}
+.b-bajo{background:var(--verde-l);color:var(--verde)}
+.b-grup{background:var(--amarillo-l);color:var(--amarillo-t);border:1px solid var(--amarillo-b);cursor:default}
+.b-grup svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2.5;flex-shrink:0}
+.risk-track{width:56px;height:5px;border-radius:3px;background:var(--borde);overflow:hidden;display:inline-block;vertical-align:middle;margin-left:5px}
+.risk-fill{height:100%;border-radius:3px}
+
+/* TOOLTIP */
+.ttw{position:relative;display:inline-block}
+.ttb{display:none;position:absolute;z-index:999;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--negro);color:#fff;border-radius:7px;padding:8px 12px;font-size:11px;line-height:1.7;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none}
+.ttb::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--negro)}
+.ttw:hover .ttb{display:block}
+
+/* GRUPO CARD */
+.grupo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.grupo-card{background:#fff;border:1px solid var(--borde);border-radius:10px;padding:1rem 1.25rem}
+.gc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;padding-bottom:.6rem;border-bottom:1px solid var(--borde)}
+.gc-nombre{font-size:13px;font-weight:800;color:var(--negro)}
+.gc-id{font-size:10px;color:var(--txt-ss);background:var(--bg);padding:2px 7px;border-radius:4px;font-weight:600}
+.gc-deuda-total{font-size:16px;font-weight:800;color:var(--rojo)}
+.gc-deuda-label{font-size:9px;color:var(--txt-ss);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.gc-clientes{margin-top:.6rem}
+.gc-cli-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #F8F9FA;font-size:12px;gap:8px}
+.gc-cli-row:last-child{border-bottom:none}
+.gc-cli-name{font-weight:600;color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gc-cli-monto{font-weight:700;flex-shrink:0}
+.gc-cli-monto.pos{color:var(--rojo)}
+.gc-cli-monto.neg{color:var(--azul)}
+.gc-cli-monto.zer{color:var(--txt-ss)}
+.gc-empty{color:var(--txt-ss);font-size:11px;text-align:center;padding:.5rem 0}
+
+/* FOOTER */
+.footer{text-align:center;padding:1.25rem 2rem;font-size:10px;color:var(--txt-ss);background:#fff;border-top:1px solid var(--borde);margin-top:1rem}
+
+@media(max-width:900px){
+  .charts-grid{grid-template-columns:1fr}.chart-card.full{grid-column:1}
+  .kpi-r5,.kpi-r3{grid-template-columns:repeat(2,1fr)}
+  .grupo-grid{grid-template-columns:1fr}
+  .header-inner{height:auto;padding:.75rem 0;flex-wrap:wrap}
+  .donut-wrap{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="logo">DP</div>
+      <div>
+        <div class="h-title">Dashboard de Cobranzas &mdash; Distribuidora del Palacio S.A.</div>
+        <div class="h-sub">Saldos compensados por cliente &middot; Empleados excluidos (CLIE PEOPLE)</div>
+      </div>
+    </div>
+    <div class="h-badges">
+      <span class="hb hb-fecha" id="fechaBadge">Al 19/06/2026</span>
+      <span class="hb hb-excl">Empleados excluidos</span>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT BANNER -->
+<div class="alert-banner" id="alertBanner">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  <span id="alertMsg"></span>
+</div>
+
+<!-- IMPORT BAR -->
+<div class="import-bar">
+  <div class="import-inner">
+    <button class="btn-import" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Importar Excel / CSV del día
+    </button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="importFile(this)">
+    <span class="import-hint">Importá el archivo diario y todo el dashboard se actualiza solo.</span>
+    <span id="impSt"></span>
+    <button class="btn-download" id="btnDownload" onclick="downloadSnapshot()" title="Genera un HTML con los datos actuales para subir a GitHub Pages">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Descargar versión del día
+    </button>
+  </div>
+</div>
+
+<!-- TABS NAV -->
+<div class="tabs-nav">
+  <div class="tabs-nav-inner">
+    <div class="tnav active" onclick="switchTab('cobranzas',this)">&#128196; Cobranzas</div>
+    <div class="tnav" onclick="switchTab('grupos',this)">&#128101; Grupos</div>
+    <div class="tnav" onclick="switchTab('vendedores',this)">&#128100; Vendedores</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ══════════════════════════════════════
+     TAB 1 — COBRANZAS
+══════════════════════════════════════ -->
+<div class="tab-pane active" id="tab-cobranzas">
+
+  <!-- filters -->
+  <div class="filters-card" style="margin-top:1rem">
+    <div class="fg"><label>Sucursal</label><input class="f-input" id="fSuc" list="dlSuc" placeholder="Todas…" oninput="applyFilters()"><datalist id="dlSuc"></datalist></div>
+    <div class="fg"><label>Vendedor</label><input class="f-input" id="fVend" list="dlVend" placeholder="Todos…" oninput="applyFilters()"><datalist id="dlVend"></datalist></div>
+    <div class="fg"><label>Localidad</label><input class="f-input" id="fLoc" list="dlLoc" placeholder="Todas…" oninput="applyFilters()"><datalist id="dlLoc"></datalist></div>
+    <div class="fg"><label>Cliente</label><input class="f-input" id="fCli" list="dlCli" placeholder="Buscar cliente…" oninput="applyFilters()"><datalist id="dlCli"></datalist></div>
+    <div class="fg"><label>Código</label><input class="f-input" id="fCod" list="dlCod" placeholder="Ej: 1354" oninput="applyFilters()"><datalist id="dlCod"></datalist></div>
+    <div class="fg"><label>Grupo</label><input class="f-input" id="fConj" list="dlConj" placeholder="Nombre o N°…" oninput="applyFilters()"><datalist id="dlConj"></datalist></div>
+    <button class="btn-reset" onclick="resetFilters()">&#8635; Limpiar</button>
+    <span class="f-info" id="filterInfo"></span>
+  </div>
+
+  <!-- search -->
+  <div class="search-bar">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="Buscar por nombre o código de cliente…" oninput="onSearch(this)">
+    <button class="clear-search" id="clearSearch" onclick="clearSearch()">&#215;</button>
+  </div>
+
+  <!-- DEUDA -->
+  <div class="sec-hdr">
+    <div class="sec-stripe s-rojo"></div>
+    <h2>Cartera deudora</h2>
+    <span id="subDeuda"></span>
+  </div>
+  <div class="kpi-row kpi-r3" style="margin-bottom:10px">
+    <div class="kpi kpi-deuda-main" id="kpiDT"></div>
+    <div class="kpi kpi-deuda" id="kpiCD"></div>
+    <div class="kpi kpi-deuda" id="kpiP60"></div>
+  </div>
+  <div class="kpi-row kpi-r5">
+    <div class="kpi kpi-antig" id="kD7"></div>
+    <div class="kpi kpi-antig" id="kD15"></div>
+    <div class="kpi kpi-antig" id="kD30"></div>
+    <div class="kpi kpi-antig" id="kD60"></div>
+    <div class="kpi kpi-antig" id="kD60p"></div>
+  </div>
+
+  <!-- charts deuda -->
+  <div class="charts-grid" style="margin-top:12px">
+    <div class="chart-card">
+      <div class="chart-title">Distribución por antigüedad</div>
+      <div class="donut-wrap">
+        <div style="position:relative;width:180px;height:180px;flex-shrink:0"><canvas id="cDonut" role="img" aria-label="Distribución deuda por antigüedad"></canvas></div>
+        <div class="donut-legend" id="donutLegend"></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Top 10 clientes &mdash; mayor deuda</div>
+      <div style="position:relative;height:200px"><canvas id="cTop10" role="img" aria-label="Top 10 clientes"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Deuda por localidad</div>
+      <div style="position:relative;height:200px"><canvas id="cLoc" role="img" aria-label="Deuda por localidad"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Deuda por sucursal</div>
+      <div style="position:relative;height:200px"><canvas id="cSuc" role="img" aria-label="Deuda por sucursal"></canvas></div>
+    </div>
+  </div>
+
+  <!-- tabla deudores -->
+  <div class="table-card" style="margin-top:12px">
+    <div class="tc-hdr">
+      <span class="tc-title" id="deudTitle">Clientes deudores</span>
+      <div class="tc-actions">
+        <button class="btn-exp" onclick="exportCSV('deudores')">&#8659;&nbsp;Exportar</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table id="deudTable"></table></div>
+  </div>
+
+  <!-- ACREEDORES -->
+  <div class="divider"></div>
+  <div class="sec-hdr">
+    <div class="sec-stripe s-azul"></div>
+    <h2>Saldos acreedores</h2>
+    <span id="subAcr">No se descuentan de la deuda total</span>
+  </div>
+  <div class="kpi-row kpi-r3">
+    <div class="kpi kpi-acr-main" id="kpiAT"></div>
+    <div class="kpi kpi-acr" id="kpiCA"></div>
+    <div class="kpi kpi-acr" id="kpiAMax"></div>
+  </div>
+  <div class="table-card" style="margin-top:12px">
+    <div class="tc-hdr">
+      <span class="tc-title" id="acrTitle">Clientes acreedores</span>
+      <button class="btn-exp" onclick="exportCSV('acreedores')">&#8659;&nbsp;Exportar</button>
+    </div>
+    <div class="table-wrap"><table id="acrTable"></table></div>
+  </div>
+
+</div><!-- /tab-cobranzas -->
+
+<!-- ══════════════════════════════════════
+     TAB 2 — GRUPOS
+══════════════════════════════════════ -->
+<div class="tab-pane" id="tab-grupos">
+
+  <div class="sec-hdr" style="margin-top:1rem">
+    <div class="sec-stripe s-verde"></div>
+    <h2>Grupos económicos</h2>
+    <span id="subGrupos"></span>
+  </div>
+
+  <div class="kpi-row kpi-r3" style="margin-bottom:1.25rem">
+    <div class="kpi kpi-antig" id="kGrupoTotal"></div>
+    <div class="kpi kpi-antig" id="kGrupoCant"></div>
+    <div class="kpi kpi-antig" id="kGrupoAcr"></div>
+  </div>
+
+  <div class="grupo-grid" id="grupoGrid"></div>
+
+</div><!-- /tab-grupos -->
+
+<!-- ══════════════════════════════════════
+     TAB 3 — VENDEDORES
+══════════════════════════════════════ -->
+<div class="tab-pane" id="tab-vendedores">
+
+  <div class="sec-hdr" style="margin-top:1rem">
+    <div class="sec-stripe s-rojo"></div>
+    <h2>Análisis por vendedor</h2>
+    <span id="subVend"></span>
+  </div>
+
+  <div class="charts-grid" style="margin-bottom:12px">
+    <div class="chart-card">
+      <div class="chart-title">Deuda total por vendedor</div>
+      <div style="position:relative;height:240px"><canvas id="cVend" role="img" aria-label="Deuda por vendedor"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Clientes deudores por vendedor</div>
+      <div style="position:relative;height:240px"><canvas id="cVendCli" role="img" aria-label="Clientes por vendedor"></canvas></div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="tc-hdr">
+      <span class="tc-title">Ranking de vendedores</span>
+      <div class="tc-actions">
+        <div class="vtabs" id="vendTabs">
+          <button class="vtab active" onclick="sortVend('deuda',event)">Por deuda</button>
+          <button class="vtab" onclick="sortVend('deudores',event)">Por deudores</button>
+          <button class="vtab" onclick="sortVend('clientes',event)">Por clientes</button>
+        </div>
+        <button class="btn-exp" onclick="exportCSV('vendedor')">&#8659;&nbsp;Exportar</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table id="vendTable"></table></div>
+  </div>
+
+</div><!-- /tab-vendedores -->
+
+</div><!-- /wrap -->
+<div class="footer">Distribuidora del Palacio S.A. &nbsp;&middot;&nbsp; Información confidencial &mdash; uso interno &nbsp;&middot;&nbsp; <span id="footerFecha">Datos al 19/06/2026</span></div>
+
+<script>
+const BASE_DATA  = [{"cliente": "15 POR CIENTO SRL", "saldo": 3840071.03, "d7": 0.0, "d15": 3840071.03, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 13, "cantCbte": 3, "codigo": "1354", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "15 SUPER MDA NORTE S R.L", "saldo": -155737.82, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -150555.42, "d60p": -5182.4, "antiguedad": 0, "cantCbte": 3, "codigo": "654", "vendedor": "PAIVA YESSICA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ACOSTA VILLALBA TERESITA", "saldo": -7303.26, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -7303.26, "antiguedad": 0, "cantCbte": 1, "codigo": "2355", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ALDABE FEDERICO", "saldo": 0.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 21, "cantCbte": 2, "codigo": "11642", "vendedor": "PENA ELEANA", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ALMEIDA GUILLERMO DANIEL", "saldo": 33329.66, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 33329.66, "antiguedad": 126, "cantCbte": 1, "codigo": "8457", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "ALMACEN VENTANA", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ALMIRON GERMAN AGUSTIN", "saldo": -4595.71, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -4595.71, "antiguedad": 0, "cantCbte": 1, "codigo": "4073", "vendedor": "LANCHAS ELSA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ROTISERIA/COM P", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ALZA VIRGINIA CAROLINA", "saldo": 197508.41, "d7": 197508.41, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "7706", "vendedor": "MARRERO LAUTARO", "localidad": "GENERAL GUIDO", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "AMA GOZUA SA", "saldo": 531435.07, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 531435.07, "antiguedad": 868, "cantCbte": 4, "codigo": "7473", "vendedor": "MARRERO LAUTARO", "localidad": "MAIPU", "sucursal": "2", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ARAYA ROMINA GISEL", "saldo": -79701.88, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -79701.88, "antiguedad": 0, "cantCbte": 1, "codigo": "2031", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["28"], "multiVendedor": false, "grupos": [{"id": "28", "nombre": "OLIVO"}]}, {"cliente": "ARGERICH RUBEN ALBERTO", "saldo": 40743.73, "d7": 0.0, "d15": 0.0, "d30": 40743.73, "d60": 0.0, "d60p": 0.0, "antiguedad": 22, "cantCbte": 2, "codigo": "5996", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ARMANI SERGIO MARCELO", "saldo": 168950.19, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 168950.19, "antiguedad": 91, "cantCbte": 1, "codigo": "4210", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ASOCIACION CIVIL EL GRAN PORVENIR DE SAN CLEMENTE", "saldo": 312797.48, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 312797.48, "antiguedad": 3096, "cantCbte": 6, "codigo": "345", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "BASE DEPORTE", "conjuntos": ["Sin conjunto"], "multiVendedor": true, "grupos": []}, {"cliente": "ASOCIACION MUTUAL VILLA DEL SUR", "saldo": 0.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 37, "cantCbte": 3, "codigo": "10031", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "AUTOSERVICIOS DE CASTELLI SRL", "saldo": 681912.11, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 681912.11, "antiguedad": 104, "cantCbte": 2, "codigo": "11027", "vendedor": "BRUNNO LUCIANO", "localidad": "CASTELLI", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "AYALA ABEL DARIO JULIAN", "saldo": -764615.79, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -287494.53, "d60p": -477121.26, "antiguedad": 0, "cantCbte": 2, "codigo": "560", "vendedor": "NUÑEZ MATIAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "CADENA PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "AYALA MARIEL CAROLINA", "saldo": -61023.65, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -61023.65, "antiguedad": 0, "cantCbte": 1, "codigo": "611", "vendedor": "LANCHAS ELSA", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "CADENA PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "AYASTUY FRANCO", "saldo": 311130.76, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 311130.76, "antiguedad": 294, "cantCbte": 6, "codigo": "1118", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BALLEJOS OCANO NADIA FLORENCIA", "saldo": 332404.74, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 332404.74, "antiguedad": 444, "cantCbte": 1, "codigo": "2375", "vendedor": "PAIVA YESSICA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "BASE BAR", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BEGUERIE FLORENCIA", "saldo": 238619.19, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 238619.19, "antiguedad": 216, "cantCbte": 2, "codigo": "10069", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BENITEZ MARIA DE LOS ANGELES", "saldo": -9597.92, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -9597.92, "antiguedad": 0, "cantCbte": 1, "codigo": "4113", "vendedor": "GIACHE LEONEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "CARNICERIA/POLLE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BINGO CHIOZZA S.A.", "saldo": 656980.0, "d7": 0.0, "d15": 459565.85, "d30": 0.0, "d60": 223726.96, "d60p": -26312.81, "antiguedad": 80, "cantCbte": 6, "codigo": "2703", "vendedor": "LANCHAS ELSA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG BAR", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BINGO MAR DE AJO SA", "saldo": 211119.39, "d7": 200191.08, "d15": 0.0, "d30": 10928.31, "d60": 0.0, "d60p": 0.0, "antiguedad": 17, "cantCbte": 2, "codigo": "1194", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG CASINO", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BINGO SHOW S.A.", "saldo": 351019.89, "d7": 29794.44, "d15": 238224.63, "d30": 218557.75, "d60": 0.0, "d60p": -135556.93, "antiguedad": 21, "cantCbte": 8, "codigo": "4267", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG CASINO", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BLANCO ANTONIO MANUEL", "saldo": -50940.35, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -50940.35, "antiguedad": 0, "cantCbte": 1, "codigo": "5195", "vendedor": "LIZARRAGA NAHUEL", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BLANCO EMMANUEL", "saldo": -3273.66, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -3273.66, "antiguedad": 0, "cantCbte": 1, "codigo": "4617", "vendedor": "NUÑEZ MATIAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BLANCO SUAREZ LAUTARO NICOLAS", "saldo": -8890.0, "d7": 0.0, "d15": 0.0, "d30": -8890.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "4713", "vendedor": "NUÑEZ GABRIEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BOCCUZZI MARIO", "saldo": 39655.6, "d7": 39655.6, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 6, "cantCbte": 1, "codigo": "2733", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG CAF?? / CONF", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BOMBEROS VOLUNTARIOS", "saldo": 792847.3, "d7": 0.0, "d15": 415771.19, "d30": 0.0, "d60": 0.0, "d60p": 377076.11, "antiguedad": 160, "cantCbte": 3, "codigo": "1172", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BORDACHAR ANDRES", "saldo": 1498785.41, "d7": 1498785.41, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 3, "cantCbte": 3, "codigo": "10217", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "VINOTECA", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BROCCO TRINIDAD LILIAN", "saldo": 147499.13, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 147499.13, "antiguedad": 171, "cantCbte": 1, "codigo": "1157", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG DEPORTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "BURGOS MIGUEL", "saldo": 4589367.49, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 4589367.49, "antiguedad": 1049, "cantCbte": 1, "codigo": "11417", "vendedor": "50-OFICINA DOLORES", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "MAYORISTA DEPOSI", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CABANA LORENA ALEJANDRA", "saldo": -8976.4, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -8976.4, "antiguedad": 0, "cantCbte": 1, "codigo": "2489", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN VENTANA", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CABARCOS DIEGO JOSE", "saldo": 1845733.81, "d7": 1057317.94, "d15": 788415.87, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 14, "cantCbte": 2, "codigo": "2168", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CABRERA BALBINA", "saldo": 669176.04, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 669176.04, "antiguedad": 1855, "cantCbte": 10, "codigo": "1529", "vendedor": "LOPEZ VALENTINA", "localidad": "BARRIO PEDRO ROCCO", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CABRERA MARINA ESTELLA", "saldo": 1800000.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1800000.0, "antiguedad": 518, "cantCbte": 1, "codigo": "7329", "vendedor": "MARRERO LAUTARO", "localidad": "GENERAL GUIDO", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CAFE MULE SRL EN FORMACION", "saldo": 208364.09, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 208364.09, "antiguedad": 415, "cantCbte": 1, "codigo": "10321", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "REG RESTAURANTE", "conjuntos": ["22"], "multiVendedor": false, "grupos": [{"id": "22", "nombre": "CAFE MULE SRL"}]}, {"cliente": "CAFE MULE SRL. EN FORMACION", "saldo": 273012.81, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 273012.81, "antiguedad": 303, "cantCbte": 3, "codigo": "11303", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "REG HAMBURGUESER", "conjuntos": ["22"], "multiVendedor": false, "grupos": [{"id": "22", "nombre": "CAFE MULE SRL"}]}, {"cliente": "CALDUBEHERE MARIELA LAURA", "saldo": -9035.64, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -9035.64, "antiguedad": 0, "cantCbte": 1, "codigo": "3965", "vendedor": "NUÑEZ MATIAS", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CAMACHI VALERIA SABRINA", "saldo": -228647.17, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -228647.17, "antiguedad": 0, "cantCbte": 1, "codigo": "4231", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "CADENA HAMBURGUE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CAPRIA FACUNDO EZEQUIEL", "saldo": 1399226.63, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1399226.63, "antiguedad": 511, "cantCbte": 5, "codigo": "11375", "vendedor": "PENA ELEANA", "localidad": "GENERAL BELGRANO", "sucursal": "2", "canal": "REG BAR", "conjuntos": ["25"], "multiVendedor": false, "grupos": [{"id": "25", "nombre": "RUSTICO CAFE"}]}, {"cliente": "CARBONETTI FEDERICO HECTOR DANIEL", "saldo": -10363.34, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -10363.34, "antiguedad": 0, "cantCbte": 1, "codigo": "11591", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "REG CAF?? / CONF", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CATALINA COMBUSTIBLES S.A.", "saldo": 38402.64, "d7": 0.0, "d15": 38402.64, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 15, "cantCbte": 1, "codigo": "10212", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "EST DE SERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CELUNI 33 S.R.L", "saldo": 703810.13, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 703810.13, "antiguedad": 210, "cantCbte": 3, "codigo": "4201", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CERVECERIA Y MALTERIA QUILMES SAICA Y G", "saldo": 832442.49, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 559589.16, "d60p": 272853.33, "antiguedad": 148, "cantCbte": 2, "codigo": "102", "vendedor": "OFICINA MDA", "localidad": "ZARATE", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CHAPINAL JUAN MANUEL", "saldo": 127254.7, "d7": 127254.7, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "6062", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "CARNICERIA/POLLE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CHARPENTIER RAUL J", "saldo": -55222.27, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -55222.27, "antiguedad": 0, "cantCbte": 1, "codigo": "2002", "vendedor": "OFICINA MDA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CHEN BIXIA", "saldo": 4325239.62, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 4325239.62, "antiguedad": 149, "cantCbte": 1, "codigo": "3055", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CHEN MEIHUA", "saldo": 394170.69, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 394170.69, "antiguedad": 505, "cantCbte": 3, "codigo": "3684", "vendedor": "NUÑEZ GABRIEL", "localidad": "COSTA DEL ESTE", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CHEN XING", "saldo": 475091.15, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 475091.15, "antiguedad": 281, "cantCbte": 2, "codigo": "8477", "vendedor": "VILLALBA CAROLINA", "localidad": "GENERAL LAVALLE", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CHEN YONG", "saldo": -14371.94, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -14371.94, "antiguedad": 0, "cantCbte": 1, "codigo": "2568", "vendedor": "PAIVA YESSICA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CIUFFI DIEGO MATIAS", "saldo": -16656.73, "d7": 0.0, "d15": 0.0, "d30": -16656.73, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "2147", "vendedor": "NUÑEZ MATIAS", "localidad": "AGUAS VERDES", "sucursal": "1", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CLUB INN SA", "saldo": 84206.54, "d7": 84206.54, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 6, "cantCbte": 1, "codigo": "2196", "vendedor": "PAIVA YESSICA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "BASE HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "COMERCIALIZADORA NORDAX S.A", "saldo": 927999.66, "d7": 0.0, "d15": 927999.66, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 9, "cantCbte": 3, "codigo": "4160", "vendedor": "MAYORISTAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "MAYORISTA DEPOSI", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CONSTANTINO CARLOS IGNACIO", "saldo": 38306.27, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 38306.27, "antiguedad": 231, "cantCbte": 1, "codigo": "11065", "vendedor": "BRUNNO LUCIANO", "localidad": "CASTELLI", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "COSENTINO LUCAS", "saldo": -666739.33, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -666739.33, "antiguedad": 86, "cantCbte": 5, "codigo": "5231", "vendedor": "PRAINO TAMARA", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "COSTEROS GASTRONOMICOS S. R. L.", "saldo": 239697.45, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 239697.45, "antiguedad": 169, "cantCbte": 1, "codigo": "2009", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "CRENCI CLAUDIO", "saldo": 351277.27, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 351277.27, "antiguedad": 70, "cantCbte": 1, "codigo": "10161", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "REG PIZZER??A", "conjuntos": ["33"], "multiVendedor": false, "grupos": [{"id": "33", "nombre": "CRENCI CLAUDIO"}]}, {"cliente": "DA SILVA BRITO CESAR ANDRES", "saldo": 248425.91, "d7": 268438.41, "d15": 0.0, "d30": 0.0, "d60": -20012.5, "d60p": 0.0, "antiguedad": 7, "cantCbte": 2, "codigo": "1248", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG CAF?? / CONF", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "DA SILVA BRITO MARCO ANTONIO", "saldo": 597412.69, "d7": 435964.33, "d15": 218315.41, "d30": -56867.05, "d60": 0.0, "d60p": 0.0, "antiguedad": 10, "cantCbte": 5, "codigo": "287", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["10"], "multiVendedor": false, "grupos": [{"id": "10", "nombre": "QUINCHO MDA"}]}, {"cliente": "DA SILVA BRITO MARIO FRANCISCO", "saldo": 2485512.44, "d7": 483477.57, "d15": 0.0, "d30": 962998.54, "d60": 386053.95, "d60p": 652982.38, "antiguedad": 128, "cantCbte": 21, "codigo": "2085", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "DE FELIPE CAMILA", "saldo": -10490.45, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -10490.45, "antiguedad": 70, "cantCbte": 2, "codigo": "10601", "vendedor": "BRUNNO LUCIANO", "localidad": "PILA", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "DEL PALACIO SA (DOL)", "saldo": 26758.34, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 26758.34, "antiguedad": 751, "cantCbte": 1, "codigo": "199", "vendedor": "OFICINA MDA", "localidad": "DOLORES", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "DIAZ FERNANDO ANGEL", "saldo": -13371.74, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -13371.74, "antiguedad": 0, "cantCbte": 1, "codigo": "2136", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "DIZ ANIBAL", "saldo": -27182.07, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -27182.07, "antiguedad": 0, "cantCbte": 1, "codigo": "77", "vendedor": "NUÑEZ MATIAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ECHANDI PERALTA S. CAP I SECC IV", "saldo": 331097.09, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 331097.09, "antiguedad": 80, "cantCbte": 2, "codigo": "7270", "vendedor": "VILLALBA CAROLINA", "localidad": "GENERAL LAVALLE", "sucursal": "2", "canal": "EST DE SERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ECO DE LOS ANDES S.A", "saldo": 562891.01, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 480331.36, "d60p": 82559.65, "antiguedad": 148, "cantCbte": 2, "codigo": "208", "vendedor": "OFICINA MDA", "localidad": "CAPITAL FEDERAL", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "EL MODESTO LOGISTICA SA", "saldo": 360549.48, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 360549.48, "antiguedad": 178, "cantCbte": 2, "codigo": "8438", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "TIENDA DE BEBIDA", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "EMTUR", "saldo": -36754.86, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -36754.86, "antiguedad": 142, "cantCbte": 15, "codigo": "2413", "vendedor": "PARRA CARLOS", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ENTRE PUEBLOS S.A", "saldo": 1046179.38, "d7": 1046179.38, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 6, "cantCbte": 1, "codigo": "10425", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "REG OTROS MEALS", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ESCOBAR HORACIO DANIEL", "saldo": 107202.09, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 107202.09, "antiguedad": 258, "cantCbte": 1, "codigo": "11576", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ESPINA MARIA DE LOS DOLORES", "saldo": 335725.03, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 335725.03, "antiguedad": 98, "cantCbte": 1, "codigo": "1171", "vendedor": "PAIVA YESSICA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ESQUINA 3 S.A.", "saldo": 70656.18, "d7": 49186.04, "d15": 0.0, "d30": 42351.31, "d60": 0.0, "d60p": -20881.17, "antiguedad": 27, "cantCbte": 3, "codigo": "347", "vendedor": "PAIVA YESSICA", "localidad": "COSTA DEL ESTE", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "EXPRESO DE LAS SIERRAS S.A", "saldo": 312034.39, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 312034.39, "antiguedad": 1170, "cantCbte": 2, "codigo": "784", "vendedor": "OFICINA MDA", "localidad": "QUILMES", "sucursal": "1", "canal": "BASE OTROS ENTRE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FARRAN NICOLAS EZEQUIEL", "saldo": -7068.53, "d7": -7068.53, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "4580", "vendedor": "LANCHAS ELSA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ROTISERIA/COM P", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FARRELL ELIANA GISELE", "saldo": -2436.07, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -2436.07, "antiguedad": 0, "cantCbte": 1, "codigo": "111", "vendedor": "NUÑEZ MATIAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FERNANDEZ HORACIO", "saldo": -104699.49, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -104699.49, "antiguedad": 0, "cantCbte": 1, "codigo": "2452", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FERNANDEZ JORGE RICARDO", "saldo": -6382.36, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -6382.36, "antiguedad": 0, "cantCbte": 1, "codigo": "2745", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FERPEL SRL (PADDLE)", "saldo": 288877.26, "d7": 256386.06, "d15": 0.0, "d30": 32491.2, "d60": 0.0, "d60p": 0.0, "antiguedad": 23, "cantCbte": 3, "codigo": "4925", "vendedor": "PRAINO TAMARA", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "REG DEPORTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FERRER MAXIMILIANO", "saldo": 37930.14, "d7": 37930.14, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 1, "cantCbte": 2, "codigo": "6124", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FERROL SRL", "saldo": -88081.33, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -2398.92, "d60p": -85682.41, "antiguedad": 0, "cantCbte": 6, "codigo": "2592", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FLORENTIN JUAN CRUZ", "saldo": -41441.76, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -41441.76, "antiguedad": 195, "cantCbte": 2, "codigo": "1414", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FORNARO JAVIER A.", "saldo": 458104.86, "d7": 458104.86, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 6, "cantCbte": 1, "codigo": "2096", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FOSATTI LUIS ALBERTO", "saldo": 162889.9, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 162889.9, "antiguedad": 64, "cantCbte": 1, "codigo": "6052", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "FOURCADE ARIEL FEDERICO", "saldo": 1001982.51, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1001982.51, "antiguedad": 958, "cantCbte": 2, "codigo": "10703", "vendedor": "PENA ELEANA", "localidad": "GENERAL BELGRANO", "sucursal": "2", "canal": "VINOTECA", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "GAUDIUSO FERNANDO ARIEL", "saldo": -646066.12, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -646066.12, "antiguedad": 181, "cantCbte": 7, "codigo": "4037", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "GHIORZI RICARDO CARLOS ALBERTO", "saldo": -2696.63, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -2696.63, "antiguedad": 0, "cantCbte": 1, "codigo": "4829", "vendedor": "GIACHE LEONEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "GIULIATTI ARIANA", "saldo": 22210.21, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 22210.21, "antiguedad": 272, "cantCbte": 1, "codigo": "11627", "vendedor": "BRUNNO LUCIANO", "localidad": "LEZAMA", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "GONZALEZ LEOPOLDO SA", "saldo": 3878320.56, "d7": 2536416.67, "d15": 299861.61, "d30": 1096955.0, "d60": -54912.72, "d60p": 0.0, "antiguedad": 35, "cantCbte": 13, "codigo": "10226", "vendedor": "PENA ELEANA", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["20"], "multiVendedor": true, "grupos": [{"id": "20", "nombre": "SUPER CHAS"}]}, {"cliente": "GRAN HOTEL FONTAINEBLEAU SA", "saldo": 58790.48, "d7": 58790.48, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 3, "cantCbte": 1, "codigo": "5501", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "REG HOTEL", "conjuntos": ["7"], "multiVendedor": false, "grupos": [{"id": "7", "nombre": "FONTAINEBLEAU"}]}, {"cliente": "GRASSL DANIELA ELIZABETH", "saldo": 251250.63, "d7": 158417.33, "d15": 92833.3, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 13, "cantCbte": 2, "codigo": "2800", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["5"], "multiVendedor": false, "grupos": [{"id": "5", "nombre": "CATALANO"}]}, {"cliente": "GRAVANO PABLO ALEJANDRO", "saldo": 123152.88, "d7": 0.0, "d15": 123152.88, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 9, "cantCbte": 1, "codigo": "1045", "vendedor": "LANCHAS ELSA", "localidad": "VILLA CLELIA", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "GRAZIANI EMILIANO", "saldo": -29115.62, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 424207.17, "d60p": -453322.79, "antiguedad": 48, "cantCbte": 2, "codigo": "2098", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG PIZZER??A", "conjuntos": ["32"], "multiVendedor": false, "grupos": [{"id": "32", "nombre": "DON CORLEONE"}]}, {"cliente": "GRAZIANI SANTIAGO GABRIEL", "saldo": -73799.04, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -73799.04, "antiguedad": 154, "cantCbte": 7, "codigo": "1463", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "TOP PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "GRUPO CARRERA DE LA COSTA S.R.L", "saldo": 1523782.38, "d7": 1159511.27, "d15": 241625.21, "d30": 122645.9, "d60": 0.0, "d60p": 0.0, "antiguedad": 23, "cantCbte": 8, "codigo": "2115", "vendedor": "NUÑEZ GABRIEL", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["1"], "multiVendedor": true, "grupos": [{"id": "1", "nombre": "J & CARRERA SRL"}]}, {"cliente": "GRUPO CARRERA DE LA COSTA S.R.L.", "saldo": 2312014.87, "d7": 716993.29, "d15": 703464.94, "d30": 891556.64, "d60": 0.0, "d60p": 0.0, "antiguedad": 23, "cantCbte": 18, "codigo": "1028", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["1"], "multiVendedor": false, "grupos": [{"id": "1", "nombre": "J & CARRERA SRL"}]}, {"cliente": "GRUPO EMPRESARIO SANTA CHEN S.R.L.", "saldo": 1924162.6, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1924162.6, "antiguedad": 330, "cantCbte": 5, "codigo": "4581", "vendedor": "NUÑEZ GABRIEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["3"], "multiVendedor": false, "grupos": [{"id": "3", "nombre": "DINEVIA"}]}, {"cliente": "GRUPO FRA DE LA COSTA S.R.L.", "saldo": -6000.03, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -6000.03, "antiguedad": 134, "cantCbte": 2, "codigo": "4384", "vendedor": "NUÑEZ GABRIEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "HAKIM HERMANOS S.R.L.", "saldo": 1238526.77, "d7": 276843.47, "d15": 387833.8, "d30": 220574.68, "d60": 353274.82, "d60p": 0.0, "antiguedad": 53, "cantCbte": 7, "codigo": "3476", "vendedor": "PAIVA YESSICA", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["21"], "multiVendedor": false, "grupos": [{"id": "21", "nombre": "FRUTAMAR"}]}, {"cliente": "HAKIM HERMANOS SRL", "saldo": 2863065.18, "d7": 369294.15, "d15": 423816.43, "d30": 319301.67, "d60": 1750652.93, "d60p": 0.0, "antiguedad": 56, "cantCbte": 10, "codigo": "4001", "vendedor": "NUÑEZ GABRIEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["21"], "multiVendedor": false, "grupos": [{"id": "21", "nombre": "FRUTAMAR"}]}, {"cliente": "HIPER CHASCOMUS S.R.L.", "saldo": 2331347.73, "d7": 1865021.95, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 466325.78, "antiguedad": 209, "cantCbte": 5, "codigo": "10180", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["23"], "multiVendedor": false, "grupos": [{"id": "23", "nombre": "HIPER CHASCOMUS"}]}, {"cliente": "HIPER CHASCOMUS SRL", "saldo": 1978255.58, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1978255.58, "antiguedad": 223, "cantCbte": 5, "codigo": "10066", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["23"], "multiVendedor": false, "grupos": [{"id": "23", "nombre": "HIPER CHASCOMUS"}]}, {"cliente": "HOSTERIA SANTA TERESITA", "saldo": -1.6, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -1.6, "antiguedad": 0, "cantCbte": 1, "codigo": "15", "vendedor": "LANCHAS ELSA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "TOP HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "HOTEL TERMAL DOLORES S A", "saldo": 2566455.76, "d7": 429724.28, "d15": 481588.13, "d30": 992601.51, "d60": 662541.84, "d60p": 0.0, "antiguedad": 44, "cantCbte": 5, "codigo": "6731", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "REG HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "HUANG LIQING", "saldo": 947864.95, "d7": 0.0, "d15": 0.0, "d30": -277352.57, "d60": 1225217.52, "d60p": 0.0, "antiguedad": 35, "cantCbte": 2, "codigo": "6601", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "IALUL MARIA EUGENIA", "saldo": 188213.41, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 188213.41, "antiguedad": 333, "cantCbte": 5, "codigo": "11317", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "IRIARTE JUAN MANUEL", "saldo": -647979.2, "d7": -3947979.77, "d15": 0.0, "d30": 0.0, "d60": 3300000.57, "d60p": 0.0, "antiguedad": 31, "cantCbte": 4, "codigo": "10952", "vendedor": "BRUNNO LUCIANO", "localidad": "LEZAMA", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "IRIZAR TOBIAS", "saldo": -70246.92, "d7": 1551864.64, "d15": -1172110.0, "d30": 0.0, "d60": 0.0, "d60p": -450001.56, "antiguedad": 112, "cantCbte": 11, "codigo": "10927", "vendedor": "BRUNNO LUCIANO", "localidad": "LEZAMA", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["27"], "multiVendedor": false, "grupos": [{"id": "27", "nombre": "IRIZAR TOBIAS"}]}, {"cliente": "KE XIAOJIAO", "saldo": 2758147.92, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 129080.7, "d60p": 2629067.22, "antiguedad": 141, "cantCbte": 2, "codigo": "1077", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "KIRICOS CARLOS ANDRES", "saldo": 30088.35, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 30088.35, "d60p": 0.0, "antiguedad": 32, "cantCbte": 1, "codigo": "6273", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "KORMOS KARINA", "saldo": -330992.82, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -330992.82, "antiguedad": 0, "cantCbte": 2, "codigo": "2222", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LA FORTALEZA DE LA LIBERTAD S.R.L", "saldo": 9310823.45, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -6928255.55, "d60p": 16239079.0, "antiguedad": 126, "cantCbte": 18, "codigo": "10045", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LA MISIONERA LOGISTICA Y OBRAS VIALES", "saldo": 250000.01, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 250000.01, "antiguedad": 1931, "cantCbte": 2, "codigo": "226", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "BASE OTROS ENTRE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LA SEGUNDA COOP LTDA DE SEGURO", "saldo": -1268.13, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -1268.13, "antiguedad": 0, "cantCbte": 1, "codigo": "119", "vendedor": "SIN VENDEDOR", "localidad": "CAPITAL FEDERAL", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LATINOAMERICANO SRL", "saldo": -95070.38, "d7": -95070.38, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "1243", "vendedor": "PAIVA YESSICA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LATORRE PAOLA Y LATORRE CLAUDIA - SOCIEDAD LEY", "saldo": -3745.76, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -3745.76, "antiguedad": 0, "cantCbte": 1, "codigo": "5096", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LAZARTE ANGELES CAROLINA", "saldo": 487697.78, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 487697.78, "antiguedad": 641, "cantCbte": 4, "codigo": "10134", "vendedor": "PICONE SEBASTIAN", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": true, "grupos": []}, {"cliente": "LEBAN JOSE ESTEBAN", "saldo": -70000.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -70000.0, "antiguedad": 0, "cantCbte": 1, "codigo": "4996", "vendedor": "GIACHE LEONEL", "localidad": "LAS TONINAS", "sucursal": "1", "canal": "REG CAF?? / CONF", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LI WEIHONG", "saldo": -60000.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -60000.0, "antiguedad": 0, "cantCbte": 1, "codigo": "232", "vendedor": "LANCHAS ELSA", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LING ZHIQIANG", "saldo": 4516226.76, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 4516226.76, "antiguedad": 186, "cantCbte": 1, "codigo": "2388", "vendedor": "PAIVA YESSICA", "localidad": "AGUAS VERDES", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LO BIANCO NESTOR MARTIN", "saldo": -250119.14, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -245092.8, "d60p": -5026.34, "antiguedad": 41, "cantCbte": 3, "codigo": "2069", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LOGISTICA GRAL LAVALLE S.R.L", "saldo": 0.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 259, "cantCbte": 4, "codigo": "2", "vendedor": "OFICINA MDA", "localidad": "GENERAL LAVALLE", "sucursal": "1", "canal": "BASE HAMBURGUESE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LONNE RICARDO", "saldo": 223612.69, "d7": 0.0, "d15": 223612.69, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 9, "cantCbte": 1, "codigo": "20", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "BASE OTROS ENTRE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LOPEZ CAROLINA ANDREA", "saldo": -362364.24, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -362364.24, "antiguedad": 0, "cantCbte": 2, "codigo": "95", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "TOP HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LOPEZ CINTIA VERONICA", "saldo": -7307.53, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -7307.53, "antiguedad": 0, "cantCbte": 1, "codigo": "2097", "vendedor": "PAIVA YESSICA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LOPEZ JOSE LUIS", "saldo": -1920.68, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -1920.68, "d60p": 0.0, "antiguedad": 55, "cantCbte": 2, "codigo": "1256", "vendedor": "LANCHAS ELSA", "localidad": "VILLA CLELIA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "LOS SAUQUITOS SA", "saldo": 3308106.58, "d7": 161775.56, "d15": 0.0, "d30": 410858.29, "d60": 1395543.29, "d60p": 1339929.44, "antiguedad": 104, "cantCbte": 14, "codigo": "6057", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MADRID MARIA AMALIA", "saldo": -11201.51, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -11201.51, "antiguedad": 0, "cantCbte": 1, "codigo": "4131", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["8"], "multiVendedor": false, "grupos": [{"id": "8", "nombre": "MADRID"}]}, {"cliente": "MAMELI JULIETA", "saldo": -9745.87, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -9745.87, "antiguedad": 0, "cantCbte": 1, "codigo": "700", "vendedor": "PARRA CARLOS", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MANOLIO NELSON ALBERTO", "saldo": -49292.83, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -49292.83, "antiguedad": 164, "cantCbte": 2, "codigo": "1071", "vendedor": "PARRA CARLOS", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "ROTISERIA/COM P", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MARTINEZ DAIANA NOELIA", "saldo": -704645.58, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -704645.58, "antiguedad": 0, "cantCbte": 2, "codigo": "571", "vendedor": "PAIVA YESSICA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "CADENA HAMBURGUE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MARTINEZ KARINA", "saldo": -789696.66, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -789696.66, "antiguedad": 0, "cantCbte": 2, "codigo": "587", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "CADENA HAMBURGUE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MARTINEZ KARINA VIRGINIA", "saldo": -1440327.97, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -1440327.97, "antiguedad": 0, "cantCbte": 2, "codigo": "2698", "vendedor": "LANCHAS ELSA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "CADENA RESTAURAN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MAV DE LA COSTA SRL", "saldo": -276935.61, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -276935.61, "antiguedad": 0, "cantCbte": 2, "codigo": "4507", "vendedor": "NUÑEZ GABRIEL", "localidad": "LAS TONINAS", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MAXI FULL 2023 S.R.L", "saldo": 3813755.27, "d7": 3080292.07, "d15": 733463.2, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 8, "cantCbte": 8, "codigo": "4024", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MERLO JAVIER HORACIO", "saldo": 1040040.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1040040.0, "antiguedad": 262, "cantCbte": 1, "codigo": "8483", "vendedor": "MARRERO LAUTARO", "localidad": "MAIPU", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MINOTAURO S.A.", "saldo": 3381279.09, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 3381279.09, "antiguedad": 83, "cantCbte": 2, "codigo": "6330", "vendedor": "BRUNNO LUCIANO", "localidad": "CASTELLI", "sucursal": "2", "canal": "REG BAR", "conjuntos": ["31"], "multiVendedor": false, "grupos": [{"id": "31", "nombre": "MINOTAURO"}]}, {"cliente": "MONTE RICARDO FABIAN", "saldo": -432809.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -432809.0, "antiguedad": 0, "cantCbte": 1, "codigo": "3406", "vendedor": "NUÑEZ MATIAS", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MORALES CARLA VALERIA", "saldo": -660058.12, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -660058.12, "antiguedad": 204, "cantCbte": 3, "codigo": "4710", "vendedor": "NUÑEZ GABRIEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MORO JUAN FRANCISCO", "saldo": -3403.07, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -3403.07, "antiguedad": 0, "cantCbte": 1, "codigo": "2402", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "OTROS K+T", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MOUSSOU WALTER RAMONN", "saldo": -12579.61, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -12579.61, "antiguedad": 121, "cantCbte": 2, "codigo": "2915", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "MUNDO MARINO S A", "saldo": 1913.32, "d7": 0.0, "d15": 1913.32, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 15, "cantCbte": 1, "codigo": "5451", "vendedor": "OFICINA MDA", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "CADENA HAMBURGUE", "conjuntos": ["6"], "multiVendedor": false, "grupos": [{"id": "6", "nombre": "SABORES"}]}, {"cliente": "MUNICIPALIDAD DE DOLORES", "saldo": 448833.24, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 448833.24, "antiguedad": 1010, "cantCbte": 8, "codigo": "6604", "vendedor": "50-OFICINA DOLORES", "localidad": "DOLORES", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "NARDULLI ANDREA", "saldo": 154129.78, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 154129.78, "antiguedad": 482, "cantCbte": 2, "codigo": "1538", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "NISTAL LUCAS GABRIELL", "saldo": -658644.03, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -658644.03, "antiguedad": 0, "cantCbte": 1, "codigo": "2549", "vendedor": "LANCHAS ELSA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "NITKA MARIA FERNANDAA", "saldo": -2255601.91, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -2255601.91, "d60p": 0.0, "antiguedad": 0, "cantCbte": 2, "codigo": "1329", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "NR", "saldo": 12290213.21, "d7": 0.0, "d15": 494559.11, "d30": -157653.86, "d60": 289512.42, "d60p": 11663795.54, "antiguedad": 546, "cantCbte": 7, "codigo": "6225", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "REG CAF?? / CONF", "conjuntos": ["Sin conjunto"], "multiVendedor": true, "grupos": []}, {"cliente": "OBISPADO DE CHASCOMUS", "saldo": 557680.72, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 557680.72, "antiguedad": 256, "cantCbte": 5, "codigo": "14549", "vendedor": "50-OFICINA DOLORES", "localidad": "DOLORES", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "OCHOA ESTEFANIA", "saldo": 217247.49, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 217247.49, "antiguedad": 591, "cantCbte": 1, "codigo": "11093", "vendedor": "BRUNNO LUCIANO", "localidad": "CASTELLI", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ODRIOZOLA ANA MARIA", "saldo": 10000.0, "d7": 10000.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 1, "cantCbte": 1, "codigo": "6342", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "OLIVERA MICAELA", "saldo": 31278.77, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 31278.77, "antiguedad": 189, "cantCbte": 1, "codigo": "11462", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ORO DE LA COSTA SRL", "saldo": -20000.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -20000.0, "antiguedad": 0, "cantCbte": 1, "codigo": "5122", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ORTIZ DIEGO JONATHAN", "saldo": -30000.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -30000.0, "antiguedad": 0, "cantCbte": 1, "codigo": "2192", "vendedor": "PAIVA YESSICA", "localidad": "COSTA AZUL", "sucursal": "1", "canal": "REG OTROS MEALS", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "OSPSA (FATSA)", "saldo": 30058.16, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 30058.16, "antiguedad": 483, "cantCbte": 1, "codigo": "2130", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "BASE HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "OU HANQI", "saldo": -2661.44, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -2661.44, "antiguedad": 0, "cantCbte": 1, "codigo": "11", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PABON MIGUEL ANGEL", "saldo": 923129.15, "d7": 923129.15, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 6, "cantCbte": 1, "codigo": "2276", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PAGES FELIX ADAN", "saldo": 624804.54, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 624804.54, "antiguedad": 140, "cantCbte": 3, "codigo": "10313", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PAPASIDERO GERARDO EMILIO", "saldo": -2898.83, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -2898.83, "antiguedad": 0, "cantCbte": 1, "codigo": "2924", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PASTORE OSCAR ALFREDO", "saldo": -63136.66, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -63136.66, "antiguedad": 0, "cantCbte": 1, "codigo": "180", "vendedor": "PAIVA YESSICA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG OTROS MEALS", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PAZOUREK FEDERICO", "saldo": -60788.59, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -60788.59, "antiguedad": 0, "cantCbte": 1, "codigo": "161", "vendedor": "NUÑEZ MATIAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PECILE ROXANA KARINA", "saldo": -153667.91, "d7": -141811.38, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -11856.53, "antiguedad": 0, "cantCbte": 3, "codigo": "1135", "vendedor": "PAIVA YESSICA", "localidad": "BARRIO PEDRO ROCCO", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PEGORARO PABLO MARTIN", "saldo": -91268.71, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -91268.71, "antiguedad": 98, "cantCbte": 2, "codigo": "271", "vendedor": "PAIVA YESSICA", "localidad": "NUEVA ATLANTIS", "sucursal": "1", "canal": "BASE OTROS MEALS", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PETTINA AGUSTIN JOSE", "saldo": 4736930.52, "d7": 2698897.73, "d15": 2038032.79, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 8, "cantCbte": 6, "codigo": "6002", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["34"], "multiVendedor": false, "grupos": [{"id": "34", "nombre": "PETTINA"}]}, {"cliente": "PETTINA-CAPIEL S. CAP I SECC", "saldo": 8401812.28, "d7": 3464223.27, "d15": 1172022.75, "d30": 3765566.26, "d60": 0.0, "d60p": 0.0, "antiguedad": 21, "cantCbte": 10, "codigo": "6175", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["34"], "multiVendedor": false, "grupos": [{"id": "34", "nombre": "PETTINA"}]}, {"cliente": "PETTINA-CAPIEL S. CAP I SECC IV", "saldo": 8007150.56, "d7": 367890.65, "d15": 7406295.12, "d30": 232964.79, "d60": 0.0, "d60p": 0.0, "antiguedad": 16, "cantCbte": 10, "codigo": "11641", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["34"], "multiVendedor": true, "grupos": [{"id": "34", "nombre": "PETTINA"}]}, {"cliente": "PFAIFFER EMILIA VERÓNICA", "saldo": -6677.27, "d7": -6677.27, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "703", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PIERONI MAURO", "saldo": -23118.09, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 1275911.87, "d60p": -1299029.96, "antiguedad": 129, "cantCbte": 6, "codigo": "4656", "vendedor": "NUÑEZ GABRIEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PLESCIA JULIO CESAR", "saldo": 656688.7, "d7": 656688.7, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 1, "cantCbte": 2, "codigo": "6049", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PORTELA JULIETA AYELEN", "saldo": -27444.83, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -27444.83, "antiguedad": 0, "cantCbte": 1, "codigo": "4839", "vendedor": "GIACHE LEONEL", "localidad": "LAS TONINAS", "sucursal": "1", "canal": "REG CAF?? / CONF", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PROP. DE RUSTICO CAFE BAR RESTO SS", "saldo": 649580.39, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 649580.39, "antiguedad": 519, "cantCbte": 8, "codigo": "11309", "vendedor": "RAMALLO ENZO", "localidad": "GENERAL BELGRANO", "sucursal": "2", "canal": "REG BAR", "conjuntos": ["25"], "multiVendedor": true, "grupos": [{"id": "25", "nombre": "RUSTICO CAFE"}]}, {"cliente": "PUERTO CAFE MARAJA S.R.L.", "saldo": 143236.42, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 143236.42, "d60p": 0.0, "antiguedad": 34, "cantCbte": 1, "codigo": "1415", "vendedor": "PRAINO TAMARA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "REG CAF?? / CONF", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "PUNTA NORTE CHASCOMUS S.A.", "saldo": -2186459.66, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -2186459.66, "antiguedad": 0, "cantCbte": 1, "codigo": "14533", "vendedor": "PENA ELEANA", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "REG BAR", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "QUINTANA EMANUEL FERNANDO", "saldo": -1191.2, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -1191.2, "antiguedad": 0, "cantCbte": 1, "codigo": "4536", "vendedor": "GIACHE LEONEL", "localidad": "LAS TONINAS", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "RAMIREZ JOHANA VALERIA", "saldo": 367510.01, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 367510.01, "antiguedad": 498, "cantCbte": 3, "codigo": "7024", "vendedor": "VILLALBA CAROLINA", "localidad": "GENERAL LAVALLE", "sucursal": "2", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "REAL FOOD SA", "saldo": 2426650.41, "d7": 241016.96, "d15": 1236777.57, "d30": 948855.88, "d60": 0.0, "d60p": 0.0, "antiguedad": 27, "cantCbte": 4, "codigo": "4070", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG BAR", "conjuntos": ["4"], "multiVendedor": false, "grupos": [{"id": "4", "nombre": "HONORIO"}]}, {"cliente": "RED DE SERVICIOS RURALES S.R.L", "saldo": 6371305.41, "d7": 245330.35, "d15": 114649.71, "d30": 398846.68, "d60": 572806.36, "d60p": 5039672.31, "antiguedad": 154, "cantCbte": 57, "codigo": "1096", "vendedor": "PARRA CARLOS", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "EST DE SERV", "conjuntos": ["19"], "multiVendedor": true, "grupos": [{"id": "19", "nombre": "RED DE SERVICIOS"}]}, {"cliente": "RED DE SERVICIOS RURALES SRL", "saldo": 13220343.0, "d7": 122439.08, "d15": 524529.6, "d30": 284378.09, "d60": 684525.6, "d60p": 11604470.63, "antiguedad": 158, "cantCbte": 22, "codigo": "6401", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "EST DE SERV", "conjuntos": ["19"], "multiVendedor": true, "grupos": [{"id": "19", "nombre": "RED DE SERVICIOS"}]}, {"cliente": "REPETTO JOSE FEDERIC", "saldo": 432039.34, "d7": 417054.92, "d15": 234472.54, "d30": 0.0, "d60": 0.0, "d60p": -219488.12, "antiguedad": 13, "cantCbte": 4, "codigo": "2262", "vendedor": "PRAINO TAMARA", "localidad": "LA LUCILA DEL MAR", "sucursal": "1", "canal": "TOP RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "REYLEY MARIA AMANCAY ITATI.", "saldo": -492388.68, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -492388.68, "antiguedad": 79, "cantCbte": 3, "codigo": "4497", "vendedor": "PRAINO TAMARA", "localidad": "LAS TONINAS", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "RIAJOS SRL", "saldo": 0.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 529, "cantCbte": 2, "codigo": "1011", "vendedor": "ENFOCADA AS MDA", "localidad": "BARRIO PEDRO ROCCO", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "RICCA MONICA ROSA", "saldo": -11703.07, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -11703.07, "antiguedad": 0, "cantCbte": 1, "codigo": "4831", "vendedor": "NUÑEZ MATIAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "RINALDI RODRIGO ALEJANDRO", "saldo": -18572.75, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -18572.75, "antiguedad": 0, "cantCbte": 1, "codigo": "2093", "vendedor": "LOPEZ VALENTINA", "localidad": "COSTA AZUL", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "RIVERSO SILVIA INES", "saldo": -17727.23, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -17727.23, "antiguedad": 125, "cantCbte": 2, "codigo": "4663", "vendedor": "GIACHE LEONEL", "localidad": "LAS TONINAS", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ROCCA MARIA FLORENCIA", "saldo": 4795423.26, "d7": 557050.64, "d15": 515066.33, "d30": 1073762.83, "d60": 1757731.55, "d60p": 891811.91, "antiguedad": 77, "cantCbte": 12, "codigo": "10078", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "REG HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ROCCO OSCAR ALBERTO", "saldo": 1231328.63, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1231328.63, "antiguedad": 113, "cantCbte": 3, "codigo": "3218", "vendedor": "PRAINO TAMARA", "localidad": "COSTA DEL ESTE", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "RODRIGUEZ IGNACIO VALENTIN", "saldo": -580726.16, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -580726.16, "antiguedad": 465, "cantCbte": 8, "codigo": "3630", "vendedor": "PRAINO TAMARA", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "REG OTROS MEALS", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ROMANO MARIA ROSA", "saldo": -4457.26, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -4457.26, "antiguedad": 0, "cantCbte": 1, "codigo": "1320", "vendedor": "LOPEZ VALENTINA", "localidad": "VILLA CLELIA", "sucursal": "1", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ROMERO GONZALO MARTIN", "saldo": 480210.09, "d7": 0.0, "d15": 0.0, "d30": 480210.09, "d60": 0.0, "d60p": 0.0, "antiguedad": 18, "cantCbte": 1, "codigo": "6161", "vendedor": "MARRERO LAUTARO", "localidad": "DOLORES", "sucursal": "2", "canal": "COM P/LLEVAR(D)", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ROMERO RICARDO MARIANO", "saldo": 21.34, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 21.34, "d60p": 0.0, "antiguedad": 53, "cantCbte": 1, "codigo": "13019", "vendedor": "SIN VENDEDOR", "localidad": "DOLORES", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ROTELA KARINA", "saldo": 0.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 247, "cantCbte": 2, "codigo": "1193", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "CARNICERIA/POLLE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ROUMIEH HNOS SA", "saldo": -102825.62, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -102825.62, "antiguedad": 116, "cantCbte": 5, "codigo": "4202", "vendedor": "NUÑEZ MATIAS", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["13"], "multiVendedor": false, "grupos": [{"id": "13", "nombre": "AL SHAM"}]}, {"cliente": "RUARTES JULIO JAVIER", "saldo": -14191.71, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -14191.71, "antiguedad": 0, "cantCbte": 1, "codigo": "10332", "vendedor": "RAMALLO ENZO", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "S.O.E.S.G.Y.P.E", "saldo": 1639326.4, "d7": 678981.41, "d15": 0.0, "d30": 716797.47, "d60": 243547.52, "d60p": 0.0, "antiguedad": 32, "cantCbte": 3, "codigo": "2344", "vendedor": "NUÑEZ MATIAS", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SABORES S R L", "saldo": 674172.48, "d7": 674172.48, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 1, "cantCbte": 3, "codigo": "5145", "vendedor": "OFICINA MDA", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "CADENA HAMBURGUE", "conjuntos": ["6"], "multiVendedor": false, "grupos": [{"id": "6", "nombre": "SABORES"}]}, {"cliente": "SALVATORE CARLA DANIELA", "saldo": -81967.82, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -81967.82, "antiguedad": 0, "cantCbte": 2, "codigo": "5413", "vendedor": "PRAINO TAMARA", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "REG PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SANTAMARIA ABEL ROBERTO", "saldo": 31018.38, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 31018.38, "antiguedad": 91, "cantCbte": 1, "codigo": "8500", "vendedor": "MARRERO LAUTARO", "localidad": "MAIPU", "sucursal": "2", "canal": "EST DE SERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SCARDINO GABRIEL J.", "saldo": -1481.6, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -1481.6, "antiguedad": 0, "cantCbte": 1, "codigo": "2693", "vendedor": "LOPEZ VALENTINA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SHI GONGWEI", "saldo": -66623.65, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -66623.65, "antiguedad": 0, "cantCbte": 3, "codigo": "14488", "vendedor": "PENA ELEANA", "localidad": "RANCHOS", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SIND. CAMIONEROS", "saldo": 882283.33, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 882283.33, "antiguedad": 3465, "cantCbte": 29, "codigo": "72", "vendedor": "OFICINA MDA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SINDICATO DE PEONES DE TAXIS DE LA CAPITAL FEDERAL", "saldo": 126444.55, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 126444.55, "antiguedad": 811, "cantCbte": 2, "codigo": "697", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "BASE HOTEL", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SMK", "saldo": 4256.28, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 4256.28, "antiguedad": 3115, "cantCbte": 5, "codigo": "115", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "MAYORIS SMK", "conjuntos": ["Sin conjunto"], "multiVendedor": true, "grupos": []}, {"cliente": "SORBA S.R.L", "saldo": 25657.83, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 25657.83, "antiguedad": 505, "cantCbte": 1, "codigo": "137", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "BASE OTROS ENTRE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SORIA ADRIAN FRANCISCO", "saldo": -108467.11, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -108467.11, "antiguedad": 0, "cantCbte": 1, "codigo": "590", "vendedor": "PAIVA YESSICA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "CADENA RESTAURAN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SOUTO OLGA CRISTINA", "saldo": 613865.3, "d7": 0.0, "d15": 613865.3, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 13, "cantCbte": 2, "codigo": "2794", "vendedor": "NUÑEZ GABRIEL", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "STERLI FLORENCIA MICAELA", "saldo": 805363.61, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 805363.61, "antiguedad": 513, "cantCbte": 3, "codigo": "2483", "vendedor": "ENFOCADA AS MDA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "STORTO DANIELA AGOSTINA", "saldo": 27948.79, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 27948.79, "antiguedad": 79, "cantCbte": 1, "codigo": "5162", "vendedor": "GIACHE LEONEL", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "KIOSCO/MAXIKIOSC", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SU LIHUA", "saldo": -4740.63, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -4740.63, "antiguedad": 0, "cantCbte": 1, "codigo": "4294", "vendedor": "GIACHE LEONEL", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SUCESION DE PERRI LUIS FRANCISCO", "saldo": 55214.97, "d7": 0.0, "d15": 0.0, "d30": 158500.26, "d60": 0.0, "d60p": -103285.29, "antiguedad": 20, "cantCbte": 3, "codigo": "395", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG PIZZER??A", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SUPERMERCADO EL CENTRAL", "saldo": 1496753.47, "d7": 0.0, "d15": 967223.21, "d30": 0.0, "d60": 529530.26, "d60p": 0.0, "antiguedad": 43, "cantCbte": 4, "codigo": "1116", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "SUSANA GARRO E HIJOS SRL", "saldo": 307444.71, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 307444.71, "antiguedad": 853, "cantCbte": 2, "codigo": "7014", "vendedor": "50-OFICINA DOLORES", "localidad": "DOLORES", "sucursal": "2", "canal": "BASE OTROS ENTRE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "TABEIRA DELGADO GABRIEL", "saldo": -1230451.42, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": -639653.84, "d60p": -590797.58, "antiguedad": 90, "cantCbte": 7, "codigo": "205", "vendedor": "LANCHAS ELSA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "CADENA HAMBURGUE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "TAPIA ROMULO JAVIER", "saldo": -5633.78, "d7": 0.0, "d15": 0.0, "d30": -5633.78, "d60": 0.0, "d60p": 0.0, "antiguedad": 22, "cantCbte": 2, "codigo": "4734", "vendedor": "LANCHAS ELSA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "TAYPE SANTA CRUZ", "saldo": 800000.0, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 800000.0, "antiguedad": 442, "cantCbte": 1, "codigo": "831", "vendedor": "OFICINA MDA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "TOLICAR SA", "saldo": 2403627.63, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 2403627.63, "antiguedad": 164, "cantCbte": 3, "codigo": "2327", "vendedor": "PRAINO TAMARA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG HAMBURGUESER", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "TOPAR SRL", "saldo": -30895.3, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -30895.3, "antiguedad": 0, "cantCbte": 1, "codigo": "11320", "vendedor": "PENA ELEANA", "localidad": "GENERAL BELGRANO", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["30"], "multiVendedor": false, "grupos": [{"id": "30", "nombre": "TOPAR SRL"}]}, {"cliente": "TORRES MATIAS LEANDRO", "saldo": -2633.01, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -2633.01, "antiguedad": 0, "cantCbte": 1, "codigo": "3008", "vendedor": "NUÑEZ GABRIEL", "localidad": "MAR DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "TRACO SA", "saldo": 12361978.75, "d7": 0.0, "d15": 901809.81, "d30": 3452935.2, "d60": 6352121.15, "d60p": 1655112.59, "antiguedad": 100, "cantCbte": 8, "codigo": "6331", "vendedor": "BRUNNO LUCIANO", "localidad": "CASTELLI", "sucursal": "2", "canal": "REG OTROS ENTRET", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "TURRILLAS MARTIN MIGUEL", "saldo": -8202.26, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -8202.26, "antiguedad": 137, "cantCbte": 2, "codigo": "2041", "vendedor": "LOPEZ VALENTINA", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "ALMACEN", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "VACCARO OMAR", "saldo": -34077.79, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -34077.79, "antiguedad": 0, "cantCbte": 1, "codigo": "5160", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "VERA CORREA SILVIO RAMON", "saldo": 47454.55, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 47454.55, "antiguedad": 387, "cantCbte": 1, "codigo": "11563", "vendedor": "PICONE SEBASTIAN", "localidad": "CHASCOMUS", "sucursal": "2", "canal": "ALMACEN VENTANA", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "VERCELLI ALEJANDRO H", "saldo": 513877.04, "d7": 0.0, "d15": 513877.04, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 10, "cantCbte": 1, "codigo": "4211", "vendedor": "PRAINO TAMARA", "localidad": "SANTA TERESITA", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["4"], "multiVendedor": false, "grupos": [{"id": "4", "nombre": "HONORIO"}]}, {"cliente": "VILLA DEBORA YANEL", "saldo": -9620.15, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -9620.15, "antiguedad": 0, "cantCbte": 1, "codigo": "2723", "vendedor": "PAIVA YESSICA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "CARNICERIA/POLLE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "WU WEIHONG", "saldo": -4316.44, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -4316.44, "antiguedad": 0, "cantCbte": 1, "codigo": "10793", "vendedor": "PENA ELEANA", "localidad": "GENERAL BELGRANO", "sucursal": "2", "canal": "ALMACEN AUTOSERV", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "XU YUANHAI", "saldo": -83786.86, "d7": 0.0, "d15": 0.0, "d30": 192743.14, "d60": -276530.0, "d60p": 0.0, "antiguedad": 27, "cantCbte": 2, "codigo": "5038", "vendedor": "LAMBERTINI JUAN", "localidad": "SAN CLEMENTE DEL TUYU", "sucursal": "1", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ZAMORA MAXIMILIANO EXEQUIEL", "saldo": -2852.96, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -2852.96, "antiguedad": 529, "cantCbte": 6, "codigo": "1033", "vendedor": "PARRA CARLOS", "localidad": "MAR DE AJO", "sucursal": "1", "canal": "ROTISERIA/COM P", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ZHAO YANG", "saldo": -262792.61, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -262792.61, "antiguedad": 0, "cantCbte": 2, "codigo": "2118", "vendedor": "LANCHAS ELSA", "localidad": "SAN BERNARDO DEL TUYU", "sucursal": "1", "canal": "REG RESTAURANTE", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ZHENG JINRUI", "saldo": -0.35, "d7": 0.0, "d15": 0.0, "d30": -0.35, "d60": 0.0, "d60p": 0.0, "antiguedad": 0, "cantCbte": 1, "codigo": "7050", "vendedor": "MARRERO LAUTARO", "localidad": "MAIPU", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}, {"cliente": "ZHUANG BILONG", "saldo": 410013.1, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 410013.1, "d60p": 0.0, "antiguedad": 50, "cantCbte": 5, "codigo": "8507", "vendedor": "VILLALBA CAROLINA", "localidad": "DOLORES", "sucursal": "2", "canal": "AUTOSERVICIO IND", "conjuntos": ["Sin conjunto"], "multiVendedor": false, "grupos": []}];
+const BASE_MULTI = {"ASOCIACION CIVIL EL GRAN PORVENIR DE SAN CLEMENTE": [{"v": "LAMBERTINI JUAN", "s": 300763.22}, {"v": "LIZARRAGA NAHUEL", "s": 12034.26}], "GONZALEZ LEOPOLDO SA": [{"v": "PENA ELEANA", "s": 2036749.31}, {"v": "RAMALLO ENZO", "s": 1841571.25}], "GRUPO CARRERA DE LA COSTA S.R.L": [{"v": "NUÑEZ GABRIEL", "s": 875214.35}, {"v": "NUÑEZ MATIAS", "s": 648568.03}], "LAZARTE ANGELES CAROLINA": [{"v": "PICONE SEBASTIAN", "s": 411813.79}, {"v": "RAMALLO ENZO", "s": 75883.99}], "NR": [{"v": "OFICINA MDA", "s": 5289512.43}, {"v": "RAMALLO ENZO", "s": 494559.11}, {"v": "VILLALBA CAROLINA", "s": 6663795.53}], "PETTINA-CAPIEL S. CAP I SECC IV": [{"v": "MARRERO LAUTARO", "s": 905359.42}, {"v": "RAMALLO ENZO", "s": 7101791.14}], "PROP. DE RUSTICO CAFE BAR RESTO SS": [{"v": "PENA ELEANA", "s": 185288.67}, {"v": "RAMALLO ENZO", "s": 464291.72}], "RED DE SERVICIOS RURALES S.R.L": [{"v": "LANCHAS ELSA", "s": 492161.99}, {"v": "LOPEZ VALENTINA", "s": 1872925.55}, {"v": "NUÑEZ MATIAS", "s": 672656.88}, {"v": "PAIVA YESSICA", "s": 396747.63}, {"v": "PARRA CARLOS", "s": 2959059.32}], "RED DE SERVICIOS RURALES SRL": [{"v": "MARRERO LAUTARO", "s": 8630388.91}, {"v": "VILLALBA CAROLINA", "s": 4589954.09}], "SMK": [{"v": "OFICINA MDA", "s": 3536.72}, {"v": "VENTA REMOTA", "s": 721.05}]};
+const BASE_GRUPOS= [{"id": "34", "nombre": "PETTINA", "clientes": [{"codigo": "6175", "cliente": "PETTINA-CAPIEL S. CAP I SECC", "vendedor": "VILLALBA CAROLINA", "saldo": 8401812.28, "d7": 3464223.27, "d15": 1172022.75, "d30": 3765566.26, "d60": 0.0, "d60p": 0.0, "antiguedad": 21}, {"codigo": "11641", "cliente": "PETTINA-CAPIEL S. CAP I SECC IV", "vendedor": "RAMALLO ENZO", "saldo": 8007150.56, "d7": 367890.65, "d15": 7406295.12, "d30": 232964.79, "d60": 0.0, "d60p": 0.0, "antiguedad": 16}, {"codigo": "6002", "cliente": "PETTINA AGUSTIN JOSE", "vendedor": "VILLALBA CAROLINA", "saldo": 4736930.52, "d7": 2698897.73, "d15": 2038032.79, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 8}], "deudaTotal": 21145893.36, "acreedorTotal": 0, "deudaNeta": 21145893.36}, {"id": "19", "nombre": "RED DE SERVICIOS", "clientes": [{"codigo": "6401", "cliente": "RED DE SERVICIOS RURALES SRL", "vendedor": "MARRERO LAUTARO", "saldo": 13220343.0, "d7": 122439.08, "d15": 524529.6, "d30": 284378.09, "d60": 684525.6, "d60p": 11604470.63, "antiguedad": 158}, {"codigo": "1096", "cliente": "RED DE SERVICIOS RURALES S.R.L", "vendedor": "PARRA CARLOS", "saldo": 6371305.41, "d7": 245330.35, "d15": 114649.71, "d30": 398846.68, "d60": 572806.36, "d60p": 5039672.31, "antiguedad": 154}], "deudaTotal": 19591648.41, "acreedorTotal": 0, "deudaNeta": 19591648.41}, {"id": "23", "nombre": "HIPER CHASCOMUS", "clientes": [{"codigo": "10180", "cliente": "HIPER CHASCOMUS S.R.L.", "vendedor": "RAMALLO ENZO", "saldo": 2331347.73, "d7": 1865021.95, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 466325.78, "antiguedad": 209}, {"codigo": "10066", "cliente": "HIPER CHASCOMUS SRL", "vendedor": "RAMALLO ENZO", "saldo": 1978255.58, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1978255.58, "antiguedad": 223}], "deudaTotal": 4309603.3100000005, "acreedorTotal": 0, "deudaNeta": 4309603.3100000005}, {"id": "21", "nombre": "FRUTAMAR", "clientes": [{"codigo": "4001", "cliente": "HAKIM HERMANOS SRL", "vendedor": "NUÑEZ GABRIEL", "saldo": 2863065.18, "d7": 369294.15, "d15": 423816.43, "d30": 319301.67, "d60": 1750652.93, "d60p": 0.0, "antiguedad": 56}, {"codigo": "3476", "cliente": "HAKIM HERMANOS S.R.L.", "vendedor": "PAIVA YESSICA", "saldo": 1238526.77, "d7": 276843.47, "d15": 387833.8, "d30": 220574.68, "d60": 353274.82, "d60p": 0.0, "antiguedad": 53}], "deudaTotal": 4101591.95, "acreedorTotal": 0, "deudaNeta": 4101591.95}, {"id": "20", "nombre": "SUPER CHAS", "clientes": [{"codigo": "10226", "cliente": "GONZALEZ LEOPOLDO SA", "vendedor": "PENA ELEANA", "saldo": 3878320.56, "d7": 2536416.67, "d15": 299861.61, "d30": 1096955.0, "d60": -54912.72, "d60p": 0.0, "antiguedad": 35}], "deudaTotal": 3878320.56, "acreedorTotal": 0, "deudaNeta": 3878320.56}, {"id": "1", "nombre": "J & CARRERA SRL", "clientes": [{"codigo": "1028", "cliente": "GRUPO CARRERA DE LA COSTA S.R.L.", "vendedor": "NUÑEZ GABRIEL", "saldo": 2312014.87, "d7": 716993.29, "d15": 703464.94, "d30": 891556.64, "d60": 0.0, "d60p": 0.0, "antiguedad": 23}, {"codigo": "2115", "cliente": "GRUPO CARRERA DE LA COSTA S.R.L", "vendedor": "NUÑEZ GABRIEL", "saldo": 1523782.38, "d7": 1159511.27, "d15": 241625.21, "d30": 122645.9, "d60": 0.0, "d60p": 0.0, "antiguedad": 23}], "deudaTotal": 3835797.25, "acreedorTotal": 0, "deudaNeta": 3835797.25}, {"id": "31", "nombre": "MINOTAURO", "clientes": [{"codigo": "6330", "cliente": "MINOTAURO S.A.", "vendedor": "BRUNNO LUCIANO", "saldo": 3381279.09, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 3381279.09, "antiguedad": 83}], "deudaTotal": 3381279.09, "acreedorTotal": 0, "deudaNeta": 3381279.09}, {"id": "4", "nombre": "HONORIO", "clientes": [{"codigo": "4070", "cliente": "REAL FOOD SA", "vendedor": "PRAINO TAMARA", "saldo": 2426650.41, "d7": 241016.96, "d15": 1236777.57, "d30": 948855.88, "d60": 0.0, "d60p": 0.0, "antiguedad": 27}, {"codigo": "4211", "cliente": "VERCELLI ALEJANDRO H", "vendedor": "PRAINO TAMARA", "saldo": 513877.04, "d7": 0.0, "d15": 513877.04, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 10}], "deudaTotal": 2940527.45, "acreedorTotal": 0, "deudaNeta": 2940527.45}, {"id": "25", "nombre": "RUSTICO CAFE", "clientes": [{"codigo": "11375", "cliente": "CAPRIA FACUNDO EZEQUIEL", "vendedor": "PENA ELEANA", "saldo": 1399226.63, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1399226.63, "antiguedad": 511}, {"codigo": "11309", "cliente": "PROP. DE RUSTICO CAFE BAR RESTO SS", "vendedor": "RAMALLO ENZO", "saldo": 649580.39, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 649580.39, "antiguedad": 519}], "deudaTotal": 2048807.02, "acreedorTotal": 0, "deudaNeta": 2048807.02}, {"id": "3", "nombre": "DINEVIA", "clientes": [{"codigo": "4581", "cliente": "GRUPO EMPRESARIO SANTA CHEN S.R.L.", "vendedor": "NUÑEZ GABRIEL", "saldo": 1924162.6, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 1924162.6, "antiguedad": 330}], "deudaTotal": 1924162.6, "acreedorTotal": 0, "deudaNeta": 1924162.6}, {"id": "6", "nombre": "SABORES", "clientes": [{"codigo": "5145", "cliente": "SABORES S R L", "vendedor": "OFICINA MDA", "saldo": 674172.48, "d7": 674172.48, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 1}, {"codigo": "5451", "cliente": "MUNDO MARINO S A", "vendedor": "OFICINA MDA", "saldo": 1913.32, "d7": 0.0, "d15": 1913.32, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 15}], "deudaTotal": 676085.7999999999, "acreedorTotal": 0, "deudaNeta": 676085.7999999999}, {"id": "10", "nombre": "QUINCHO MDA", "clientes": [{"codigo": "287", "cliente": "DA SILVA BRITO MARCO ANTONIO", "vendedor": "PRAINO TAMARA", "saldo": 597412.69, "d7": 435964.33, "d15": 218315.41, "d30": -56867.05, "d60": 0.0, "d60p": 0.0, "antiguedad": 10}], "deudaTotal": 597412.69, "acreedorTotal": 0, "deudaNeta": 597412.69}, {"id": "22", "nombre": "CAFE MULE SRL", "clientes": [{"codigo": "11303", "cliente": "CAFE MULE SRL. EN FORMACION", "vendedor": "RAMALLO ENZO", "saldo": 273012.81, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 273012.81, "antiguedad": 303}, {"codigo": "10321", "cliente": "CAFE MULE SRL EN FORMACION", "vendedor": "RAMALLO ENZO", "saldo": 208364.09, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 208364.09, "antiguedad": 415}], "deudaTotal": 481376.9, "acreedorTotal": 0, "deudaNeta": 481376.9}, {"id": "33", "nombre": "CRENCI CLAUDIO", "clientes": [{"codigo": "10161", "cliente": "CRENCI CLAUDIO", "vendedor": "RAMALLO ENZO", "saldo": 351277.27, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 351277.27, "antiguedad": 70}], "deudaTotal": 351277.27, "acreedorTotal": 0, "deudaNeta": 351277.27}, {"id": "5", "nombre": "CATALANO", "clientes": [{"codigo": "2800", "cliente": "GRASSL DANIELA ELIZABETH", "vendedor": "PRAINO TAMARA", "saldo": 251250.63, "d7": 158417.33, "d15": 92833.3, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 13}], "deudaTotal": 251250.63, "acreedorTotal": 0, "deudaNeta": 251250.63}, {"id": "7", "nombre": "FONTAINEBLEAU", "clientes": [{"codigo": "5501", "cliente": "GRAN HOTEL FONTAINEBLEAU SA", "vendedor": "LAMBERTINI JUAN", "saldo": 58790.48, "d7": 58790.48, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": 0.0, "antiguedad": 3}], "deudaTotal": 58790.48, "acreedorTotal": 0, "deudaNeta": 58790.48}, {"id": "28", "nombre": "OLIVO", "clientes": [{"codigo": "2031", "cliente": "ARAYA ROMINA GISEL", "vendedor": "LOPEZ VALENTINA", "saldo": -79701.88, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -79701.88, "antiguedad": 0}], "deudaTotal": 0, "acreedorTotal": -79701.88, "deudaNeta": -79701.88}, {"id": "32", "nombre": "DON CORLEONE", "clientes": [{"codigo": "2098", "cliente": "GRAZIANI EMILIANO", "vendedor": "PRAINO TAMARA", "saldo": -29115.62, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 424207.17, "d60p": -453322.79, "antiguedad": 48}], "deudaTotal": 0, "acreedorTotal": -29115.62, "deudaNeta": -29115.62}, {"id": "27", "nombre": "IRIZAR TOBIAS", "clientes": [{"codigo": "10927", "cliente": "IRIZAR TOBIAS", "vendedor": "BRUNNO LUCIANO", "saldo": -70246.92, "d7": 1551864.64, "d15": -1172110.0, "d30": 0.0, "d60": 0.0, "d60p": -450001.56, "antiguedad": 112}], "deudaTotal": 0, "acreedorTotal": -70246.92, "deudaNeta": -70246.92}, {"id": "8", "nombre": "MADRID", "clientes": [{"codigo": "4131", "cliente": "MADRID MARIA AMALIA", "vendedor": "PRAINO TAMARA", "saldo": -11201.51, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -11201.51, "antiguedad": 0}], "deudaTotal": 0, "acreedorTotal": -11201.51, "deudaNeta": -11201.51}, {"id": "13", "nombre": "AL SHAM", "clientes": [{"codigo": "4202", "cliente": "ROUMIEH HNOS SA", "vendedor": "NUÑEZ MATIAS", "saldo": -102825.62, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -102825.62, "antiguedad": 116}], "deudaTotal": 0, "acreedorTotal": -102825.62, "deudaNeta": -102825.62}, {"id": "30", "nombre": "TOPAR SRL", "clientes": [{"codigo": "11320", "cliente": "TOPAR SRL", "vendedor": "PENA ELEANA", "saldo": -30895.3, "d7": 0.0, "d15": 0.0, "d30": 0.0, "d60": 0.0, "d60p": -30895.3, "antiguedad": 0}], "deudaTotal": 0, "acreedorTotal": -30895.3, "deudaNeta": -30895.3}];
+const CONJ_NAMES = {"1": "J & CARRERA SRL", "3": "DINEVIA", "4": "HONORIO", "5": "CATALANO", "6": "SABORES", "7": "FONTAINEBLEAU", "8": "MADRID", "10": "QUINCHO MDA", "13": "AL SHAM", "19": "RED DE SERVICIOS", "20": "SUPER CHAS", "21": "FRUTAMAR", "22": "CAFE MULE SRL", "23": "HIPER CHASCOMUS", "25": "RUSTICO CAFE", "27": "IRIZAR TOBIAS", "28": "OLIVO", "30": "TOPAR SRL", "31": "MINOTAURO", "32": "DON CORLEONE", "33": "CRENCI CLAUDIO", "34": "PETTINA"};
+
+let DATA    = [...BASE_DATA];
+let MULTI   = {...BASE_MULTI};
+let GRUPOS  = [...BASE_GRUPOS];
+let filtered= [...DATA];
+let vendSortKey = 'deuda';
+let searchTerm  = '';
+let charts  = {};
+let currentFecha= '19/06/2026';
+let lastUpdate  = null;
+
+// ── HELPERS ──────────────────────────────────────────────────────
+const fmt  = v => '$\u00a0' + Math.round(Math.abs(v)).toLocaleString('es-AR');
+const pct  = (a,b) => b>0 ? (a/b*100).toFixed(1)+'%' : '0%';
+function unique(arr,key){ return [...new Set(arr.map(r=>r[key]).filter(Boolean))].sort(); }
+
+// ── TABS ─────────────────────────────────────────────────────────
+function switchTab(id, el){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tnav').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='grupos') renderGrupos();
+  if(id==='vendedores') renderVendedores();
+}
+
+// ── ALERT BANNER ─────────────────────────────────────────────────
+function showAlert(msg, type){
+  const b = document.getElementById('alertBanner');
+  document.getElementById('alertMsg').innerHTML = msg;
+  b.className = 'alert-banner show alert-' + type;
+}
+function checkFreshness(){
+  if(!lastUpdate){
+    showAlert('&#9888;&nbsp; <strong>Atención:</strong> Este dashboard puede contener información desactualizada. Aún no se importó un archivo en esta sesión. Utilizá el botón <em>Importar Excel / CSV del día</em> para ver datos vigentes.','warn');
+    return;
+  }
+  const mins=Math.round((Date.now()-lastUpdate)/60000);
+  const hora=new Date(lastUpdate).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const fecha=new Date(lastUpdate).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  if(mins<120){
+    showAlert('&#10003;&nbsp; <strong>Datos actualizados.</strong> Última importación: hoy a las '+hora+' (hace '+mins+' min) &mdash; Datos al '+currentFecha,'ok');
+  } else if(mins<1440){
+    showAlert('&#9888;&nbsp; <strong>Atención:</strong> Este dashboard puede contener información desactualizada. Última importación: hoy a las '+hora+' (hace '+mins+' min). Verificá si hay un archivo más reciente.','warn');
+  } else {
+    showAlert('&#9888;&nbsp; <strong>Atención:</strong> Este dashboard puede contener información desactualizada. La última importación fue el '+fecha+' a las '+hora+'. Verificá que estés viendo la versión del día.','warn');
+  }
+}
+
+// ── IMPORT ───────────────────────────────────────────────────────
+function importFile(input){
+  const file=input.files[0]; if(!file) return;
+  setSt('Procesando…','loading');
+  const r=new FileReader();
+  r.onload=function(e){
+    try{
+      let rows;
+      if(file.name.toLowerCase().endsWith('.csv')){ rows=parseCSV(e.target.result); }
+      else{ const wb=XLSX.read(e.target.result,{type:'array'}); rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:0}); }
+      const res=processRows(rows);
+      if(!res){ setSt('Error: formato no reconocido.','err'); return; }
+      DATA=res.data; MULTI=res.multi; GRUPOS=res.grupos; currentFecha=res.fecha;
+      lastUpdate=Date.now();
+      filtered=[...DATA]; searchTerm='';
+      document.getElementById('searchInput').value='';
+      document.getElementById('clearSearch').className='clear-search';
+      resetFiltersInternal(); rebuildFilters(); render();
+      document.getElementById('fechaBadge').textContent='Al '+currentFecha;
+      document.getElementById('footerFecha').textContent='Datos al '+currentFecha;
+      setSt('&#10003; '+file.name+' &mdash; '+DATA.length+' clientes','ok');
+      // Persistir en localStorage para sobrevivir recargas
+      try{
+        const snapshot={data:DATA,multi:MULTI,grupos:GRUPOS,fecha:currentFecha,savedAt:Date.now()};
+        localStorage.setItem('dp_cobranzas_snapshot', JSON.stringify(snapshot));
+      }catch(e){ console.warn('localStorage no disponible:',e); }
+      checkFreshness();
+    }catch(err){ setSt('Error: '+err.message,'err'); }
+    input.value='';
+  };
+  file.name.toLowerCase().endsWith('.csv')?r.readAsText(file,'utf-8'):r.readAsArrayBuffer(file);
+}
+function setSt(msg,type){ const el=document.getElementById('impSt'); el.innerHTML=msg; el.className='imp-st imp-'+type; }
+
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,'');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  const sep=lines[0].includes('\t')?'\t':',';
+  const hdr=lines[0].split(sep).map(h=>h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).map(line=>{const v=line.split(sep).map(x=>x.replace(/^"|"$/g,'').trim());const o={};hdr.forEach((h,i)=>{o[h]=v[i]||0;});return o;});
+}
+
+function processRows(rows){
+  if(!rows||!rows.length) return null;
+  const keys=Object.keys(rows[0]);
+  const fc=(...ns)=>keys.find(k=>ns.some(n=>k.toLowerCase().replace(/\s+/g,'').includes(n.toLowerCase().replace(/\s+/g,''))));
+  const cFecha=fc('Fecha'),cSuc=fc('Sucursal'),cVend=fc('Vendedor'),cCli=fc('Cliente'),cCanal=fc('Canal'),cLoc=fc('Localidad'),cConj=fc('Conjunto');
+  const cSaldo=fc('SaldoTotal','Saldo Total');
+  const cD7=fc('A7','A 7'),cD15=fc('A15','A 15'),cD30=fc('A30','A 30');
+  const cD60=keys.find(k=>/a\s*60\s*d/i.test(k)&&!/\+/.test(k));
+  const cD60p=keys.find(k=>/\+60/i.test(k));
+  const cAntig=fc('Antigüedad','Antiguedad'),cCbte=fc('Cant');
+  if(!cCli||!cSaldo) return null;
+  let fecha='—';
+  if(cFecha&&rows[0][cFecha]){
+    const raw=rows[0][cFecha];
+    if(typeof raw==='number'&&raw>40000&&raw<60000){
+      // Número serial de Excel → convertir a fecha
+      const d=new Date(Math.round((raw-25569)*86400*1000));
+      fecha=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    } else {
+      // Ya es texto — normalizar formato
+      const s=String(raw).trim();
+      // Puede venir como "19/6/2026" → normalizar a dd/mm/yyyy
+      const m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if(m) fecha=m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+m[3];
+      else fecha=s;
+    }
+  }
+  const sp=s=>{const str=String(s||'').trim();const i=str.indexOf(' - ');return i>0?[str.slice(0,i).trim(),str.slice(i+3).trim()]:['',str];};
+  const cn=s=>sp(s)[1];
+  const tn=v=>{if(typeof v==='number')return v;return parseFloat(String(v).replace(/[^\d.,-]/g,'').replace(',','.'))||0;};
+  const sz=s=>String(s||'').lstrip?String(s).replace(/^0+/,'')||'0':String(s||'').replace(/^0+/,'')||'0';
+  const filtRows=rows.filter(r=>!String(r[cCanal]||'').includes('CLIE PEOPLE'));
+  const map={};
+  for(const r of filtRows){
+    const[cod,nom]=sp(r[cCli]); if(!nom) continue;
+    const saldo=tn(r[cSaldo]),abs=Math.abs(saldo);
+    const conjRaw=cConj?String(r[cConj]||'0').trim():'0';
+    const conjStr=conjRaw==='0'||conjRaw===''?'Sin conjunto':conjRaw;
+    if(!map[nom]) map[nom]={cliente:nom,codigo:String(cod).replace(/^0+/,'')||'',saldo:0,d7:0,d15:0,d30:0,d60:0,d60p:0,antiguedad:0,cantCbte:0,vendedor:'',localidad:'',sucursal:'',canal:'',conjuntos:new Set(),grupos:[],multiVendedor:false,_max:-1};
+    const rec=map[nom];
+    rec.saldo+=saldo; rec.d7+=cD7?tn(r[cD7]):0; rec.d15+=cD15?tn(r[cD15]):0; rec.d30+=cD30?tn(r[cD30]):0;
+    rec.d60+=cD60?tn(r[cD60]):0; rec.d60p+=cD60p?tn(r[cD60p]):0;
+    rec.antiguedad=Math.max(rec.antiguedad,cAntig?tn(r[cAntig]):0);
+    rec.cantCbte+=cCbte?tn(r[cCbte]):0;
+    rec.conjuntos.add(conjStr);
+    if(abs>rec._max){rec._max=abs;rec.vendedor=cVend?cn(r[cVend]):'';rec.localidad=cLoc?cn(r[cLoc]):'';rec.sucursal=cSuc?String(r[cSuc]):'';rec.canal=cCanal?cn(r[cCanal]):'';if(!rec.codigo&&cod)rec.codigo=String(cod).replace(/^0+/,'')||'';}
+  }
+  const posMap={};
+  for(const r of filtRows){
+    const[,nom]=sp(r[cCli]);if(!nom)continue;
+    const saldo=tn(r[cSaldo]);if(saldo<=0)continue;
+    const vend=cVend?cn(r[cVend]):'';
+    if(!posMap[nom])posMap[nom]={};
+    posMap[nom][vend]=(posMap[nom][vend]||0)+saldo;
+  }
+  const multi={};
+  for(const[nom,vm] of Object.entries(posMap)){
+    const entries=Object.entries(vm).filter(([,s])=>s>0);
+    if(entries.length>1){multi[nom]=entries.map(([v,s])=>({v,s:Math.round(s*100)/100})).sort((a,b)=>b.s-a.s);}
+  }
+  const data=Object.values(map).map(r=>{
+    delete r._max;
+    const conjs=[...r.conjuntos];
+    r.conjuntos=conjs;
+    r.grupos=conjs.filter(c=>c!=='Sin conjunto').map(c=>({id:c,nombre:CONJ_NAMES[c]||'Grupo '+c}));
+    r.multiVendedor=!!multi[r.cliente];
+    ['saldo','d7','d15','d30','d60','d60p'].forEach(k=>r[k]=Math.round((r[k]||0)*100)/100);
+    r.antiguedad=Math.round(r.antiguedad);
+    return r;
+  });
+  // rebuild grupos
+  const gmap={};
+  for(const r of data){
+    for(const g of r.grupos){
+      if(!gmap[g.id]) gmap[g.id]={id:g.id,nombre:g.nombre,clientes:[]};
+      gmap[g.id].clientes.push({codigo:r.codigo,cliente:r.cliente,vendedor:r.vendedor,saldo:r.saldo,d7:r.d7,d15:r.d15,d30:r.d30,d60:r.d60,d60p:r.d60p,antiguedad:r.antiguedad});
+    }
+  }
+  const grupos=Object.values(gmap).map(g=>{
+    g.clientes.sort((a,b)=>b.saldo-a.saldo);
+    g.deudaTotal=g.clientes.filter(c=>c.saldo>0).reduce((s,c)=>s+c.saldo,0);
+    g.acreedorTotal=g.clientes.filter(c=>c.saldo<0).reduce((s,c)=>s+c.saldo,0);
+    g.deudaNeta=g.clientes.reduce((s,c)=>s+c.saldo,0);
+    return g;
+  }).sort((a,b)=>b.deudaTotal-a.deudaTotal);
+  return{data,multi,grupos,fecha};
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────
+function onSearch(input){
+  searchTerm=input.value.toLowerCase().trim();
+  document.getElementById('clearSearch').className='clear-search'+(searchTerm?' show':'');
+  applyFilters();
+}
+function clearSearch(){
+  document.getElementById('searchInput').value='';
+  searchTerm='';
+  document.getElementById('clearSearch').className='clear-search';
+  applyFilters();
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────
+function rebuildFilters(){
+  const popDL=(dlId,opts)=>{const dl=document.getElementById(dlId);if(!dl)return;dl.innerHTML=opts.map(o=>'<option value="'+o+'">').join('');};
+  popDL('dlSuc',unique(DATA,'sucursal'));
+  popDL('dlVend',unique(DATA,'vendedor'));
+  popDL('dlLoc',unique(DATA,'localidad'));
+  popDL('dlCli',unique(DATA,'cliente'));
+  popDL('dlCod',[...new Set(DATA.map(r=>r.codigo).filter(Boolean))].sort((a,b)=>Number(a)-Number(b)));
+  const allConj=[...new Set(DATA.flatMap(r=>r.conjuntos||[]))].filter(c=>c!=='Sin conjunto').sort((a,b)=>Number(a)-Number(b));
+  const dl=document.getElementById('dlConj');if(dl)dl.innerHTML=allConj.map(c=>'<option value="'+c+'">'+(CONJ_NAMES[c]?CONJ_NAMES[c]+' ('+c+')':c)+'</option>').join('');
+}
+function initFilters(){ rebuildFilters(); }
+function applyFilters(){
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
+  const mSuc=g('fSuc'),mVend=g('fVend'),mLoc=g('fLoc'),mCli=g('fCli'),mCod=g('fCod'),conjRaw=g('fConj');
+  const mConj=conjRaw?(Object.entries(CONJ_NAMES).find(([,nm])=>nm.toLowerCase()===conjRaw.toLowerCase())||[conjRaw])[0]:'';
+  filtered=DATA.filter(r=>{
+    if(mSuc&&!r.sucursal.toLowerCase().includes(mSuc.toLowerCase()))return false;
+    if(mVend&&!r.vendedor.toLowerCase().includes(mVend.toLowerCase()))return false;
+    if(mLoc&&!r.localidad.toLowerCase().includes(mLoc.toLowerCase()))return false;
+    if(mCli&&!r.cliente.toLowerCase().includes(mCli.toLowerCase()))return false;
+    if(mCod&&!r.codigo.toLowerCase().includes(mCod.toLowerCase()))return false;
+    if(mConj&&!(r.conjuntos||[]).some(c=>c===mConj))return false;
+    if(searchTerm&&!r.cliente.toLowerCase().includes(searchTerm)&&!r.codigo.toLowerCase().includes(searchTerm))return false;
+    return true;
+  });
+  const n=[mSuc,mVend,mLoc,mCli,mCod,mConj].filter(Boolean).length+(searchTerm?1:0);
+  document.getElementById('filterInfo').textContent=n?n+' filtro(s) — '+filtered.length+' clientes':'';
+  render();
+}
+function resetFiltersInternal(){
+  ['fSuc','fVend','fLoc','fCli','fCod','fConj'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  searchTerm='';
+  searchTerm='';
+  const si=document.getElementById('searchInput');if(si)si.value='';
+  const cs=document.getElementById('clearSearch');if(cs)cs.className='clear-search';
+  filtered=[...DATA];
+  const fi=document.getElementById('filterInfo');if(fi)fi.textContent='';
+}
+function resetFilters(){ resetFiltersInternal(); render(); }
+
+// ── RISK ─────────────────────────────────────────────────────────
+function riskScore(r){
+  // combina % de deuda en +60d y antigüedad
+  const pct60=r.saldo>0?(r.d60p||0)/r.saldo*100:0;
+  if(r.antiguedad>365||pct60>75) return 'alto';
+  if(r.antiguedad>60||pct60>40) return 'medio';
+  return 'bajo';
+}
+function riskBadge(r,deuda){
+  if(!deuda) return '';
+  const rs=riskScore(r);
+  const cls={'alto':'b-alto','medio':'b-medio','bajo':'b-bajo'}[rs];
+  const dot={'alto':'&#9679;','medio':'&#9679;','bajo':'&#9679;'}[rs];
+  const lbl={'alto':'Riesgo alto','medio':'Riesgo medio','bajo':'Riesgo bajo'}[rs];
+  return `<span class="badge ${cls}">${dot} ${lbl}</span>`;
+}
+function riskTrack(r,deuda){
+  if(!deuda) return '';
+  const pct60=deuda>0?(r.d60p||0)/deuda*100:0;
+  const w=Math.min(100,Math.round(pct60));
+  const col=pct60>75?'var(--rojo)':pct60>40?'var(--naranja)':'var(--verde)';
+  return `<div class="risk-track"><div class="risk-fill" style="width:${w}%;background:${col}"></div></div>`;
+}
+
+// ── GROUP BADGE ───────────────────────────────────────────────────
+function grupoBadge(r){
+  const gs=(r.grupos||[]);
+  if(!gs.length) return '';
+  return gs.map(g=>{
+    const tip='Grupo '+g.id+': '+g.nombre;
+    return `<span class="ttw"><span class="badge b-grup" title="${tip}"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Grp.${g.id} – ${g.nombre}</span><span class="ttb">${tip}</span></span>`;
+  }).join('\u00a0');
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────
+function kpi(id,label,val,cls,bar,note){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=`<div class="kl">${label}</div><div class="kv ${cls||''}">${val}</div>`+
+    (bar!==undefined?`<div class="k-bar"><div class="k-bar-f" style="width:${Math.min(100,bar)}%;background:currentColor"></div></div>`:'')+
+    (note?`<div class="k-note">${note}</div>`:'');
+}
+function renderKPIs(data){
+  const drs=data.filter(r=>r.saldo>0),ars=data.filter(r=>r.saldo<0);
+  const dt=drs.reduce((s,r)=>s+r.saldo,0),at=ars.reduce((s,r)=>s+r.saldo,0);
+  const d7=data.filter(r=>r.d7>0).reduce((s,r)=>s+r.d7,0);
+  const d15=data.filter(r=>r.d15>0).reduce((s,r)=>s+r.d15,0);
+  const d30=data.filter(r=>r.d30>0).reduce((s,r)=>s+r.d30,0);
+  const d60=data.filter(r=>r.d60>0).reduce((s,r)=>s+r.d60,0);
+  const d60p=data.filter(r=>r.d60p>0).reduce((s,r)=>s+r.d60p,0);
+  const p60=dt>0?d60p/dt*100:0;
+  kpi('kpiDT','Deuda total neta',fmt(dt),'');
+  kpi('kpiCD','Clientes deudores',drs.length,'rojo');
+  kpi('kpiP60','Deuda vencida +60 días',p60.toFixed(1)+'%',p60>50?'rojo':'naranja',p60,'sobre deuda total');
+  [{id:'kD7',l:'A 7 días',v:d7,c:'verde'},{id:'kD15',l:'A 15 días',v:d15,c:'verde'},{id:'kD30',l:'A 30 días',v:d30,c:''},{id:'kD60',l:'A 60 días',v:d60,c:'naranja'},{id:'kD60p',l:'A +60 días',v:d60p,c:'rojo'}]
+    .forEach(k=>{const pp=dt>0?k.v/dt*100:0;kpi(k.id,k.l,fmt(k.v),k.c,pp,pp.toFixed(1)+'% del total');});
+  const amax=ars.length?Math.abs(Math.min(...ars.map(r=>r.saldo))):0;
+  kpi('kpiAT','Total saldos acreedores',fmt(Math.abs(at)),'');
+  kpi('kpiCA','Clientes acreedores',ars.length,'azul');
+  kpi('kpiAMax','Mayor saldo acreedor',fmt(amax),'azul');
+  document.getElementById('subDeuda').textContent=drs.length+' clientes · '+fmt(dt)+' en cartera';
+}
+
+// ── CHARTS ───────────────────────────────────────────────────────
+function mkChart(id,type,labels,values,colors,opts){
+  if(charts[id]) charts[id].destroy();
+  const ctx=document.getElementById(id);if(!ctx)return;
+  charts[id]=new Chart(ctx,{type,
+    data:{labels,datasets:[{data:values,backgroundColor:colors,borderWidth:type==='doughnut'?2:0,borderColor:'#fff',borderRadius:type==='bar'?5:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:type==='doughnut'?'65%':undefined,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)}}},
+      scales:type==='bar'?{x:{ticks:{font:{size:10},maxRotation:35,color:'#95A5A6'},grid:{display:false},border:{display:false}},y:{ticks:{font:{size:10},color:'#95A5A6',callback:v=>'$'+Math.round(v/1e6)+'M'},grid:{color:'rgba(0,0,0,0.04)'},border:{display:false}}}:{},
+      ...(opts||{})
+    }
+  });
+}
+
+function renderCharts(data){
+  const d7=data.filter(r=>r.d7>0).reduce((s,r)=>s+r.d7,0);
+  const d15=data.filter(r=>r.d15>0).reduce((s,r)=>s+r.d15,0);
+  const d30=data.filter(r=>r.d30>0).reduce((s,r)=>s+r.d30,0);
+  const d60=data.filter(r=>r.d60>0).reduce((s,r)=>s+r.d60,0);
+  const d60p=data.filter(r=>r.d60p>0).reduce((s,r)=>s+r.d60p,0);
+  const donutColors=['#1E8449','#27AE60','#F39C12','#E67E22','#C0392B'];
+  const donutLabels=['7 días','15 días','30 días','60 días','+60 días'];
+  const donutVals=[d7,d15,d30,d60,d60p];
+  const total=donutVals.reduce((s,v)=>s+v,0);
+  mkChart('cDonut','doughnut',donutLabels,donutVals,donutColors);
+  // legend
+  const leg=document.getElementById('donutLegend');
+  if(leg) leg.innerHTML=donutLabels.map((l,i)=>`<div class="dl-item"><span class="dl-dot" style="background:${donutColors[i]}"></span><span class="dl-name">${l}</span><span class="dl-val">${total>0?(donutVals[i]/total*100).toFixed(1)+'%':'0%'}</span></div>`).join('');
+
+  const top10=[...data].filter(r=>r.saldo>0).sort((a,b)=>b.saldo-a.saldo).slice(0,10);
+  mkChart('cTop10','bar',top10.map(r=>(r.codigo?r.codigo+' ':'')+(r.cliente.length>15?r.cliente.slice(0,15)+'…':r.cliente)),top10.map(r=>r.saldo),top10.map((_,i)=>i===0?'#C0392B':i<3?'#E74C3C':'#F1948A'));
+
+  const lm={};data.filter(r=>r.saldo>0).forEach(r=>{lm[r.localidad]=(lm[r.localidad]||0)+r.saldo;});
+  const ls=Object.entries(lm).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkChart('cLoc','bar',ls.map(([k])=>k.length>12?k.slice(0,12)+'…':k),ls.map(([,v])=>v),ls.map((_,i)=>i===0?'#1A5276':i<3?'#2980B9':'#7FB3D3'));
+
+  const sm={};data.filter(r=>r.saldo>0).forEach(r=>{sm['Suc '+r.sucursal]=(sm['Suc '+r.sucursal]||0)+r.saldo;});
+  const ss=Object.entries(sm).sort((a,b)=>b[1]-a[1]);
+  mkChart('cSuc','bar',ss.map(([k])=>k),ss.map(([,v])=>v),['#8E44AD','#A569BD','#C39BD3']);
+}
+
+function renderVendedoresCharts(data){
+  const vm={};
+  data.forEach(r=>{
+    if(!vm[r.vendedor]) vm[r.vendedor]={deuda:0,deudores:new Set()};
+    if(r.saldo>0){vm[r.vendedor].deuda+=r.saldo;vm[r.vendedor].deudores.add(r.cliente);}
+  });
+  const vs=Object.entries(vm).sort((a,b)=>b[1].deuda-a[1].deuda).slice(0,12);
+  mkChart('cVend','bar',vs.map(([k])=>k.length>12?k.slice(0,12)+'…':k),vs.map(([,v])=>v.deuda),vs.map((_,i)=>i===0?'#1E8449':i<3?'#27AE60':'#82E0AA'));
+  const vc=Object.entries(vm).sort((a,b)=>b[1].deudores.size-a[1].deudores.size).slice(0,12);
+  mkChart('cVendCli','bar',vc.map(([k])=>k.length>12?k.slice(0,12)+'…':k),vc.map(([,v])=>v.deudores.size),vc.map((_,i)=>i===0?'#D35400':i<3?'#E67E22':'#FAB545'));
+}
+
+// ── TABLES ───────────────────────────────────────────────────────
+function ac(d){ return d>365?'a-danger':d>60?'a-warn':d>30?'a-warn':'a-ok'; }
+
+function renderDeudTable(data){
+  const rows=data.filter(r=>r.saldo>0).sort((a,b)=>b.saldo-a.saldo);
+  document.getElementById('deudTitle').textContent=rows.length+' clientes deudores — mayor a menor';
+  if(!rows.length){document.getElementById('deudTable').innerHTML='<tr><td class="no-results" colspan="10">Sin resultados para los filtros aplicados.</td></tr>';return;}
+  document.getElementById('deudTable').innerHTML=
+    `<thead><tr><th>Código</th><th>Cliente</th><th>Vendedor</th><th>Localidad</th><th>Deuda neta</th><th>7d</th><th>15d</th><th>30d</th><th>60d</th><th>+60d</th><th>Antigüedad</th><th>Riesgo</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr>
+      <td><span class="td-cod">${r.codigo||'—'}</span></td>
+      <td class="td-cli" style="max-width:220px">${r.cliente}&nbsp;${grupoBadge(r)}</td>
+      <td class="td-dim" style="max-width:130px">${r.vendedor}</td>
+      <td class="td-dim" style="max-width:110px">${r.localidad}</td>
+      <td class="td-r">${fmt(r.saldo)}</td>
+      <td class="td-dim">${r.d7>0?fmt(r.d7):'-'}</td>
+      <td class="td-dim">${r.d15>0?fmt(r.d15):'-'}</td>
+      <td class="td-dim">${r.d30>0?fmt(r.d30):'-'}</td>
+      <td class="td-dim">${r.d60>0?fmt(r.d60):'-'}</td>
+      <td class="td-dim">${r.d60p>0?fmt(r.d60p):'-'}</td>
+      <td class="${ac(r.antiguedad)}">${r.antiguedad}d</td>
+      <td>${riskBadge(r,r.saldo)}${riskTrack(r,r.saldo)}</td>
+    </tr>`).join('')+`</tbody>`;
+}
+
+function renderAcrTable(data){
+  const rows=data.filter(r=>r.saldo<0).sort((a,b)=>a.saldo-b.saldo);
+  document.getElementById('acrTitle').textContent=rows.length+' clientes con saldo acreedor — mayor a menor';
+  if(!rows.length){document.getElementById('acrTable').innerHTML='<tr><td class="no-results" colspan="6">Sin resultados.</td></tr>';return;}
+  document.getElementById('acrTable').innerHTML=
+    `<thead><tr><th>Código</th><th>Cliente</th><th>Vendedor</th><th>Localidad</th><th>Saldo a favor</th><th>Antigüedad</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr>
+      <td><span class="td-cod">${r.codigo||'—'}</span></td>
+      <td class="td-cli" style="max-width:240px">${r.cliente}&nbsp;${grupoBadge(r)}</td>
+      <td class="td-dim">${r.vendedor}</td>
+      <td class="td-dim">${r.localidad}</td>
+      <td class="td-b">${fmt(Math.abs(r.saldo))}</td>
+      <td class="${ac(r.antiguedad)}">${r.antiguedad}d</td>
+    </tr>`).join('')+`</tbody>`;
+}
+
+function renderVendTable(data){
+  const vm={};
+  data.forEach(r=>{
+    if(!vm[r.vendedor]) vm[r.vendedor]={c:new Set(),d:new Set(),a:new Set(),deuda:0,d60p:0};
+    vm[r.vendedor].c.add(r.cliente);
+    if(r.saldo>0){vm[r.vendedor].d.add(r.cliente);vm[r.vendedor].deuda+=r.saldo;}
+    if(r.saldo<0) vm[r.vendedor].a.add(r.cliente);
+    if(r.d60p>0) vm[r.vendedor].d60p+=r.d60p;
+  });
+  let rows=Object.entries(vm).map(([v,d])=>({v,c:d.c.size,d:d.d.size,a:d.a.size,deuda:d.deuda,d60p:d.d60p,pct:d.deuda>0?d.d60p/d.deuda*100:0}));
+  if(vendSortKey==='deuda') rows.sort((a,b)=>b.deuda-a.deuda);
+  else if(vendSortKey==='deudores') rows.sort((a,b)=>b.d-a.d);
+  else rows.sort((a,b)=>b.c-a.c);
+  const rs=r=>{if(r.pct>70)return'<span class="badge b-alto">&#9679; Alto</span>';if(r.pct>40)return'<span class="badge b-medio">&#9679; Medio</span>';return'<span class="badge b-bajo">&#9679; Bajo</span>';};
+  const rb=r=>{const w=Math.min(100,Math.round(r.pct));const col=r.pct>70?'var(--rojo)':r.pct>40?'var(--naranja)':'var(--verde)';return`<div class="risk-track"><div class="risk-fill" style="width:${w}%;background:${col}"></div></div>`;};
+  document.getElementById('vendTable').innerHTML=
+    `<thead><tr><th>Vendedor</th><th>Clientes</th><th>Deudores</th><th>Acreedores</th><th>Deuda total</th><th>+60 días</th><th colspan="2">Riesgo +60d</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td style="font-weight:700;max-width:160px">${r.v}</td><td>${r.c}</td><td>${r.d}</td><td>${r.a}</td><td class="td-r">${fmt(r.deuda)}</td><td class="td-dim">${fmt(r.d60p)}</td><td>${rs(r)}</td><td>${rb(r)}</td></tr>`).join('')+`</tbody>`;
+  document.getElementById('subVend').textContent=rows.length+' vendedores activos';
+}
+
+function sortVend(key,e){
+  vendSortKey=key;
+  document.querySelectorAll('#vendTabs .vtab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  renderVendTable(DATA);
+}
+
+// ── GRUPOS TAB ───────────────────────────────────────────────────
+function renderGrupos(){
+  const glist=GRUPOS;
+  const totalDeuda=glist.reduce((s,g)=>s+g.deudaTotal,0);
+  const totalAcr=glist.reduce((s,g)=>s+Math.abs(g.acreedorTotal||0),0);
+  const conGrupos=glist.filter(g=>g.deudaTotal>0).length;
+  kpi('kGrupoTotal','Deuda total en grupos',fmt(totalDeuda),'rojo');
+  kpi('kGrupoCant','Grupos con deuda activa',conGrupos,'');
+  kpi('kGrupoAcr','Saldo acreedor en grupos',fmt(totalAcr),'azul');
+  document.getElementById('subGrupos').textContent=glist.length+' grupos registrados';
+  document.getElementById('grupoGrid').innerHTML=glist.map(g=>`
+    <div class="grupo-card">
+      <div class="gc-hdr">
+        <div>
+          <div class="gc-nombre">${g.nombre}</div>
+          <div class="gc-id" style="margin-top:3px">Conjunto ${g.id}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="gc-deuda-label">Deuda total</div>
+          <div class="gc-deuda-total">${g.deudaTotal>0?fmt(g.deudaTotal):'Sin deuda'}</div>
+          ${g.acreedorTotal<0?'<div class="gc-deuda-label" style="margin-top:4px">Saldo acreedor</div><div style="font-size:13px;font-weight:700;color:var(--azul)">'+fmt(Math.abs(g.acreedorTotal))+'</div>':''}
+        </div>
+      </div>
+      <div class="gc-clientes">
+        ${g.clientes.map(c=>`<div class="gc-cli-row">
+          <span class="td-cod" style="flex-shrink:0">${c.codigo||'—'}</span>
+          <span class="gc-cli-name" title="${c.cliente}">${c.cliente}</span>
+          <span class="gc-cli-monto ${c.saldo>0?'pos':c.saldo<0?'neg':'zer'}">${c.saldo!==0?fmt(c.saldo):'$\u00a00'}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── VENDEDORES TAB ───────────────────────────────────────────────
+function renderVendedores(){
+  renderVendedoresCharts(DATA);
+  renderVendTable(DATA);
+}
+
+// ── DOWNLOAD SNAPSHOT (para GitHub Pages) ───────────────────────
+function downloadSnapshot(){
+  const btn=document.getElementById('btnDownload');
+  if(btn){ btn.disabled=true; btn.textContent='Generando…'; }
+  setTimeout(()=>{
+    try{
+      // Generar HTML con datos actuales embedidos
+      let snap = document.documentElement.outerHTML;
+
+      // Reemplazar los datos BASE con los datos actuales
+      const dataStr = JSON.stringify(DATA);
+      const multiStr = JSON.stringify(MULTI);
+      const gruposStr = JSON.stringify(GRUPOS);
+
+      // Reemplazar BASE_DATA, BASE_MULTI, BASE_GRUPOS con los actuales
+      snap = snap.replace(
+        /const BASE_DATA\s*=\s*\[[\s\S]*?\];(?=\s*
+)/,
+        'const BASE_DATA = ' + dataStr + ';'
+      );
+      snap = snap.replace(
+        /const BASE_MULTI\s*=\s*\{[\s\S]*?\};(?=\s*
+)/,
+        'const BASE_MULTI = ' + multiStr + ';'
+      );
+      snap = snap.replace(
+        /const BASE_GRUPOS\s*=\s*\[[\s\S]*?\];(?=\s*
+)/,
+        'const BASE_GRUPOS = ' + gruposStr + ';'
+      );
+
+      // Ajustar la fecha embebida
+      snap = snap.replace(
+        /currentFecha\s*=\s*'[^']*';/,
+        "currentFecha = '" + currentFecha + "';"
+      );
+
+      // Quitar el bloque de restauración de localStorage (ya tiene datos frescos embedidos)
+      snap = snap.replace(
+        /\/\/ Restaurar datos del localStorage[\s\S]*?render\(\);/,
+        'initFilters();
+rebuildFilters();
+checkFreshness();
+render();'
+      );
+
+      // Descargar
+      const fecha = currentFecha.replace(/\//g,'');
+      const blob = new Blob([snap], {type:'text/html;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'index.html';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if(btn){ btn.disabled=false; btn.innerHTML='<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar versión del día'; }
+    } catch(e){
+      alert('Error al generar el archivo: ' + e.message);
+      if(btn){ btn.disabled=false; btn.textContent='Descargar versión del día'; }
+    }
+  }, 100);
+}
+
+// ── EXPORT ───────────────────────────────────────────────────────
+function exportCSV(type){
+  let headers=[],rows=[];
+  const d=currentFecha.replace(/\//g,'');
+  if(type==='vendedor'){
+    headers=['Vendedor','Clientes','Deudores','Acreedores','Deuda Total','Deuda +60d','% +60d'];
+    const vm={};
+    filtered.forEach(r=>{if(!vm[r.vendedor])vm[r.vendedor]={c:new Set(),d:new Set(),a:new Set(),deuda:0,d60p:0};vm[r.vendedor].c.add(r.cliente);if(r.saldo>0){vm[r.vendedor].d.add(r.cliente);vm[r.vendedor].deuda+=r.saldo;}if(r.saldo<0)vm[r.vendedor].a.add(r.cliente);if(r.d60p>0)vm[r.vendedor].d60p+=r.d60p;});
+    rows=Object.entries(vm).sort((a,b)=>b[1].deuda-a[1].deuda).map(([v,x])=>[v,x.c.size,x.d.size,x.a.size,Math.round(x.deuda),Math.round(x.d60p),x.deuda>0?(x.d60p/x.deuda*100).toFixed(1)+'%':'0%']);
+  } else if(type==='acreedores'){
+    headers=['Código','Cliente','Vendedor','Localidad','Saldo Acreedor','Antigüedad','Grupo'];
+    rows=filtered.filter(r=>r.saldo<0).sort((a,b)=>a.saldo-b.saldo).map(r=>[r.codigo||'',r.cliente,r.vendedor,r.localidad,Math.round(r.saldo),r.antiguedad,(r.grupos||[]).map(g=>g.nombre).join('; ')||'—']);
+  } else {
+    headers=['Código','Cliente','Vendedor','Localidad','Deuda Neta','A 7d','A 15d','A 30d','A 60d','A +60d','Antigüedad','Riesgo','Grupo'];
+    rows=filtered.filter(r=>r.saldo>0).sort((a,b)=>b.saldo-a.saldo).map(r=>[r.codigo||'',r.cliente,r.vendedor,r.localidad,Math.round(r.saldo),Math.round(r.d7||0),Math.round(r.d15||0),Math.round(r.d30||0),Math.round(r.d60||0),Math.round(r.d60p||0),r.antiguedad,riskScore(r),(r.grupos||[]).map(g=>g.nombre).join('; ')||'—']);
+  }
+  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='cobranzas_'+type+'_'+d+'.csv';a.click();
+}
+
+// ── RENDER ───────────────────────────────────────────────────────
+function render(){
+  renderKPIs(filtered);
+  renderCharts(filtered);
+  renderDeudTable(filtered);
+  renderAcrTable(filtered);
+}
+
+// Restaurar datos del localStorage si hay una importación previa
+(function(){
+  try{
+    const snap=localStorage.getItem('dp_cobranzas_snapshot');
+    if(snap){
+      const s=JSON.parse(snap);
+      if(s.data&&s.data.length){
+        DATA=s.data; MULTI=s.multi||{}; GRUPOS=s.grupos||[];
+        currentFecha=s.fecha||'—'; lastUpdate=s.savedAt||null;
+        filtered=[...DATA];
+        const fb=document.getElementById('fechaBadge');
+        const ff=document.getElementById('footerFecha');
+        if(fb) fb.textContent='Al '+currentFecha;
+        if(ff) ff.textContent='Datos al '+currentFecha;
+        const mins=lastUpdate?Math.round((Date.now()-lastUpdate)/60000):null;
+        setSt('&#128190; Restaurado: '+currentFecha+(mins!==null?' (hace '+mins+' min)':''),'ok');
+      }
+    }
+  }catch(e){ console.warn('localStorage error:',e); }
+})();
+
+initFilters();
+rebuildFilters();
+checkFreshness();
+render();
+</script>
+</body>
+</html>
