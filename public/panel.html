@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.rol-badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700}
+.rol-admin{background:rgba(196,130,10,.3);color:#FCD34D}
+.rol-vista{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+/* PAGE */
+.page{max-width:1000px;margin:0 auto;padding:2rem 1rem}
+.welcome{margin-bottom:2rem}
+.welcome-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+.welcome-sub{font-size:13px;color:#9896A0;margin-top:.25rem;font-weight:500}
+
+/* MÓDULOS GRID */
+.modulos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:2rem}
+.modulo-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.4rem;cursor:pointer;transition:all .2s;text-decoration:none;display:block;position:relative;overflow:hidden}
+.modulo-card:hover{border-color:#1E6FD9;box-shadow:0 4px 20px rgba(30,111,217,.12);transform:translateY(-2px)}
+.modulo-card.coming-soon{cursor:default;opacity:.6}
+.modulo-card.coming-soon:hover{transform:none;box-shadow:none;border-color:#DDDBD6}
+.modulo-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;flex-shrink:0}
+.modulo-nombre{font-size:15px;font-weight:700;color:#18181A;margin-bottom:.3rem}
+.modulo-desc{font-size:12px;color:#9896A0;font-weight:500;line-height:1.5}
+.modulo-badge{position:absolute;top:.85rem;right:.85rem;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge-activo{background:#D4F2E8;color:#075C41}
+.badge-pronto{background:#F2F1EE;color:#9896A0}
+.modulo-arrow{position:absolute;bottom:1rem;right:1rem;color:#DDDBD6;transition:color .15s}
+.modulo-card:hover .modulo-arrow{color:#1E6FD9}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:2rem}
+.stat-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.9rem 1.1rem}
+.stat-label{font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem}
+.stat-val{font-size:18px;font-weight:700;color:#18181A}
+.stat-sub{font-size:11px;color:#9896A0;margin-top:2px;font-weight:500}
+
+/* CAMBIAR PASS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.75rem;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:.25rem}
+.modal-sub{font-size:12px;color:#9896A0;margin-bottom:1.25rem}
+.field{margin-bottom:.85rem}
+.field label{display:block;font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem}
+.field input{width:100%;padding:.65rem .9rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.field input:focus{border-color:#1E6FD9}
+.modal-btns{display:flex;gap:8px;margin-top:1.1rem}
+.btn-primary{flex:1;padding:.65rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-primary:hover{background:#0D4FA0}
+.btn-secondary{padding:.65rem 1rem;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.msg-pass{display:none;padding:.5rem .75rem;border-radius:6px;font-size:12px;font-weight:500;margin-top:.5rem}
+.msg-ok{background:#D4F2E8;color:#075C41;display:flex}
+.msg-err{background:#FAE0E0;color:#8A1F1F;display:flex}
+
+@media(max-width:600px){.stats-row{grid-template-columns:1fr}.topbar{padding:.75rem 1rem}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Sistema de Gestión</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+      <span class="rol-badge" id="rol-badge">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="welcome">
+    <div class="welcome-title" id="welcome-title">Bienvenido</div>
+    <div class="welcome-sub" id="welcome-date"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Módulos activos</div>
+      <div class="stat-val">1</div>
+      <div class="stat-sub">de 5-10 planificados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Último acceso</div>
+      <div class="stat-val" id="stat-acceso">Hoy</div>
+      <div class="stat-sub" id="stat-hora"></div>
+    </div>
+    <div class="stat-card" id="stat-admin" style="display:none">
+      <div class="stat-label">Configuración</div>
+      <div class="stat-val" style="font-size:13px;cursor:pointer;color:#1E6FD9" onclick="abrirCambiarPass()">Cambiar contraseña</div>
+      <div class="stat-sub">Gestión de acceso</div>
+    </div>
+    <div class="stat-card" id="stat-vista" style="display:none">
+      <div class="stat-label">Modo</div>
+      <div class="stat-val" style="font-size:14px">Solo lectura</div>
+      <div class="stat-sub">Contactá al admin para cambios</div>
+    </div>
+  </div>
+
+  <!-- MÓDULOS -->
+  <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9896A0;margin-bottom:.75rem">Módulos</div>
+  <div class="modulos-grid">
+
+    <!-- FACTURACIÓN -->
+    <a href="/facturacion" class="modulo-card">
+      <span class="modulo-badge badge-activo">Activo</span>
+      <div class="modulo-icon" style="background:#DCE9FA">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E6FD9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div class="modulo-nombre">Facturación</div>
+      <div class="modulo-desc">Ventas, IVA, distribución por tipo de cliente y evolución mensual.</div>
+      <div class="modulo-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </a>
+
+    <!-- CTA CTE -->
+    <div class="modulo-card coming-soon">
+      <span class="modulo-badge badge-pronto">Próximamente</span>
+      <div class="modulo-icon" style="background:#EDE5FA">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B3FC8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="modulo-nombre">Cta. Cte. Clientes</div>
+      <div class="modulo-desc">Saldos, movimientos y seguimiento de cuentas corrientes de clientes.</div>
+    </div>
+
+    <!-- COMPRAS -->
+    <div class="modulo-card coming-soon">
+      <span class="modulo-badge badge-pronto">Próximamente</span>
+      <div class="modulo-icon" style="background:#D4F0F2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A7F8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      </div>
+      <div class="modulo-nombre">Compras</div>
+      <div class="modulo-desc">Proveedores, órdenes de compra y seguimiento de gastos.</div>
+    </div>
+
+    <!-- TESORERÍA -->
+    <div class="modulo-card coming-soon">
+      <span class="modulo-badge badge-pronto">Próximamente</span>
+      <div class="modulo-icon" style="background:#D4F2E8">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E9267" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      </div>
+      <div class="modulo-nombre">Tesorería</div>
+      <div class="modulo-desc">Flujo de caja, ingresos, egresos y posición financiera.</div>
+    </div>
+
+    <!-- IMPOSITIVO -->
+    <div class="modulo-card coming-soon">
+      <span class="modulo-badge badge-pronto">Próximamente</span>
+      <div class="modulo-icon" style="background:#FDF0D4">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4820A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <div class="modulo-nombre">Impositivo</div>
+      <div class="modulo-desc">Vencimientos, declaraciones y seguimiento de obligaciones fiscales.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR CONTRASEÑA -->
+<div class="modal-overlay" id="modal-pass">
+  <div class="modal">
+    <div class="modal-title">Cambiar contraseña</div>
+    <div class="modal-sub">Ingresá tu contraseña actual y la nueva.</div>
+    <div class="field"><label>Contraseña actual</label><input type="password" id="pass-actual" placeholder="••••••••"></div>
+    <div class="field"><label>Contraseña nueva</label><input type="password" id="pass-nueva" placeholder="••••••••"></div>
+    <div class="field"><label>Confirmar nueva</label><input type="password" id="pass-confirmar" placeholder="••••••••"></div>
+    <div class="msg-pass" id="msg-pass"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" onclick="cambiarPass()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Verificar sesión
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) { window.location.href = '/'; }
+
+// Render usuario
+const now = new Date();
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre||userData.username).charAt(0).toUpperCase();
+document.getElementById('welcome-title').textContent = 'Bienvenido/a, ' + (userData.nombre||userData.username);
+document.getElementById('welcome-date').textContent = now.toLocaleDateString('es-AR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+document.getElementById('stat-hora').textContent = now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+document.getElementById('stat-acceso').textContent = now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+if(userData.rol==='admin'){
+  document.getElementById('rol-badge').textContent='Admin';
+  document.getElementById('rol-badge').className='rol-badge rol-admin';
+  document.getElementById('stat-admin').style.display='block';
+} else {
+  document.getElementById('rol-badge').textContent='Vista';
+  document.getElementById('rol-badge').className='rol-badge rol-vista';
+  document.getElementById('stat-vista').style.display='block';
+  // Ocultar enlace a facturación si no tiene permiso (opcional — por ahora todos pueden ver)
+}
+
+function abrirCambiarPass(){ document.getElementById('modal-pass').classList.add('show'); }
+function cerrarModal(){ document.getElementById('modal-pass').classList.remove('show'); ['pass-actual','pass-nueva','pass-confirmar'].forEach(id=>document.getElementById(id).value=''); showMsgPass('',''); }
+
+function showMsgPass(type,txt){
+  const el=document.getElementById('msg-pass');
+  el.className='msg-pass'+(type?' '+type:'');
+  el.textContent=txt;
+  el.style.display=type?'flex':'none';
+}
+
+async function cambiarPass(){
+  const actual=document.getElementById('pass-actual').value;
+  const nueva=document.getElementById('pass-nueva').value;
+  const conf=document.getElementById('pass-confirmar').value;
+  if(!actual||!nueva||!conf){ showMsgPass('msg-err','Completá todos los campos.'); return; }
+  if(nueva!==conf){ showMsgPass('msg-err','Las contraseñas nuevas no coinciden.'); return; }
+  if(nueva.length<6){ showMsgPass('msg-err','La contraseña debe tener al menos 6 caracteres.'); return; }
+  try{
+    const r=await fetch('/api/cambiar-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:userData.username,password_actual:actual,password_nueva:nueva})});
+    const d=await r.json();
+    if(!r.ok){ showMsgPass('msg-err',d.error||'Error al cambiar.'); return; }
+    showMsgPass('msg-ok','✓ Contraseña cambiada correctamente.');
+    setTimeout(cerrarModal,1500);
+  }catch(e){ showMsgPass('msg-err','Error de conexión.'); }
+}
+</script>
+</body>
+</html>

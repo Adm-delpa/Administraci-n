@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Path \"C:\\\\Users\\\\aryps\\\\OneDrive\\\\Desktop\\\\proyectow\\\\public\" -Force)",
+      "PowerShell(Move-Item \"C:\\\\Users\\\\aryps\\\\OneDrive\\\\Desktop\\\\proyectow\\\\index.html\" \"C:\\\\Users\\\\aryps\\\\OneDrive\\\\Desktop\\\\proyectow\\\\public\\\\\" -Force)",
+      "PowerShell(Move-Item \"C:\\\\Users\\\\aryps\\\\OneDrive\\\\Desktop\\\\proyectow\\\\panel.html\" \"C:\\\\Users\\\\aryps\\\\OneDrive\\\\Desktop\\\\proyectow\\\\public\\\\\" -Force)",
+      "PowerShell(Move-Item \"C:\\\\Users\\\\aryps\\\\OneDrive\\\\Desktop\\\\proyectow\\\\facturacion.html\" \"C:\\\\Users\\\\aryps\\\\OneDrive\\\\Desktop\\\\proyectow\\\\public\\\\\" -Force)"
+    ]
+  }
+}
