@@ -10,7 +10,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── BASE DE DATOS ──
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: false
+  ssl: process.env.DATABASE_URL ? {
+    rejectUnauthorized: false,
+    checkServerIdentity: () => undefined,
+  } : false
 });
 
 // Inicializar tablas
@@ -144,5 +147,9 @@ app.get('/facturacion', (req, res) => res.sendFile(path.join(__dirname, 'public'
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
-  await initDB();
+  try {
+    await initDB();
+  } catch (err) {
+    console.error('Error al inicializar DB:', err.message);
+  }
 });
