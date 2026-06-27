@@ -203,11 +203,10 @@ app.post('/api/chess/sync', async (req, res) => {
       return res.status(502).json({ error: `Chess respondió ${dataRes.status}` });
     }
 
-    let data;
-    try { data = JSON.parse(dataRes.body); } catch(e) { data = dataRes.body; }
-    console.log('Chess response status:', dataRes.status);
-    console.log('Chess response body:', JSON.stringify(data).slice(0, 500));
-    res.json({ ok: true, data, _raw: dataRes.body.slice(0, 1000) });
+    let parsed;
+    try { parsed = JSON.parse(dataRes.body); } catch(e) { return res.status(502).json({ error: 'Respuesta Chess inválida' }); }
+    const movimientos = parsed.ttresubco || [];
+    res.json({ ok: true, data: movimientos });
 
   } catch (err) {
     console.error('Chess sync error:', err);

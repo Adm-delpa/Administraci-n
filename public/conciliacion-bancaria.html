@@ -690,14 +690,14 @@ async function sincronizarChess(){
       return;
     }
 
-    // Mapear campos Chess → formato interno (ajustar según estructura real)
+    // Mapear campos Chess (ttresubco) → formato interno
     state.chess = movimientos.map(m => ({
-      fecha: m.fecha || m.fechaMovimiento || m.date,
-      haber: parseFloat(m.haber || m.importe || m.amount || 0),
-      codCli: m.codigoCli || m.codCliente || '',
-      nomCli: m.nombreCli || m.razonSocial || '',
-      ref: m.referencia || m.comprobante || ''
-    }));
+      fecha: m.fechamov,
+      haber: parseFloat(m.haber || 0),
+      codCli: m.idcliente ? String(m.idcliente) : '',
+      nomCli: m.nomcli || '',
+      ref: m.dsmovban || m.referencia || ''
+    })).filter(m => m.haber > 0);
 
     const now = Date.now();
     markFileCard('chess', 'Reporte Chess', state.chess.length + ' COBRs (Chess)', now);
