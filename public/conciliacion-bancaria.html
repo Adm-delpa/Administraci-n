@@ -59,6 +59,9 @@ input[type=file]{display:none}
 .btn-export{width:100%;padding:9px;background:#fff;color:#16a34a;border:1.5px solid #22c55e;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:6px}
 .btn-export:hover:not(:disabled){background:#f0fdf4}
 .btn-export:disabled{opacity:.4;cursor:default}
+.btn-chess-sync{width:100%;padding:8px;background:#fff;color:#7c3aed;border:1.5px solid #a78bfa;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:6px}
+.btn-chess-sync:hover{background:#f5f3ff}
+.btn-chess-sync:disabled{opacity:.4;cursor:default}
 
 /* PERIOD LIST */
 .period-list{display:flex;flex-direction:column;gap:2px;padding-bottom:8px}
@@ -263,6 +266,7 @@ tr:hover td{background:#f9fbff}
       </div>
     </button>
     <input type="file" id="f-chess" accept=".xlsx,.xls" onchange="cargarArchivo('chess',this)">
+    <button class="btn-chess-sync" id="btn-chess-sync" onclick="sincronizarChess()">⟳ Importar desde Chess ERP</button>
 
     <button class="file-card" id="btn-banco" onclick="document.getElementById('f-banco').click()">
       <div class="file-card-top">
@@ -660,6 +664,56 @@ function cargarClientes(sucursal,inp){
 }
 
 /* CARGAR CHESS Y BANCO */
+async function sincronizarChess(){
+  const btn = document.getElementById('btn-chess-sync');
+  btn.disabled = true;
+  btn.textContent = '⟳ Conectando con Chess...';
+
+  // Calcular rango: mes actual
+  const hoy = new Date();
+  const desde = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+  const hasta = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+
+  try {
+    const r = await fetch('/api/chess/sync', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ desde, hasta })
+    });
+    const json = await r.json();
+    if (!r.ok) throw new Error(json.error || 'Error desconocido');
+
+    // Convertir respuesta Chess al formato interno
+    const movimientos = json.data;
+    if (!Array.isArray(movimientos) || movimientos.length === 0) {
+      showAlert('alert-info', 'Chess no devolvió movimientos para el período.');
+      return;
+    }
+
+    // Mapear campos Chess → formato interno (ajustar según estructura real)
+    state.chess = movimientos.map(m => ({
+      fecha: m.fecha || m.fechaMovimiento || m.date,
+      haber: parseFloat(m.haber || m.importe || m.amount || 0),
+      codCli: m.codigoCli || m.codCliente || '',
+      nomCli: m.nombreCli || m.razonSocial || '',
+      ref: m.referencia || m.comprobante || ''
+    }));
+
+    const now = Date.now();
+    markFileCard('chess', 'Reporte Chess', state.chess.length + ' COBRs (Chess)', now);
+    document.getElementById('sb-chess').textContent = 'Chess: ' + state.chess.length + ' COBRs';
+    document.getElementById('fname-chess').textContent = `Chess ERP (${desde} → ${hasta})`;
+    document.getElementById('ftime-chess').textContent = fmtTs(now);
+    verificarListo();
+    showAlert('alert-ok', `Chess ERP: ${state.chess.length} movimientos importados (${desde} al ${hasta})`);
+  } catch(e) {
+    showAlert('alert-info', 'Error al importar desde Chess: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⟳ Importar desde Chess ERP';
+  }
+}
+
 function cargarArchivo(tipo,inp){
   var file=inp.files[0]; if(!file) return;
   var now=new Date().toISOString();

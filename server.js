@@ -2,6 +2,8 @@ const express = require('express');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const https = require('https');
+const querystring = require('querystring');
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -136,6 +138,77 @@ app.post('/api/cambiar-password', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: 'Error al cambiar contraseña' });
+  }
+});
+
+// ── CHESS ERP INTEGRATION ──
+
+function httpsRequest(options, body) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+app.post('/api/chess/sync', async (req, res) => {
+  const { desde, hasta } = req.body;
+  if (!desde || !hasta) return res.status(400).json({ error: 'Faltan fechas' });
+
+  const chessUser = process.env.CHESS_USER || 'aldana';
+  const chessPass = process.env.CHESS_PASS;
+  if (!chessPass) return res.status(500).json({ error: 'Credenciales Chess no configuradas (CHESS_PASS)' });
+
+  try {
+    // 1. Login
+    const loginBody = querystring.stringify({ j_username: chessUser, j_password: chessPass });
+    const loginRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: '/AR459/static/auth/j_spring_security_check',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(loginBody),
+        'Referer': 'https://delpalacio.chesserp.com/AR459/',
+        'Origin': 'https://delpalacio.chesserp.com',
+      }
+    }, loginBody);
+
+    // Extraer cookies de sesión
+    const setCookies = loginRes.headers['set-cookie'] || [];
+    const cookies = setCookies.map(c => c.split(';')[0]).join('; ');
+
+    if (!cookies.includes('JSESSIONID')) {
+      return res.status(401).json({ error: 'Login Chess fallido — verificar credenciales' });
+    }
+
+    // 2. Obtener datos bancarios
+    const dataRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: `/AR459/web/api/conciliacionBancaria/obtenerResumenCuenta?pdtdesde=${desde}&pdthasta=${hasta}&pidCtasBco=10`,
+      method: 'GET',
+      headers: {
+        'Cookie': cookies,
+        'Referer': 'https://delpalacio.chesserp.com/AR459/',
+        'Accept': 'application/json',
+      }
+    });
+
+    if (dataRes.status !== 200) {
+      return res.status(502).json({ error: `Chess respondió ${dataRes.status}` });
+    }
+
+    const data = JSON.parse(dataRes.body);
+    res.json({ ok: true, data });
+
+  } catch (err) {
+    console.error('Chess sync error:', err);
+    res.status(500).json({ error: 'Error al conectar con Chess ERP' });
   }
 });
 
