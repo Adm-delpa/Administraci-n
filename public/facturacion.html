@@ -459,7 +459,7 @@ function aplicarFiltro(){
 function renderChips(){
   document.getElementById('mes-chips').innerHTML=chipsFiltrados.map(k=>{
     const d=db[k];const c=d.estado==='completo';
-    return`<div class="mchip ${k===mesActivo?'active':''}" onclick="setMes('${k}')"><span class="sdot ${c?'dg':'da'}"></span>${fP(k)}<span class="del" onclick="event.stopPropagation();borrar('${k}')">×</span></div>`;
+    return`<div class="mchip ${k===mesActivo?'active':''}" onclick="setMes('${k}')"><span class="sdot ${c?'dg':'da'}"></span>${fP(k)}</div>`;
   }).join('');
 }
 
