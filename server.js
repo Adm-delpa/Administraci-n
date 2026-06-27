@@ -203,8 +203,11 @@ app.post('/api/chess/sync', async (req, res) => {
       return res.status(502).json({ error: `Chess respondió ${dataRes.status}` });
     }
 
-    const data = JSON.parse(dataRes.body);
-    res.json({ ok: true, data });
+    let data;
+    try { data = JSON.parse(dataRes.body); } catch(e) { data = dataRes.body; }
+    console.log('Chess response status:', dataRes.status);
+    console.log('Chess response body:', JSON.stringify(data).slice(0, 500));
+    res.json({ ok: true, data, _raw: dataRes.body.slice(0, 1000) });
 
   } catch (err) {
     console.error('Chess sync error:', err);
