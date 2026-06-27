@@ -59,6 +59,11 @@ input[type=file]{display:none}
 .btn-export{width:100%;padding:9px;background:#fff;color:#16a34a;border:1.5px solid #22c55e;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:6px}
 .btn-export:hover:not(:disabled){background:#f0fdf4}
 .btn-export:disabled{opacity:.4;cursor:default}
+.preview-tabs{margin-bottom:0}
+.tab-bar{display:flex;gap:4px;border-bottom:2px solid #e5e7eb;margin-bottom:12px}
+.tab-btn{padding:8px 16px;border:none;background:none;font-size:13px;font-weight:500;color:#666;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;transition:all .15s}
+.tab-btn.active{color:#1a5fc0;border-bottom-color:#1a5fc0}
+.tab-btn:hover:not(.active){color:#333}
 .btn-chess-sync{width:100%;padding:8px;background:#fff;color:#7c3aed;border:1.5px solid #a78bfa;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:6px}
 .btn-chess-sync:hover{background:#f5f3ff}
 .btn-chess-sync:disabled{opacity:.4;cursor:default}
@@ -347,7 +352,54 @@ tr:hover td{background:#f9fbff}
     </div>
   </div>
 
-  <div class="panel">
+  <!-- TABS DE PREVIEW -->
+  <div class="preview-tabs" id="preview-section" style="display:none">
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-btn-conc" onclick="switchTab('conc')">Conciliación</button>
+      <button class="tab-btn" id="tab-btn-chess" onclick="switchTab('chess')">Chess ERP</button>
+      <button class="tab-btn" id="tab-btn-banco" onclick="switchTab('banco')">Extracto bancario</button>
+    </div>
+  </div>
+
+  <!-- PANEL CHESS PREVIEW -->
+  <div class="panel" id="panel-chess-preview" style="display:none">
+    <div class="panel-header">
+      <h3>Datos Chess ERP cargados</h3>
+      <span id="chess-preview-count" style="font-size:12px;color:#666"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:90px">Fecha</th>
+          <th>Descripción</th>
+          <th style="width:110px;text-align:right">Haber</th>
+          <th>Cliente</th>
+          <th style="width:80px">Cód.</th>
+        </tr></thead>
+        <tbody id="chess-preview-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PANEL BANCO PREVIEW -->
+  <div class="panel" id="panel-banco-preview" style="display:none">
+    <div class="panel-header">
+      <h3>Datos Extracto Bancario cargados</h3>
+      <span id="banco-preview-count" style="font-size:12px;color:#666"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:90px">Fecha</th>
+          <th>Descripción</th>
+          <th style="width:110px;text-align:right">Importe</th>
+        </tr></thead>
+        <tbody id="banco-preview-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-conc">
     <div class="panel-header">
       <h3>Registros del período seleccionado</h3>
       <div class="filters">
@@ -790,9 +842,43 @@ function cargarArchivo(tipo,inp){
 }
 
 function verificarListo(){
-  /* Solo requiere Chess + Banco; clientes son opcionales */
   document.getElementById('btn-run').disabled=!(state.chess.length>0&&state.banco.length>0);
+  // Mostrar tabs si hay al menos un archivo cargado
+  var hasDatos = state.chess.length>0 || state.banco.length>0;
+  document.getElementById('preview-section').style.display = hasDatos ? '' : 'none';
+  if(hasDatos) actualizarPreviews();
 }
+
+function switchTab(tab){
+  ['conc','chess','banco'].forEach(function(t){
+    document.getElementById('tab-btn-'+t).classList.toggle('active', t===tab);
+    var panel = t==='conc' ? document.getElementById('panel-conc') : document.getElementById('panel-'+t+'-preview');
+    if(panel) panel.style.display = t===tab ? '' : 'none';
+  });
+}
+
+function actualizarPreviews(){
+  // Chess preview
+  var cb = document.getElementById('chess-preview-body');
+  cb.innerHTML = state.chess.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px">Sin datos Chess cargados</td></tr>'
+    : state.chess.map(function(m){
+        return '<tr><td>'+fmtFecha(m.fecha)+'</td><td style="font-size:12px">'+esc(m.ref)+'</td><td style="text-align:right">'+fmtN(m.haber)+'</td><td style="font-size:12px">'+esc(m.nomCli)+'</td><td>'+esc(m.codCli)+'</td></tr>';
+      }).join('');
+  document.getElementById('chess-preview-count').textContent = state.chess.length + ' registros';
+
+  // Banco preview
+  var bb = document.getElementById('banco-preview-body');
+  bb.innerHTML = state.banco.length === 0
+    ? '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:16px">Sin extracto bancario cargado</td></tr>'
+    : state.banco.map(function(b){
+        return '<tr><td>'+fmtFecha(b.fecha)+'</td><td style="font-size:12px">'+esc(b.desc)+'</td><td style="text-align:right">'+fmtN(b.importe)+'</td></tr>';
+      }).join('');
+  document.getElementById('banco-preview-count').textContent = state.banco.length + ' registros';
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function fmtFecha(f){ return f ? String(f).slice(0,10) : '—'; }
 
 /* PROCESAR */
 async function procesar(){
