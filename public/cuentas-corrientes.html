@@ -515,26 +515,45 @@ async function sincronizarChessCC() {
     const hoy = new Date();
     const fechaStr = hoy.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
 
-    DATA = json.data.map(function(c) {
-      return {
-        codigo: String(c.idcliente || '').replace(/^0+/, ''),
-        cliente: (c.nombre || '').replace(/^\d+\s*-\s*/, ''),
-        saldo: Math.round(parseFloat(c.saltot || 0) * 100) / 100,
-        d7: Math.round(parseFloat(c.saldo7 || 0) * 100) / 100,
-        d15: Math.round(parseFloat(c.saldo15 || 0) * 100) / 100,
-        d30: Math.round(parseFloat(c.saldo30 || 0) * 100) / 100,
-        d60: Math.round(parseFloat(c.saldo60 || 0) * 100) / 100,
-        d60p: Math.round(parseFloat(c.saldomas || 0) * 100) / 100,
-        antiguedad: parseInt(c.diasdeu || 0),
-        cantCbte: parseInt(c.cntcbte || 0),
-        sucursal: c.idSucur === 2 ? 'Dolores' : 'Central',
-        localidad: (c.dsLocalidad || '').replace(/^\w+\s*-\s*/, ''),
-        vendedor: (c.dsperso || '').replace(/^\d+\s*-\s*/, ''),
-        canal: (c.dscanal || '').replace(/^\d+\s*-\s*/, ''),
-        conjuntos: ['Sin conjunto'],
-        grupos: [],
-        multiVendedor: false,
-      };
+    // Agrupar por idcliente y sumar saldos de todas las sucursales
+    var mapaClientes = {};
+    json.data.forEach(function(c) {
+      var id = c.idcliente;
+      if (!id) return;
+      if (!mapaClientes[id]) {
+        mapaClientes[id] = {
+          codigo: String(id).replace(/^0+/, ''),
+          cliente: (c.nombre || '').replace(/^\d+\s*-\s*/, ''),
+          saldo: 0, d7: 0, d15: 0, d30: 0, d60: 0, d60p: 0,
+          antiguedad: 0, cantCbte: 0,
+          sucursal: '', localidad: '',
+          vendedor: (c.dsperso || '').replace(/^\d+\s*-\s*/, ''),
+          canal: (c.dscanal || '').replace(/^\d+\s*-\s*/, ''),
+          conjuntos: ['Sin conjunto'], grupos: [], multiVendedor: false,
+        };
+      }
+      var rec = mapaClientes[id];
+      rec.saldo  += parseFloat(c.saltot  || 0);
+      rec.d7     += parseFloat(c.saldo7  || 0);
+      rec.d15    += parseFloat(c.saldo15 || 0);
+      rec.d30    += parseFloat(c.saldo30 || 0);
+      rec.d60    += parseFloat(c.saldo60 || 0);
+      rec.d60p   += parseFloat(c.saldomas|| 0);
+      rec.antiguedad = Math.max(rec.antiguedad, parseInt(c.diasdeu || 0));
+      rec.cantCbte  += parseInt(c.cntcbte || 0);
+      // Sucursal: mostrar ambas si tiene las dos
+      var suc = c.idSucur === 2 ? 'Dolores' : 'Central';
+      rec.sucursal = rec.sucursal && rec.sucursal !== suc ? 'Central / Dolores' : suc;
+      if (!rec.localidad) rec.localidad = (c.dsLocalidad || '').replace(/^\w+\s*-\s*/, '');
+    });
+    DATA = Object.values(mapaClientes).map(function(r) {
+      r.saldo  = Math.round(r.saldo  * 100) / 100;
+      r.d7     = Math.round(r.d7     * 100) / 100;
+      r.d15    = Math.round(r.d15    * 100) / 100;
+      r.d30    = Math.round(r.d30    * 100) / 100;
+      r.d60    = Math.round(r.d60    * 100) / 100;
+      r.d60p   = Math.round(r.d60p   * 100) / 100;
+      return r;
     }).filter(function(c) { return c.saldo !== 0; });
 
     MULTI = {}; GRUPOS = {}; currentFecha = fechaStr; lastUpdate = Date.now();
