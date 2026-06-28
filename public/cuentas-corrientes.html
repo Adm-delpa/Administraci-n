@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -736,7 +736,11 @@ function riskTrack(r, deuda) {
 function grupoBadge(r) {
   const gs = (r.grupos || []);
   if (!gs.length) return '';
-  return gs.map(g => '<span class="ttw"><span class="badge b-grup" title="Grupo ' + g.id + ': ' + g.nombre + '"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Grp.' + g.id + ' – ' + g.nombre + '</span><span class="ttb">Grupo ' + g.id + ': ' + g.nombre + '</span></span>').join(' ');
+  return gs.map(g => {
+    const idNum = String(parseInt(g.id) || g.id);
+    const nombre = g.nombre.replace(/^\d+\s*-\s*/, '').trim();
+    return '<span class="badge b-grup" style="font-size:11px;font-weight:700" title="G' + idNum + ' - ' + nombre + '">G' + idNum + ' - ' + nombre + '</span>';
+  }).join(' ');
 }
 
 // ── KPIs ──
@@ -816,11 +820,12 @@ function renderDeudTable(data) {
 }
 function renderAcrTable(data) {
   const rows = data.filter(r => r.saldo < 0).sort((a, b) => a.saldo - b.saldo);
-  document.getElementById('acrTitle').textContent = rows.length + ' clientes con saldo acreedor';
-  if (!rows.length) { document.getElementById('acrTable').innerHTML = '<tr><td class="no-results" colspan="6">Sin clientes acreedores.</td></tr>'; return; }
+  const totalAcr = rows.reduce((s, r) => s + r.saldo, 0);
+  document.getElementById('acrTitle').textContent = rows.length + ' clientes con saldo a favor — total: ' + fmt(Math.abs(totalAcr));
+  if (!rows.length) { document.getElementById('acrTable').innerHTML = '<tr><td class="no-results" colspan="5">Sin clientes acreedores.</td></tr>'; return; }
   document.getElementById('acrTable').innerHTML =
-    '<thead><tr><th>Código</th><th>Cliente</th><th>Vendedor</th><th>Localidad</th><th>Saldo a favor</th><th>Antigüedad</th></tr></thead><tbody>' +
-    rows.map(r => '<tr><td><span class="td-cod">' + (r.codigo || '—') + '</span></td><td class="td-cli" style="max-width:240px">' + r.cliente + ' ' + grupoBadge(r) + '</td><td class="td-dim">' + r.vendedor + '</td><td class="td-dim">' + r.localidad + '</td><td class="td-b">' + fmt(Math.abs(r.saldo)) + '</td><td class="' + ac(r.antiguedad) + '">' + r.antiguedad + 'd</td></tr>').join('') + '</tbody>';
+    '<thead><tr><th>Código</th><th>Cliente</th><th>Vendedor</th><th>Localidad</th><th>Saldo a favor</th></tr></thead><tbody>' +
+    rows.map(r => '<tr><td><span class="td-cod">' + (r.codigo || '—') + '</span></td><td class="td-cli" style="max-width:240px">' + r.cliente + ' ' + grupoBadge(r) + '</td><td class="td-dim">' + r.vendedor + '</td><td class="td-dim">' + r.localidad + '</td><td class="td-b">' + fmt(Math.abs(r.saldo)) + '</td></tr>').join('') + '</tbody>';
 }
 function renderVendTable(data) {
   const vm = {};
