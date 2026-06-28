@@ -722,9 +722,9 @@ function riskScore(r) {
 function riskBadge(r, deuda) {
   if (!deuda) return '';
   const rs = riskScore(r);
-  const cls = { alto: 'b-alto', medio: 'b-medio', bajo: 'b-bajo' }[rs];
+  const col = { alto: '#ef4444', medio: '#f59e0b', bajo: '#22c55e' }[rs];
   const lbl = { alto: 'Riesgo alto', medio: 'Riesgo medio', bajo: 'Riesgo bajo' }[rs];
-  return '<span class="badge ' + cls + '">● ' + lbl + '</span>';
+  return '<span title="' + lbl + '" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:' + col + ';vertical-align:middle"></span>';
 }
 function riskTrack(r, deuda) {
   if (!deuda) return '';
@@ -816,7 +816,7 @@ function renderDeudTable(data) {
   if (!rows.length) { document.getElementById('deudTable').innerHTML = '<tr><td class="no-results" colspan="12">Sin resultados para los filtros aplicados.</td></tr>'; return; }
   document.getElementById('deudTable').innerHTML =
     '<thead><tr><th>Código</th><th>Cliente</th><th>Vendedor</th><th>Localidad</th><th>Deuda neta</th><th>7d</th><th>15d</th><th>30d</th><th>60d</th><th>+60d</th><th>Antigüedad</th><th>Riesgo</th></tr></thead><tbody>' +
-    rows.map(r => '<tr><td><span class="td-cod">' + (r.codigo || '—') + '</span></td><td class="td-cli">' + r.cliente + ' ' + grupoBadge(r) + '</td><td class="td-dim" style="max-width:130px">' + r.vendedor + '</td><td class="td-dim" style="max-width:110px">' + r.localidad + '</td><td class="td-r">' + fmt(r.saldo) + '</td><td class="td-dim">' + (r.d7 > 0 ? fmt(r.d7) : '-') + '</td><td class="td-dim">' + (r.d15 > 0 ? fmt(r.d15) : '-') + '</td><td class="td-dim">' + (r.d30 > 0 ? fmt(r.d30) : '-') + '</td><td class="td-dim">' + (r.d60 > 0 ? fmt(r.d60) : '-') + '</td><td class="td-dim">' + (r.d60p > 0 ? fmt(r.d60p) : '-') + '</td><td class="' + ac(r.antiguedad) + '">' + r.antiguedad + 'd</td><td>' + riskBadge(r, r.saldo) + riskTrack(r, r.saldo) + '</td></tr>').join('') + '</tbody>';
+    rows.map(r => '<tr><td><span class="td-cod">' + (r.codigo || '—') + '</span></td><td class="td-cli">' + r.cliente + ' ' + grupoBadge(r) + '</td><td class="td-dim" style="max-width:130px">' + r.vendedor + '</td><td class="td-dim" style="max-width:110px">' + r.localidad + '</td><td class="td-r">' + fmt(r.saldo) + '</td><td class="td-dim">' + (r.d7 > 0 ? fmt(r.d7) : '-') + '</td><td class="td-dim">' + (r.d15 > 0 ? fmt(r.d15) : '-') + '</td><td class="td-dim">' + (r.d30 > 0 ? fmt(r.d30) : '-') + '</td><td class="td-dim">' + (r.d60 > 0 ? fmt(r.d60) : '-') + '</td><td class="td-dim">' + (r.d60p > 0 ? fmt(r.d60p) : '-') + '</td><td class="' + ac(r.antiguedad) + '">' + r.antiguedad + 'd</td><td>' + riskBadge(r, r.saldo) + '</td></tr>').join('') + '</tbody>';
 }
 function renderAcrTable(data) {
   const rows = data.filter(r => r.saldo < 0).sort((a, b) => a.saldo - b.saldo);
