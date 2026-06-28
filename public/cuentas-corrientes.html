@@ -226,11 +226,14 @@ tr:hover td{background:#FAFBFC}
   <div class="import-inner">
     <button class="btn-import" onclick="document.getElementById('fileInput').click()">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Importar Excel / CSV del día
+      Importar Excel / CSV
     </button>
     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="importFile(this)">
-    <span class="import-hint">Cargá el archivo diario — los datos anteriores se reemplazarán.</span>
-    <span id="impSt"></span>
+    <button class="btn-import" id="btn-chess-cc" onclick="sincronizarChessCC()" style="background:#7c3aed">
+      <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Importar desde Chess ERP
+    </button>
+    <span class="import-hint" id="impSt"></span>
   </div>
 </div>
 
@@ -497,6 +500,62 @@ function importFile(input) {
 }
 
 function setSt(msg, type) { const el = document.getElementById('impSt'); el.innerHTML = msg; el.className = 'imp-st imp-' + type; }
+
+async function sincronizarChessCC() {
+  if (!isAdmin) return;
+  const btn = document.getElementById('btn-chess-cc');
+  btn.disabled = true;
+  setSt('Conectando con Chess ERP...', 'loading');
+  try {
+    const r = await fetch('/api/chess/saldos', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+    const json = await r.json();
+    if (!r.ok) throw new Error(json.error || 'Error desconocido');
+
+    // Convertir formato Chess → formato interno de cobranzas
+    const hoy = new Date();
+    const fechaStr = hoy.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+
+    DATA = json.data.map(function(c) {
+      return {
+        codigo: String(c.idcliente || ''),
+        nombre: (c.nombre || '').replace(/^\d+\s*-\s*/, ''),
+        saldo: parseFloat(c.saltot || 0),
+        diasDeuda: parseInt(c.diasdeu || 0),
+        cantCbte: parseInt(c.cntcbte || 0),
+        sucursal: c.idSucur === 2 ? 'Dolores' : 'Central',
+        localidad: (c.dsLocalidad || '').replace(/^\w+\s*-\s*/, ''),
+        saldo7: parseFloat(c.saldo7 || 0),
+        saldo15: parseFloat(c.saldo15 || 0),
+        saldo30: parseFloat(c.saldo30 || 0),
+        saldo60: parseFloat(c.saldo60 || 0),
+        saldoMas: parseFloat(c.saldomas || 0),
+        ruta: (c.dsruta || '').replace(/^\d+\s*-\s*/, ''),
+        vendedor: (c.dsperso || '').replace(/^\d+\s*-\s*/, ''),
+      };
+    }).filter(function(c) { return c.saldo !== 0; });
+
+    MULTI = {}; GRUPOS = {}; currentFecha = fechaStr; lastUpdate = Date.now();
+    filtered = [...DATA]; searchTerm = '';
+    resetFiltersInternal(); rebuildFilters(); render();
+    document.getElementById('fechaBadge') && (document.getElementById('fechaBadge').textContent = 'Al ' + fechaStr);
+    document.getElementById('footerFecha').textContent = 'Datos al ' + fechaStr;
+
+    const payload = { data: DATA, multi: MULTI, grupos: GRUPOS, fecha: fechaStr, _savedAt: new Date().toISOString() };
+    const resp = await fetch('/api/datos/cobranzas', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ periodo: 'current', datos: payload })
+    });
+    if (!resp.ok) throw new Error('Error al guardar');
+    setSt('✓ Chess ERP — ' + DATA.length + ' clientes con saldo', 'ok');
+    actualizarUltimaCarga(new Date().toISOString());
+    document.getElementById('noDatos').style.display = 'none';
+    document.getElementById('mainContent').style.display = '';
+  } catch(e) {
+    setSt('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 function actualizarUltimaCarga(isoStr) {
   const d = new Date(isoStr);

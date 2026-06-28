@@ -214,6 +214,45 @@ app.post('/api/chess/sync', async (req, res) => {
   }
 });
 
+app.post('/api/chess/saldos', async (req, res) => {
+  const chessUser = process.env.CHESS_USER || 'aldana';
+  const chessPass = process.env.CHESS_PASS;
+  if (!chessPass) return res.status(500).json({ error: 'Credenciales Chess no configuradas (CHESS_PASS)' });
+
+  try {
+    const loginBody = querystring.stringify({ j_username: chessUser, j_password: chessPass });
+    const loginRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: '/AR459/static/auth/j_spring_security_check',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(loginBody),
+        'Referer': 'https://delpalacio.chesserp.com/AR459/',
+        'Origin': 'https://delpalacio.chesserp.com',
+      }
+    }, loginBody);
+
+    const setCookies = loginRes.headers['set-cookie'] || [];
+    const cookies = setCookies.map(c => c.split(';')[0]).join('; ');
+    if (!cookies.includes('JSESSIONID')) return res.status(401).json({ error: 'Login Chess fallido' });
+
+    const dataRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: '/AR459/web/api/saldoTotalDeudores/ObtenerSaldoTotalDeudores?pcEmp=0&pcSuc=1,%202&piLineaCredito=1&pdFec=null&pcDocs=-1&plactual=true',
+      method: 'GET',
+      headers: { 'Cookie': cookies, 'Referer': 'https://delpalacio.chesserp.com/AR459/', 'Accept': 'application/json' }
+    });
+
+    let parsed;
+    try { parsed = JSON.parse(dataRes.body); } catch(e) { return res.status(502).json({ error: 'Respuesta Chess inválida' }); }
+    res.json({ ok: true, data: parsed.ttsaldototaldeudores || [] });
+  } catch(err) {
+    console.error('Chess saldos error:', err);
+    res.status(500).json({ error: 'Error al conectar con Chess ERP' });
+  }
+});
+
 // Servir páginas
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/panel', (req, res) => res.sendFile(path.join(__dirname, 'public', 'panel.html')));
