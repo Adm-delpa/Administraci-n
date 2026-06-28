@@ -541,10 +541,22 @@ async function sincronizarChessCC() {
       rec.d60p   += parseFloat(c.saldomas|| 0);
       rec.antiguedad = Math.max(rec.antiguedad, parseInt(c.diasdeu || 0));
       rec.cantCbte  += parseInt(c.cntcbte || 0);
-      // Sucursal: mostrar ambas si tiene las dos
+      // Sucursal
       var suc = c.idSucur === 2 ? 'Dolores' : 'Central';
       rec.sucursal = rec.sucursal && rec.sucursal !== suc ? 'Central / Dolores' : suc;
       if (!rec.localidad) rec.localidad = (c.dsLocalidad || '').replace(/^\w+\s*-\s*/, '');
+      // Grupos/conjuntos
+      var codConj = c.codconj || c.codConjunto || 0;
+      var dsConj  = (c.dsconj  || c.dsConjunto  || '').trim();
+      if (codConj && codConj !== 0 && dsConj && dsConj !== 'SIN CONJUNTO') {
+        var conjId = String(codConj);
+        if (!rec._conjSet) rec._conjSet = new Set();
+        if (!rec._conjSet.has(conjId)) {
+          rec._conjSet.add(conjId);
+          rec.conjuntos.push(conjId);
+          rec.grupos.push({ id: conjId, nombre: dsConj });
+        }
+      }
     });
     DATA = Object.values(mapaClientes).map(function(r) {
       r.saldo  = Math.round(r.saldo  * 100) / 100;
