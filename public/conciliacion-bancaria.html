@@ -64,6 +64,9 @@ input[type=file]{display:none}
 .tab-btn{padding:8px 16px;border:none;background:none;font-size:13px;font-weight:500;color:#666;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit;transition:all .15s}
 .tab-btn.active{color:#1a5fc0;border-bottom-color:#1a5fc0}
 .tab-btn:hover:not(.active){color:#333}
+.chess-sync-row{display:flex;align-items:center;gap:4px;margin-top:6px}
+.chess-date-input{flex:1;padding:5px 6px;border:1.5px solid #d1d5db;border-radius:6px;font-size:11px;font-family:inherit;color:#374151;min-width:0}
+.chess-date-input:focus{outline:none;border-color:#a78bfa}
 .btn-chess-sync{width:100%;padding:8px;background:#fff;color:#7c3aed;border:1.5px solid #a78bfa;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:6px}
 .btn-chess-sync:hover{background:#f5f3ff}
 .btn-chess-sync:disabled{opacity:.4;cursor:default}
@@ -271,6 +274,11 @@ tr:hover td{background:#f9fbff}
       </div>
     </button>
     <input type="file" id="f-chess" accept=".xlsx,.xls" onchange="cargarArchivo('chess',this)">
+    <div class="chess-sync-row">
+      <input type="date" id="chess-desde" class="chess-date-input">
+      <span style="font-size:11px;color:#999">→</span>
+      <input type="date" id="chess-hasta" class="chess-date-input">
+    </div>
     <button class="btn-chess-sync" id="btn-chess-sync" onclick="sincronizarChess()">⟳ Importar desde Chess ERP</button>
 
     <button class="file-card" id="btn-banco" onclick="document.getElementById('f-banco').click()">
@@ -577,6 +585,11 @@ async function init(){
   if(!USER){window.location.href='/';return;}
   document.getElementById('tb-nombre').textContent=USER.nombre||USER.username;
   document.getElementById('tb-rol').textContent=USER.rol==='admin'?'Administrador':'Vista';
+  // Inicializar fechas Chess con el mes actual
+  var hoy=new Date();
+  var yy=hoy.getFullYear(), mm=String(hoy.getMonth()+1).padStart(2,'0'), dd=String(hoy.getDate()).padStart(2,'0');
+  document.getElementById('chess-desde').value=yy+'-'+mm+'-01';
+  document.getElementById('chess-hasta').value=yy+'-'+mm+'-'+dd;
   try{
     await Promise.all([loadClientes(),loadPeriodos()]);
   }catch(e){
@@ -722,9 +735,9 @@ async function sincronizarChess(){
   btn.textContent = '⟳ Conectando con Chess...';
 
   // Calcular rango: mes actual
-  const hoy = new Date();
-  const desde = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
-  const hasta = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  const desde = document.getElementById('chess-desde').value;
+  const hasta = document.getElementById('chess-hasta').value;
+  if (!desde || !hasta) { showAlert('alert-info','Seleccioná las fechas de importación.'); return; }
 
   try {
     const r = await fetch('/api/chess/sync', {
