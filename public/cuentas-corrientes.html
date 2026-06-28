@@ -518,6 +518,7 @@ async function sincronizarChessCC() {
     // Agrupar por idcliente y sumar saldos de todas las sucursales
     var mapaClientes = {};
     json.data.forEach(function(c) {
+      if ((c.dscanal || '').toUpperCase().includes('CLIE PEOPLE')) return;
       var id = c.idcliente;
       if (!id) return;
       if (!mapaClientes[id]) {
