@@ -70,6 +70,13 @@ async function initDB() {
         detalle TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS modulo_visto (
+        username VARCHAR(50) NOT NULL,
+        modulo VARCHAR(50) NOT NULL,
+        last_seen_at TIMESTAMP DEFAULT NOW(),
+        PRIMARY KEY (username, modulo)
+      );
     `);
 
     // Crear usuarios por defecto si no existen
@@ -283,6 +290,56 @@ app.delete('/api/pendientes-acreditacion/:id', async (req, res) => {
     await pool.query('DELETE FROM pendientes_acreditacion WHERE id=$1 AND estado=$2', [id, 'pendiente']);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
+});
+
+// ── NOVEDADES (notificaciones por módulo) ──
+
+app.get('/api/novedades/pendientes', async (req, res) => {
+  const { username } = req.query;
+  if (!username) return res.status(400).json({ error: 'Falta username' });
+  try {
+    // Buscar el last_seen del usuario para este módulo
+    const visto = await pool.query(
+      'SELECT last_seen_at FROM modulo_visto WHERE username=$1 AND modulo=$2',
+      [username, 'pendientes-acreditacion']
+    );
+    const lastSeen = visto.rows.length ? visto.rows[0].last_seen_at : null;
+
+    // Contar items más nuevos que su last_seen (tanto cargados como confirmados)
+    let count = 0;
+    if (!lastSeen) {
+      // Nunca entró: cualquier item es novedad
+      const r = await pool.query('SELECT COUNT(*) FROM pendientes_acreditacion');
+      count = parseInt(r.rows[0].count);
+    } else {
+      const r = await pool.query(
+        `SELECT COUNT(*) FROM pendientes_acreditacion
+         WHERE cargado_at > $1
+            OR (confirmado_at IS NOT NULL AND confirmado_at::timestamp > $1)`,
+        [lastSeen]
+      );
+      count = parseInt(r.rows[0].count);
+    }
+    res.json({ novedades: count });
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error al consultar novedades' });
+  }
+});
+
+app.post('/api/novedades/pendientes/marcar-visto', async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: 'Falta username' });
+  try {
+    await pool.query(
+      `INSERT INTO modulo_visto (username, modulo, last_seen_at) VALUES ($1, $2, NOW())
+       ON CONFLICT (username, modulo) DO UPDATE SET last_seen_at=NOW()`,
+      [username, 'pendientes-acreditacion']
+    );
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: 'Error al marcar visto' });
+  }
 });
 
 // ── ACTIVITY LOG ──

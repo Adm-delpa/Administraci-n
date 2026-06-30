@@ -44,6 +44,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .badge-pronto{background:#F2F1EE;color:#9896A0}
 .modulo-arrow{position:absolute;bottom:1rem;right:1rem;color:#DDDBD6;transition:color .15s}
 .modulo-card:hover .modulo-arrow{color:#1E6FD9}
+.notif-dot{position:absolute;top:.7rem;left:.7rem;background:#E53E3E;color:#fff;border-radius:20px;font-size:10px;font-weight:700;padding:2px 7px;display:none;line-height:1.4}
 
 /* STATS ROW */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:2rem}
@@ -170,8 +171,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     </a>
 
     <!-- PENDIENTES ACREDITACIÓN -->
-    <a href="/pendientes-acreditacion" class="modulo-card">
+    <a href="/pendientes-acreditacion" class="modulo-card" id="card-pendientes">
       <span class="modulo-badge badge-activo">Activo</span>
+      <span class="notif-dot" id="notif-pendientes"></span>
       <div class="modulo-icon" style="background:#FEF3C7">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
@@ -457,6 +459,20 @@ async function crearUsuario(){
     await cargarUsuarios();
   }catch(e){ showMsg('msg-crear','msg-err','Error de conexión.'); }
 }
+
+// ── Notificaciones pendientes ──
+async function checkNovedadesPendientes(){
+  try{
+    const r=await fetch('/api/novedades/pendientes?username='+encodeURIComponent(userData.username));
+    const d=await r.json();
+    const dot=document.getElementById('notif-pendientes');
+    if(d.novedades>0){
+      dot.textContent=d.novedades;
+      dot.style.display='inline-block';
+    }
+  }catch(e){}
+}
+checkNovedadesPendientes();
 </script>
 </body>
 </html>

@@ -232,6 +232,7 @@ async function cargar(){
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 cargar();
+fetch('/api/novedades/pendientes/marcar-visto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:USER.username})}).catch(()=>{});
 </script>
 </body>
 </html>
