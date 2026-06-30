@@ -114,20 +114,32 @@ const hoy = new Date().toISOString().slice(0,10);
 document.getElementById('fil-hasta').value = hoy;
 
 const ICONOS = {
-  login:       {bg:'#DBEAFE',color:'#1D4ED8',svg:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>'},
-  chess_import:{bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'},
-  banco_upload:{bg:'#EDE9FE',color:'#5B21B6',svg:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'},
-  confirmar_sugerido:{bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="20 6 9 17 4 12"/>'},
-  asignar_manual:{bg:'#FEF3C7',color:'#B45309',svg:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/>'},
+  login:               {bg:'#DBEAFE',color:'#1D4ED8',svg:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>'},
+  chess_import:        {bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'},
+  banco_upload:        {bg:'#EDE9FE',color:'#5B21B6',svg:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'},
+  confirmar_sugerido:  {bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="20 6 9 17 4 12"/>'},
+  asignar_manual:      {bg:'#FEF3C7',color:'#B45309',svg:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/>'},
   confirmar_match_pend:{bg:'#FEE2E2',color:'#991B1B',svg:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'},
+  pendiente_cargado:   {bg:'#FEF3C7',color:'#B45309',svg:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'},
+  pendiente_confirmado:{bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="20 6 9 17 4 12"/>'},
+  ticket_creado:       {bg:'#EDE9FE',color:'#5B21B6',svg:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+  ticket_en_proceso:   {bg:'#FEF3C7',color:'#B45309',svg:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'},
+  ticket_nota:         {bg:'#F0F9FF',color:'#0369A1',svg:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
+  ticket_finalizado:   {bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="20 6 9 17 4 12"/>'},
 };
 const ACCION_LABELS = {
-  login:'Ingresó al sistema',
-  chess_import:'Importó Chess ERP',
-  banco_upload:'Subió extracto bancario',
-  confirmar_sugerido:'Confirmó cliente sugerido',
-  asignar_manual:'Asignó cliente manualmente',
+  login:               'Ingresó al sistema',
+  chess_import:        'Importó Chess ERP',
+  banco_upload:        'Subió extracto bancario',
+  confirmar_sugerido:  'Confirmó cliente sugerido',
+  asignar_manual:      'Asignó cliente manualmente',
   confirmar_match_pend:'Confirmó match pendiente',
+  pendiente_cargado:   'Cargó pendiente de acreditación',
+  pendiente_confirmado:'Confirmó acreditación pendiente',
+  ticket_creado:       'Creó un ticket',
+  ticket_en_proceso:   'Pasó ticket a en proceso',
+  ticket_nota:         'Agregó nota en ticket',
+  ticket_finalizado:   'Finalizó un ticket',
 };
 
 function iconoSVG(accion){

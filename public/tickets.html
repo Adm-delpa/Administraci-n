@@ -444,7 +444,8 @@ function selRes(id, val){
 
 async function pasarAProceso(id){
   try{
-    var r=await fetch('/api/tickets/'+id+'/proceso',{method:'PUT'});
+    var r=await fetch('/api/tickets/'+id+'/proceso',{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:USER.username,nombre:USER.nombre})});
     if(r.ok){ await reloadDetail(id); actualizarBadge(id,'en_proceso'); }
   }catch(e){}
 }

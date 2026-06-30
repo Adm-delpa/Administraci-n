@@ -284,6 +284,11 @@ app.post('/api/usuarios/reset-password', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al resetear contraseña' }); }
 });
 
+// helper interno de log
+async function log(username, nombre, accion, detalle) {
+  try { await pool.query('INSERT INTO activity_log (username, nombre, accion, detalle) VALUES ($1,$2,$3,$4)', [username, nombre||null, accion, detalle||null]); } catch(e) {}
+}
+
 // ── PENDIENTES ACREDITACIÓN ──
 
 app.get('/api/pendientes-acreditacion', async (req, res) => {
@@ -301,6 +306,7 @@ app.post('/api/pendientes-acreditacion', async (req, res) => {
       'INSERT INTO pendientes_acreditacion (concepto, importe, detalle, cargado_por, cargado_por_nombre) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [concepto, importe, detalle||null, username, nombre||username]
     );
+    await log(username, nombre, 'pendiente_cargado', `Cargó pendiente: ${concepto} ($${importe})`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al guardar' }); }
 });
@@ -315,6 +321,7 @@ app.put('/api/pendientes-acreditacion/:id/confirmar', async (req, res) => {
       ['confirmado', username, nombre||username, id]
     );
     if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    await log(username, nombre, 'pendiente_confirmado', `Confirmó pendiente #${id}: ${r.rows[0].concepto}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al confirmar' }); }
 });
@@ -366,16 +373,19 @@ app.post('/api/tickets', async (req, res) => {
       [tipo, titulo, descripcion||null, num_cliente||null, nombre_cliente||null,
        alta_nombre||null, alta_telefono||null, alta_direccion||null, alta_localidad||null, alta_rubro||null,
        asignado_a||null, asignado_a_nombre||null, username, nombre||username]);
+    await log(username, nombre, 'ticket_creado', `Creó ticket #${r.rows[0].id}: ${titulo}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al crear ticket' }); }
 });
 
 app.put('/api/tickets/:id/proceso', async (req, res) => {
+  const { username, nombre } = req.body || {};
   try {
     const r = await pool.query(
       `UPDATE tickets SET estado='en_proceso', en_proceso_at=NOW() WHERE id=$1 AND estado='abierto' RETURNING *`,
       [req.params.id]);
     if (!r.rows.length) return res.status(400).json({ error: 'No se puede cambiar estado' });
+    if (username) await log(username, nombre, 'ticket_en_proceso', `Pasó ticket #${req.params.id} a en proceso: ${r.rows[0].titulo}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al actualizar' }); }
 });
@@ -387,6 +397,7 @@ app.post('/api/tickets/:id/notas', async (req, res) => {
     const r = await pool.query(
       'INSERT INTO ticket_notas (ticket_id, texto, autor, autor_nombre) VALUES ($1,$2,$3,$4) RETURNING *',
       [req.params.id, texto, username, nombre||username]);
+    await log(username, nombre, 'ticket_nota', `Agregó nota en ticket #${req.params.id}: ${texto.slice(0,80)}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al guardar nota' }); }
 });
@@ -401,6 +412,8 @@ app.put('/api/tickets/:id/finalizar', async (req, res) => {
        WHERE id=$5 AND estado='en_proceso' RETURNING *`,
       [resuelto, motivo_cierre, username, nombre||username, req.params.id]);
     if (!r.rows.length) return res.status(400).json({ error: 'No se puede finalizar' });
+    const resueltoTxt = resuelto ? 'resuelto' : 'no resuelto';
+    await log(username, nombre, 'ticket_finalizado', `Finalizó ticket #${req.params.id} (${resueltoTxt}): ${motivo_cierre.slice(0,80)}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al finalizar' }); }
 });
