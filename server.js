@@ -77,6 +77,41 @@ async function initDB() {
         last_seen_at TIMESTAMP DEFAULT NOW(),
         PRIMARY KEY (username, modulo)
       );
+
+      CREATE TABLE IF NOT EXISTS tickets (
+        id SERIAL PRIMARY KEY,
+        tipo VARCHAR(50) NOT NULL,
+        titulo VARCHAR(200) NOT NULL,
+        descripcion TEXT,
+        num_cliente VARCHAR(50),
+        nombre_cliente VARCHAR(200),
+        alta_nombre VARCHAR(100),
+        alta_telefono VARCHAR(50),
+        alta_direccion VARCHAR(200),
+        alta_localidad VARCHAR(100),
+        alta_rubro VARCHAR(100),
+        asignado_a VARCHAR(50),
+        asignado_a_nombre VARCHAR(100),
+        cargado_por VARCHAR(50) NOT NULL,
+        cargado_por_nombre VARCHAR(100),
+        cargado_at TIMESTAMP DEFAULT NOW(),
+        estado VARCHAR(20) DEFAULT 'abierto',
+        en_proceso_at TIMESTAMP,
+        resuelto BOOLEAN,
+        motivo_cierre TEXT,
+        cerrado_por VARCHAR(50),
+        cerrado_por_nombre VARCHAR(100),
+        cerrado_at TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS ticket_notas (
+        id SERIAL PRIMARY KEY,
+        ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+        texto TEXT NOT NULL,
+        autor VARCHAR(50) NOT NULL,
+        autor_nombre VARCHAR(100),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
     `);
 
     // Crear usuarios por defecto si no existen
@@ -290,6 +325,91 @@ app.delete('/api/pendientes-acreditacion/:id', async (req, res) => {
     await pool.query('DELETE FROM pendientes_acreditacion WHERE id=$1 AND estado=$2', [id, 'pendiente']);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
+});
+
+// ── TICKETS ──
+
+app.get('/api/tickets', async (req, res) => {
+  const { estado, tipo, asignado } = req.query;
+  try {
+    let where = [];
+    let params = [];
+    if (estado) { params.push(estado); where.push(`estado=$${params.length}`); }
+    if (tipo) { params.push(tipo); where.push(`tipo=$${params.length}`); }
+    if (asignado) { params.push(asignado); where.push(`asignado_a=$${params.length}`); }
+    const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    const r = await pool.query(`SELECT * FROM tickets ${whereClause} ORDER BY cargado_at DESC`, params);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error al leer tickets' }); }
+});
+
+app.get('/api/tickets/:id', async (req, res) => {
+  try {
+    const t = await pool.query('SELECT * FROM tickets WHERE id=$1', [req.params.id]);
+    if (!t.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    const notas = await pool.query('SELECT * FROM ticket_notas WHERE ticket_id=$1 ORDER BY created_at ASC', [req.params.id]);
+    res.json({ ...t.rows[0], notas: notas.rows });
+  } catch(e) { res.status(500).json({ error: 'Error al leer ticket' }); }
+});
+
+app.post('/api/tickets', async (req, res) => {
+  const { tipo, titulo, descripcion, num_cliente, nombre_cliente,
+          alta_nombre, alta_telefono, alta_direccion, alta_localidad, alta_rubro,
+          asignado_a, asignado_a_nombre, username, nombre } = req.body;
+  if (!tipo || !titulo || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(`
+      INSERT INTO tickets (tipo, titulo, descripcion, num_cliente, nombre_cliente,
+        alta_nombre, alta_telefono, alta_direccion, alta_localidad, alta_rubro,
+        asignado_a, asignado_a_nombre, cargado_por, cargado_por_nombre)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      [tipo, titulo, descripcion||null, num_cliente||null, nombre_cliente||null,
+       alta_nombre||null, alta_telefono||null, alta_direccion||null, alta_localidad||null, alta_rubro||null,
+       asignado_a||null, asignado_a_nombre||null, username, nombre||username]);
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al crear ticket' }); }
+});
+
+app.put('/api/tickets/:id/proceso', async (req, res) => {
+  try {
+    const r = await pool.query(
+      `UPDATE tickets SET estado='en_proceso', en_proceso_at=NOW() WHERE id=$1 AND estado='abierto' RETURNING *`,
+      [req.params.id]);
+    if (!r.rows.length) return res.status(400).json({ error: 'No se puede cambiar estado' });
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al actualizar' }); }
+});
+
+app.post('/api/tickets/:id/notas', async (req, res) => {
+  const { texto, username, nombre } = req.body;
+  if (!texto || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO ticket_notas (ticket_id, texto, autor, autor_nombre) VALUES ($1,$2,$3,$4) RETURNING *',
+      [req.params.id, texto, username, nombre||username]);
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al guardar nota' }); }
+});
+
+app.put('/api/tickets/:id/finalizar', async (req, res) => {
+  const { resuelto, motivo_cierre, username, nombre } = req.body;
+  if (resuelto === undefined || !motivo_cierre || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(
+      `UPDATE tickets SET estado='finalizado', resuelto=$1, motivo_cierre=$2,
+       cerrado_por=$3, cerrado_por_nombre=$4, cerrado_at=NOW()
+       WHERE id=$5 AND estado='en_proceso' RETURNING *`,
+      [resuelto, motivo_cierre, username, nombre||username, req.params.id]);
+    if (!r.rows.length) return res.status(400).json({ error: 'No se puede finalizar' });
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al finalizar' }); }
+});
+
+app.get('/api/usuarios-lista', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT username, nombre FROM usuarios ORDER BY nombre ASC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
 });
 
 // ── NOVEDADES (notificaciones por módulo) ──
@@ -516,6 +636,7 @@ app.get('/cuentas-corrientes', (req, res) => res.sendFile(path.join(__dirname, '
 app.get('/conciliacion-bancaria', (req, res) => res.sendFile(path.join(__dirname, 'public', 'conciliacion-bancaria.html')));
 app.get('/actividad', (req, res) => res.sendFile(path.join(__dirname, 'public', 'actividad.html')));
 app.get('/pendientes-acreditacion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pendientes-acreditacion.html')));
+app.get('/tickets', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tickets.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tickets Internos — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;text-decoration:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 10px}
+.topbar-back:hover{background:rgba(255,255,255,.15);color:#fff}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:900px;margin:0 auto;padding:2rem 1rem}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.btn-nuevo{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-nuevo:hover{background:#0D4FA0}
+
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.fil-btn{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #DDDBD6;background:#fff;color:#56555A;font-family:'Inter',sans-serif}
+.fil-btn.active{background:#1E6FD9;color:#fff;border-color:#1E6FD9}
+.fil-sel{padding:5px 10px;border-radius:8px;font-size:12px;border:1.5px solid #DDDBD6;background:#fff;color:#18181A;font-family:'Inter',sans-serif;outline:none}
+
+.form-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:none}
+.form-title{font-size:14px;font-weight:700;margin-bottom:1rem}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.f-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;background:#fff;color:#18181A}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#1E6FD9}
+.field textarea{resize:vertical;min-height:70px;line-height:1.5}
+.alta-section{background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:9px;padding:1rem;margin-top:2px}
+.alta-title{font-size:11px;font-weight:700;color:#166534;margin-bottom:.75rem}
+.form-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.btn-cancel{padding:7px 14px;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.btn-save{padding:7px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.msg-err{background:#FAE0E0;color:#8A1F1F;padding:.4rem .8rem;border-radius:6px;font-size:12px;margin-top:.5rem;display:none}
+
+.tickets-list{display:flex;flex-direction:column;gap:6px}
+.ticket{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.85rem 1rem;cursor:pointer;transition:border-color .15s}
+.ticket:hover{border-color:#1E6FD9}
+.ticket.open{border-color:#1E6FD9;border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none}
+.t-top{display:flex;align-items:flex-start;gap:10px}
+.t-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.dot-reclamo{background:#DC2626}
+.dot-solicitud{background:#7C3AED}
+.dot-alta{background:#059669}
+.dot-otro{background:#9896A0}
+.t-body{flex:1;min-width:0}
+.t-id{font-size:10px;color:#9896A0;font-weight:600;margin-bottom:2px}
+.t-title{font-size:13px;font-weight:600;color:#18181A;margin-bottom:4px}
+.t-meta{font-size:11px;color:#9896A0;display:flex;gap:12px;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.b-abierto{background:#DBEAFE;color:#1D4ED8}
+.b-proceso{background:#FEF3C7;color:#92400E}
+.b-finalizado{background:#D1FAE5;color:#065F46}
+.empty{padding:2.5rem;text-align:center;color:#9896A0;font-size:13px}
+
+.detail{background:#fff;border:1px solid #1E6FD9;border-top:none;border-bottom-left-radius:10px;border-bottom-right-radius:10px;padding:1rem 1.1rem;margin-bottom:6px}
+.d-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin:1rem 0 .4rem}
+.d-section:first-child{margin-top:0}
+.d-row{display:flex;gap:8px;margin-bottom:.2rem;font-size:12px}
+.d-lbl{color:#9896A0;min-width:105px;flex-shrink:0}
+.d-val{color:#18181A;font-weight:600}
+.motivo-box{background:#F8F7F5;border:1px solid #DDDBD6;border-radius:8px;padding:.6rem .8rem;font-size:12px;color:#56555A;line-height:1.6}
+.hr{border:none;border-top:1px solid #F0EEEb;margin:.85rem 0}
+
+.estado-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn-proceso{padding:5px 13px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid #FDE68A;background:#FFFBEB;color:#92400E;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-proceso:hover{background:#FEF3C7}
+.btn-finalizar{padding:5px 13px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid #BBF7D0;background:#F0FDF4;color:#065F46;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-finalizar:hover{background:#D1FAE5}
+
+.notas-list{display:flex;flex-direction:column;gap:8px;margin-bottom:.75rem}
+.nota{display:flex;gap:10px;align-items:flex-start}
+.nota-line{display:flex;flex-direction:column;align-items:center}
+.nota-dot{width:8px;height:8px;border-radius:50%;background:#F59E0B;flex-shrink:0;margin-top:3px}
+.nota-connector{width:1.5px;background:#DDDBD6;flex:1;min-height:14px;margin-top:3px}
+.nota-body{flex:1}
+.nota-meta{font-size:10px;color:#9896A0;margin-bottom:3px;font-weight:600}
+.nota-texto{font-size:12px;color:#56555A;line-height:1.55;background:#F8F7F5;border:1px solid #DDDBD6;border-radius:8px;padding:.5rem .7rem}
+.add-nota-row{display:flex;gap:10px;align-items:flex-start}
+.add-dot{width:8px;height:8px;border-radius:50%;border:2px solid #DDDBD6;flex-shrink:0;margin-top:7px}
+.nota-input{width:100%;padding:.5rem .7rem;border-radius:8px;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;font-size:12px;color:#18181A;resize:none;line-height:1.5}
+.nota-input:focus{outline:none;border-color:#F59E0B}
+.btn-add-nota{padding:4px 13px;border-radius:7px;font-size:11px;font-weight:700;background:#1E6FD9;color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;margin-top:4px;display:block;margin-left:auto}
+
+.fin-form{background:#F8F7F5;border:1px solid #DDDBD6;border-radius:10px;padding:.9rem;margin-top:.75rem;display:none}
+.fin-form.show{display:block}
+.fin-title{font-size:12px;font-weight:700;margin-bottom:.7rem}
+.radio-row{display:flex;gap:8px;margin-bottom:.65rem}
+.ropt{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;border-radius:8px;border:1.5px solid #DDDBD6;background:#fff;cursor:pointer;font-weight:600}
+.ropt.si{background:#D1FAE5;border-color:#6EE7B7;color:#065F46}
+.ropt.no{background:#FAE0E0;border-color:#FECACA;color:#8A1F1F}
+.fin-textarea{width:100%;padding:.5rem .75rem;border-radius:8px;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;font-size:12px;color:#18181A;resize:none;line-height:1.5}
+.fin-textarea:focus{outline:none;border-color:#1E6FD9}
+.fin-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:.65rem}
+
+.cierre-info{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:.65rem .85rem;font-size:12px}
+.cierre-no{background:#FAE0E0;border-color:#FECACA}
+.cierre-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
+.cierre-label-ok{color:#065F46}
+.cierre-label-no{color:#8A1F1F}
+
+@media(max-width:600px){.topbar{padding:.75rem 1rem}.f-grid,.f-grid-3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/panel" class="topbar-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Panel
+    </a>
+    <div class="topbar-titulo">Tickets Internos</div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-title">Tickets internos</div>
+    <button class="btn-nuevo" onclick="toggleForm()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo ticket
+    </button>
+  </div>
+
+  <!-- FORMULARIO NUEVO TICKET -->
+  <div class="form-card" id="form-card">
+    <div class="form-title">Nuevo ticket</div>
+    <div class="f-grid">
+      <div class="field">
+        <label>Tipo</label>
+        <select id="f-tipo" onchange="toggleAltaFields()">
+          <option value="reclamo">Reclamo de cliente</option>
+          <option value="solicitud">Solicitud de cliente</option>
+          <option value="alta_cliente">Alta cliente nuevo</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Asignado a</label>
+        <select id="f-asignado"><option value="">Sin asignar</option></select>
+      </div>
+    </div>
+    <div class="f-grid" id="f-cliente-row">
+      <div class="field"><label>N° cliente <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(si aplica)</span></label><input type="text" id="f-num-cliente" placeholder="Ej: 00087"></div>
+      <div class="field"><label>Nombre del cliente</label><input type="text" id="f-nombre-cliente" placeholder="Ej: Supermercado Rey"></div>
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Título del ticket</label>
+      <input type="text" id="f-titulo" placeholder="Describí brevemente el ticket">
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Motivo / descripción</label>
+      <textarea id="f-desc" placeholder="Detallá el motivo del ticket..."></textarea>
+    </div>
+
+    <div class="alta-section" id="alta-fields" style="display:none">
+      <div class="alta-title">Datos del solicitante (alta de cliente nuevo)</div>
+      <div class="f-grid" style="margin-bottom:8px">
+        <div class="field"><label>Nombre completo</label><input type="text" id="f-alta-nombre" placeholder="Ej: Juan Pérez"></div>
+        <div class="field"><label>Teléfono</label><input type="text" id="f-alta-tel" placeholder="Ej: 11 1234-5678"></div>
+      </div>
+      <div class="f-grid-3">
+        <div class="field" style="grid-column:span 2"><label>Dirección</label><input type="text" id="f-alta-dir" placeholder="Av. San Martín 450"></div>
+        <div class="field"><label>Localidad</label><input type="text" id="f-alta-loc" placeholder="Quilmes"></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label>Rubro</label><input type="text" id="f-alta-rubro" placeholder="Ej: Almacén, kiosco..."></div>
+    </div>
+
+    <div class="msg-err" id="form-err"></div>
+    <div class="form-footer">
+      <button class="btn-cancel" onclick="toggleForm()">Cancelar</button>
+      <button class="btn-save" onclick="crearTicket()">Guardar ticket</button>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters">
+    <button class="fil-btn active" onclick="setFiltro(this,'')">Todos</button>
+    <button class="fil-btn" onclick="setFiltro(this,'abierto')">Abiertos</button>
+    <button class="fil-btn" onclick="setFiltro(this,'en_proceso')">En proceso</button>
+    <button class="fil-btn" onclick="setFiltro(this,'finalizado')">Finalizados</button>
+    <select class="fil-sel" id="fil-tipo" onchange="cargar()">
+      <option value="">Todos los tipos</option>
+      <option value="reclamo">Reclamo</option>
+      <option value="solicitud">Solicitud</option>
+      <option value="alta_cliente">Alta cliente nuevo</option>
+      <option value="otro">Otro</option>
+    </select>
+    <select class="fil-sel" id="fil-asignado" onchange="cargar()">
+      <option value="">Todos los asignados</option>
+    </select>
+  </div>
+
+  <div class="tickets-list" id="tickets-list">
+    <div class="empty">Cargando...</div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) { window.location.href = '/'; }
+document.getElementById('user-nombre').textContent = USER.nombre || USER.username;
+document.getElementById('user-avatar').textContent = (USER.nombre||USER.username).charAt(0).toUpperCase();
+
+var filtroEstado = '';
+var openTicketId = null;
+var usuarios = [];
+
+const TIPO_LABEL = { reclamo:'Reclamo de cliente', solicitud:'Solicitud de cliente', alta_cliente:'Alta cliente nuevo', otro:'Otro' };
+const TIPO_DOT = { reclamo:'dot-reclamo', solicitud:'dot-solicitud', alta_cliente:'dot-alta', otro:'dot-otro' };
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(iso); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+
+async function cargarUsuarios(){
+  try{
+    var r=await fetch('/api/usuarios-lista');
+    usuarios=await r.json();
+    var selF=document.getElementById('fil-asignado');
+    var selA=document.getElementById('f-asignado');
+    usuarios.forEach(function(u){
+      selF.innerHTML+='<option value="'+esc(u.username)+'">'+esc(u.nombre||u.username)+'</option>';
+      selA.innerHTML+='<option value="'+esc(u.username)+'">'+esc(u.nombre||u.username)+'</option>';
+    });
+  }catch(e){}
+}
+
+function setFiltro(btn, estado){
+  document.querySelectorAll('.fil-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  filtroEstado = estado;
+  openTicketId = null;
+  cargar();
+}
+
+async function cargar(){
+  var list = document.getElementById('tickets-list');
+  list.innerHTML = '<div class="empty">Cargando...</div>';
+  var params = new URLSearchParams();
+  if(filtroEstado) params.set('estado', filtroEstado);
+  var tipo = document.getElementById('fil-tipo').value;
+  var asignado = document.getElementById('fil-asignado').value;
+  if(tipo) params.set('tipo', tipo);
+  if(asignado) params.set('asignado', asignado);
+  try{
+    var r = await fetch('/api/tickets?' + params.toString());
+    var tickets = await r.json();
+    if(!tickets.length){ list.innerHTML='<div class="empty">Sin tickets para los filtros seleccionados.</div>'; return; }
+    list.innerHTML = '';
+    tickets.forEach(function(t){
+      var wrap = document.createElement('div');
+      wrap.id = 'wrap-'+t.id;
+      var badgeCls = t.estado==='abierto'?'b-abierto':t.estado==='en_proceso'?'b-proceso':'b-finalizado';
+      var badgeTxt = t.estado==='abierto'?'Abierto':t.estado==='en_proceso'?'En proceso':'Finalizado';
+      wrap.innerHTML = '<div class="ticket" id="ticket-'+t.id+'" onclick="toggleDetail('+t.id+')">'
+        +'<div class="t-top">'
+        +'<div class="t-dot '+TIPO_DOT[t.tipo]+'" title="'+esc(TIPO_LABEL[t.tipo])+'"></div>'
+        +'<div class="t-body">'
+        +'<div class="t-id">#'+t.id+' · '+esc(TIPO_LABEL[t.tipo])+'</div>'
+        +'<div class="t-title">'+esc(t.titulo)+'</div>'
+        +'<div class="t-meta">'
+        +(t.asignado_a_nombre?'<span>Asignado a '+esc(t.asignado_a_nombre)+'</span>':'')
+        +'<span>'+fmtFecha(t.cargado_at)+'</span>'
+        +'<span>Cargado por '+esc(t.cargado_por_nombre||t.cargado_por)+'</span>'
+        +'</div>'
+        +'</div>'
+        +'<span class="badge '+badgeCls+'">'+badgeTxt+'</span>'
+        +'</div>'
+        +'</div>'
+        +'<div class="detail" id="detail-'+t.id+'" style="display:none"></div>';
+      list.appendChild(wrap);
+    });
+    if(openTicketId) toggleDetail(openTicketId, true);
+  }catch(e){
+    list.innerHTML='<div class="empty" style="color:#C0392B">Error al cargar tickets.</div>';
+  }
+}
+
+async function toggleDetail(id, forceOpen){
+  var detailEl = document.getElementById('detail-'+id);
+  var ticketEl = document.getElementById('ticket-'+id);
+  if(!forceOpen && detailEl.style.display==='block'){
+    detailEl.style.display='none';
+    ticketEl.classList.remove('open');
+    openTicketId = null;
+    return;
+  }
+  if(openTicketId && openTicketId!==id){
+    var prev = document.getElementById('detail-'+openTicketId);
+    if(prev){ prev.style.display='none'; document.getElementById('ticket-'+openTicketId).classList.remove('open'); }
+  }
+  openTicketId = id;
+  ticketEl.classList.add('open');
+  detailEl.style.display='block';
+  detailEl.innerHTML='<div style="color:#9896A0;font-size:12px">Cargando...</div>';
+  try{
+    var r = await fetch('/api/tickets/'+id);
+    var t = await r.json();
+    renderDetail(t, detailEl);
+  }catch(e){
+    detailEl.innerHTML='<div style="color:#C0392B;font-size:12px">Error al cargar.</div>';
+  }
+}
+
+function renderDetail(t, el){
+  var badgeCls = t.estado==='abierto'?'b-abierto':t.estado==='en_proceso'?'b-proceso':'b-finalizado';
+  var badgeTxt = t.estado==='abierto'?'Abierto':t.estado==='en_proceso'?'En proceso':'Finalizado';
+
+  var html = '<div class="d-section">Datos del ticket</div>';
+  html += '<div class="d-row"><span class="d-lbl">Estado</span><span class="badge '+badgeCls+'" style="margin-left:0">'+badgeTxt+'</span></div>';
+  if(t.num_cliente) html += '<div class="d-row"><span class="d-lbl">N° cliente</span><span class="d-val">'+esc(t.num_cliente)+'</span></div>';
+  if(t.nombre_cliente) html += '<div class="d-row"><span class="d-lbl">Cliente</span><span class="d-val">'+esc(t.nombre_cliente)+'</span></div>';
+  html += '<div class="d-row"><span class="d-lbl">Asignado a</span><span class="d-val">'+(t.asignado_a_nombre?esc(t.asignado_a_nombre):'<span style="color:#9896A0;font-weight:400">Sin asignar</span>')+'</span></div>';
+  html += '<div class="d-row"><span class="d-lbl">Cargado por</span><span class="d-val">'+esc(t.cargado_por_nombre||t.cargado_por)+' · '+fmtFechaHora(t.cargado_at)+'</span></div>';
+
+  if(t.tipo==='alta_cliente' && (t.alta_nombre||t.alta_telefono||t.alta_direccion)){
+    html += '<div class="d-section">Datos del solicitante</div>';
+    if(t.alta_nombre) html += '<div class="d-row"><span class="d-lbl">Nombre</span><span class="d-val">'+esc(t.alta_nombre)+'</span></div>';
+    if(t.alta_telefono) html += '<div class="d-row"><span class="d-lbl">Teléfono</span><span class="d-val">'+esc(t.alta_telefono)+'</span></div>';
+    if(t.alta_direccion) html += '<div class="d-row"><span class="d-lbl">Dirección</span><span class="d-val">'+esc(t.alta_direccion)+(t.alta_localidad?', '+esc(t.alta_localidad):'')+'</span></div>';
+    if(t.alta_rubro) html += '<div class="d-row"><span class="d-lbl">Rubro</span><span class="d-val">'+esc(t.alta_rubro)+'</span></div>';
+  }
+
+  html += '<div class="d-section">Motivo del ticket</div>';
+  html += '<div class="motivo-box">'+(t.descripcion?esc(t.descripcion):'<span style="color:#9896A0">Sin descripción.</span>')+'</div>';
+
+  html += '<div class="hr"></div>';
+
+  if(t.estado==='abierto'){
+    html += '<div class="estado-bar">'
+      +'<span style="font-size:12px;color:#9896A0">Ticket abierto, sin seguimiento aún.</span>'
+      +'<button class="btn-proceso" onclick="pasarAProceso('+t.id+')">Pasar a en proceso</button>'
+      +'</div>';
+  } else if(t.estado==='en_proceso'){
+    html += '<div class="d-section" style="margin-top:0">Seguimiento</div>';
+    if(t.notas && t.notas.length){
+      html += '<div class="notas-list" id="notas-list-'+t.id+'">';
+      t.notas.forEach(function(n){
+        html += '<div class="nota">'
+          +'<div class="nota-line"><div class="nota-dot"></div><div class="nota-connector"></div></div>'
+          +'<div class="nota-body"><div class="nota-meta">'+esc(n.autor_nombre||n.autor)+' · '+fmtFechaHora(n.created_at)+'</div>'
+          +'<div class="nota-texto">'+esc(n.texto)+'</div></div></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="notas-list" id="notas-list-'+t.id+'"><div style="font-size:12px;color:#9896A0;margin-bottom:.75rem">Sin notas de seguimiento aún.</div></div>';
+    }
+    html += '<div class="add-nota-row">'
+      +'<div class="add-dot"></div>'
+      +'<div style="flex:1">'
+      +'<textarea class="nota-input" id="nota-input-'+t.id+'" rows="2" placeholder="Agregá una nota de seguimiento..."></textarea>'
+      +'<button class="btn-add-nota" onclick="agregarNota('+t.id+')">Agregar nota</button>'
+      +'</div></div>';
+    html += '<div class="fin-form" id="fin-form-'+t.id+'">'
+      +'<div class="fin-title">Cerrar ticket</div>'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.4rem">¿Se resolvió?</div>'
+      +'<div class="radio-row">'
+      +'<div class="ropt" id="opt-si-'+t.id+'" onclick="selRes('+t.id+',true)">✓ Sí, resuelto</div>'
+      +'<div class="ropt" id="opt-no-'+t.id+'" onclick="selRes('+t.id+',false)">✕ No resuelto</div>'
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.4rem">Motivo del cierre</div>'
+      +'<textarea class="fin-textarea" id="fin-motivo-'+t.id+'" rows="2" placeholder="Explicá cómo se resolvió o por qué no fue posible..."></textarea>'
+      +'<div id="fin-err-'+t.id+'" class="msg-err"></div>'
+      +'<div class="fin-btns">'
+      +'<button class="btn-cancel" onclick="cancelarFin('+t.id+')">Cancelar</button>'
+      +'<button class="btn-save" onclick="finalizarTicket('+t.id+')">Confirmar cierre</button>'
+      +'</div></div>';
+    html += '<div style="margin-top:.75rem">'
+      +'<button class="btn-finalizar" id="btn-fin-'+t.id+'" onclick="mostrarFin('+t.id+')">Finalizar ticket</button>'
+      +'</div>';
+  } else {
+    // Finalizado
+    html += '<div class="d-section" style="margin-top:0">Seguimiento</div>';
+    if(t.notas && t.notas.length){
+      html += '<div class="notas-list">';
+      t.notas.forEach(function(n){
+        html += '<div class="nota">'
+          +'<div class="nota-line"><div class="nota-dot"></div><div class="nota-connector"></div></div>'
+          +'<div class="nota-body"><div class="nota-meta">'+esc(n.autor_nombre||n.autor)+' · '+fmtFechaHora(n.created_at)+'</div>'
+          +'<div class="nota-texto">'+esc(n.texto)+'</div></div></div>';
+      });
+      html += '</div>';
+    }
+    var cierreCls = t.resuelto ? 'cierre-info' : 'cierre-info cierre-no';
+    var cierreLblCls = t.resuelto ? 'cierre-label-ok' : 'cierre-label-no';
+    var cierreTxt = t.resuelto ? 'Resuelto' : 'No resuelto';
+    html += '<div class="d-section">Resolución</div>';
+    html += '<div class="'+cierreCls+'">'
+      +'<div class="cierre-label '+cierreLblCls+'">'+cierreTxt+'</div>'
+      +'<div style="font-size:12px;color:#18181A;margin-bottom:.35rem">'+esc(t.motivo_cierre)+'</div>'
+      +'<div style="font-size:11px;color:#9896A0">Cerrado por <strong>'+esc(t.cerrado_por_nombre||t.cerrado_por)+'</strong> · '+fmtFechaHora(t.cerrado_at)+'</div>'
+      +'</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+var resolucionMap = {};
+function selRes(id, val){
+  resolucionMap[id] = val;
+  document.getElementById('opt-si-'+id).className='ropt'+(val===true?' si':'');
+  document.getElementById('opt-no-'+id).className='ropt'+(val===false?' no':'');
+}
+
+async function pasarAProceso(id){
+  try{
+    var r=await fetch('/api/tickets/'+id+'/proceso',{method:'PUT'});
+    if(r.ok){ await reloadDetail(id); actualizarBadge(id,'en_proceso'); }
+  }catch(e){}
+}
+
+async function agregarNota(id){
+  var input=document.getElementById('nota-input-'+id);
+  var texto=input.value.trim();
+  if(!texto) return;
+  try{
+    var r=await fetch('/api/tickets/'+id+'/notas',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({texto,username:USER.username,nombre:USER.nombre})});
+    if(r.ok){
+      var nota=await r.json();
+      var list=document.getElementById('notas-list-'+id);
+      var div=document.createElement('div');
+      div.className='nota';
+      div.innerHTML='<div class="nota-line"><div class="nota-dot"></div><div class="nota-connector"></div></div>'
+        +'<div class="nota-body"><div class="nota-meta">'+esc(nota.autor_nombre||nota.autor)+' · '+fmtFechaHora(nota.created_at)+'</div>'
+        +'<div class="nota-texto">'+esc(nota.texto)+'</div></div>';
+      list.appendChild(div);
+      input.value='';
+    }
+  }catch(e){}
+}
+
+function mostrarFin(id){
+  document.getElementById('fin-form-'+id).classList.add('show');
+  document.getElementById('btn-fin-'+id).style.display='none';
+}
+function cancelarFin(id){
+  document.getElementById('fin-form-'+id).classList.remove('show');
+  document.getElementById('btn-fin-'+id).style.display='inline-block';
+  resolucionMap[id]=undefined;
+  document.getElementById('opt-si-'+id).className='ropt';
+  document.getElementById('opt-no-'+id).className='ropt';
+}
+
+async function finalizarTicket(id){
+  if(resolucionMap[id]===undefined){ showFinErr(id,'Indicá si se resolvió o no.'); return; }
+  var motivo=document.getElementById('fin-motivo-'+id).value.trim();
+  if(!motivo){ showFinErr(id,'Ingresá el motivo del cierre.'); return; }
+  try{
+    var r=await fetch('/api/tickets/'+id+'/finalizar',{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({resuelto:resolucionMap[id],motivo_cierre:motivo,username:USER.username,nombre:USER.nombre})});
+    if(r.ok){ await reloadDetail(id); actualizarBadge(id,'finalizado'); }
+    else{ var d=await r.json(); showFinErr(id,d.error||'Error al finalizar.'); }
+  }catch(e){ showFinErr(id,'Error de conexión.'); }
+}
+function showFinErr(id,msg){ var el=document.getElementById('fin-err-'+id); el.textContent=msg; el.style.display='block'; }
+
+async function reloadDetail(id){
+  var el=document.getElementById('detail-'+id);
+  var r=await fetch('/api/tickets/'+id);
+  var t=await r.json();
+  renderDetail(t,el);
+}
+
+function actualizarBadge(id, estado){
+  var el=document.getElementById('ticket-'+id);
+  if(!el) return;
+  var badgeCls=estado==='abierto'?'b-abierto':estado==='en_proceso'?'b-proceso':'b-finalizado';
+  var badgeTxt=estado==='abierto'?'Abierto':estado==='en_proceso'?'En proceso':'Finalizado';
+  var badge=el.querySelector('.badge');
+  if(badge){ badge.className='badge '+badgeCls; badge.textContent=badgeTxt; }
+}
+
+function toggleForm(){
+  var f=document.getElementById('form-card');
+  f.style.display=f.style.display==='block'?'none':'block';
+  if(f.style.display==='block') document.getElementById('f-titulo').focus();
+}
+function toggleAltaFields(){
+  var tipo=document.getElementById('f-tipo').value;
+  var altaEl=document.getElementById('alta-fields');
+  var cliRow=document.getElementById('f-cliente-row');
+  altaEl.style.display=tipo==='alta_cliente'?'block':'none';
+  cliRow.style.display=tipo==='alta_cliente'?'none':'grid';
+}
+function showErr(msg){ var el=document.getElementById('form-err'); el.textContent=msg; el.style.display=msg?'block':'none'; }
+
+async function crearTicket(){
+  var tipo=document.getElementById('f-tipo').value;
+  var titulo=document.getElementById('f-titulo').value.trim();
+  var desc=document.getElementById('f-desc').value.trim();
+  var sel=document.getElementById('f-asignado');
+  var asignado_a=sel.value;
+  var asignado_a_nombre=sel.options[sel.selectedIndex].text;
+  if(!titulo){ showErr('Ingresá un título.'); return; }
+  var body={tipo,titulo,descripcion:desc||null,username:USER.username,nombre:USER.nombre,
+    asignado_a:asignado_a||null,asignado_a_nombre:asignado_a?asignado_a_nombre:null,
+    num_cliente:document.getElementById('f-num-cliente').value.trim()||null,
+    nombre_cliente:document.getElementById('f-nombre-cliente').value.trim()||null};
+  if(tipo==='alta_cliente'){
+    body.alta_nombre=document.getElementById('f-alta-nombre').value.trim()||null;
+    body.alta_telefono=document.getElementById('f-alta-tel').value.trim()||null;
+    body.alta_direccion=document.getElementById('f-alta-dir').value.trim()||null;
+    body.alta_localidad=document.getElementById('f-alta-loc').value.trim()||null;
+    body.alta_rubro=document.getElementById('f-alta-rubro').value.trim()||null;
+  }
+  try{
+    var r=await fetch('/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var d=await r.json();
+    if(!r.ok){ showErr(d.error||'Error al guardar.'); return; }
+    toggleForm();
+    ['f-titulo','f-desc','f-num-cliente','f-nombre-cliente','f-alta-nombre','f-alta-tel','f-alta-dir','f-alta-loc','f-alta-rubro'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
+    });
+    showErr('');
+    await cargar();
+  }catch(e){ showErr('Error de conexión.'); }
+}
+
+cargarUsuarios();
+cargar();
+</script>
+</body>
+</html>
