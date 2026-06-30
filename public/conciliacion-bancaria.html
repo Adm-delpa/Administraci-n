@@ -940,6 +940,9 @@ async function cargarArchivo(tipo,inp){
         var descUp=desc.toUpperCase();
         if(descUp.indexOf('DEPOSITO CHEQUE')>=0) return;
         if(descUp.indexOf('DEPOSITO POR CAJA CUIT 30566130633')>=0) return;
+        if(descUp.indexOf('REV. IMP.DEBITO')>=0) return;
+        if(descUp.indexOf('REV. IMP.CREDITO')>=0) return;
+        if(descUp.indexOf('REVERSA RETENCION')>=0) return;
         state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
       });
       markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
