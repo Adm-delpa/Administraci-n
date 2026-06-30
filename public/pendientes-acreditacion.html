@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pendientes de Acreditación — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;text-decoration:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 10px;transition:all .15s}
+.topbar-back:hover{background:rgba(255,255,255,.15);color:#fff}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:860px;margin:0 auto;padding:2rem 1rem}
+
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
+.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+
+.btn-nuevo{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-nuevo:hover{background:#0D4FA0}
+
+.form-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;display:none}
+.form-title{font-size:14px;font-weight:700;color:#18181A;margin-bottom:1rem}
+.form-grid{display:grid;grid-template-columns:1fr 160px;gap:10px;margin-bottom:10px}
+.field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .15s;background:#fff;color:#18181A}
+.field input:focus,.field textarea:focus{border-color:#1E6FD9}
+.field textarea{resize:vertical;height:72px;line-height:1.5}
+.form-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.btn-cancel{padding:7px 14px;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.btn-save{padding:7px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-save:hover{background:#0D4FA0}
+
+.section{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden;margin-bottom:1rem}
+.section-header{padding:.65rem 1.1rem;border-bottom:1px solid #F5F5F7;display:flex;align-items:center;gap:6px}
+.section-title{font-size:12px;font-weight:700;color:#18181A}
+.section-count{font-size:11px;color:#9896A0;background:#F2F1EE;padding:1px 8px;border-radius:20px;margin-left:2px}
+
+.item{padding:.9rem 1.1rem;border-bottom:1px solid #F5F5F7;display:flex;align-items:flex-start;gap:14px}
+.item:last-child{border-bottom:none}
+.item-body{flex:1;min-width:0}
+.item-concepto{font-size:13px;font-weight:600;color:#18181A;margin-bottom:3px}
+.item-detalle{font-size:12px;color:#56555A;margin-bottom:4px;line-height:1.45}
+.item-meta{font-size:11px;color:#9896A0}
+.item-meta span{color:#56555A}
+.item-right{flex-shrink:0;text-align:right}
+.item-importe{font-size:14px;font-weight:700;color:#18181A;margin-bottom:6px;white-space:nowrap}
+.btn-confirmar{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:5px 12px;background:#D4F2E8;color:#075C41;border:1px solid #A7E3CC;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-confirmar:hover{background:#A7E3CC}
+.btn-borrar{background:none;border:none;color:#C0392B;font-size:11px;cursor:pointer;padding:4px 6px;margin-top:3px;display:block;margin-left:auto;font-family:'Inter',sans-serif}
+.btn-borrar:hover{text-decoration:underline}
+.badge-confirmado{font-size:11px;padding:4px 10px;background:#D4F2E8;color:#075C41;border-radius:6px;white-space:nowrap}
+.item.confirmado{opacity:.7}
+.empty{padding:2rem;text-align:center;color:#9896A0;font-size:13px}
+.msg-err{background:#FAE0E0;color:#8A1F1F;padding:.5rem .85rem;border-radius:6px;font-size:12px;font-weight:500;margin-top:.5rem;display:none}
+
+@media(max-width:600px){.topbar{padding:.75rem 1rem}.form-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/panel" class="topbar-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Panel
+    </a>
+    <div class="topbar-titulo">Pendientes de Acreditación</div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-title">Pendientes de acreditación</div>
+    <button class="btn-nuevo" onclick="toggleForm()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo pendiente
+    </button>
+  </div>
+
+  <div class="form-card" id="form-card">
+    <div class="form-title">Nuevo pendiente</div>
+    <div class="form-grid">
+      <div class="field"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Ej: NC Quilmes mayo 2026"></div>
+      <div class="field"><label>Importe</label><input type="text" id="f-importe" placeholder="0,00"></div>
+    </div>
+    <div class="field" style="margin-bottom:10px"><label>Detalle <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
+      <textarea id="f-detalle" placeholder="Información adicional, referencia, observaciones..."></textarea>
+    </div>
+    <div class="msg-err" id="form-err"></div>
+    <div class="form-footer">
+      <button class="btn-cancel" onclick="toggleForm()">Cancelar</button>
+      <button class="btn-save" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+
+  <div class="section" id="sec-pendientes">
+    <div class="section-header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span class="section-title">Pendientes</span>
+      <span class="section-count" id="count-pend">0</span>
+    </div>
+    <div id="list-pendientes"><div class="empty">Cargando...</div></div>
+  </div>
+
+  <div class="section" id="sec-confirmados">
+    <div class="section-header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#075C41" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span class="section-title">Confirmados</span>
+      <span class="section-count" id="count-conf">0</span>
+    </div>
+    <div id="list-confirmados"><div class="empty">Sin confirmados aún.</div></div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) { window.location.href = '/'; }
+document.getElementById('user-nombre').textContent = USER.nombre || USER.username;
+document.getElementById('user-avatar').textContent = (USER.nombre||USER.username).charAt(0).toUpperCase();
+
+function fmtImporte(n){ return '$'+parseFloat(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(iso); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+
+function toggleForm(){
+  var f=document.getElementById('form-card');
+  var visible=f.style.display==='block';
+  f.style.display=visible?'none':'block';
+  if(!visible){ document.getElementById('f-concepto').focus(); }
+  if(visible){ document.getElementById('f-concepto').value=''; document.getElementById('f-importe').value=''; document.getElementById('f-detalle').value=''; showErr(''); }
+}
+
+function showErr(msg){ var el=document.getElementById('form-err'); el.textContent=msg; el.style.display=msg?'block':'none'; }
+
+async function guardar(){
+  var concepto=document.getElementById('f-concepto').value.trim();
+  var importeStr=document.getElementById('f-importe').value.trim().replace(/\./g,'').replace(',','.');
+  var detalle=document.getElementById('f-detalle').value.trim();
+  if(!concepto){ showErr('Ingresá un concepto.'); return; }
+  var importe=parseFloat(importeStr);
+  if(isNaN(importe)||importe<=0){ showErr('Ingresá un importe válido.'); return; }
+  try{
+    var r=await fetch('/api/pendientes-acreditacion',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({concepto,importe,detalle:detalle||null,username:USER.username,nombre:USER.nombre})});
+    var d=await r.json();
+    if(!r.ok){ showErr(d.error||'Error al guardar.'); return; }
+    toggleForm();
+    await cargar();
+  }catch(e){ showErr('Error de conexión.'); }
+}
+
+async function confirmar(id){
+  if(!confirm('¿Confirmar esta acreditación?')) return;
+  try{
+    var r=await fetch('/api/pendientes-acreditacion/'+id+'/confirmar',{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:USER.username,nombre:USER.nombre})});
+    if(r.ok) await cargar();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+async function borrar(id){
+  if(!confirm('¿Eliminar este pendiente?')) return;
+  try{
+    var r=await fetch('/api/pendientes-acreditacion/'+id,{method:'DELETE'});
+    if(r.ok) await cargar();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+async function cargar(){
+  try{
+    var r=await fetch('/api/pendientes-acreditacion');
+    var items=await r.json();
+    var pendientes=items.filter(function(i){return i.estado==='pendiente';});
+    var confirmados=items.filter(function(i){return i.estado==='confirmado';});
+
+    document.getElementById('count-pend').textContent=pendientes.length;
+    document.getElementById('count-conf').textContent=confirmados.length;
+
+    var lp=document.getElementById('list-pendientes');
+    lp.innerHTML=pendientes.length===0?'<div class="empty">Sin pendientes.</div>':pendientes.map(function(it){
+      return '<div class="item">'
+        +'<div class="item-body">'
+        +'<div class="item-concepto">'+esc(it.concepto)+'</div>'
+        +(it.detalle?'<div class="item-detalle">'+esc(it.detalle)+'</div>':'')
+        +'<div class="item-meta">Cargado por <span>'+esc(it.cargado_por_nombre||it.cargado_por)+'</span> · '+fmtFechaHora(it.cargado_at)+'</div>'
+        +'</div>'
+        +'<div class="item-right">'
+        +'<div class="item-importe">'+fmtImporte(it.importe)+'</div>'
+        +'<button class="btn-confirmar" onclick="confirmar('+it.id+')">✓ Confirmar</button>'
+        +'<button class="btn-borrar" onclick="borrar('+it.id+')">Eliminar</button>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+    var lc=document.getElementById('list-confirmados');
+    lc.innerHTML=confirmados.length===0?'<div class="empty">Sin confirmados aún.</div>':confirmados.map(function(it){
+      return '<div class="item confirmado">'
+        +'<div class="item-body">'
+        +'<div class="item-concepto">'+esc(it.concepto)+'</div>'
+        +(it.detalle?'<div class="item-detalle">'+esc(it.detalle)+'</div>':'')
+        +'<div class="item-meta">Cargado por <span>'+esc(it.cargado_por_nombre||it.cargado_por)+'</span> · '+fmtFechaHora(it.cargado_at)
+        +' · Confirmado por <span>'+esc(it.confirmado_por_nombre||it.confirmado_por)+'</span> · '+fmtFecha(it.confirmado_at)+'</div>'
+        +'</div>'
+        +'<div class="item-right">'
+        +'<div class="item-importe">'+fmtImporte(it.importe)+'</div>'
+        +'<span class="badge-confirmado">Acreditado</span>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+  }catch(e){
+    document.getElementById('list-pendientes').innerHTML='<div class="empty" style="color:#C0392B">Error al cargar.</div>';
+  }
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+cargar();
+</script>
+</body>
+</html>

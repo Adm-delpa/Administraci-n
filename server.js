@@ -48,6 +48,20 @@ async function initDB() {
         UNIQUE(modulo, periodo)
       );
 
+      CREATE TABLE IF NOT EXISTS pendientes_acreditacion (
+        id SERIAL PRIMARY KEY,
+        concepto VARCHAR(200) NOT NULL,
+        importe NUMERIC(14,2) NOT NULL,
+        detalle TEXT,
+        cargado_por VARCHAR(50) NOT NULL,
+        cargado_por_nombre VARCHAR(100),
+        cargado_at TIMESTAMP DEFAULT NOW(),
+        confirmado_por VARCHAR(50),
+        confirmado_por_nombre VARCHAR(100),
+        confirmado_at DATE,
+        estado VARCHAR(20) DEFAULT 'pendiente'
+      );
+
       CREATE TABLE IF NOT EXISTS activity_log (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) NOT NULL,
@@ -228,6 +242,49 @@ app.post('/api/usuarios/reset-password', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al resetear contraseña' }); }
 });
 
+// ── PENDIENTES ACREDITACIÓN ──
+
+app.get('/api/pendientes-acreditacion', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM pendientes_acreditacion ORDER BY estado ASC, cargado_at DESC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error al leer' }); }
+});
+
+app.post('/api/pendientes-acreditacion', async (req, res) => {
+  const { concepto, importe, detalle, username, nombre } = req.body;
+  if (!concepto || !importe || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO pendientes_acreditacion (concepto, importe, detalle, cargado_por, cargado_por_nombre) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [concepto, importe, detalle||null, username, nombre||username]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al guardar' }); }
+});
+
+app.put('/api/pendientes-acreditacion/:id/confirmar', async (req, res) => {
+  const { username, nombre } = req.body;
+  const { id } = req.params;
+  if (!username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(
+      'UPDATE pendientes_acreditacion SET estado=$1, confirmado_por=$2, confirmado_por_nombre=$3, confirmado_at=CURRENT_DATE WHERE id=$4 RETURNING *',
+      ['confirmado', username, nombre||username, id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al confirmar' }); }
+});
+
+app.delete('/api/pendientes-acreditacion/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM pendientes_acreditacion WHERE id=$1 AND estado=$2', [id, 'pendiente']);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
+});
+
 // ── ACTIVITY LOG ──
 
 app.post('/api/log', async (req, res) => {
@@ -401,6 +458,7 @@ app.get('/facturacion', (req, res) => res.sendFile(path.join(__dirname, 'public'
 app.get('/cuentas-corrientes', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cuentas-corrientes.html')));
 app.get('/conciliacion-bancaria', (req, res) => res.sendFile(path.join(__dirname, 'public', 'conciliacion-bancaria.html')));
 app.get('/actividad', (req, res) => res.sendFile(path.join(__dirname, 'public', 'actividad.html')));
+app.get('/pendientes-acreditacion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pendientes-acreditacion.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
