@@ -165,7 +165,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <div class="field"><label>N° cliente <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(si aplica)</span></label><input type="text" id="f-num-cliente" placeholder="Ej: 00087"></div>
       <div class="field"><label>Nombre del cliente</label><input type="text" id="f-nombre-cliente" placeholder="Ej: Supermercado Rey"></div>
     </div>
-    <div class="field" style="margin-bottom:10px">
+    <div class="field" style="margin-bottom:10px" id="f-titulo-row">
       <label>Título del ticket</label>
       <input type="text" id="f-titulo" placeholder="Describí brevemente el ticket">
     </div>
@@ -500,21 +500,27 @@ function toggleForm(){
 }
 function toggleAltaFields(){
   var tipo=document.getElementById('f-tipo').value;
-  var altaEl=document.getElementById('alta-fields');
-  var cliRow=document.getElementById('f-cliente-row');
-  altaEl.style.display=tipo==='alta_cliente'?'block':'none';
-  cliRow.style.display=tipo==='alta_cliente'?'none':'grid';
+  var esAlta=tipo==='alta_cliente';
+  document.getElementById('alta-fields').style.display=esAlta?'block':'none';
+  document.getElementById('f-cliente-row').style.display=esAlta?'none':'grid';
+  document.getElementById('f-titulo-row').style.display=esAlta?'none':'block';
 }
 function showErr(msg){ var el=document.getElementById('form-err'); el.textContent=msg; el.style.display=msg?'block':'none'; }
 
 async function crearTicket(){
   var tipo=document.getElementById('f-tipo').value;
-  var titulo=document.getElementById('f-titulo').value.trim();
   var desc=document.getElementById('f-desc').value.trim();
   var sel=document.getElementById('f-asignado');
   var asignado_a=sel.value;
   var asignado_a_nombre=sel.options[sel.selectedIndex].text;
-  if(!titulo){ showErr('Ingresá un título.'); return; }
+  var titulo;
+  if(tipo==='alta_cliente'){
+    var altaNombre=document.getElementById('f-alta-nombre').value.trim();
+    titulo='Alta cliente nuevo'+(altaNombre?' — '+altaNombre:'');
+  } else {
+    titulo=document.getElementById('f-titulo').value.trim();
+    if(!titulo){ showErr('Ingresá un título.'); return; }
+  }
   var body={tipo,titulo,descripcion:desc||null,username:USER.username,nombre:USER.nombre,
     asignado_a:asignado_a||null,asignado_a_nombre:asignado_a?asignado_a_nombre:null,
     num_cliente:document.getElementById('f-num-cliente').value.trim()||null,
