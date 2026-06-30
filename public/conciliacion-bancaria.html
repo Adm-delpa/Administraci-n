@@ -1420,11 +1420,18 @@ function calcStats(){
 }
 
 /* TABLA */
+var DESC_EXCLUIDAS=['REV. IMP.DEBITO','REV. IMP.CREDITO','REVERSA RETENCION','DEPOSITO CHEQUE','DEPOSITO POR CAJA CUIT 30566130633'];
+function estaExcluida(desc){
+  var d=(desc||'').toUpperCase();
+  return DESC_EXCLUIDAS.some(function(x){return d.indexOf(x)>=0;});
+}
+
 function filtrar(){
   var resultados=(state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[];
   var est=document.getElementById('fil-est').value;
   var q=(document.getElementById('fil-q').value||'').toLowerCase();
   state.filtradas=resultados.filter(function(r){
+    if(estaExcluida(r.desc)) return false;
     if(est==='CONC_ALL'){if(r.nivel!=='N1'&&r.nivel!=='MAN'&&r.nivel!=='CONC') return false;}
     else if(est&&r.nivel!==est) return false;
     if(q){
