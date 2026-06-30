@@ -9,6 +9,60 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── MIDDLEWARE DE ACTIVIDAD AUTOMÁTICA ──
+// Mapeo de rutas → descripción legible. Nuevos módulos solo necesitan agregarse aquí.
+const ROUTE_LABELS = {
+  'POST /api/login':                            null, // login se registra por separado con accion 'login'
+  'POST /api/log':                              null, // evitar recursión
+  'POST /api/pendientes-acreditacion':          { accion: 'pendiente_cargado',    label: (b) => `Cargó pendiente: ${b.concepto} ($${b.importe})` },
+  'PUT /api/pendientes-acreditacion/:id/confirmar': { accion: 'pendiente_confirmado', label: (b,p) => `Confirmó pendiente #${p.id}` },
+  'POST /api/tickets':                          { accion: 'ticket_creado',         label: (b) => `Creó ticket: ${b.titulo}` },
+  'PUT /api/tickets/:id/proceso':               { accion: 'ticket_en_proceso',     label: (b,p) => `Pasó ticket #${p.id} a en proceso` },
+  'POST /api/tickets/:id/notas':                { accion: 'ticket_nota',           label: (b,p) => `Nota en ticket #${p.id}: ${(b.texto||'').slice(0,80)}` },
+  'PUT /api/tickets/:id/finalizar':             { accion: 'ticket_finalizado',     label: (b,p) => `Finalizó ticket #${p.id} (${b.resuelto?'resuelto':'no resuelto'})` },
+};
+
+function matchRoute(method, url) {
+  const path = url.split('?')[0];
+  for (const key of Object.keys(ROUTE_LABELS)) {
+    const [m, pattern] = key.split(' ');
+    if (m !== method) continue;
+    const regex = new RegExp('^' + pattern.replace(/:[^/]+/g, '([^/]+)') + '$');
+    const match = path.match(regex);
+    if (match) {
+      const paramNames = [...pattern.matchAll(/:([^/]+)/g)].map(x => x[1]);
+      const params = {};
+      paramNames.forEach((n, i) => { params[n] = match[i + 1]; });
+      return { config: ROUTE_LABELS[key], params };
+    }
+  }
+  return null;
+}
+
+app.use((req, res, next) => {
+  if (!['POST','PUT','DELETE'].includes(req.method)) return next();
+  const matched = matchRoute(req.method, req.url);
+  if (!matched || matched.config === null) return next();
+  const { config, params } = matched;
+  const origJson = res.json.bind(res);
+  res.json = function(data) {
+    if (res.statusCode < 300) {
+      const body = req.body || {};
+      const username = body.username || body.adminUsername;
+      const nombre = body.nombre || null;
+      if (username && config) {
+        try {
+          const detalle = config.label(body, params);
+          pool.query('INSERT INTO activity_log (username, nombre, accion, detalle) VALUES ($1,$2,$3,$4)',
+            [username, nombre, config.accion, detalle]).catch(() => {});
+        } catch(e) {}
+      }
+    }
+    return origJson(data);
+  };
+  next();
+});
+
 // ── BASE DE DATOS ──
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -306,7 +360,6 @@ app.post('/api/pendientes-acreditacion', async (req, res) => {
       'INSERT INTO pendientes_acreditacion (concepto, importe, detalle, cargado_por, cargado_por_nombre) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [concepto, importe, detalle||null, username, nombre||username]
     );
-    await log(username, nombre, 'pendiente_cargado', `Cargó pendiente: ${concepto} ($${importe})`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al guardar' }); }
 });
@@ -321,7 +374,6 @@ app.put('/api/pendientes-acreditacion/:id/confirmar', async (req, res) => {
       ['confirmado', username, nombre||username, id]
     );
     if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
-    await log(username, nombre, 'pendiente_confirmado', `Confirmó pendiente #${id}: ${r.rows[0].concepto}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al confirmar' }); }
 });
@@ -373,7 +425,6 @@ app.post('/api/tickets', async (req, res) => {
       [tipo, titulo, descripcion||null, num_cliente||null, nombre_cliente||null,
        alta_nombre||null, alta_telefono||null, alta_direccion||null, alta_localidad||null, alta_rubro||null,
        asignado_a||null, asignado_a_nombre||null, username, nombre||username]);
-    await log(username, nombre, 'ticket_creado', `Creó ticket #${r.rows[0].id}: ${titulo}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al crear ticket' }); }
 });
@@ -385,7 +436,6 @@ app.put('/api/tickets/:id/proceso', async (req, res) => {
       `UPDATE tickets SET estado='en_proceso', en_proceso_at=NOW() WHERE id=$1 AND estado='abierto' RETURNING *`,
       [req.params.id]);
     if (!r.rows.length) return res.status(400).json({ error: 'No se puede cambiar estado' });
-    if (username) await log(username, nombre, 'ticket_en_proceso', `Pasó ticket #${req.params.id} a en proceso: ${r.rows[0].titulo}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al actualizar' }); }
 });
@@ -397,7 +447,6 @@ app.post('/api/tickets/:id/notas', async (req, res) => {
     const r = await pool.query(
       'INSERT INTO ticket_notas (ticket_id, texto, autor, autor_nombre) VALUES ($1,$2,$3,$4) RETURNING *',
       [req.params.id, texto, username, nombre||username]);
-    await log(username, nombre, 'ticket_nota', `Agregó nota en ticket #${req.params.id}: ${texto.slice(0,80)}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al guardar nota' }); }
 });
@@ -412,8 +461,6 @@ app.put('/api/tickets/:id/finalizar', async (req, res) => {
        WHERE id=$5 AND estado='en_proceso' RETURNING *`,
       [resuelto, motivo_cierre, username, nombre||username, req.params.id]);
     if (!r.rows.length) return res.status(400).json({ error: 'No se puede finalizar' });
-    const resueltoTxt = resuelto ? 'resuelto' : 'no resuelto';
-    await log(username, nombre, 'ticket_finalizado', `Finalizó ticket #${req.params.id} (${resueltoTxt}): ${motivo_cierre.slice(0,80)}`);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al finalizar' }); }
 });
