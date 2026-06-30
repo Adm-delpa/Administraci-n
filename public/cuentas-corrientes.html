@@ -224,7 +224,7 @@ tr:hover td{background:#FAFBFC}
 <!-- IMPORT BAR (solo admin) -->
 <div class="import-bar" id="importBar" style="display:none">
   <div class="import-inner">
-    <button class="btn-import" onclick="document.getElementById('fileInput').click()">
+    <button class="btn-import" id="btn-excel" onclick="document.getElementById('fileInput').click()">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Importar Excel / CSV
     </button>
@@ -275,7 +275,7 @@ tr:hover td{background:#FAFBFC}
     <div class="fg"><label>Localidad</label><input class="f-input" id="fLoc" list="dlLoc" placeholder="Todas…" oninput="applyFilters()"><datalist id="dlLoc"></datalist></div>
     <div class="fg"><label>Cliente</label><input class="f-input" id="fCli" list="dlCli" placeholder="Buscar cliente…" oninput="applyFilters()"><datalist id="dlCli"></datalist></div>
     <div class="fg"><label>Código</label><input class="f-input" id="fCod" list="dlCod" placeholder="Ej: 1354" oninput="applyFilters()"><datalist id="dlCod"></datalist></div>
-    <div class="fg"><label>Grupo</label><input class="f-input" id="fConj" list="dlConj" placeholder="Nombre o N°…" oninput="applyFilters()"><datalist id="dlConj"></datalist></div>
+    <div class="fg"><label>Grupo</label><select class="f-input" id="fConj" onchange="applyFilters()" style="cursor:pointer"><option value="">Todos los grupos</option></select></div>
     <button class="btn-reset" onclick="resetFilters()">↺ Limpiar</button>
     <span class="f-info" id="filterInfo"></span>
   </div>
@@ -411,16 +411,27 @@ tr:hover td{background:#FAFBFC}
 // ── AUTH ──
 const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!userData) { window.location.href = '/'; }
-const isAdmin = userData && userData.rol === 'admin';
+const _rolMod = userData && userData.modulos ? userData.modulos['cuentas-corrientes'] : (userData && userData.rol === 'admin' ? 'admin' : 'vista');
+if (userData && userData.modulos && !_rolMod) { window.location.href = '/panel'; }
+const isAdmin = _rolMod === 'admin';
 const nombre = userData ? (userData.nombre || userData.username) : '';
 document.getElementById('topbar-user').innerHTML =
   nombre + ' · <span class="rol-badge ' + (isAdmin ? 'rol-admin' : 'rol-vista') + '">' + (isAdmin ? 'Admin' : 'Vista') + '</span>';
-if (isAdmin) document.getElementById('importBar').style.display = '';
+document.getElementById('importBar').style.display = '';
+if (!isAdmin) document.getElementById('btn-excel').style.display = 'none';
 
 // ── ESTADO ──
 var DATA = [], MULTI = {}, GRUPOS = [], filtered = [], charts = {};
 var currentFecha = '—', lastUpdate = null, vendSortKey = 'deuda';
 var CONJ_NAMES = {};
+function buildConjNames(data){
+  // Desde GRUPOS global (tiene los nombres de Chess)
+  (GRUPOS||[]).forEach(function(g){ if(g.id&&g.nombre) CONJ_NAMES[String(g.id)]=g.nombre; });
+  // Desde cada fila de DATA como fallback
+  data.forEach(function(r){
+    (r.grupos||[]).forEach(function(g){ if(g.id&&g.nombre&&g.nombre!=='Grupo '+g.id) CONJ_NAMES[String(g.id)]=g.nombre; });
+  });
+}
 var searchTerm = '';
 
 // ── FORMATO ──
@@ -446,17 +457,6 @@ function showAlert(msg, type) {
 function checkFreshness() {
   if (!lastUpdate) {
     showAlert('⚠ <strong>Sin datos:</strong> Aún no se importó ningún archivo.', 'warn');
-    return;
-  }
-  const mins = Math.round((Date.now() - lastUpdate) / 60000);
-  const hora = new Date(lastUpdate).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  const fecha = new Date(lastUpdate).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  if (mins < 120) {
-    showAlert('✓ <strong>Datos actualizados.</strong> Última importación: hoy a las ' + hora + ' (hace ' + mins + ' min) — Datos al ' + currentFecha, 'ok');
-  } else if (mins < 1440) {
-    showAlert('⚠ <strong>Atención:</strong> Última importación hoy a las ' + hora + ' (hace ' + mins + ' min). Verificá si hay un archivo más reciente.', 'warn');
-  } else {
-    showAlert('⚠ <strong>Atención:</strong> La última importación fue el ' + fecha + ' a las ' + hora + '. Puede haber datos más recientes.', 'warn');
   }
 }
 
@@ -475,6 +475,7 @@ function importFile(input) {
       if (!res) { setSt('Error: formato no reconocido.', 'err'); return; }
       DATA = res.data; MULTI = res.multi; GRUPOS = res.grupos; currentFecha = res.fecha;
       lastUpdate = Date.now();
+      buildConjNames(DATA);
       filtered = [...DATA]; searchTerm = '';
       resetFiltersInternal(); rebuildFilters(); render();
       document.getElementById('fechaBadge') && (document.getElementById('fechaBadge').textContent = 'Al ' + currentFecha);
@@ -502,12 +503,11 @@ function importFile(input) {
 function setSt(msg, type) { const el = document.getElementById('impSt'); el.innerHTML = msg; el.className = 'imp-st imp-' + type; }
 
 async function sincronizarChessCC() {
-  if (!isAdmin) return;
   const btn = document.getElementById('btn-chess-cc');
   btn.disabled = true;
   setSt('Conectando con Chess ERP...', 'loading');
   try {
-    const r = await fetch('/api/chess/saldos', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+    const r = await fetch('/api/chess/saldos', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username:userData?.username,nombre:userData?.nombre}) });
     const json = await r.json();
     if (!r.ok) throw new Error(json.error || 'Error desconocido');
 
@@ -569,7 +569,21 @@ async function sincronizarChessCC() {
       return r;
     }).filter(function(c) { return c.saldo !== 0; });
 
-    MULTI = {}; GRUPOS = {}; currentFecha = fechaStr; lastUpdate = Date.now();
+    MULTI = {};
+    var gmapCC = {};
+    DATA.forEach(function(r) {
+      (r.grupos || []).forEach(function(g) {
+        if (!gmapCC[g.id]) gmapCC[g.id] = { id: g.id, nombre: g.nombre, clientes: [] };
+        gmapCC[g.id].clientes.push({ codigo: r.codigo, cliente: r.cliente, vendedor: r.vendedor, saldo: r.saldo });
+      });
+    });
+    GRUPOS = Object.values(gmapCC).map(function(g) {
+      g.clientes.sort(function(a, b) { return b.saldo - a.saldo; });
+      g.deudaTotal = g.clientes.filter(function(c) { return c.saldo > 0; }).reduce(function(s, c) { return s + c.saldo; }, 0);
+      g.acreedorTotal = g.clientes.filter(function(c) { return c.saldo < 0; }).reduce(function(s, c) { return s + c.saldo; }, 0);
+      return g;
+    }).sort(function(a, b) { return b.deudaTotal - a.deudaTotal; });
+    currentFecha = fechaStr; lastUpdate = Date.now();
     filtered = [...DATA]; searchTerm = '';
     resetFiltersInternal(); rebuildFilters(); render();
     document.getElementById('fechaBadge') && (document.getElementById('fechaBadge').textContent = 'Al ' + fechaStr);
@@ -687,12 +701,20 @@ function rebuildFilters() {
   popDL('dlCli', unique(DATA, 'cliente'));
   popDL('dlCod', [...new Set(DATA.map(r => r.codigo).filter(Boolean))].sort((a, b) => Number(a) - Number(b)));
   const allConj = [...new Set(DATA.flatMap(r => r.conjuntos || []))].filter(c => c !== 'Sin conjunto').sort((a, b) => Number(a) - Number(b));
-  const dl = document.getElementById('dlConj'); if (dl) dl.innerHTML = allConj.map(c => '<option value="' + c + '">' + (CONJ_NAMES[c] ? CONJ_NAMES[c] + ' (' + c + ')' : c) + '</option>').join('');
+  const sel = document.getElementById('fConj');
+  if (sel && sel.tagName === 'SELECT') {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Todos los grupos</option>' + allConj.map(c => {
+      var nm = (CONJ_NAMES[c] || '').replace(/^\d+\s*-\s*/, '');
+      return '<option value="' + c + '">' + c + (nm ? ' - ' + nm : '') + '</option>';
+    }).join('');
+    if (cur) sel.value = cur;
+  }
 }
 function applyFilters() {
   const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
   const mSuc = g('fSuc'), mVend = g('fVend'), mLoc = g('fLoc'), mCli = g('fCli'), mCod = g('fCod'), conjRaw = g('fConj');
-  const mConj = conjRaw ? (Object.entries(CONJ_NAMES).find(([, nm]) => nm.toLowerCase() === conjRaw.toLowerCase()) || [conjRaw])[0] : '';
+  const mConj = conjRaw ? (conjRaw.match(/^(\d+)/)||[,''])[1] || conjRaw : '';
   filtered = DATA.filter(r => {
     if (mSuc && !r.sucursal.toLowerCase().includes(mSuc.toLowerCase())) return false;
     if (mVend && !r.vendedor.toLowerCase().includes(mVend.toLowerCase())) return false;
@@ -898,6 +920,7 @@ async function bootDashboard() {
         DATA = saved.data; MULTI = saved.multi || {}; GRUPOS = saved.grupos || [];
         currentFecha = saved.fecha || '—';
         lastUpdate = saved._savedAt ? new Date(saved._savedAt).getTime() : null;
+        buildConjNames(DATA);
         filtered = [...DATA];
         document.getElementById('footerFecha').textContent = 'Datos al ' + currentFecha;
         rebuildFilters(); render();

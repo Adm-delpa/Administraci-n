@@ -16,7 +16,9 @@ const ROUTE_LABELS = {
   'POST /api/log':                              null, // evitar recursión
   'POST /api/pendientes-acreditacion':          { accion: 'pendiente_cargado',    label: (b) => `Cargó pendiente: ${b.concepto} ($${b.importe})` },
   'PUT /api/pendientes-acreditacion/:id/confirmar': { accion: 'pendiente_confirmado', label: (b,p) => `Confirmó pendiente #${p.id}` },
-  'POST /api/tickets':                          { accion: 'ticket_creado',         label: (b) => `Creó ticket: ${b.titulo}` },
+  'POST /api/chess/saldos':                     { accion: 'chess_cc_import',        label: () => `Importó saldos desde Chess ERP (cuentas corrientes)` },
+  'POST /api/chess/sync':                       { accion: 'chess_import',           label: (b) => `Importó Chess ERP (${b.desde} al ${b.hasta})` },
+  'POST /api/tickets':                          { accion: 'ticket_creado',          label: (b) => `Creó ticket: ${b.titulo}` },
   'PUT /api/tickets/:id/proceso':               { accion: 'ticket_en_proceso',     label: (b,p) => `Pasó ticket #${p.id} a en proceso` },
   'POST /api/tickets/:id/notas':                { accion: 'ticket_nota',           label: (b,p) => `Nota en ticket #${p.id}: ${(b.texto||'').slice(0,80)}` },
   'PUT /api/tickets/:id/finalizar':             { accion: 'ticket_finalizado',     label: (b,p) => `Finalizó ticket #${p.id} (${b.resuelto?'resuelto':'no resuelto'})` },
