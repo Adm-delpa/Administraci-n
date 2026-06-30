@@ -231,8 +231,8 @@ const TIPO_LABEL = { reclamo:'Reclamo de cliente', solicitud:'Solicitud de clien
 const TIPO_DOT = { reclamo:'dot-reclamo', solicitud:'dot-solicitud', alta_cliente:'dot-alta', otro:'dot-otro' };
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(iso); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
-function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T')); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+function fmtFecha(iso){ if(!iso) return '—'; var s=String(iso).replace(' ','T'); if(s.length>10) s=s.slice(0,10); var d=new Date(s+'T12:00:00'); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 
 async function cargarUsuarios(){
   try{
