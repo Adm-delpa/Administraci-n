@@ -376,7 +376,10 @@ tr:hover td{background:#f9fbff}
   <div class="panel" id="panel-chess-preview" style="display:none">
     <div class="panel-header">
       <h3>Datos Chess ERP cargados</h3>
-      <span id="chess-preview-count" style="font-size:12px;color:#666"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="text" id="chess-preview-q" placeholder="Buscar cliente, código..." style="padding:4px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;width:200px;outline:none" oninput="filtrarChessPreview()">
+        <span id="chess-preview-count" style="font-size:12px;color:#666"></span>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table>
@@ -1008,6 +1011,18 @@ function actualizarPreviews(){
   document.getElementById('banco-preview-count').textContent = state.banco.length + ' registros';
 }
 
+function filtrarChessPreview(){
+  var q=(document.getElementById('chess-preview-q').value||'').toLowerCase().trim();
+  var rows=document.querySelectorAll('#chess-preview-body tr');
+  var vis=0;
+  rows.forEach(function(tr){
+    var txt=tr.textContent.toLowerCase();
+    var show=!q||txt.indexOf(q)>=0;
+    tr.style.display=show?'':'none';
+    if(show) vis++;
+  });
+  document.getElementById('chess-preview-count').textContent=(q?vis+' de ':'')+state.chess.length+' registros';
+}
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 function fmtFecha(f){ return f ? String(f).slice(0,10) : '—'; }
 
