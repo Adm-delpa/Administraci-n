@@ -730,7 +730,6 @@ function selectPeriodo(ym){
     if(d.banco&&d.banco.length>0){
       bancoRecup=d.banco;
     } else if(d.resultados&&d.resultados.length>0){
-      // Reconstruir banco desde resultados guardados
       bancoRecup=d.resultados.map(function(r){return {fecha:r.fecha,desc:r.desc,importe:r.importe};});
     }
     if(bancoRecup.length>0){
@@ -739,6 +738,12 @@ function selectPeriodo(ym){
       verificarSecuencias(bancoRecup);
       verificarListo();
     }
+  }
+  if(d&&d.chess&&d.chess.length>0){
+    state.chess=mergeChess(state.chess,d.chess);
+    markFileCard('chess','Reporte Chess',state.chess.length+' COBRs (guardado)',null);
+    document.getElementById('sb-chess').textContent='Chess: '+state.chess.length+' COBRs';
+    verificarListo();
   }
   calcStats(); filtrar();
 }
@@ -827,7 +832,7 @@ async function sincronizarChess(){
 
     // Mapear campos Chess (ttresubco) → formato interno
     // Solo COBRANZA CREDITO BANCARIO
-    state.chess = movimientos
+    var nuevosChess = movimientos
       .filter(m => String(m.dsmovban || '').trim().toUpperCase() === 'COBRANZA CREDITO BANCARIO')
       .map(m => ({
         fecha: m.fechamov,
@@ -837,14 +842,18 @@ async function sincronizarChess(){
         ref: m.dsmovban || m.referencia || ''
       })).filter(m => m.haber > 0);
 
+    var prevLen = state.chess.length;
+    state.chess = mergeChess(state.chess, nuevosChess);
+    var agregados = state.chess.length - prevLen;
+
     const now = Date.now();
     markFileCard('chess', 'Reporte Chess', state.chess.length + ' COBRs (Chess)', now);
     document.getElementById('sb-chess').textContent = 'Chess: ' + state.chess.length + ' COBRs';
     document.getElementById('fname-chess').textContent = `Chess ERP (${desde} → ${hasta})`;
     document.getElementById('ftime-chess').textContent = fmtTs(now);
     verificarListo();
-    showAlert('alert-ok', `Chess ERP: ${state.chess.length} movimientos importados (${desde} al ${hasta})`);
-    registrarAccion('chess_import','Importó Chess ERP: '+state.chess.length+' movimientos ('+desde+' al '+hasta+')');
+    showAlert('alert-ok', `Chess ERP: ${agregados} nuevos movimientos agregados (${desde} al ${hasta}). Total: ${state.chess.length}`);
+    registrarAccion('chess_import','Importó Chess ERP: '+agregados+' nuevos movimientos ('+desde+' al '+hasta+')');
     if(state.banco.length>0) await procesar();
   } catch(e) {
     showAlert('alert-info', 'Error al importar desde Chess: ' + e.message);
@@ -875,7 +884,7 @@ async function cargarArchivo(tipo,inp){
       var colRef=buscarCol(data[0],['referencia','ref']);
       var colHaber=buscarCol(data[0],['haber','credito','credit']);
       var colNum=buscarCol(data[0],['numero','nro','num','número']);
-      state.chess=[];
+      var nuevosChessXls=[];
       data.forEach(function(r){
         if(String(r[colTipo]||'').trim().toUpperCase()!=='COBR') return;
         var refStr=String(r[colRef]||'');
@@ -884,13 +893,16 @@ async function cargarArchivo(tipo,inp){
         var nomCli=m?m[2].trim():'';
         var haber=parseFloat(String(r[colHaber]||'0').replace(/[^\d.,-]/g,'').replace(',','.'));
         if(isNaN(haber)||haber<=0) return;
-        state.chess.push({fecha:parseFecha(r[colFecha]),haber:haber,codCli:codCli,nomCli:nomCli,ref:refStr});
+        nuevosChessXls.push({fecha:parseFecha(r[colFecha]),haber:haber,codCli:codCli,nomCli:nomCli,ref:refStr});
       });
+      var prevLenXls=state.chess.length;
+      state.chess=mergeChess(state.chess,nuevosChessXls);
+      var agregadosXls=state.chess.length-prevLenXls;
       markFileCard('chess','Reporte Chess',state.chess.length+' COBRs cargados',now);
       document.getElementById('sb-chess').textContent='Chess: '+state.chess.length+' COBRs';
       document.getElementById('fname-chess').textContent=file.name;
       document.getElementById('ftime-chess').textContent=fmtTs(now);
-      toast('Chess cargado: '+state.chess.length+' COBRs','ok-t');
+      toast('Chess: '+agregadosXls+' nuevos movimientos agregados. Total: '+state.chess.length,'ok-t');
     } else {
       state.checksumBanco=cs;
       // Formato fijo banco: filas 0-1 = títulos, fila 2 = encabezados reales
@@ -996,7 +1008,7 @@ function actualizarPreviews(){
   var cb = document.getElementById('chess-preview-body');
   cb.innerHTML = state.chess.length === 0
     ? '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px">Sin datos Chess cargados</td></tr>'
-    : state.chess.map(function(m){
+    : state.chess.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');}).map(function(m){
         return '<tr><td>'+fmtFecha(m.fecha)+'</td><td style="font-size:12px">'+esc(m.ref)+'</td><td style="text-align:right">'+fmtN(m.haber)+'</td><td style="font-size:12px">'+esc(m.nomCli)+'</td><td>'+esc(m.codCli)+'</td></tr>';
       }).join('');
   document.getElementById('chess-preview-count').textContent = state.chess.length + ' registros';
@@ -1009,6 +1021,12 @@ function actualizarPreviews(){
         return '<tr><td>'+fmtFecha(b.fecha)+'</td><td style="font-size:12px">'+esc(b.desc)+'</td><td style="text-align:right">'+fmtN(b.importe)+'</td></tr>';
       }).join('');
   document.getElementById('banco-preview-count').textContent = state.banco.length + ' registros';
+}
+
+function mergeChess(existentes, nuevos){
+  var keys=new Set(existentes.map(function(m){return m.fecha+'|'+m.haber+'|'+m.codCli;}));
+  var agregados=nuevos.filter(function(m){return !keys.has(m.fecha+'|'+m.haber+'|'+m.codCli);});
+  return existentes.concat(agregados);
 }
 
 function filtrarChessPreview(){
@@ -1090,7 +1108,7 @@ async function confirmarMatchPendiente(i){
     state.periodos[state.periodoActivo]._savedAt=savedAt;
     await fetch('/api/datos/conciliacion',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco}})
+      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco,chess:state.chess}})
     });
     await guardarPendientes();
     registrarAccion('confirmar_match_pend','Confirmó match pendiente de '+(cliInfo?cliInfo.n:p.cod)+' ($'+fmtNum(p.imp)+')');
@@ -1338,11 +1356,11 @@ async function procesar(){
     });
     var merged=Object.values(fpMap);
     var savedAt=new Date().toISOString();
-    state.periodos[periodo]={resultados:merged,_savedAt:savedAt,banco:state.banco.slice()};
+    state.periodos[periodo]={resultados:merged,_savedAt:savedAt,banco:state.banco.slice(),chess:state.chess.slice()};
     try{
       await fetch('/api/datos/conciliacion',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({periodo:periodo,datos:{resultados:merged,_savedAt:savedAt,banco:state.banco}})
+        body:JSON.stringify({periodo:periodo,datos:{resultados:merged,_savedAt:savedAt,banco:state.banco,chess:state.chess}})
       });
     }catch(e){toast('Error al guardar '+periodo,'err-t');}
   }
@@ -1512,7 +1530,7 @@ async function confirmarPend(gi){
     state.periodos[state.periodoActivo]._savedAt=savedAt;
     await fetch('/api/datos/conciliacion',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt}})
+      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco,chess:state.chess}})
     });
     toast('Conciliado: '+(r.nomCli||r.codCli||r.desc),'ok-t');
   }catch(e){toast('Error al guardar','err-t');}
@@ -1530,7 +1548,7 @@ async function confirmarSugerido(gi){
     var savedAt=new Date().toISOString();
     state.periodos[state.periodoActivo]._savedAt=savedAt;
     await fetch('/api/datos/conciliacion',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco}})});
+      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco,chess:state.chess}})});
     registrarAccion('confirmar_sugerido','Confirmó cliente sugerido '+r.nomCli+' ('+r.codCli+') en movimiento $'+fmtNum(r.importe)+' del '+r.fecha);
     toast('Confirmado: '+r.nomCli,'ok-t');
   }catch(e){toast('Error al guardar','err-t');}
