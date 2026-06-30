@@ -122,7 +122,7 @@ select:focus,input[type=text]:focus{outline:none;border-color:#4a6fa5}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{background:#f8f9fb;padding:8px 11px;text-align:left;font-weight:700;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #eee;white-space:nowrap}
-td{padding:8px 11px;border-bottom:1px solid #f5f5f7;vertical-align:middle}
+td{padding:5px 11px;border-bottom:1px solid #f5f5f7;vertical-align:top;padding-top:8px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#f9fbff}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
@@ -257,23 +257,12 @@ tr:hover td{background:#f9fbff}
 
     <div class="sec-label" style="margin-top:4px">Archivos de conciliación</div>
 
-    <button class="file-card" id="btn-chess" onclick="document.getElementById('f-chess').click()">
-      <div class="file-card-top">
-        <div class="file-card-icon">♞</div>
-        <div class="file-card-info">
-          <div class="file-card-title">Reporte Chess</div>
-          <div class="file-card-hint" id="hint-chess">Click para cargar Excel</div>
-        </div>
-        <div class="file-card-badge">
-          <svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg>
-        </div>
-      </div>
-      <div class="file-card-meta">
-        <div class="file-card-name" id="fname-chess">—</div>
-        <div class="file-card-time" id="ftime-chess">—</div>
-      </div>
-    </button>
-    <input type="file" id="f-chess" accept=".xlsx,.xls" onchange="cargarArchivo('chess',this)">
+    <div id="btn-chess" style="display:none">
+      <div id="hint-chess"></div>
+      <div id="fname-chess"></div>
+      <div id="ftime-chess"></div>
+    </div>
+    <input type="file" id="f-chess" accept=".xlsx,.xls" onchange="cargarArchivo('chess',this)" style="display:none">
     <div class="chess-sync-row">
       <input type="date" id="chess-desde" class="chess-date-input">
       <span style="font-size:11px;color:#999">→</span>
@@ -300,8 +289,13 @@ tr:hover td{background:#f9fbff}
     <input type="file" id="f-banco" accept=".xlsx,.xls,.csv" onchange="cargarArchivo('banco',this)">
 
     <div style="margin-top:12px">
-      <button class="btn-process" id="btn-run" onclick="procesar()" disabled>▶ Procesar y guardar</button>
-      <button class="btn-export" id="btn-export" onclick="exportar()" disabled>⬇ Exportar período</button>
+      <button class="btn-process" id="btn-run" onclick="procesar()" disabled style="display:none"></button>
+      <button class="btn-export" id="btn-export" onclick="exportar()" disabled style="display:none"></button>
+    </div>
+
+    <div class="divider"></div>
+    <div style="padding:0 4px">
+      <button onclick="abrirModalPendientes()" id="btn-pendientes" style="width:100%;padding:7px;background:#4f3aa0;color:#c4b5fd;border:1.5px solid #6d4dc7;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;text-align:left">⏳ Pendientes (<span id="pend-count">0</span>)</button>
     </div>
 
     <div class="divider"></div>
@@ -336,6 +330,10 @@ tr:hover td{background:#f9fbff}
     <span class="ico">✓</span>
     <span id="alert-ok-txt"></span>
   </div>
+  <div class="alert err" id="alert-seq" style="display:none">
+    <span class="ico">⚠</span>
+    <span id="alert-seq-txt"></span>
+  </div>
 
   <div class="stats-row">
     <div class="stat n">
@@ -344,7 +342,7 @@ tr:hover td{background:#f9fbff}
       <div class="sub2">acreditaciones</div>
     </div>
     <div class="stat g">
-      <div class="lbl">Confirmados N1</div>
+      <div class="lbl">Conciliado</div>
       <div class="val" id="st-conf">—</div>
       <div class="monto" id="st-conf-m"></div>
     </div>
@@ -353,10 +351,15 @@ tr:hover td{background:#f9fbff}
       <div class="val" id="st-nc">—</div>
       <div class="monto" id="st-nc-m"></div>
     </div>
-    <div class="stat y">
+    <div class="stat y" id="stat-n2-card" style="display:none">
       <div class="lbl">Probables N2</div>
       <div class="val" id="st-n2">—</div>
       <div class="monto" id="st-n2-m"></div>
+    </div>
+    <div class="stat r" id="stat-pend-card" style="display:none">
+      <div class="lbl">Pend. liquidación</div>
+      <div class="val" id="st-pend">—</div>
+      <div class="monto" id="st-pend-m"></div>
     </div>
   </div>
 
@@ -413,10 +416,9 @@ tr:hover td{background:#f9fbff}
       <div class="filters">
         <select id="fil-est" onchange="filtrar()">
           <option value="">Todos los estados</option>
-          <option value="N1">N1 — Confirmado</option>
-          <option value="N2">N2 — Probable</option>
+          <option value="CONC_ALL">Conciliado</option>
           <option value="NC">No conciliado</option>
-          <option value="MAN">Asignado manual</option>
+          <option value="PEND">Pendiente de liquidación</option>
         </select>
         <input type="text" id="fil-q" placeholder="Cliente, importe, descripción..." style="width:220px" oninput="filtrar()">
         <span id="fil-count" style="font-size:11px;color:#aaa"></span>
@@ -432,7 +434,7 @@ tr:hover td{background:#f9fbff}
             <th style="width:200px">Cliente</th>
             <th style="width:60px">Cód.</th>
             <th style="width:110px">CUIT</th>
-            <th style="width:115px">Estado</th>
+            <th style="width:200px">Estado</th>
             <th style="width:70px"></th>
           </tr>
         </thead>
@@ -482,6 +484,34 @@ tr:hover td{background:#f9fbff}
 <div class="loading-overlay" id="loading"><div class="spinner"></div><div style="font-size:12px;color:#666">Guardando...</div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Modal pendientes de liquidación -->
+<div class="modal-bg" id="modal-pend" onclick="if(event.target===this)cerrarModalPendientes()">
+  <div class="modal" style="width:500px">
+    <div class="modal-head">
+      <div><h3>Pendientes de liquidación</h3><div class="minfo">Clientes que transfirieron pero aún no se liquidaron</div></div>
+      <button class="modal-close" onclick="cerrarModalPendientes()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div style="flex:1">
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">Cód. cliente</div>
+          <input type="text" id="mp-cod" placeholder="ej. 1234" onkeydown="if(event.key==='Enter')document.getElementById('mp-imp').focus()" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1.5px solid #3a3f5c;border-radius:7px;background:#1e2235;color:#e2e8f0;font-size:13px;outline:none">
+        </div>
+        <div style="flex:2">
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">Importe</div>
+          <input type="text" id="mp-imp" placeholder="ej. 50000" onkeydown="if(event.key==='Enter')mpAgregar()" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1.5px solid #3a3f5c;border-radius:7px;background:#1e2235;color:#e2e8f0;font-size:13px;outline:none">
+        </div>
+        <button onclick="mpAgregar()" style="padding:7px 14px;background:#6d28d9;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">+ Agregar</button>
+      </div>
+      <div id="mp-list" style="flex:1;overflow-y:auto;max-height:320px;border:1px solid #2a3050;border-radius:8px;padding:4px 0"></div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="cerrarModalPendientes()" style="padding:8px 18px;background:none;border:1.5px solid #3a3f5c;color:#94a3b8;border-radius:7px;font-size:13px;cursor:pointer">Cancelar</button>
+      <button onclick="mpGuardar()" style="padding:8px 18px;background:#6d28d9;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var USER = null;
 var state = {
@@ -491,7 +521,8 @@ var state = {
   periodos: {},
   periodoActivo: null,
   filtradas: [], pagina: 0, POR_PAG: 100,
-  modalIdx: null, clienteSel: null
+  modalIdx: null, clienteSel: null,
+  pendientes: []
 };
 
 /* UTILS */
@@ -565,6 +596,10 @@ function toast(msg,type){
 }
 function loading(show){ document.getElementById('loading').classList[show?'add':'remove']('show'); }
 function logout(){ sessionStorage.clear(); window.location.href='/'; }
+function registrarAccion(accion,detalle){
+  if(!USER) return;
+  fetch('/api/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:USER.username,nombre:USER.nombre,accion:accion,detalle:detalle||null})}).catch(function(){});
+}
 
 function leerExcel(file){
   return new Promise(function(res,rej){
@@ -583,15 +618,18 @@ function leerExcel(file){
 async function init(){
   USER=JSON.parse(sessionStorage.getItem('user')||'null');
   if(!USER){window.location.href='/';return;}
+  var _rolMod=USER.modulos?USER.modulos['conciliacion-bancaria']:(USER.rol==='admin'?'admin':'vista');
+  if(USER.modulos&&!_rolMod){window.location.href='/panel';return;}
+  var isAdmin=_rolMod==='admin';
   document.getElementById('tb-nombre').textContent=USER.nombre||USER.username;
-  document.getElementById('tb-rol').textContent=USER.rol==='admin'?'Administrador':'Vista';
+  document.getElementById('tb-rol').textContent=isAdmin?'Administrador':'Vista';
   // Inicializar fechas Chess con el mes actual
   var hoy=new Date();
   var yy=hoy.getFullYear(), mm=String(hoy.getMonth()+1).padStart(2,'0'), dd=String(hoy.getDate()).padStart(2,'0');
   document.getElementById('chess-desde').value=yy+'-'+mm+'-01';
   document.getElementById('chess-hasta').value=yy+'-'+mm+'-'+dd;
   try{
-    await Promise.all([loadClientes(),loadPeriodos()]);
+    await Promise.all([loadClientes(),loadPeriodos(),cargarPendientes()]);
   }catch(e){
     showAlert('alert-dup','Error al conectar con el servidor: '+e.message);
   }
@@ -650,11 +688,23 @@ function renderPeriodList(){
   if(!keys.length){list.innerHTML='<div class="no-periods">Sin períodos guardados aún</div>';return;}
   list.innerHTML=keys.map(function(k){
     var cnt=(state.periodos[k].resultados||[]).length;
-    return '<button class="period-btn'+(state.periodoActivo===k?' active':'')+'" onclick="selectPeriodo(\''+k+'\')">'
+    return '<div style="display:flex;align-items:center;gap:4px">'
+      +'<button class="period-btn'+(state.periodoActivo===k?' active':'')+'" onclick="selectPeriodo(\''+k+'\')" style="flex:1">'
       +'<span>'+fmtPeriodo(k)+'</span>'
       +'<span class="pcount">'+cnt+'</span>'
-      +'</button>';
+      +'</button>'
+      +'<button onclick="borrarPeriodo(\''+k+'\')" title="Borrar período" style="flex-shrink:0;background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:12px;line-height:1">✕</button>'
+      +'</div>';
   }).join('');
+}
+
+async function borrarPeriodo(ym){
+  if(!confirm('¿Borrar el período '+fmtPeriodo(ym)+'? Esta acción no se puede deshacer.')) return;
+  await fetch('/api/datos/conciliacion/'+ym,{method:'DELETE'});
+  delete state.periodos[ym];
+  if(state.periodoActivo===ym){ state.periodoActivo=null; document.getElementById('main-panel').style.display='none'; }
+  renderPeriodList();
+  toast('Período '+fmtPeriodo(ym)+' eliminado','ok-t');
 }
 
 function selectPeriodo(ym){
@@ -670,6 +720,23 @@ function selectPeriodo(ym){
     'Última actualización: '+savedAt.toLocaleDateString('es-AR')+' a las '+savedAt.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):
     '';
   document.getElementById('btn-export').disabled=false;
+  // Restaurar banco guardado si no hay uno cargado en memoria
+  var d=state.periodos[ym];
+  if(state.banco.length===0&&d){
+    var bancoRecup=[];
+    if(d.banco&&d.banco.length>0){
+      bancoRecup=d.banco;
+    } else if(d.resultados&&d.resultados.length>0){
+      // Reconstruir banco desde resultados guardados
+      bancoRecup=d.resultados.map(function(r){return {fecha:r.fecha,desc:r.desc,importe:r.importe};});
+    }
+    if(bancoRecup.length>0){
+      state.banco=bancoRecup;
+      markFileCard('banco','Extracto bancario',bancoRecup.length+' acreditaciones (período guardado)',null);
+      verificarSecuencias(bancoRecup);
+      verificarListo();
+    }
+  }
   calcStats(); filtrar();
 }
 
@@ -756,13 +823,16 @@ async function sincronizarChess(){
     }
 
     // Mapear campos Chess (ttresubco) → formato interno
-    state.chess = movimientos.map(m => ({
-      fecha: m.fechamov,
-      haber: parseFloat(m.haber || 0),
-      codCli: m.idcliente ? String(m.idcliente) : '',
-      nomCli: m.nomcli || '',
-      ref: m.dsmovban || m.referencia || ''
-    })).filter(m => m.haber > 0);
+    // Solo COBRANZA CREDITO BANCARIO
+    state.chess = movimientos
+      .filter(m => String(m.dsmovban || '').trim().toUpperCase() === 'COBRANZA CREDITO BANCARIO')
+      .map(m => ({
+        fecha: m.fechamov,
+        haber: parseFloat(m.haber || 0),
+        codCli: m.idcliente ? String(m.idcliente) : '',
+        nomCli: m.nomcli || '',
+        ref: m.dsmovban || m.referencia || ''
+      })).filter(m => m.haber > 0);
 
     const now = Date.now();
     markFileCard('chess', 'Reporte Chess', state.chess.length + ' COBRs (Chess)', now);
@@ -771,6 +841,8 @@ async function sincronizarChess(){
     document.getElementById('ftime-chess').textContent = fmtTs(now);
     verificarListo();
     showAlert('alert-ok', `Chess ERP: ${state.chess.length} movimientos importados (${desde} al ${hasta})`);
+    registrarAccion('chess_import','Importó Chess ERP: '+state.chess.length+' movimientos ('+desde+' al '+hasta+')');
+    if(state.banco.length>0) await procesar();
   } catch(e) {
     showAlert('alert-info', 'Error al importar desde Chess: ' + e.message);
   } finally {
@@ -779,10 +851,10 @@ async function sincronizarChess(){
   }
 }
 
-function cargarArchivo(tipo,inp){
+async function cargarArchivo(tipo,inp){
   var file=inp.files[0]; if(!file) return;
   var now=new Date().toISOString();
-  leerExcel(file).then(function(raw){
+  leerExcel(file).then(async function(raw){
     var cs=checksum(raw);
     if(cs===(tipo==='chess'?state.checksumChess:state.checksumBanco)){
       toast('Este archivo ya fue cargado (contenido idéntico)','err-t');
@@ -818,40 +890,86 @@ function cargarArchivo(tipo,inp){
       toast('Chess cargado: '+state.chess.length+' COBRs','ok-t');
     } else {
       state.checksumBanco=cs;
-      var colFB=buscarCol(raw[0],['fecha','date']);
-      var colDesc=buscarCol(raw[0],['descrip','detalle','concepto','desc']);
-      var colImp=buscarCol(raw[0],['importe','monto','credito','haber','credit','amount']);
-      if(!colFB||!colImp){
-        var hidx=0;
-        for(var i=0;i<Math.min(raw.length,10);i++){
-          var v2=Object.values(raw[i]||{}).map(function(v){return String(v||'').toLowerCase();});
-          if(v2.some(function(v){return v==='fecha'||v==='importe'||v==='date';})){hidx=i;break;}
-        }
-        var ckeys=Object.keys(raw[hidx]||{});
-        raw=raw.slice(hidx+1).map(function(r2){
-          var obj={};
-          ckeys.forEach(function(k){obj[String(raw[hidx][k]||k)]=r2[k];});
-          return obj;
-        });
-        colFB=buscarCol(raw[0],['fecha','date']);
-        colDesc=buscarCol(raw[0],['descrip','detalle','concepto','desc']);
-        colImp=buscarCol(raw[0],['importe','monto','credito','haber','credit','amount']);
+      // Formato fijo banco: filas 0-1 = títulos, fila 2 = encabezados reales
+      // Columnas: Número Secuencia | Fecha | Importe | Saldo | Descripción | Descripción Extendida | ...
+      var headerIdx=0;
+      for(var i=0;i<Math.min(raw.length,10);i++){
+        var vals=Object.values(raw[i]||{}).map(function(v){return String(v||'').toLowerCase().trim();});
+        if(vals.some(function(v){return v==='fecha';})){headerIdx=i;break;}
       }
+      var hkeys=Object.keys(raw[headerIdx]||{});
+      var dataRows=raw.slice(headerIdx+1).map(function(r2){
+        var obj={};
+        hkeys.forEach(function(k){obj[String(raw[headerIdx][k]||k).trim()]=r2[k];});
+        return obj;
+      });
       state.banco=[];
-      raw.forEach(function(r2){
-        var impStr=String(r2[colImp]||'').replace(/[^\d.,-]/g,'').replace(',','.');
-        var imp=parseFloat(impStr);
+      var todasLasSeqs=[];
+      dataRows.forEach(function(r2){
+        var seq=String(r2['Número Secuencia']||r2['Numero Secuencia']||'').trim();
+        var fecha=parseFecha(String(r2['Fecha']||''));
+        // Guardar todas las secuencias para verificación (débitos y créditos)
+        if(seq) todasLasSeqs.push({seq:seq,fecha:fecha});
+        var impStr=String(r2['Importe']||'').replace(/[^\d.,-]/g,'');
+        var imp;
+        if(impStr.indexOf(',')>-1 && impStr.indexOf('.')>-1){
+          if(impStr.lastIndexOf('.')>impStr.lastIndexOf(',')){ imp=parseFloat(impStr.replace(/,/g,'')); }
+          else { imp=parseFloat(impStr.replace(/\./g,'').replace(',','.')); }
+        } else {
+          imp=parseFloat(impStr.replace(',','.'));
+        }
         if(isNaN(imp)||imp<=0) return;
-        state.banco.push({fecha:parseFecha(r2[colFB]),desc:String(r2[colDesc]||''),importe:imp});
+        var desc=String(r2['Descripción Extendida']||r2['Descripcion Extendida']||r2['Descripción']||r2['Descripcion']||'').trim();
+        var descUp=desc.toUpperCase();
+        if(descUp.indexOf('DEPOSITO CHEQUE')>=0) return;
+        if(descUp.indexOf('DEPOSITO POR CAJA CUIT 30566130633')>=0) return;
+        state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
       });
       markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
       document.getElementById('fname-banco').textContent=file.name;
       document.getElementById('ftime-banco').textContent=fmtTs(now);
+      verificarSecuencias(todasLasSeqs);
+      if(state.chess.length>0){
+        await procesar();
+      } else {
+        // Auto-importar Chess si hay fechas configuradas, luego procesar
+        var desde=document.getElementById('chess-desde').value;
+        var hasta=document.getElementById('chess-hasta').value;
+        if(desde&&hasta){ await sincronizarChess(); }
+      }
+      registrarAccion('banco_upload','Subió extracto bancario: '+state.banco.length+' acreditaciones ('+file.name+')');
       toast('Extracto bancario: '+state.banco.length+' acreditaciones','ok-t');
     }
     verificarListo();
     inp.value='';
   }).catch(function(e){toast('Error: '+e.message,'err-t');inp.value='';});
+}
+
+function verificarSecuencias(banco){
+  // Solo considerar movimientos del mes activo para evitar falsos saltos por movimientos de otros meses
+  var mesActivo=state.periodoActivo||(banco.length>0?banco[banco.length-1].fecha.slice(0,7):null);
+  var bancoFiltrado=mesActivo?banco.filter(function(b){return b.fecha&&b.fecha.slice(0,7)===mesActivo;}):banco;
+  var seqs=bancoFiltrado.map(function(b){return parseInt(b.seq,10);}).filter(function(n){return !isNaN(n)&&n>0;});
+  if(seqs.length<2){document.getElementById('alert-seq').style.display='none';return;}
+  seqs.sort(function(a,b){return a-b;});
+  var min=seqs[0],max=seqs[seqs.length-1];
+  var seqSet=new Set(seqs);
+  var faltantes=[];
+  for(var j=min+1;j<max;j++){
+    if(!seqSet.has(j)){
+      faltantes.push(j);
+      if(faltantes.length>=50) break;
+    }
+  }
+  var el=document.getElementById('alert-seq');
+  if(faltantes.length){
+    var msg='Atención: las siguientes secuencias no están en el extracto bancario: '+faltantes.join(', ');
+    if(faltantes.length>=50) msg+=' (y más)';
+    document.getElementById('alert-seq-txt').textContent=msg;
+    el.style.display='flex';
+  } else {
+    el.style.display='none';
+  }
 }
 
 function verificarListo(){
@@ -893,17 +1011,194 @@ function actualizarPreviews(){
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 function fmtFecha(f){ return f ? String(f).slice(0,10) : '—'; }
 
+/* PENDIENTES DE LIQUIDACIÓN */
+function abrirModalPendientes(){
+  renderMpList();
+  document.getElementById('modal-pend').classList.add('open');
+  document.getElementById('mp-cod').focus();
+}
+
+function cerrarModalPendientes(){
+  document.getElementById('modal-pend').classList.remove('open');
+}
+
+function mpAgregar(){
+  var cod=document.getElementById('mp-cod').value.trim();
+  var impStr=document.getElementById('mp-imp').value.trim().replace(/[^\d,.]/g,'').replace(',','.');
+  var imp=parseFloat(impStr);
+  if(!cod||isNaN(imp)||imp<=0){ toast('Completá código e importe','err-t'); return; }
+  var cliInfo=state.clientes[cod]||Object.values(state.clientes).find(function(c){return c.c===cod;})||null;
+  state.pendientes.push({ cod:cod, imp:imp, nom:cliInfo?cliInfo.n:'', confirmado:false });
+  document.getElementById('mp-cod').value='';
+  document.getElementById('mp-imp').value='';
+  document.getElementById('mp-cod').focus();
+  renderMpList();
+  actualizarContadorPendientes();
+}
+
+function mpQuitarPendiente(i){
+  state.pendientes.splice(i,1);
+  renderMpList();
+  actualizarContadorPendientes();
+}
+
+function findBancoCercano(imp){
+  var resultados=(state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[];
+  var mejor=null,mejorDif=null;
+  resultados.forEach(function(r){
+    if(r.nivel!=='NC'&&r.nivel!=='PEND') return;
+    var dif=Math.abs(r.importe-imp);
+    if(mejorDif===null||dif<mejorDif){mejorDif=dif;mejor=r;}
+  });
+  return mejor?{row:mejor,dif:mejorDif}:null;
+}
+
+async function confirmarMatchPendiente(i){
+  var p=state.pendientes[i];
+  if(!p) return;
+  var cerca=findBancoCercano(p.imp);
+  if(!cerca){ toast('No hay movimiento bancario cercano','err-t'); return; }
+  var cliInfo=state.clientes[p.cod]||null;
+  // Sincronizar el importe del pendiente con el importe real del banco, para que el
+  // próximo "Procesar y guardar" lo detecte exacto cuando aparezca en Chess
+  p.imp=cerca.row.importe;
+  p.confirmado=true;
+  cerca.row.nivel='PEND';
+  cerca.row.codCli=p.cod;
+  cerca.row.nomCli=cliInfo?cliInfo.n:(p.nom||'');
+  cerca.row.cuit=cliInfo?cliInfo.cuit:'';
+  cerca.row.motivo='';
+  loading(true);
+  try{
+    var resultados=state.periodos[state.periodoActivo].resultados;
+    var savedAt=new Date().toISOString();
+    state.periodos[state.periodoActivo]._savedAt=savedAt;
+    await fetch('/api/datos/conciliacion',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco}})
+    });
+    await guardarPendientes();
+    registrarAccion('confirmar_match_pend','Confirmó match pendiente de '+(cliInfo?cliInfo.n:p.cod)+' ($'+fmtNum(p.imp)+')');
+    toast('Vinculado como pendiente: '+(cliInfo?cliInfo.n:p.cod),'ok-t');
+  }catch(e){toast('Error al guardar','err-t');}
+  loading(false);
+  renderMpList();
+  actualizarContadorPendientes();
+  calcStats(); filtrar();
+}
+
+function renderMpList(){
+  var list=document.getElementById('mp-list');
+  if(!state.pendientes.length){
+    list.innerHTML='<div style="color:#64748b;padding:12px 14px;font-size:13px">Sin pendientes cargados</div>';
+    return;
+  }
+  list.innerHTML=state.pendientes.map(function(p,i){
+    var color=p.confirmado?'#4ade80':'#fbbf24';
+    var icon=p.confirmado?'✓':'⏳';
+    var cercanoHtml='';
+    if(!p.confirmado){
+      var cerca=findBancoCercano(p.imp);
+      if(cerca&&cerca.dif>0.01){
+        cercanoHtml='<div style="font-size:10px;color:#f59e0b;margin-top:2px">Banco cercano: $'+fmtN(cerca.row.importe)+' (dif: $'+fmtN(cerca.dif)+') '
+          +'<button onclick="confirmarMatchPendiente('+i+')" style="margin-left:4px;padding:1px 7px;background:#7c3aed;color:#fff;border:none;border-radius:4px;font-size:10px;cursor:pointer">Confirmar match</button></div>';
+      }
+    }
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid #1e2235">'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<span style="color:'+color+';font-size:14px">'+icon+'</span>'
+      +'<div><div style="font-weight:600;font-size:13px;color:#e2e8f0"><span style="color:#c4b5fd;font-family:monospace">'+p.cod+'</span>'+(p.nom?' · <span style="font-weight:400;color:#94a3b8">'+p.nom.slice(0,20)+'</span>':'')+'</div>'
+      +'<div style="font-size:12px;color:#94a3b8">$'+fmtN(p.imp)+'</div>'
+      +cercanoHtml
+      +'</div>'
+      +'</div>'
+      +(p.confirmado?'<span style="font-size:11px;color:#4ade80">Encontrado</span>':'<button onclick="mpQuitarPendiente('+i+')" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:16px;padding:2px 6px;line-height:1" title="Quitar">✕</button>')
+      +'</div>';
+  }).join('');
+}
+
+async function mpGuardar(){
+  await guardarPendientes();
+  cerrarModalPendientes();
+  toast('Pendientes guardados — procesando...','ok-t');
+  if(state.banco.length>0) await procesar();
+}
+
+function actualizarContadorPendientes(){
+  var el=document.getElementById('pend-count');
+  if(el) el.textContent=state.pendientes.length;
+}
+
+function renderPendientes(){
+  actualizarContadorPendientes();
+}
+
+async function guardarPendientes(){
+  try{
+    await fetch('/api/datos/conciliacion-pendientes',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({periodo:'pendientes',datos:{lista:state.pendientes}})
+    });
+  }catch(e){}
+}
+
+async function cargarPendientes(){
+  try{
+    var r=await fetch('/api/datos/conciliacion-pendientes');
+    var data=await r.json();
+    if(data.pendientes&&data.pendientes.lista) state.pendientes=data.pendientes.lista;
+  }catch(e){}
+  actualizarContadorPendientes();
+}
+
+/* HELPERS FECHAS HÁBILES */
+function sigFechaHabil(fechaStr, feriadosSet){
+  var d=new Date(fechaStr+'T00:00:00');
+  do {
+    d.setDate(d.getDate()+1);
+    var yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
+    var key=yy+'-'+mm+'-'+dd;
+    var dow=d.getDay(); // 0=dom,6=sab
+  } while(dow===0||feriadosSet.has(key));
+  var yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
+  return yy+'-'+mm+'-'+dd;
+}
+
+function fechasHabilesDesde(fechaStr, feriadosSet){
+  // Devuelve las próximas 2 fechas hábiles desde fechaStr (sin incluirla)
+  var f1=sigFechaHabil(fechaStr,feriadosSet);
+  var f2=sigFechaHabil(f1,feriadosSet);
+  return [f1,f2];
+}
+
 /* PROCESAR */
 async function procesar(){
   var chess=state.chess,banco=state.banco;
   var cuitMap={},codMap=state.clientes;
-  Object.values(state.clientes).forEach(function(c){if(c.cuit) cuitMap[c.cuit]=c;});
+  Object.values(state.clientes).forEach(function(c){if(c.cuit) cuitMap[normCUIT(c.cuit)]=c;});
   var sisUsado=chess.map(function(){return false;});
   var nuevos=[];
 
+  // Traer feriados del año actual y siguiente
+  var feriadosSet=new Set();
+  try{
+    var anio=new Date().getFullYear();
+    var [r1,r2]=await Promise.all([
+      fetch('/api/feriados/'+anio).then(function(r){return r.json();}),
+      fetch('/api/feriados/'+(anio+1)).then(function(r){return r.json();})
+    ]);
+    (r1.feriados||[]).forEach(function(f){feriadosSet.add(f);});
+    (r2.feriados||[]).forEach(function(f){feriadosSet.add(f);});
+  }catch(e){ console.warn('No se pudieron cargar feriados, usando solo sábados/domingos'); }
+
+  // Resetear flags de pendientes antes de procesar
+  state.pendientes.forEach(function(p){ p.confirmado=false; delete p._toDelete; });
+
   banco.forEach(function(b){
     var cuitBco=extraerCUIT(b.desc);
-    var match=null,nivel='NC',cliInfo=null;
+    var match=null,nivel='NC',cliInfo=null,sugerido=null;
+
+    // N1: CUIT conocido + importe exacto (sin importar fecha)
     if(cuitBco&&cuitMap[cuitBco]){
       var cli=cuitMap[cuitBco];
       for(var i=0;i<chess.length;i++){
@@ -917,22 +1212,85 @@ async function procesar(){
         }
       }
     }
+
+    // N2: importe exacto + fecha Chess es día hábil anterior al banco (hasta 2 días hábiles)
     if(!match){
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
-        if(Math.abs(chess[i].haber-b.importe)<0.01&&chess[i].fecha===b.fecha){
-          match=chess[i];nivel='N2';sisUsado[i]=true;cliInfo=codMap[chess[i].codCli]||null;break;
+        if(Math.abs(chess[i].haber-b.importe)<0.01){
+          var fechasEsperadas=fechasHabilesDesde(chess[i].fecha,feriadosSet);
+          if(chess[i].fecha===b.fecha||fechasEsperadas.indexOf(b.fecha)>=0){
+            match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=codMap[chess[i].codCli]||null;break;
+          }
+        }
+      }
+    }
+
+    // Verificar pendientes: banco coincide por importe; si además hay Chess del cliente → CONC, si no → PEND
+    if(nivel==='NC'){
+      for(var pi=0;pi<state.pendientes.length;pi++){
+        var pend=state.pendientes[pi];
+        if(pend.confirmado) continue;
+        if(Math.abs(pend.imp-b.importe)<0.01){
+          cliInfo=state.clientes[pend.cod]||null;
+          // Buscar si también hay movimiento Chess del mismo cliente con mismo importe
+          var chessMatch=null;
+          for(var ci=0;ci<chess.length;ci++){
+            if(sisUsado[ci]) continue;
+            if(String(chess[ci].codCli)===String(pend.cod)&&Math.abs(chess[ci].haber-b.importe)<0.01){
+              var fechasEsp=fechasHabilesDesde(chess[ci].fecha,feriadosSet);
+              if(chess[ci].fecha===b.fecha||fechasEsp.indexOf(b.fecha)>=0){
+                chessMatch=chess[ci]; sisUsado[ci]=true; break;
+              }
+            }
+          }
+          nivel=chessMatch?'N1':'PEND';
+          match=chessMatch||null;
+          if(chessMatch){ pend._toDelete=true; } else { pend.confirmado=true; }
+          break;
+        }
+      }
+    }
+
+    var motivo='';
+    if(nivel==='PEND') motivo='';
+    else if(nivel==='N1') motivo='CUIT coincidente + importe exacto';
+    else if(nivel==='N2'){
+      var diasDif=match?(new Date(b.fecha)-new Date(match.fecha))/(1000*60*60*24):0;
+      motivo='Importe exacto $'+b.importe+(match?' — Chess: '+(match.nomCli||match.codCli||'')+' ('+match.fecha+(diasDif>0?', +'+diasDif+'d':'')+')':'');
+    } else if(nivel==='NC'){
+      // Buscar motivo: si el CUIT está en el maestro, mostrar la diferencia con el importe Chess más cercano
+      var cuitBcoNC=extraerCUIT(b.desc);
+      if(cuitBcoNC&&cuitMap[cuitBcoNC]){
+        var cliNC=cuitMap[cuitBcoNC];
+        // Buscar el movimiento Chess del mismo cliente con importe más cercano (usado o no)
+        var mejorDif=null,mejorChess=null;
+        for(var i=0;i<chess.length;i++){
+          var dif=Math.abs(chess[i].haber-b.importe);
+          if(chess[i].codCli===cliNC.c&&(mejorDif===null||dif<mejorDif)){
+            mejorDif=dif; mejorChess=chess[i];
+          }
+        }
+        if(mejorChess){
+          motivo='Cliente: '+cliNC.c+' - '+(cliNC.n||cliNC.c)+' — Chess más cercano: $'+fmtN(mejorChess.haber)+' (dif: $'+fmtN(mejorDif)+', fecha '+mejorChess.fecha+')';
+          sugerido={cod:cliNC.c,nom:cliNC.n||cliNC.c,cuit:cliNC.cuit||''};
+        } else {
+          motivo='Cliente '+(cliNC.n||cliNC.c)+' encontrado pero sin movimiento Chess en el período';
         }
       }
     }
     nuevos.push({
-      fecha:b.fecha,desc:b.desc,importe:b.importe,nivel:nivel,
+      fecha:b.fecha,desc:b.desc,importe:b.importe,nivel:nivel,motivo:motivo,
       codCli:match?match.codCli:'',
-      nomCli:match?(match.nomCli||(cliInfo?cliInfo.n:'')):'',
+      nomCli:match?(match.nomCli||(cliInfo?cliInfo.n:'')):(cliInfo?cliInfo.n:''),
       cuit:cliInfo?cliInfo.cuit:(match&&match.codCli&&codMap[match.codCli]?codMap[match.codCli].cuit:''),
-      ref:match?match.ref:''
+      ref:match?match.ref:'',
+      sugerido:sugerido||null
     });
   });
+
+  // Eliminar pendientes que ya pasaron a N1 (encontraron match en Chess y banco)
+  state.pendientes=state.pendientes.filter(function(p){return !p._toDelete;});
 
   loading(true);
   var byMonth={};
@@ -943,30 +1301,46 @@ async function procesar(){
   });
 
   var movAdded=0,movDups=0;
+  var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PEND':2,'NC':1};
   for(var periodo in byMonth){
     var existing=(state.periodos[periodo]&&state.periodos[periodo].resultados)||[];
-    var fpSet=new Set(existing.map(fingerprint));
-    var merged=existing.slice();
+    var fpMap={};
+    existing.forEach(function(r){ fpMap[fingerprint(r)]=r; });
     byMonth[periodo].forEach(function(r){
       var fp=fingerprint(r);
-      if(fpSet.has(fp)){movDups++;return;}
-      merged.push(r); fpSet.add(fp); movAdded++;
+      if(fpMap[fp]){
+        var oldPeso=nivelPeso[fpMap[fp].nivel]||0;
+        var newPeso=nivelPeso[r.nivel]||0;
+        if(newPeso>oldPeso){ fpMap[fp]=r; movAdded++; }
+        else {
+          // Aunque se mantenga el resultado viejo, actualizar sugerido si el nuevo lo tiene
+          if(r.sugerido) fpMap[fp].sugerido=r.sugerido;
+          movDups++;
+        }
+      } else {
+        fpMap[fp]=r; movAdded++;
+      }
     });
+    var merged=Object.values(fpMap);
     var savedAt=new Date().toISOString();
-    state.periodos[periodo]={resultados:merged,_savedAt:savedAt};
+    state.periodos[periodo]={resultados:merged,_savedAt:savedAt,banco:state.banco.slice()};
     try{
       await fetch('/api/datos/conciliacion',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({periodo:periodo,datos:{resultados:merged,_savedAt:savedAt}})
+        body:JSON.stringify({periodo:periodo,datos:{resultados:merged,_savedAt:savedAt,banco:state.banco}})
       });
     }catch(e){toast('Error al guardar '+periodo,'err-t');}
   }
   loading(false);
+  guardarPendientes();
+  renderPendientes();
   renderPeriodList();
   var maxPeriodo=Object.keys(byMonth).sort().pop();
   if(maxPeriodo) selectPeriodo(maxPeriodo);
   var msg=movAdded+' movimientos nuevos guardados';
   if(movDups>0) msg+=' ('+movDups+' duplicados omitidos)';
+  var pendConf=state.pendientes.filter(function(p){return p.confirmado;}).length;
+  if(pendConf>0) msg+=' — '+pendConf+' pendiente(s) confirmado(s)';
   showAlert('alert-ok',msg);
   toast('Conciliación guardada','ok-t');
 }
@@ -974,19 +1348,25 @@ async function procesar(){
 /* STATS */
 function calcStats(){
   var resultados=(state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[];
-  var n1=0,n2=0,nc=0,mN1=0,mN2=0,mNc=0,tot=resultados.length;
+  var n1=0,n2=0,nc=0,pend=0,conc=0,mN1=0,mN2=0,mNc=0,mPend=0,mConc=0,tot=resultados.length;
   resultados.forEach(function(r){
     if(r.nivel==='N1'||r.nivel==='MAN'){n1++;mN1+=r.importe;}
     else if(r.nivel==='N2'){n2++;mN2+=r.importe;}
+    else if(r.nivel==='PEND'){pend++;mPend+=r.importe;}
+    else if(r.nivel==='CONC'){conc++;mConc+=r.importe;}
     else{nc++;mNc+=r.importe;}
   });
   document.getElementById('st-tot').textContent=tot||'—';
-  document.getElementById('st-conf').textContent=n1||'—';
-  document.getElementById('st-conf-m').textContent=n1?'$'+fmtN(mN1):'';
+  document.getElementById('st-conf').textContent=(n1+conc)||'—';
+  document.getElementById('st-conf-m').textContent=(n1+conc)?'$'+fmtN(mN1+mConc):'';
   document.getElementById('st-nc').textContent=nc||'—';
   document.getElementById('st-nc-m').textContent=nc?'$'+fmtN(mNc):'';
   document.getElementById('st-n2').textContent=n2||'—';
   document.getElementById('st-n2-m').textContent=n2?'$'+fmtN(mN2):'';
+  document.getElementById('st-pend').textContent=pend||'—';
+  document.getElementById('st-pend-m').textContent=pend?'$'+fmtN(mPend):'';
+  document.getElementById('stat-n2-card').style.display=n2?'':'none';
+  document.getElementById('stat-pend-card').style.display=pend?'':'none';
 }
 
 /* TABLA */
@@ -995,7 +1375,8 @@ function filtrar(){
   var est=document.getElementById('fil-est').value;
   var q=(document.getElementById('fil-q').value||'').toLowerCase();
   state.filtradas=resultados.filter(function(r){
-    if(est&&r.nivel!==est) return false;
+    if(est==='CONC_ALL'){if(r.nivel!=='N1'&&r.nivel!=='MAN'&&r.nivel!=='CONC') return false;}
+    else if(est&&r.nivel!==est) return false;
     if(q){
       var ok=(r.nomCli||'').toLowerCase().indexOf(q)>=0||(r.codCli||'').toLowerCase().indexOf(q)>=0||
              (r.desc||'').toLowerCase().indexOf(q)>=0||String(r.importe).indexOf(q)>=0||(r.cuit||'').indexOf(q)>=0;
@@ -1015,11 +1396,37 @@ function renderTabla(){
   } else {
     pag.forEach(function(r,li){
       var gi=ini+li;
-      var badge=r.nivel==='N1'?'<span class="badge b-n1">✓ N1 confirmado</span>':
-                r.nivel==='N2'?'<span class="badge b-n2">~ N2 probable</span>':
-                r.nivel==='MAN'?'<span class="badge b-man">✎ Manual</span>':
-                '<span class="badge b-nc">✕ Sin conciliar</span>';
-      var accion=(r.nivel==='NC'||r.nivel==='N2')?'<button class="btn-asi" onclick="abrirModal('+gi+')">Asignar</button>':'';
+      var motivoTxt='';
+      if(r.motivo){
+        if(r.nivel==='NC'){
+          var difIdx=r.motivo.indexOf('(dif:');
+          if(difIdx>=0){
+            motivoTxt='<div style="font-size:10px;margin-top:3px;max-width:220px;white-space:normal;line-height:1.3">'
+              +'<span style="color:#1a1a1a">'+esc(r.motivo.slice(0,difIdx))+'</span>'
+              +'<span style="color:#b91c1c">'+esc(r.motivo.slice(difIdx))+'</span>'
+              +'</div>';
+          } else {
+            motivoTxt='<div style="font-size:10px;color:#b91c1c;margin-top:3px;max-width:220px;white-space:normal;line-height:1.3">'+esc(r.motivo)+'</div>';
+          }
+        } else if(r.nivel==='N2'){
+          motivoTxt='<div style="font-size:10px;color:#92600a;margin-top:3px;max-width:220px;white-space:normal;line-height:1.3">'+esc(r.motivo)+'</div>';
+        }
+      }
+      var badge=r.nivel==='N1'?'<span class="badge b-n1">✓ Conciliado</span>':
+                r.nivel==='CONC'?'<span class="badge b-n1">✓ Conciliado</span>':
+                r.nivel==='MAN'?'<span class="badge b-n1">✓ Conciliado</span>':
+                r.nivel==='PEND'?'<span class="badge b-nc" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5">⏳ Pendiente de liquidación</span>':
+                r.nivel==='N2'?'<span class="badge b-n2">~ N2 probable</span>'+motivoTxt:
+                '<span class="badge b-nc">✕ Sin conciliar</span>'+motivoTxt;
+      var accion=r.nivel==='PEND'?''
+        :r.nivel==='N2'
+        ?'<button class="btn-asi" style="background:#d97706" onclick="confirmarN2('+gi+')">✓ Confirmar</button> <button class="btn-asi" onclick="abrirModal('+gi+')">Cambiar</button>'
+        :r.nivel==='NC'?
+          '<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch">'
+          +(r.sugerido?'<button class="btn-asi" style="background:#16a34a;color:#fff;border-color:#16a34a" onclick="confirmarSugerido('+gi+')" title="Confirmar: '+esc(r.sugerido.nom)+'">✓ Confirmar</button>':'')
+          +'<button class="btn-asi" onclick="abrirModal('+gi+')">Asignar</button>'
+          +'</div>'
+        :'';
       html+='<tr>'+
         '<td>'+fmtFechaDisplay(r.fecha)+'</td>'+
         '<td title="'+esc(r.desc)+'">'+esc(trunc(r.desc,46))+'</td>'+
@@ -1079,6 +1486,62 @@ function selCli(el){
   state.clienteSel={c:el.dataset.c,n:el.dataset.n,cuit:el.dataset.cuit};
   document.getElementById('btn-ok-modal').disabled=false;
 }
+async function confirmarPend(gi){
+  var r=state.filtradas[gi];
+  if(!r||r.nivel!=='PEND') return;
+  r.nivel='CONC';
+  loading(true);
+  try{
+    var resultados=state.periodos[state.periodoActivo].resultados;
+    var savedAt=new Date().toISOString();
+    state.periodos[state.periodoActivo]._savedAt=savedAt;
+    await fetch('/api/datos/conciliacion',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt}})
+    });
+    toast('Conciliado: '+(r.nomCli||r.codCli||r.desc),'ok-t');
+  }catch(e){toast('Error al guardar','err-t');}
+  loading(false);
+  calcStats(); renderTabla();
+}
+
+async function confirmarSugerido(gi){
+  var r=state.filtradas[gi];
+  if(!r||!r.sugerido) return;
+  r.codCli=r.sugerido.cod; r.nomCli=r.sugerido.nom; r.cuit=r.sugerido.cuit; r.nivel='MAN'; r.motivo=''; r.sugerido=null;
+  loading(true);
+  try{
+    var resultados=state.periodos[state.periodoActivo].resultados;
+    var savedAt=new Date().toISOString();
+    state.periodos[state.periodoActivo]._savedAt=savedAt;
+    await fetch('/api/datos/conciliacion',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco}})});
+    registrarAccion('confirmar_sugerido','Confirmó cliente sugerido '+r.nomCli+' ('+r.codCli+') en movimiento $'+fmtNum(r.importe)+' del '+r.fecha);
+    toast('Confirmado: '+r.nomCli,'ok-t');
+  }catch(e){toast('Error al guardar','err-t');}
+  loading(false);
+  calcStats(); filtrar();
+}
+
+async function confirmarN2(gi){
+  var r=state.filtradas[gi];
+  if(!r||r.nivel!=='N2') return;
+  r.nivel='N1';
+  loading(true);
+  try{
+    var resultados=state.periodos[state.periodoActivo].resultados;
+    var savedAt=new Date().toISOString();
+    state.periodos[state.periodoActivo]._savedAt=savedAt;
+    await fetch('/api/datos/conciliacion',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt}})
+    });
+    toast('Confirmado: '+(r.nomCli||r.codCli),'ok-t');
+  }catch(e){toast('Error al guardar','err-t');}
+  loading(false);
+  calcStats(); renderTabla();
+}
+
 async function confirmar(){
   if(!state.clienteSel||state.modalIdx===null) return;
   var r=state.filtradas[state.modalIdx];
@@ -1092,6 +1555,7 @@ async function confirmar(){
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt}})
     });
+    registrarAccion('asignar_manual','Asignó manualmente cliente '+state.clienteSel.n+' ('+state.clienteSel.c+') a movimiento $'+fmtNum(r.importe)+' del '+r.fecha);
     toast('Asignado: '+state.clienteSel.n,'ok-t');
   }catch(e){toast('Error al guardar','err-t');}
   loading(false);

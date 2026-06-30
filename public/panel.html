@@ -106,8 +106,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
   <div class="stats-row">
     <div class="stat-card">
       <div class="stat-label">Módulos activos</div>
-      <div class="stat-val">1</div>
-      <div class="stat-sub">de 5-10 planificados</div>
+      <div class="stat-val" id="stat-modulos">—</div>
+      <div class="stat-sub">disponibles en el sistema</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Último acceso</div>
@@ -115,9 +115,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <div class="stat-sub" id="stat-hora"></div>
     </div>
     <div class="stat-card" id="stat-admin" style="display:none">
-      <div class="stat-label">Configuración</div>
-      <div class="stat-val" style="font-size:13px;cursor:pointer;color:#1E6FD9" onclick="abrirCambiarPass()">Cambiar contraseña</div>
-      <div class="stat-sub">Gestión de acceso</div>
+      <div class="stat-label">Administración</div>
+      <div class="stat-val" style="font-size:13px;cursor:pointer;color:#1E6FD9" onclick="abrirAdminUsuarios()">Administrar usuarios</div>
+      <div class="stat-sub">Usuarios, contraseñas y accesos</div>
     </div>
     <div class="stat-card" id="stat-vista" style="display:none">
       <div class="stat-label">Modo</div>
@@ -169,61 +169,91 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       </div>
     </a>
 
-    <!-- COMPRAS -->
-    <div class="modulo-card coming-soon">
-      <span class="modulo-badge badge-pronto">Próximamente</span>
-      <div class="modulo-icon" style="background:#D4F0F2">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A7F8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-      </div>
-      <div class="modulo-nombre">Compras</div>
-      <div class="modulo-desc">Proveedores, órdenes de compra y seguimiento de gastos.</div>
-    </div>
-
-    <!-- TESORERÍA -->
-    <div class="modulo-card coming-soon">
-      <span class="modulo-badge badge-pronto">Próximamente</span>
-      <div class="modulo-icon" style="background:#D4F2E8">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0E9267" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      </div>
-      <div class="modulo-nombre">Tesorería</div>
-      <div class="modulo-desc">Flujo de caja, ingresos, egresos y posición financiera.</div>
-    </div>
-
-    <!-- IMPOSITIVO -->
-    <div class="modulo-card coming-soon">
-      <span class="modulo-badge badge-pronto">Próximamente</span>
-      <div class="modulo-icon" style="background:#FDF0D4">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4820A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      </div>
-      <div class="modulo-nombre">Impositivo</div>
-      <div class="modulo-desc">Vencimientos, declaraciones y seguimiento de obligaciones fiscales.</div>
-    </div>
-
   </div>
 </div>
 
-<!-- MODAL CAMBIAR CONTRASEÑA -->
-<div class="modal-overlay" id="modal-pass">
-  <div class="modal">
-    <div class="modal-title">Cambiar contraseña</div>
-    <div class="modal-sub">Ingresá tu contraseña actual y la nueva.</div>
-    <div class="field"><label>Contraseña actual</label><input type="password" id="pass-actual" placeholder="••••••••"></div>
-    <div class="field"><label>Contraseña nueva</label><input type="password" id="pass-nueva" placeholder="••••••••"></div>
-    <div class="field"><label>Confirmar nueva</label><input type="password" id="pass-confirmar" placeholder="••••••••"></div>
-    <div class="msg-pass" id="msg-pass"></div>
-    <div class="modal-btns">
-      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-primary" onclick="cambiarPass()">Guardar</button>
+<!-- ACTIVITY LOG (solo admin) -->
+<div id="section-log" style="display:none;margin-bottom:2rem">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9896A0;margin-bottom:.75rem">Registro de actividad</div>
+  <div style="background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.25rem">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem">Usuario</div>
+        <input id="log-fil-user" type="text" placeholder="Todos" style="padding:.45rem .75rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;width:130px;outline:none">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem">Desde</div>
+        <input id="log-fil-desde" type="date" style="padding:.45rem .75rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;outline:none">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem">Hasta</div>
+        <input id="log-fil-hasta" type="date" style="padding:.45rem .75rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;outline:none">
+      </div>
+      <button onclick="cargarLog()" style="padding:.5rem 1.1rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Buscar</button>
+      <button onclick="document.getElementById('log-fil-user').value='';document.getElementById('log-fil-desde').value='';document.getElementById('log-fil-hasta').value='';cargarLog()" style="padding:.5rem 1rem;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Limpiar</button>
+    </div>
+    <div id="log-list" style="font-size:12px;color:#9896A0">Cargando...</div>
+  </div>
+</div>
+
+<!-- MODAL ADMIN USUARIOS -->
+<div class="modal-overlay" id="modal-admin" style="align-items:flex-start;padding:2rem 1rem;overflow-y:auto">
+  <div class="modal" style="max-width:520px;width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <div>
+        <div class="modal-title">Administración de usuarios</div>
+        <div class="modal-sub" style="margin-bottom:0">Gestioná usuarios y contraseñas del sistema.</div>
+      </div>
+      <button class="btn-secondary" onclick="cerrarAdmin()" style="padding:6px 12px">✕</button>
+    </div>
+
+    <!-- Lista de usuarios -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.5rem">Usuarios existentes</div>
+    <div id="admin-user-list" style="border:1.5px solid #DDDBD6;border-radius:8px;overflow:hidden;margin-bottom:1.25rem"></div>
+
+    <!-- Crear usuario -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.5rem">Crear nuevo usuario</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field" style="margin:0"><label>Nombre completo</label><input type="text" id="new-nombre" placeholder="Ej: Mario García"></div>
+      <div class="field" style="margin:0"><label>Usuario</label><input type="text" id="new-username" placeholder="Ej: mario"></div>
+      <div class="field" style="margin:0"><label>Contraseña</label><input type="password" id="new-pass" placeholder="Mín. 6 caracteres"></div>
+      <div class="field" style="margin:0"><label>Rol</label>
+        <select id="new-rol" style="width:100%;padding:.65rem .9rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none">
+          <option value="vista">Vista</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <div class="msg-pass" id="msg-crear"></div>
+    <button class="btn-primary" onclick="crearUsuario()" style="width:100%;margin-top:.85rem">Crear usuario</button>
+
+    <!-- Modal reset password (inline) -->
+    <div id="reset-panel" style="display:none;margin-top:1.25rem;border-top:1.5px solid #DDDBD6;padding-top:1.25rem">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.5rem">Resetear contraseña de <span id="reset-username-lbl" style="color:#1E6FD9"></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="field" style="margin:0"><label>Nueva contraseña</label><input type="password" id="reset-nueva" placeholder="Mín. 6 caracteres"></div>
+        <div class="field" style="margin:0"><label>Confirmar</label><input type="password" id="reset-confirmar" placeholder="Repetir contraseña"></div>
+      </div>
+      <div class="msg-pass" id="msg-reset"></div>
+      <div class="modal-btns" style="margin-top:.85rem">
+        <button class="btn-secondary" onclick="document.getElementById('reset-panel').style.display='none'">Cancelar</button>
+        <button class="btn-primary" onclick="resetearPass()">Guardar nueva contraseña</button>
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;font-size:12px;border-bottom:1px solid #DDDBD6}
+.user-row:last-child{border-bottom:none}
+.user-row:hover{background:#F8F7F5}
+.user-rol{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+</style>
 
 <script>
-// Verificar sesión
 const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!userData) { window.location.href = '/'; }
 
-// Render usuario
 const now = new Date();
 document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
 document.getElementById('user-avatar').textContent = (userData.nombre||userData.username).charAt(0).toUpperCase();
@@ -232,41 +262,199 @@ document.getElementById('welcome-date').textContent = now.toLocaleDateString('es
 document.getElementById('stat-hora').textContent = now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 document.getElementById('stat-acceso').textContent = now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
 
+// Ocultar módulos sin acceso: admin sin modulos configurados = todo, vista sin modulos = nada
+const modMap={'facturacion':'a[href="/facturacion"]','cuentas-corrientes':'a[href="/cuentas-corrientes"]','conciliacion-bancaria':'a[href="/conciliacion-bancaria"]'};
+if(userData.rol!=='admin'){
+  Object.entries(modMap).forEach(([id,sel])=>{
+    const tieneAcceso=userData.modulos&&userData.modulos[id];
+    if(!tieneAcceso){const el=document.querySelector(sel);if(el)el.style.display='none';}
+  });
+}
+// Contador dinámico de módulos activos
+const nActivos = document.querySelectorAll('.modulo-card:not(.coming-soon):not([style*="display: none"]):not([style*="display:none"])').length;
+document.getElementById('stat-modulos').textContent = nActivos;
+
+const ACCION_LABELS={'login':'Ingresó al sistema','chess_import':'Importó Chess ERP','banco_upload':'Subió extracto bancario','confirmar_sugerido':'Confirmó cliente sugerido','asignar_manual':'Asignó cliente manual','confirmar_match_pend':'Confirmó match pendiente'};
+
+async function cargarLog(){
+  const list=document.getElementById('log-list');
+  list.innerHTML='<span style="color:#9896A0">Cargando...</span>';
+  const user=document.getElementById('log-fil-user').value.trim();
+  const desde=document.getElementById('log-fil-desde').value;
+  const hasta=document.getElementById('log-fil-hasta').value;
+  const params=new URLSearchParams();
+  if(user) params.set('usuario',user);
+  if(desde) params.set('desde',desde);
+  if(hasta) params.set('hasta',hasta);
+  try{
+    const r=await fetch('/api/log?'+params.toString(),{headers:{'x-admin':userData.username}});
+    const rows=await r.json();
+    if(!rows.length){list.innerHTML='<span style="color:#9896A0">Sin resultados.</span>';return;}
+    list.innerHTML='<table style="width:100%;border-collapse:collapse">'
+      +'<thead><tr style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0">'
+      +'<th style="text-align:left;padding:6px 8px;border-bottom:1.5px solid #DDDBD6">Fecha y hora</th>'
+      +'<th style="text-align:left;padding:6px 8px;border-bottom:1.5px solid #DDDBD6">Usuario</th>'
+      +'<th style="text-align:left;padding:6px 8px;border-bottom:1.5px solid #DDDBD6">Acción</th>'
+      +'<th style="text-align:left;padding:6px 8px;border-bottom:1.5px solid #DDDBD6">Detalle</th>'
+      +'</tr></thead><tbody>'
+      +rows.map(function(row){
+        const dt=new Date(row.created_at);
+        const fecha=dt.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+        const hora=dt.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+        const accionLabel=ACCION_LABELS[row.accion]||row.accion;
+        return '<tr style="border-bottom:1px solid #F5F5F7">'
+          +'<td style="padding:7px 8px;white-space:nowrap;color:#56555A">'+fecha+' '+hora+'</td>'
+          +'<td style="padding:7px 8px;white-space:nowrap"><span style="font-weight:600;color:#18181A">'+(row.nombre||row.username)+'</span><span style="color:#9896A0;margin-left:4px">@'+row.username+'</span></td>'
+          +'<td style="padding:7px 8px;white-space:nowrap"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:#F2F1EE;color:#56555A">'+accionLabel+'</span></td>'
+          +'<td style="padding:7px 8px;color:#56555A">'+(row.detalle||'—')+'</td>'
+          +'</tr>';
+      }).join('')
+      +'</tbody></table>';
+  }catch(e){list.innerHTML='<span style="color:#C0392B">Error al cargar.</span>';}
+}
+
 if(userData.rol==='admin'){
   document.getElementById('rol-badge').textContent='Admin';
   document.getElementById('rol-badge').className='rol-badge rol-admin';
   document.getElementById('stat-admin').style.display='block';
+  document.getElementById('section-log').style.display='block';
+  cargarLog();
 } else {
   document.getElementById('rol-badge').textContent='Vista';
   document.getElementById('rol-badge').className='rol-badge rol-vista';
   document.getElementById('stat-vista').style.display='block';
-  // Ocultar enlace a facturación si no tiene permiso (opcional — por ahora todos pueden ver)
 }
 
-function abrirCambiarPass(){ document.getElementById('modal-pass').classList.add('show'); }
-function cerrarModal(){ document.getElementById('modal-pass').classList.remove('show'); ['pass-actual','pass-nueva','pass-confirmar'].forEach(id=>document.getElementById(id).value=''); showMsgPass('',''); }
+// ── ADMIN USUARIOS ──
+let resetTarget = null;
 
-function showMsgPass(type,txt){
-  const el=document.getElementById('msg-pass');
+async function abrirAdminUsuarios(){
+  document.getElementById('modal-admin').classList.add('show');
+  await cargarUsuarios();
+}
+
+function cerrarAdmin(){
+  document.getElementById('modal-admin').classList.remove('show');
+  document.getElementById('reset-panel').style.display='none';
+  ['new-nombre','new-username','new-pass'].forEach(id=>document.getElementById(id).value='');
+  showMsg('msg-crear','','');
+  showMsg('msg-reset','','');
+}
+
+function showMsg(id,type,txt){
+  const el=document.getElementById(id);
   el.className='msg-pass'+(type?' '+type:'');
   el.textContent=txt;
   el.style.display=type?'flex':'none';
 }
 
-async function cambiarPass(){
-  const actual=document.getElementById('pass-actual').value;
-  const nueva=document.getElementById('pass-nueva').value;
-  const conf=document.getElementById('pass-confirmar').value;
-  if(!actual||!nueva||!conf){ showMsgPass('msg-err','Completá todos los campos.'); return; }
-  if(nueva!==conf){ showMsgPass('msg-err','Las contraseñas nuevas no coinciden.'); return; }
-  if(nueva.length<6){ showMsgPass('msg-err','La contraseña debe tener al menos 6 caracteres.'); return; }
+async function cargarUsuarios(){
+  const list=document.getElementById('admin-user-list');
+  list.innerHTML='<div style="padding:.75rem 1rem;font-size:12px;color:#9896A0">Cargando...</div>';
   try{
-    const r=await fetch('/api/cambiar-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:userData.username,password_actual:actual,password_nueva:nueva})});
+    const r=await fetch('/api/usuarios',{headers:{'x-admin':userData.username}});
+    const users=await r.json();
+    if(!users.length){ list.innerHTML='<div style="padding:.75rem 1rem;font-size:12px;color:#9896A0">Sin usuarios.</div>'; return; }
+    const MODULOS=[{id:'facturacion',label:'Facturación'},{id:'cuentas-corrientes',label:'Cta. Cte.'},{id:'conciliacion-bancaria',label:'Conciliación'}];
+    list.innerHTML=users.map(u=>{
+      const mods=u.modulos||null;
+      const isGlobalAdmin=u.rol==='admin';
+      const selects=MODULOS.map(m=>{
+        const rolMod=isGlobalAdmin?'admin':(mods?mods[m.id]||'':'admin');
+        const opts=['','vista','admin'].map(v=>`<option value="${v}" ${rolMod===v?'selected':''}>${v===''?'Sin acceso':v==='vista'?'Vista':'Admin'}</option>`).join('');
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <span style="font-size:10px;color:#9896A0;font-weight:600">${m.label}</span>
+          <select data-user="${u.username}" data-mod="${m.id}" ${isGlobalAdmin?'disabled':''}            style="font-size:11px;padding:2px 4px;border:1px solid #DDDBD6;border-radius:4px;background:#fff;cursor:${isGlobalAdmin?'default':'pointer'}">${opts}</select>
+        </div>`;
+      }).join('');
+      return `<div class="user-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:.85rem 1rem">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input id="edit-nombre-${u.username}" value="${u.nombre||''}" placeholder="Nombre" style="font-size:13px;font-weight:600;border:1px solid #DDDBD6;border-radius:5px;padding:3px 8px;flex:1;min-width:100px">
+          <span style="color:#9896A0;font-size:12px">@</span>
+          <input id="edit-user-${u.username}" value="${u.username}" placeholder="usuario" style="font-size:12px;border:1px solid #DDDBD6;border-radius:5px;padding:3px 8px;width:100px">
+          <span class="user-rol ${isGlobalAdmin?'rol-admin':'rol-vista'}">${isGlobalAdmin?'Admin':'Vista'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center">
+          ${selects}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">
+          <span id="msg-mod-${u.username}" style="font-size:11px;color:#16a34a;display:none">✓ Guardado</span>
+          <button onclick="editarUsuario('${u.username}')" style="font-size:11px;font-weight:600;color:#fff;background:#6B3FC8;border:none;cursor:pointer;padding:5px 12px;border-radius:5px">Guardar datos</button>
+          <button onclick="guardarModulos('${u.username}')" ${isGlobalAdmin?'disabled':''} style="font-size:11px;font-weight:600;color:#fff;background:#1E6FD9;border:none;cursor:pointer;padding:5px 12px;border-radius:5px;${isGlobalAdmin?'opacity:.4;cursor:default':''}">Guardar módulos</button>
+          <button onclick="abrirReset('${u.username}')" style="font-size:11px;font-weight:600;color:#1E6FD9;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:5px;border:1px solid #DDDBD6">Resetear contraseña</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){ list.innerHTML='<div style="padding:.75rem 1rem;font-size:12px;color:#C0392B">Error al cargar.</div>'; }
+}
+
+function abrirReset(username){
+  resetTarget=username;
+  document.getElementById('reset-username-lbl').textContent=username;
+  document.getElementById('reset-nueva').value='';
+  document.getElementById('reset-confirmar').value='';
+  showMsg('msg-reset','','');
+  document.getElementById('reset-panel').style.display='block';
+  document.getElementById('reset-panel').scrollIntoView({behavior:'smooth'});
+}
+
+async function resetearPass(){
+  const nueva=document.getElementById('reset-nueva').value;
+  const conf=document.getElementById('reset-confirmar').value;
+  if(!nueva||!conf){ showMsg('msg-reset','msg-err','Completá ambos campos.'); return; }
+  if(nueva!==conf){ showMsg('msg-reset','msg-err','Las contraseñas no coinciden.'); return; }
+  if(nueva.length<6){ showMsg('msg-reset','msg-err','Mínimo 6 caracteres.'); return; }
+  try{
+    const r=await fetch('/api/usuarios/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUsername:userData.username,targetUsername:resetTarget,nuevaPassword:nueva})});
     const d=await r.json();
-    if(!r.ok){ showMsgPass('msg-err',d.error||'Error al cambiar.'); return; }
-    showMsgPass('msg-ok','✓ Contraseña cambiada correctamente.');
-    setTimeout(cerrarModal,1500);
-  }catch(e){ showMsgPass('msg-err','Error de conexión.'); }
+    if(!r.ok){ showMsg('msg-reset','msg-err',d.error||'Error.'); return; }
+    showMsg('msg-reset','msg-ok','✓ Contraseña actualizada.');
+    setTimeout(()=>{ document.getElementById('reset-panel').style.display='none'; },1500);
+  }catch(e){ showMsg('msg-reset','msg-err','Error de conexión.'); }
+}
+
+async function editarUsuario(username){
+  const nombre=document.getElementById('edit-nombre-'+username).value.trim();
+  const newUsername=document.getElementById('edit-user-'+username).value.trim();
+  if(!nombre||!newUsername){alert('Completá nombre y usuario.');return;}
+  try{
+    const r=await fetch(`/api/usuarios/${username}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUsername:userData.username,nombre,newUsername})});
+    const d=await r.json();
+    if(!r.ok){alert(d.error||'Error.');return;}
+    const msg=document.getElementById('msg-mod-'+username);
+    if(msg){msg.textContent='✓ Datos guardados';msg.style.display='inline';setTimeout(()=>{msg.textContent='✓ Guardado';msg.style.display='none';},2000);}
+    await cargarUsuarios();
+  }catch(e){alert('Error de conexión.');}
+}
+
+async function guardarModulos(username){
+  const sels=document.querySelectorAll(`select[data-user="${username}"]`);
+  const modulos={};
+  sels.forEach(s=>{ if(s.value) modulos[s.dataset.mod]=s.value; });
+  try{
+    const r=await fetch(`/api/usuarios/${username}/modulos`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUsername:userData.username,modulos:Object.keys(modulos).length?modulos:null})});
+    if(r.ok){
+      const msg=document.getElementById('msg-mod-'+username);
+      if(msg){msg.style.display='inline';setTimeout(()=>msg.style.display='none',2000);}
+    }
+  }catch(e){}
+}
+
+async function crearUsuario(){
+  const nombre=document.getElementById('new-nombre').value.trim();
+  const username=document.getElementById('new-username').value.trim();
+  const pass=document.getElementById('new-pass').value;
+  const rol=document.getElementById('new-rol').value;
+  if(!nombre||!username||!pass){ showMsg('msg-crear','msg-err','Completá todos los campos.'); return; }
+  if(pass.length<6){ showMsg('msg-crear','msg-err','Mínimo 6 caracteres.'); return; }
+  try{
+    const r=await fetch('/api/usuarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUsername:userData.username,nombre,username,password:pass,rol})});
+    const d=await r.json();
+    if(!r.ok){ showMsg('msg-crear','msg-err',d.error||'Error.'); return; }
+    showMsg('msg-crear','msg-ok','✓ Usuario creado correctamente.');
+    ['new-nombre','new-username','new-pass'].forEach(id=>document.getElementById(id).value='');
+    await cargarUsuarios();
+  }catch(e){ showMsg('msg-crear','msg-err','Error de conexión.'); }
 }
 </script>
 </body>

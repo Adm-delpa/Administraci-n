@@ -32,6 +32,13 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT NOW()
       );
 
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modulos JSONB DEFAULT NULL;
+      DO $$ BEGIN
+        IF (SELECT data_type FROM information_schema.columns WHERE table_name='usuarios' AND column_name='modulos') = 'ARRAY' THEN
+          ALTER TABLE usuarios ALTER COLUMN modulos TYPE JSONB USING NULL;
+        END IF;
+      END $$;
+
       CREATE TABLE IF NOT EXISTS datos_modulos (
         id SERIAL PRIMARY KEY,
         modulo VARCHAR(50) NOT NULL,
@@ -39,6 +46,15 @@ async function initDB() {
         datos JSONB NOT NULL,
         updated_at TIMESTAMP DEFAULT NOW(),
         UNIQUE(modulo, periodo)
+      );
+
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        nombre VARCHAR(100),
+        accion VARCHAR(100) NOT NULL,
+        detalle TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       );
     `);
 
@@ -65,12 +81,12 @@ app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Datos incompletos' });
   try {
-    const result = await pool.query('SELECT * FROM usuarios WHERE username=$1', [username]);
+    const result = await pool.query('SELECT * FROM usuarios WHERE LOWER(username)=LOWER($1)', [username]);
     if (result.rows.length === 0) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-    res.json({ ok: true, username: user.username, rol: user.rol, nombre: user.nombre });
+    res.json({ ok: true, username: user.username, rol: user.rol, nombre: user.nombre, modulos: user.modulos || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
@@ -138,6 +154,131 @@ app.post('/api/cambiar-password', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: 'Error al cambiar contraseña' });
+  }
+});
+
+// ── ADMIN USUARIOS ──
+
+async function esAdmin(username) {
+  const r = await pool.query("SELECT rol FROM usuarios WHERE username=$1", [username]);
+  return r.rows.length > 0 && r.rows[0].rol === 'admin';
+}
+
+app.get('/api/usuarios', async (req, res) => {
+  const adminUsername = req.headers['x-admin'];
+  if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
+  try {
+    const r = await pool.query('SELECT id, username, nombre, rol, modulos, created_at FROM usuarios ORDER BY created_at ASC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error al listar usuarios' }); }
+});
+
+app.post('/api/usuarios', async (req, res) => {
+  const { adminUsername, nombre, username, password, rol } = req.body;
+  if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
+  if (!nombre || !username || !password || !rol) return res.status(400).json({ error: 'Faltan datos' });
+  if (password.length < 6) return res.status(400).json({ error: 'Contraseña muy corta' });
+  try {
+    const hash = await bcrypt.hash(password, 10);
+    await pool.query('INSERT INTO usuarios (username, password_hash, rol, nombre) VALUES ($1,$2,$3,$4)', [username, hash, rol, nombre]);
+    res.json({ ok: true });
+  } catch(e) {
+    if (e.code === '23505') return res.status(400).json({ error: 'El usuario ya existe' });
+    res.status(500).json({ error: 'Error al crear usuario' });
+  }
+});
+
+app.put('/api/usuarios/:username', async (req, res) => {
+  const { adminUsername, nombre, newUsername } = req.body;
+  const { username } = req.params;
+  if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
+  if (!nombre && !newUsername) return res.status(400).json({ error: 'Nada que actualizar' });
+  try {
+    if (newUsername && newUsername !== username) {
+      const exists = await pool.query('SELECT id FROM usuarios WHERE username=$1', [newUsername]);
+      if (exists.rows.length) return res.status(400).json({ error: 'El usuario ya existe' });
+      await pool.query('UPDATE usuarios SET username=$1, nombre=$2 WHERE username=$3', [newUsername, nombre||null, username]);
+    } else {
+      await pool.query('UPDATE usuarios SET nombre=$1 WHERE username=$2', [nombre||null, username]);
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al actualizar usuario' }); }
+});
+
+app.put('/api/usuarios/:username/modulos', async (req, res) => {
+  const { adminUsername, modulos } = req.body;
+  const { username } = req.params;
+  if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
+  try {
+    await pool.query('UPDATE usuarios SET modulos=$1 WHERE username=$2', [modulos ? JSON.stringify(modulos) : null, username]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al actualizar módulos' }); }
+});
+
+app.post('/api/usuarios/reset-password', async (req, res) => {
+  const { adminUsername, targetUsername, nuevaPassword } = req.body;
+  if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
+  if (!targetUsername || !nuevaPassword) return res.status(400).json({ error: 'Faltan datos' });
+  if (nuevaPassword.length < 6) return res.status(400).json({ error: 'Contraseña muy corta' });
+  try {
+    const hash = await bcrypt.hash(nuevaPassword, 10);
+    const r = await pool.query('UPDATE usuarios SET password_hash=$1 WHERE username=$2', [hash, targetUsername]);
+    if (r.rowCount === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al resetear contraseña' }); }
+});
+
+// ── ACTIVITY LOG ──
+
+app.post('/api/log', async (req, res) => {
+  const { username, nombre, accion, detalle } = req.body;
+  if (!username || !accion) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    await pool.query('INSERT INTO activity_log (username, nombre, accion, detalle) VALUES ($1,$2,$3,$4)', [username, nombre||null, accion, detalle||null]);
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: 'Error al guardar log' });
+  }
+});
+
+app.get('/api/log', async (req, res) => {
+  const adminUsername = req.headers['x-admin'];
+  if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
+  const { usuario, desde, hasta, limit } = req.query;
+  try {
+    let where = [];
+    let params = [];
+    if (usuario) { params.push(usuario); where.push(`username=$${params.length}`); }
+    if (desde) { params.push(desde); where.push(`created_at >= $${params.length}::date`); }
+    if (hasta) { params.push(hasta); where.push(`created_at < ($${params.length}::date + interval '1 day')`); }
+    const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    const lim = Math.min(parseInt(limit)||200, 500);
+    const r = await pool.query(`SELECT id, username, nombre, accion, detalle, created_at FROM activity_log ${whereClause} ORDER BY created_at DESC LIMIT ${lim}`, params);
+    res.json(r.rows);
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error al leer log' });
+  }
+});
+
+// ── FERIADOS ARGENTINA ──
+
+app.get('/api/feriados/:year', async (req, res) => {
+  const { year } = req.params;
+  try {
+    const result = await httpsRequest({
+      hostname: 'api.argentinadatos.com',
+      path: `/v1/feriados/${year}`,
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = JSON.parse(result.body);
+    // Devolver solo las fechas como array de strings YYYY-MM-DD
+    const fechas = data.map(f => f.fecha).filter(Boolean);
+    res.json({ ok: true, feriados: fechas });
+  } catch(e) {
+    console.error('Error feriados:', e);
+    res.status(500).json({ error: 'No se pudieron obtener los feriados' });
   }
 });
 

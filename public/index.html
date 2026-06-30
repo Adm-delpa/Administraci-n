@@ -85,6 +85,7 @@ async function login(){
     const d=await r.json();
     if(!r.ok){ showErr(d.error||'Error al ingresar.'); return; }
     sessionStorage.setItem('user', JSON.stringify(d));
+    fetch('/api/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:d.username,nombre:d.nombre,accion:'login',detalle:'Ingresó al sistema'})}).catch(()=>{});
     window.location.href='/panel';
   }catch(e){ showErr('No se pudo conectar con el servidor.'); }
   finally{ btn.disabled=false; btn.textContent='Ingresar'; }
