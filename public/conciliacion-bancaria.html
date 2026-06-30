@@ -399,7 +399,10 @@ tr:hover td{background:#f9fbff}
   <div class="panel" id="panel-banco-preview" style="display:none">
     <div class="panel-header">
       <h3>Datos Extracto Bancario cargados</h3>
-      <span id="banco-preview-count" style="font-size:12px;color:#666"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="text" id="banco-preview-q" placeholder="Buscar descripción, importe..." style="padding:4px 10px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;width:220px;outline:none" oninput="filtrarBancoPreview()">
+        <span id="banco-preview-count" style="font-size:12px;color:#666"></span>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table>
@@ -735,7 +738,6 @@ function selectPeriodo(ym){
     if(bancoRecup.length>0){
       state.banco=bancoRecup;
       markFileCard('banco','Extracto bancario',bancoRecup.length+' acreditaciones (período guardado)',null);
-      verificarSecuencias(bancoRecup);
       verificarListo();
     }
   }
@@ -1021,6 +1023,18 @@ function actualizarPreviews(){
         return '<tr><td>'+fmtFecha(b.fecha)+'</td><td style="font-size:12px">'+esc(b.desc)+'</td><td style="text-align:right">'+fmtN(b.importe)+'</td></tr>';
       }).join('');
   document.getElementById('banco-preview-count').textContent = state.banco.length + ' registros';
+}
+
+function filtrarBancoPreview(){
+  var q=(document.getElementById('banco-preview-q').value||'').toLowerCase().trim();
+  var rows=document.querySelectorAll('#banco-preview-body tr');
+  var vis=0;
+  rows.forEach(function(tr){
+    var show=!q||tr.textContent.toLowerCase().indexOf(q)>=0;
+    tr.style.display=show?'':'none';
+    if(show) vis++;
+  });
+  document.getElementById('banco-preview-count').textContent=(q?vis+' de ':'')+state.banco.length+' registros';
 }
 
 function mergeChess(existentes, nuevos){
