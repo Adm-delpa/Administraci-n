@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Actividad — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;text-decoration:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 10px;transition:all .15s}
+.topbar-back:hover{background:rgba(255,255,255,.15);color:#fff}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:1000px;margin:0 auto;padding:2rem 1rem}
+.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em;margin-bottom:.25rem}
+.page-sub{font-size:13px;color:#9896A0;font-weight:500;margin-bottom:1.5rem}
+
+.filters-bar{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:1rem 1.25rem;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.25rem}
+.fil-group{display:flex;flex-direction:column;gap:.3rem}
+.fil-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0}
+.fil-input{padding:.45rem .75rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;outline:none;transition:border-color .15s}
+.fil-input:focus{border-color:#1E6FD9}
+.btn-buscar{padding:.5rem 1.1rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.btn-buscar:hover{background:#0D4FA0}
+.btn-limpiar{padding:.5rem 1rem;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+
+.log-container{background:#fff;border:1px solid #DDDBD6;border-radius:10px;overflow:hidden}
+.log-header{padding:.75rem 1.25rem;border-bottom:1.5px solid #F5F5F7;display:flex;justify-content:space-between;align-items:center}
+.log-header-title{font-size:12px;font-weight:700;color:#56555A}
+.log-count{font-size:11px;color:#9896A0}
+
+.log-item{display:flex;gap:14px;padding:.9rem 1.25rem;border-bottom:1px solid #F5F5F7;align-items:flex-start}
+.log-item:last-child{border-bottom:none}
+.log-item:hover{background:#FAFAF9}
+.log-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.log-body{flex:1;min-width:0}
+.log-accion{font-size:13px;font-weight:600;color:#18181A;margin-bottom:2px}
+.log-detalle{font-size:12px;color:#56555A;margin-bottom:4px;line-height:1.4}
+.log-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.log-user{font-size:11px;font-weight:600;color:#1E6FD9}
+.log-time{font-size:11px;color:#9896A0}
+.log-empty{padding:2.5rem;text-align:center;color:#9896A0;font-size:13px}
+
+@media(max-width:600px){.topbar{padding:.75rem 1rem}.filters-bar{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/panel" class="topbar-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Panel
+    </a>
+    <div class="topbar-titulo">Registro de Actividad</div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-title">Registro de Actividad</div>
+  <div class="page-sub">Historial de accesos y acciones realizadas por los usuarios del sistema.</div>
+
+  <div class="filters-bar">
+    <div class="fil-group">
+      <span class="fil-label">Usuario</span>
+      <input class="fil-input" id="fil-user" type="text" placeholder="Todos" style="width:140px">
+    </div>
+    <div class="fil-group">
+      <span class="fil-label">Desde</span>
+      <input class="fil-input" id="fil-desde" type="date">
+    </div>
+    <div class="fil-group">
+      <span class="fil-label">Hasta</span>
+      <input class="fil-input" id="fil-hasta" type="date">
+    </div>
+    <button class="btn-buscar" onclick="cargarLog()">Buscar</button>
+    <button class="btn-limpiar" onclick="limpiar()">Limpiar</button>
+  </div>
+
+  <div class="log-container">
+    <div class="log-header">
+      <span class="log-header-title">Actividad reciente</span>
+      <span class="log-count" id="log-count"></span>
+    </div>
+    <div id="log-list"><div class="log-empty">Cargando...</div></div>
+  </div>
+</div>
+
+<script>
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData || userData.rol !== 'admin') { window.location.href = '/'; }
+
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre||userData.username).charAt(0).toUpperCase();
+
+// Fecha de hoy como default para "hasta"
+const hoy = new Date().toISOString().slice(0,10);
+document.getElementById('fil-hasta').value = hoy;
+
+const ICONOS = {
+  login:       {bg:'#DBEAFE',color:'#1D4ED8',svg:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>'},
+  chess_import:{bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'},
+  banco_upload:{bg:'#EDE9FE',color:'#5B21B6',svg:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>'},
+  confirmar_sugerido:{bg:'#D1FAE5',color:'#065F46',svg:'<polyline points="20 6 9 17 4 12"/>'},
+  asignar_manual:{bg:'#FEF3C7',color:'#B45309',svg:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/>'},
+  confirmar_match_pend:{bg:'#FEE2E2',color:'#991B1B',svg:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'},
+};
+const ACCION_LABELS = {
+  login:'Ingresó al sistema',
+  chess_import:'Importó Chess ERP',
+  banco_upload:'Subió extracto bancario',
+  confirmar_sugerido:'Confirmó cliente sugerido',
+  asignar_manual:'Asignó cliente manualmente',
+  confirmar_match_pend:'Confirmó match pendiente',
+};
+
+function iconoSVG(accion){
+  const ic = ICONOS[accion] || {bg:'#F2F1EE',color:'#56555A',svg:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'};
+  return `<div class="log-icon" style="background:${ic.bg}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${ic.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${ic.svg}</svg></div>`;
+}
+
+function fmtFechaHora(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function cargarLog(){
+  const list = document.getElementById('log-list');
+  list.innerHTML = '<div class="log-empty">Cargando...</div>';
+  document.getElementById('log-count').textContent = '';
+  const user = document.getElementById('fil-user').value.trim();
+  const desde = document.getElementById('fil-desde').value;
+  const hasta = document.getElementById('fil-hasta').value;
+  const params = new URLSearchParams();
+  if(user) params.set('usuario', user);
+  if(desde) params.set('desde', desde);
+  if(hasta) params.set('hasta', hasta);
+  try{
+    const r = await fetch('/api/log?' + params.toString(), {headers:{'x-admin': userData.username}});
+    const rows = await r.json();
+    document.getElementById('log-count').textContent = rows.length + ' registro' + (rows.length===1?'':'s');
+    if(!rows.length){ list.innerHTML = '<div class="log-empty">Sin resultados para los filtros seleccionados.</div>'; return; }
+    list.innerHTML = rows.map(function(row){
+      const label = ACCION_LABELS[row.accion] || row.accion;
+      return `<div class="log-item">
+        ${iconoSVG(row.accion)}
+        <div class="log-body">
+          <div class="log-accion">${label}</div>
+          ${row.detalle ? `<div class="log-detalle">${row.detalle}</div>` : ''}
+          <div class="log-meta">
+            <span class="log-user">${row.nombre||row.username} <span style="color:#9896A0;font-weight:400">@${row.username}</span></span>
+            <span class="log-time">${fmtFechaHora(row.created_at)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    list.innerHTML = '<div class="log-empty" style="color:#C0392B">Error al cargar el registro.</div>';
+  }
+}
+
+function limpiar(){
+  document.getElementById('fil-user').value = '';
+  document.getElementById('fil-desde').value = '';
+  document.getElementById('fil-hasta').value = hoy;
+  cargarLog();
+}
+
+cargarLog();
+</script>
+</body>
+</html>
