@@ -194,6 +194,37 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     </div>
   </div>
 
+  <!-- RESUMEN -->
+  <div id="resumen-wrap" style="margin-bottom:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:600;color:#9896A0">Resumen de tickets</span>
+      <select id="resumen-usuario" onchange="actualizarResumen()" style="padding:5px 10px;border-radius:8px;font-size:12px;border:1.5px solid #DDDBD6;background:#fff;color:#18181A;font-family:'Inter',sans-serif;outline:none">
+        <option value="">Todos los usuarios</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div style="background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.75rem 1rem">
+        <div id="rs-total" style="font-size:22px;font-weight:700;color:#18181A;line-height:1;margin-bottom:3px">—</div>
+        <div style="font-size:11px;color:#9896A0">Total</div>
+      </div>
+      <div style="background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.75rem 1rem">
+        <div id="rs-abierto" style="font-size:22px;font-weight:700;color:#1D4ED8;line-height:1;margin-bottom:3px">—</div>
+        <div id="rs-abierto-pct" style="font-size:11px;font-weight:600;color:#1D4ED8;margin-bottom:3px"></div>
+        <div style="font-size:11px;color:#9896A0">Abiertos</div>
+      </div>
+      <div style="background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.75rem 1rem">
+        <div id="rs-proceso" style="font-size:22px;font-weight:700;color:#92400E;line-height:1;margin-bottom:3px">—</div>
+        <div id="rs-proceso-pct" style="font-size:11px;font-weight:600;color:#92400E;margin-bottom:3px"></div>
+        <div style="font-size:11px;color:#9896A0">En proceso</div>
+      </div>
+      <div style="background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.75rem 1rem">
+        <div id="rs-fin" style="font-size:22px;font-weight:700;color:#065F46;line-height:1;margin-bottom:3px">—</div>
+        <div id="rs-fin-pct" style="font-size:11px;font-weight:600;color:#065F46;margin-bottom:3px"></div>
+        <div style="font-size:11px;color:#9896A0">Finalizados</div>
+      </div>
+    </div>
+  </div>
+
   <!-- FILTROS -->
   <div class="filters">
     <button class="fil-btn active" onclick="setFiltro(this,'')">Todos</button>
@@ -233,19 +264,6 @@ const TIPO_DOT = { reclamo:'dot-reclamo', solicitud:'dot-solicitud', alta_client
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T')); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
 function fmtFecha(iso){ if(!iso) return '—'; var s=String(iso).replace(' ','T'); if(s.length>10) s=s.slice(0,10); var d=new Date(s+'T12:00:00'); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
-
-async function cargarUsuarios(){
-  try{
-    var r=await fetch('/api/usuarios-lista');
-    usuarios=await r.json();
-    var selF=document.getElementById('fil-asignado');
-    var selA=document.getElementById('f-asignado');
-    usuarios.forEach(function(u){
-      selF.innerHTML+='<option value="'+esc(u.username)+'">'+esc(u.nombre||u.username)+'</option>';
-      selA.innerHTML+='<option value="'+esc(u.username)+'">'+esc(u.nombre||u.username)+'</option>';
-    });
-  }catch(e){}
-}
 
 function setFiltro(btn, estado){
   document.querySelectorAll('.fil-btn').forEach(function(b){b.classList.remove('active')});
@@ -542,11 +560,64 @@ async function crearTicket(){
     });
     showErr('');
     await cargar();
+    await cargarResumen();
   }catch(e){ showErr('Error de conexión.'); }
+}
+
+async function cargarResumen(){
+  try{
+    var r=await fetch('/api/tickets');
+    var todos=await r.json();
+    window._todosTickets=todos;
+    // Poblar select de usuarios del resumen (por asignado_a)
+    var sel=document.getElementById('resumen-usuario');
+    var vistos={};
+    todos.forEach(function(t){
+      if(t.asignado_a && !vistos[t.asignado_a]){
+        vistos[t.asignado_a]=true;
+        var opt=document.createElement('option');
+        opt.value=t.asignado_a;
+        opt.textContent=t.asignado_a_nombre||t.asignado_a;
+        sel.appendChild(opt);
+      }
+    });
+    actualizarResumen();
+  }catch(e){}
+}
+
+function actualizarResumen(){
+  var todos=window._todosTickets||[];
+  var u=document.getElementById('resumen-usuario').value;
+  var lista=u?todos.filter(function(t){return t.asignado_a===u;}):todos;
+  var total=lista.length;
+  var a=lista.filter(function(t){return t.estado==='abierto';}).length;
+  var p=lista.filter(function(t){return t.estado==='en_proceso';}).length;
+  var f=lista.filter(function(t){return t.estado==='finalizado';}).length;
+  document.getElementById('rs-total').textContent=total;
+  document.getElementById('rs-abierto').textContent=a;
+  document.getElementById('rs-proceso').textContent=p;
+  document.getElementById('rs-fin').textContent=f;
+  document.getElementById('rs-abierto-pct').textContent=total?Math.round(a/total*100)+'%':'';
+  document.getElementById('rs-proceso-pct').textContent=total?Math.round(p/total*100)+'%':'';
+  document.getElementById('rs-fin-pct').textContent=total?Math.round(f/total*100)+'%':'';
+}
+
+async function cargarUsuarios(){
+  try{
+    var r=await fetch('/api/usuarios-lista');
+    usuarios=await r.json();
+    var selF=document.getElementById('fil-asignado');
+    var selA=document.getElementById('f-asignado');
+    usuarios.forEach(function(u){
+      selF.innerHTML+='<option value="'+esc(u.username)+'">'+esc(u.nombre||u.username)+'</option>';
+      selA.innerHTML+='<option value="'+esc(u.username)+'">'+esc(u.nombre||u.username)+'</option>';
+    });
+  }catch(e){}
 }
 
 cargarUsuarios();
 cargar();
+cargarResumen();
 </script>
 </body>
 </html>
