@@ -1298,7 +1298,13 @@ function fechasHabilesDesde(fechaStr, feriadosSet){
 
 /* PROCESAR */
 async function procesar(){
-  var chess=state.chess,banco=state.banco;
+  // Normalizar fechas de chess (pueden venir en distinto formato según el origen)
+  var chess=state.chess.map(function(m){
+    return Object.assign({},m,{fecha:parseFecha(String(m.fecha||''))});
+  });
+  var banco=state.banco.map(function(b){
+    return Object.assign({},b,{fecha:parseFecha(String(b.fecha||''))});
+  });
   var cuitMap={},codMap=state.clientes;
   Object.values(state.clientes).forEach(function(c){if(c.cuit) cuitMap[normCUIT(c.cuit)]=c;});
   // mapa normalizado por código numérico para tolerar diferencias de ceros al inicio
