@@ -1323,12 +1323,15 @@ async function procesar(){
     var cuitBco=extraerCUIT(b.desc);
     var match=null,nivel='NC',cliInfo=null,sugerido=null;
 
-    // Prioridad 1: CUIT del banco coincide con cliente del maestro + importe exacto en Chess (cualquier fecha)
+    // Prioridad 1: CUIT del banco coincide con cliente del maestro + importe exacto + fecha dentro de 2 días hábiles
     if(cuitBco&&cuitMap[cuitBco]){
       var cli=cuitMap[cuitBco];
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
-        if(chess[i].codCli===cli.c&&Math.abs(chess[i].haber-b.importe)<0.01){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
+        if(chess[i].codCli===cli.c&&Math.abs(chess[i].haber-b.importe)<0.01){
+          var fechasEsp1=fechasHabilesDesde(chess[i].fecha,feriadosSet);
+          if(chess[i].fecha===b.fecha||fechasEsp1.indexOf(b.fecha)>=0){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
+        }
       }
     }
 
