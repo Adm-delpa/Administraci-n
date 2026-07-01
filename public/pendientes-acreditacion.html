@@ -289,6 +289,15 @@ function renderNotas(it, confirmado){
     +'</div></div>';
 }
 
+function renderVariacion(aprox, real){
+  var dif = parseFloat(real) - parseFloat(aprox);
+  if(Math.abs(dif) < 0.01) return '<div style="font-size:11px;color:#9896A0;margin-bottom:6px">Sin diferencia</div>';
+  var color = dif > 0 ? '#065F46' : '#991B1B';
+  var bg = dif > 0 ? '#D1FAE5' : '#FEE2E2';
+  var signo = dif > 0 ? '+' : '';
+  return '<div style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:'+bg+';color:'+color+';margin-bottom:6px;display:inline-block">'+signo+fmtImporte(dif)+' vs. estimado</div>';
+}
+
 async function cargar(){
   try{
     var r=await fetch('/api/pendientes-acreditacion');
@@ -330,7 +339,7 @@ async function cargar(){
         +'</div>'
         +'<div class="item-right">'
         +'<div class="item-importe" style="text-decoration:line-through;color:#9896A0;font-size:12px">~'+fmtImporte(it.importe)+'</div>'
-        +(it.importe_real?'<div class="item-importe-real">✓ '+fmtImporte(it.importe_real)+' acreditado</div>':'')
+        +(it.importe_real?'<div class="item-importe-real">✓ '+fmtImporte(it.importe_real)+' acreditado</div>'+renderVariacion(it.importe, it.importe_real):'')
         +'<span class="badge-confirmado">Acreditado</span>'
         +'</div>'
         +'</div>'
