@@ -20,8 +20,24 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
 .logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 
-.page{max-width:900px;margin:0 auto;padding:2rem 1rem}
+.page{max-width:1160px;margin:0 auto;padding:2rem 1rem;display:grid;grid-template-columns:1fr 230px;gap:1.25rem;align-items:start}
+.main-col{min-width:0}
+.side-col{position:sticky;top:1rem}
+.side-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
+.side-header{padding:.65rem 1rem;border-bottom:1px solid #F5F5F7;font-size:11px;font-weight:700;color:#56555A;text-transform:uppercase;letter-spacing:.06em}
+.side-user{display:flex;flex-direction:column;gap:3px;padding:.65rem 1rem;border-bottom:1px solid #F5F5F7;cursor:pointer;transition:background .12s}
+.side-user:last-child{border-bottom:none}
+.side-user:hover{background:#F8F7F5}
+.side-user.active{background:#EFF6FF}
+.side-user-name{font-size:12px;font-weight:600;color:#18181A;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-stats{display:flex;gap:6px}
+.side-stat{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.ss-a{background:#DBEAFE;color:#1D4ED8}
+.ss-p{background:#FEF3C7;color:#92400E}
+.ss-f{background:#D1FAE5;color:#065F46}
+.side-empty{padding:1rem;font-size:12px;color:#9896A0;text-align:center}
 .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px}
+@media(max-width:820px){.page{grid-template-columns:1fr}.side-col{position:static}}
 .page-title{font-size:22px;font-weight:700;letter-spacing:-.02em}
 .btn-nuevo{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 .btn-nuevo:hover{background:#0D4FA0}
@@ -214,6 +230,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 </style>
 
 <div class="page">
+<div class="main-col">
   <div class="page-header">
     <div class="page-title">Tickets internos</div>
     <button class="btn-nuevo" onclick="toggleForm()">
@@ -275,11 +292,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 
   <!-- RESUMEN -->
   <div id="resumen-wrap" style="margin-bottom:1rem">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:10px;flex-wrap:wrap">
-      <span style="font-size:12px;font-weight:600;color:#9896A0">Resumen de tickets</span>
-      <select id="resumen-usuario" onchange="actualizarResumen()" style="padding:5px 10px;border-radius:8px;font-size:12px;border:1.5px solid #DDDBD6;background:#fff;color:#18181A;font-family:'Inter',sans-serif;outline:none">
-        <option value="">Todos los usuarios</option>
-      </select>
+    <div style="margin-bottom:.6rem">
+      <span style="font-size:12px;font-weight:600;color:#9896A0">Resumen general</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
       <div style="background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.75rem 1rem">
@@ -325,7 +339,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
   <div class="tickets-list" id="tickets-list">
     <div class="empty">Cargando...</div>
   </div>
+</div><!-- /main-col -->
+
+<div class="side-col">
+  <div class="side-card">
+    <div class="side-header">Por usuario</div>
+    <div id="side-usuarios"><div class="side-empty">Cargando...</div></div>
+  </div>
 </div>
+
+</div><!-- /page -->
 
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
@@ -649,30 +672,17 @@ async function cargarResumen(){
     var r=await fetch('/api/tickets');
     var todos=await r.json();
     window._todosTickets=todos;
-    // Poblar select de usuarios del resumen (por asignado_a)
-    var sel=document.getElementById('resumen-usuario');
-    var vistos={};
-    todos.forEach(function(t){
-      if(t.asignado_a && !vistos[t.asignado_a]){
-        vistos[t.asignado_a]=true;
-        var opt=document.createElement('option');
-        opt.value=t.asignado_a;
-        opt.textContent=t.asignado_a_nombre||t.asignado_a;
-        sel.appendChild(opt);
-      }
-    });
     actualizarResumen();
+    renderSidebarUsuarios();
   }catch(e){}
 }
 
 function actualizarResumen(){
   var todos=window._todosTickets||[];
-  var u=document.getElementById('resumen-usuario').value;
-  var lista=u?todos.filter(function(t){return t.asignado_a===u;}):todos;
-  var total=lista.length;
-  var a=lista.filter(function(t){return t.estado==='abierto';}).length;
-  var p=lista.filter(function(t){return t.estado==='en_proceso';}).length;
-  var f=lista.filter(function(t){return t.estado==='finalizado';}).length;
+  var total=todos.length;
+  var a=todos.filter(function(t){return t.estado==='abierto';}).length;
+  var p=todos.filter(function(t){return t.estado==='en_proceso';}).length;
+  var f=todos.filter(function(t){return t.estado==='finalizado';}).length;
   document.getElementById('rs-total').textContent=total;
   document.getElementById('rs-abierto').textContent=a;
   document.getElementById('rs-proceso').textContent=p;
@@ -680,6 +690,44 @@ function actualizarResumen(){
   document.getElementById('rs-abierto-pct').textContent=total?Math.round(a/total*100)+'%':'';
   document.getElementById('rs-proceso-pct').textContent=total?Math.round(p/total*100)+'%':'';
   document.getElementById('rs-fin-pct').textContent=total?Math.round(f/total*100)+'%':'';
+}
+
+function renderSidebarUsuarios(){
+  var todos=window._todosTickets||[];
+  var mapa={};
+  todos.forEach(function(t){
+    var key=t.asignado_a||'__sin_asignar__';
+    var nombre=t.asignado_a_nombre||(t.asignado_a?t.asignado_a:'Sin asignar');
+    if(!mapa[key]) mapa[key]={nombre:nombre,a:0,p:0,f:0};
+    if(t.estado==='abierto') mapa[key].a++;
+    else if(t.estado==='en_proceso') mapa[key].p++;
+    else if(t.estado==='finalizado') mapa[key].f++;
+  });
+  var keys=Object.keys(mapa);
+  var cont=document.getElementById('side-usuarios');
+  if(!keys.length){ cont.innerHTML='<div class="side-empty">Sin tickets aún.</div>'; return; }
+  // ordenar: primero los que tienen abiertos o en proceso
+  keys.sort(function(a,b){ return (mapa[b].a+mapa[b].p)-(mapa[a].a+mapa[a].p); });
+  var currentFilter=document.getElementById('fil-asignado').value;
+  cont.innerHTML=keys.map(function(k){
+    var u=mapa[k];
+    var isActive=currentFilter===k;
+    return '<div class="side-user'+(isActive?' active':'')+'" onclick="filtrarPorUsuarioSide(\''+k+'\')">'
+      +'<div class="side-user-name">'+esc(u.nombre)+'</div>'
+      +'<div class="side-stats">'
+      +(u.a?'<span class="side-stat ss-a">'+u.a+' Ab.</span>':'')
+      +(u.p?'<span class="side-stat ss-p">'+u.p+' Proc.</span>':'')
+      +(u.f?'<span class="side-stat ss-f">'+u.f+' Fin.</span>':'')
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function filtrarPorUsuarioSide(key){
+  var sel=document.getElementById('fil-asignado');
+  if(sel.value===key){ sel.value=''; } else { sel.value=key; }
+  cargar();
+  renderSidebarUsuarios();
 }
 
 async function cargarUsuarios(){
