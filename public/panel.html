@@ -280,7 +280,7 @@ document.getElementById('stat-hora').textContent = now.toLocaleTimeString('es-AR
 document.getElementById('stat-acceso').textContent = now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
 
 // Ocultar módulos sin acceso: admin sin modulos configurados = todo, vista sin modulos = nada
-const modMap={'facturacion':'a[href="/facturacion"]','cuentas-corrientes':'a[href="/cuentas-corrientes"]','conciliacion-bancaria':'a[href="/conciliacion-bancaria"]'};
+const modMap={'facturacion':'a[href="/facturacion"]','cuentas-corrientes':'a[href="/cuentas-corrientes"]','conciliacion-bancaria':'a[href="/conciliacion-bancaria"]','tickets':'a[href="/tickets"]','pendientes-acreditacion':'a[href="/pendientes-acreditacion"]'};
 if(userData.rol!=='admin'){
   Object.entries(modMap).forEach(([id,sel])=>{
     const tieneAcceso=userData.modulos&&userData.modulos[id];
