@@ -1248,22 +1248,16 @@ async function procesar(){
     var cuitBco=extraerCUIT(b.desc);
     var match=null,nivel='NC',cliInfo=null,sugerido=null;
 
-    // N1: CUIT conocido + importe exacto (sin importar fecha)
+    // Prioridad 1: CUIT del banco coincide con cliente del maestro + importe exacto en Chess (cualquier fecha)
     if(cuitBco&&cuitMap[cuitBco]){
       var cli=cuitMap[cuitBco];
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
         if(chess[i].codCli===cli.c&&Math.abs(chess[i].haber-b.importe)<0.01){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
       }
-      if(!match){
-        for(var i=0;i<chess.length;i++){
-          if(sisUsado[i]) continue;
-          if(Math.abs(chess[i].haber-b.importe)<0.01){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
-        }
-      }
     }
 
-    // N2: importe exacto + fecha Chess es día hábil anterior al banco (hasta 2 días hábiles)
+    // Prioridad 2: importe exacto + fecha Chess dentro de 2 días hábiles del banco
     if(!match){
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
