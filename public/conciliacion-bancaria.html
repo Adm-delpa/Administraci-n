@@ -912,9 +912,9 @@ async function sincronizarChess(){
     var nuevosChess = movimientos
       .filter(m => String(m.dsmovban || '').trim().toUpperCase() === 'COBRANZA CREDITO BANCARIO')
       .map(m => ({
-        fecha: m.fechamov,
+        fecha: parseFecha(String(m.fechamov || '')),
         haber: parseFloat(m.haber || 0),
-        codCli: m.idcliente ? String(m.idcliente) : '',
+        codCli: m.idcliente ? String(parseInt(m.idcliente, 10)) : '',
         nomCli: m.nomcli || '',
         ref: m.dsmovban || m.referencia || ''
       })).filter(m => m.haber > 0);
@@ -1301,6 +1301,11 @@ async function procesar(){
   var chess=state.chess,banco=state.banco;
   var cuitMap={},codMap=state.clientes;
   Object.values(state.clientes).forEach(function(c){if(c.cuit) cuitMap[normCUIT(c.cuit)]=c;});
+  // mapa normalizado por código numérico para tolerar diferencias de ceros al inicio
+  var codMapNorm={};
+  Object.keys(state.clientes).forEach(function(k){ codMapNorm[parseInt(k,10)]=state.clientes[k]; });
+  function lookupCli(cod){ return codMap[cod]||codMapNorm[parseInt(cod,10)]||null; }
+  function codEq(a,b){ return parseInt(a,10)===parseInt(b,10); }
   var sisUsado=chess.map(function(){return false;});
   var nuevos=[];
 
@@ -1328,7 +1333,7 @@ async function procesar(){
       var cli=cuitMap[cuitBco];
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
-        if(chess[i].codCli===cli.c&&Math.abs(chess[i].haber-b.importe)<0.01){
+        if(codEq(chess[i].codCli,cli.c)&&Math.abs(chess[i].haber-b.importe)<0.01){
           var fechasEsp1=fechasHabilesDesde(chess[i].fecha,feriadosSet);
           if(chess[i].fecha===b.fecha||fechasEsp1.indexOf(b.fecha)>=0){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
         }
@@ -1342,7 +1347,7 @@ async function procesar(){
         if(Math.abs(chess[i].haber-b.importe)<0.01){
           var fechasEsperadas=fechasHabilesDesde(chess[i].fecha,feriadosSet);
           if(chess[i].fecha===b.fecha||fechasEsperadas.indexOf(b.fecha)>=0){
-            match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=codMap[chess[i].codCli]||null;break;
+            match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=lookupCli(chess[i].codCli);break;
           }
         }
       }
@@ -1359,7 +1364,7 @@ async function procesar(){
           var chessMatch=null;
           for(var ci=0;ci<chess.length;ci++){
             if(sisUsado[ci]) continue;
-            if(String(chess[ci].codCli)===String(pend.cod)&&Math.abs(chess[ci].haber-b.importe)<0.01){
+            if(codEq(chess[ci].codCli,pend.cod)&&Math.abs(chess[ci].haber-b.importe)<0.01){
               var fechasEsp=fechasHabilesDesde(chess[ci].fecha,feriadosSet);
               if(chess[ci].fecha===b.fecha||fechasEsp.indexOf(b.fecha)>=0){
                 chessMatch=chess[ci]; sisUsado[ci]=true; break;
@@ -1389,7 +1394,7 @@ async function procesar(){
         var mejorDif=null,mejorChess=null;
         for(var i=0;i<chess.length;i++){
           var dif=Math.abs(chess[i].haber-b.importe);
-          if(chess[i].codCli===cliNC.c&&(mejorDif===null||dif<mejorDif)){
+          if(codEq(chess[i].codCli,cliNC.c)&&(mejorDif===null||dif<mejorDif)){
             mejorDif=dif; mejorChess=chess[i];
           }
         }
