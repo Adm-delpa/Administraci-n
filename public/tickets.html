@@ -130,9 +130,91 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <div class="user-avatar" id="user-avatar">?</div>
       <span id="user-nombre">—</span>
     </div>
+    <button class="logout-btn" style="background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.25);display:flex;align-items:center;gap:5px" onclick="document.getElementById('modal-ayuda').style.display='flex'" title="Ayuda">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Ayuda
+    </button>
     <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
   </div>
 </div>
+
+<!-- Modal ayuda -->
+<div id="modal-ayuda" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="background:#0D4FA0;border-radius:14px 14px 0 0;padding:1.1rem 1.5rem;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff">Módulo de Tickets Internos</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Guía de uso</div>
+      </div>
+      <button onclick="document.getElementById('modal-ayuda').style.display='none'" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:18px;line-height:1">×</button>
+    </div>
+    <div style="padding:1.5rem;font-size:13px;color:#18181A;line-height:1.7">
+
+      <div class="h-sec">📋 ¿Para qué sirve?</div>
+      <p style="color:#56555A;margin-bottom:1.25rem">Permite registrar y gestionar reclamos, solicitudes y altas de clientes nuevos. Cada ticket tiene un responsable asignado, un historial de seguimiento y queda registrado quién lo cerró y cómo se resolvió.</p>
+
+      <div class="h-sec">➕ Crear un ticket</div>
+      <ol style="color:#56555A;padding-left:1.25rem;margin-bottom:.75rem">
+        <li style="margin-bottom:.3rem">Desde el panel, ingresar a <strong>Tickets Internos</strong>.</li>
+        <li style="margin-bottom:.3rem">Hacer clic en <strong>Nuevo ticket</strong>.</li>
+        <li style="margin-bottom:.3rem">Completar los campos: <strong>Tipo</strong>, <strong>Título</strong>, <strong>N° de cliente</strong> (opcional), <strong>Asignado a</strong> y <strong>Detalle</strong>.</li>
+        <li style="margin-bottom:.3rem">Si el tipo es <strong>Alta cliente nuevo</strong>, aparecen campos adicionales: nombre, teléfono, dirección, localidad y rubro. El campo Título se oculta.</li>
+        <li>Hacer clic en <strong>Crear ticket</strong>. Queda en estado <span class="badge b-abierto">Abierto</span>.</li>
+      </ol>
+
+      <div class="h-sec">🔄 Estados</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+        <span class="badge b-abierto" style="font-size:11px;padding:4px 12px">Abierto</span>
+        <span style="color:#9896A0;font-size:16px">→</span>
+        <span class="badge b-proceso" style="font-size:11px;padding:4px 12px">En proceso</span>
+        <span style="color:#9896A0;font-size:16px">→</span>
+        <span class="badge b-finalizado" style="font-size:11px;padding:4px 12px">Finalizado</span>
+      </div>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:1.25rem">
+        <li style="margin-bottom:.3rem"><strong>Abierto</strong>: recién creado, nadie comenzó a trabajarlo.</li>
+        <li style="margin-bottom:.3rem"><strong>En proceso</strong>: alguien está trabajando; se pueden agregar notas de seguimiento.</li>
+        <li><strong>Finalizado</strong>: el caso fue cerrado con un resultado registrado.</li>
+      </ul>
+
+      <div class="h-sec">⚙️ Trabajar un ticket</div>
+      <p style="color:#56555A;margin-bottom:.5rem"><strong>Pasar a "En proceso":</strong> abrir el ticket → clic en <em>Pasar a en proceso</em>. Se habilita el panel de seguimiento.</p>
+      <p style="color:#56555A;margin-bottom:.5rem"><strong>Agregar notas:</strong> escribir en el campo de seguimiento → clic en <em>Agregar nota</em>. Cada nota queda guardada con fecha, hora y usuario.</p>
+      <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:.6rem .9rem;font-size:12px;color:#92400E;margin-bottom:1.25rem">⚠ Las notas son acumulativas y no se pueden editar ni borrar.</div>
+
+      <div class="h-sec">✅ Finalizar un ticket</div>
+      <ol style="color:#56555A;padding-left:1.25rem;margin-bottom:.75rem">
+        <li style="margin-bottom:.3rem">Con el ticket en <strong>En proceso</strong>, hacer clic en <strong>Finalizar</strong>.</li>
+        <li style="margin-bottom:.3rem">Indicar si se resolvió (Sí / No) y escribir un <strong>motivo</strong> (obligatorio).</li>
+        <li>Confirmar. Queda registrado quién finalizó, cuándo y el resultado.</li>
+      </ol>
+      <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:.6rem .9rem;font-size:12px;color:#92400E;margin-bottom:1.25rem">⚠ Cualquier usuario puede finalizar un ticket, no solo el asignado. El motivo siempre es obligatorio.</div>
+
+      <div class="h-sec">📊 Filtros y resumen</div>
+      <p style="color:#56555A;margin-bottom:.5rem">El resumen superior muestra el total de tickets y el porcentaje por estado. Para ver el resumen de un usuario específico, usar el desplegable <em>Ver por usuario</em>.</p>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:1.25rem">
+        <li style="margin-bottom:.3rem"><strong>Por estado:</strong> botones Todos / Abiertos / En proceso / Finalizados.</li>
+        <li style="margin-bottom:.3rem"><strong>Por tipo:</strong> desplegable (Reclamo, Solicitud, Alta cliente nuevo, Otro).</li>
+        <li><strong>Por asignado:</strong> desplegable con todos los usuarios.</li>
+      </ul>
+
+      <div class="h-sec">🎨 Tipos y colores</div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:#DC2626;flex-shrink:0"></span><span style="color:#56555A">Reclamo</span></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:#7C3AED;flex-shrink:0"></span><span style="color:#56555A">Solicitud</span></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:#059669;flex-shrink:0"></span><span style="color:#56555A">Alta cliente nuevo</span></div>
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:#9896A0;flex-shrink:0"></span><span style="color:#56555A">Otro</span></div>
+      </div>
+
+      <div class="h-sec">🕓 Registro de actividad</div>
+      <p style="color:#56555A">Todas las acciones sobre tickets quedan registradas en <strong>Registro de Actividad</strong>: creación, cambio de estado, notas y finalización — con el usuario y el momento exacto de cada acción.</p>
+
+    </div>
+  </div>
+</div>
+<style>
+.h-sec{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D4FA0;background:#EFF6FF;border-left:3px solid #1E6FD9;padding:.4rem .75rem;border-radius:0 6px 6px 0;margin:1.25rem 0 .6rem}
+.h-sec:first-child{margin-top:0}
+</style>
 
 <div class="page">
   <div class="page-header">
