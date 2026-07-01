@@ -1305,6 +1305,8 @@ async function procesar(){
   var banco=state.banco.map(function(b){
     return Object.assign({},b,{fecha:parseFecha(String(b.fecha||''))});
   });
+  console.log('[DEBUG] Chess cargados:', chess.length, chess.slice(0,5));
+  console.log('[DEBUG] Banco cargados:', banco.length, banco.slice(0,5));
   var cuitMap={},codMap=state.clientes;
   Object.values(state.clientes).forEach(function(c){if(c.cuit) cuitMap[normCUIT(c.cuit)]=c;});
   // mapa normalizado por código numérico para tolerar diferencias de ceros al inicio
