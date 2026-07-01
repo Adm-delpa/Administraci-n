@@ -1343,7 +1343,8 @@ async function procesar(){
         if(sisUsado[i]) continue;
         if(codEq(chess[i].codCli,cli.c)&&Math.abs(chess[i].haber-b.importe)<0.01){
           var fechasEsp1=fechasHabilesDesde(chess[i].fecha,feriadosSet);
-          if(chess[i].fecha===b.fecha||fechasEsp1.indexOf(b.fecha)>=0){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
+          var fechasEsp1r=fechasHabilesDesde(b.fecha,feriadosSet);
+          if(chess[i].fecha===b.fecha||fechasEsp1.indexOf(b.fecha)>=0||fechasEsp1r.indexOf(chess[i].fecha)>=0){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
         }
       }
     }
@@ -1354,7 +1355,8 @@ async function procesar(){
         if(sisUsado[i]) continue;
         if(Math.abs(chess[i].haber-b.importe)<0.01){
           var fechasEsperadas=fechasHabilesDesde(chess[i].fecha,feriadosSet);
-          if(chess[i].fecha===b.fecha||fechasEsperadas.indexOf(b.fecha)>=0){
+          var fechasEsperadasR=fechasHabilesDesde(b.fecha,feriadosSet);
+          if(chess[i].fecha===b.fecha||fechasEsperadas.indexOf(b.fecha)>=0||fechasEsperadasR.indexOf(chess[i].fecha)>=0){
             match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=lookupCli(chess[i].codCli);break;
           }
         }
@@ -1374,7 +1376,8 @@ async function procesar(){
             if(sisUsado[ci]) continue;
             if(codEq(chess[ci].codCli,pend.cod)&&Math.abs(chess[ci].haber-b.importe)<0.01){
               var fechasEsp=fechasHabilesDesde(chess[ci].fecha,feriadosSet);
-              if(chess[ci].fecha===b.fecha||fechasEsp.indexOf(b.fecha)>=0){
+              var fechasEspR=fechasHabilesDesde(b.fecha,feriadosSet);
+              if(chess[ci].fecha===b.fecha||fechasEsp.indexOf(b.fecha)>=0||fechasEspR.indexOf(chess[ci].fecha)>=0){
                 chessMatch=chess[ci]; sisUsado[ci]=true; break;
               }
             }
@@ -1427,6 +1430,12 @@ async function procesar(){
   // Eliminar pendientes que ya pasaron a N1 (encontraron match en Chess y banco)
   state.pendientes=state.pendientes.filter(function(p){return !p._toDelete;});
 
+  var jun30banco=banco.filter(function(b){return b.fecha==='2026-06-30';});
+  var jun30nuevos=nuevos.filter(function(r){return r.fecha==='2026-06-30';});
+  var jun30chess=chess.filter(function(c){return c.fecha==='2026-06-30'||c.fecha==='2026-07-01';});
+  console.log('[DEBUG 30/06] banco entries:',jun30banco.length,jun30banco.slice(0,3));
+  console.log('[DEBUG 30/06] nuevos results:',jun30nuevos.length,jun30nuevos.slice(0,3));
+  console.log('[DEBUG 30/06] chess (30/06+01/07):',jun30chess.length,jun30chess.slice(0,3));
   loading(true);
   var byMonth={};
   nuevos.forEach(function(r){
@@ -1434,6 +1443,7 @@ async function procesar(){
     if(!byMonth[m]) byMonth[m]=[];
     byMonth[m].push(r);
   });
+  console.log('[DEBUG byMonth keys]:', Object.keys(byMonth), Object.keys(byMonth).map(function(k){return k+':'+byMonth[k].length;}));
 
   var movAdded=0,movDups=0;
   var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PEND':2,'NC':1};
@@ -1525,7 +1535,7 @@ function filtrar(){
       if(!ok) return false;
     }
     return true;
-  });
+  }).sort(function(a,b){ return (b.fecha||'').localeCompare(a.fecha||''); });
   state.pagina=0; renderTabla();
 }
 
