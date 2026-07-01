@@ -1187,12 +1187,12 @@ async function confirmarMatchPendiente(i){
   // Sincronizar el importe del pendiente con el importe real del banco, para que el
   // próximo "Procesar y guardar" lo detecte exacto cuando aparezca en Chess
   p.imp=cerca.row.importe;
-  p.confirmado=true;
   cerca.row.nivel='PEND';
   cerca.row.codCli=p.cod;
   cerca.row.nomCli=cliInfo?cliInfo.n:(p.nom||'');
   cerca.row.cuit=cliInfo?cliInfo.cuit:'';
   cerca.row.motivo='';
+  state.pendientes.splice(i,1);
   loading(true);
   try{
     var resultados=state.periodos[state.periodoActivo].resultados;
@@ -1260,9 +1260,10 @@ function renderPendientes(){
 
 async function guardarPendientes(){
   try{
+    var lista=state.pendientes.filter(function(p){return !p.confirmado;});
     await fetch('/api/datos/conciliacion-pendientes',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:'pendientes',datos:{lista:state.pendientes}})
+      body:JSON.stringify({periodo:'pendientes',datos:{lista:lista}})
     });
   }catch(e){}
 }
