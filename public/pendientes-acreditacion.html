@@ -291,28 +291,26 @@ function renderNotas(it, confirmado){
 
 function renderVariacion(aprox, real){
   var a=parseFloat(aprox), r=parseFloat(real), dif=r-a;
+  var sinDif=Math.abs(dif)<0.01;
   var signo=dif>=0?'+':'';
   var pct=a>0?Math.round((dif/a)*100):0;
-  var barPct=a>0?Math.min(Math.round((Math.min(r,a)/a)*100),100):0;
-  var barColor=dif>=0?'#10B981':'#E24B4A';
-  var difColor=dif>=0?'#065F46':'#A32D2D';
-  var difBg=dif>=0?'#D1FAE5':'#FEE2E2';
-  var sinDif=Math.abs(dif)<0.01;
-  return '<div style="border-top:1px solid #F5F5F7;margin-top:.6rem;padding:.65rem 1.1rem 0">'
-    +'<div style="display:flex;align-items:flex-end;gap:28px;margin-bottom:.5rem">'
-    +'<div><div style="font-size:10px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Estimado</div>'
-    +'<div style="font-size:13px;color:#9896A0;text-decoration:line-through">'+fmtImporte(a)+'</div></div>'
-    +'<div><div style="font-size:10px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Acreditado</div>'
-    +'<div style="font-size:13px;font-weight:600;color:#18181A">'+fmtImporte(r)+'</div></div>'
-    +(sinDif
-      ?'<div style="font-size:11px;color:#9896A0;padding-bottom:2px">Sin diferencia</div>'
-      :'<div style="font-size:11px;font-weight:600;color:'+difColor+';background:'+difBg+';padding:3px 9px;border-radius:5px;margin-bottom:1px">'+signo+fmtImporte(dif)+' ('+signo+pct+'%)</div>')
+  var difColor=dif>0?'#065F46':dif<0?'#A32D2D':'#9896A0';
+  var difBg=dif>0?'#D1FAE5':dif<0?'#FEE2E2':'#F2F1EE';
+  return '<div style="border-top:1px solid #F5F5F7;margin-top:.6rem;padding:.5rem 1.1rem">'
+    +'<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">'
+    +'<div style="display:flex;align-items:baseline;gap:6px">'
+    +'<span style="font-size:10px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.04em">Estimado</span>'
+    +'<span style="font-size:13px;color:#9896A0;text-decoration:line-through">'+fmtImporte(a)+'</span>'
     +'</div>'
-    +(!sinDif
-      ?'<div style="height:5px;background:#EBEBEB;border-radius:4px;overflow:hidden;margin-bottom:.65rem">'
-        +'<div style="height:100%;width:'+barPct+'%;background:'+barColor+';border-radius:4px"></div>'
-        +'</div>'
-      :'')
+    +'<span style="color:#DDDBD6;font-size:14px">→</span>'
+    +'<div style="display:flex;align-items:baseline;gap:6px">'
+    +'<span style="font-size:10px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.04em">Acreditado</span>'
+    +'<span style="font-size:13px;font-weight:600;color:#18181A">'+fmtImporte(r)+'</span>'
+    +'</div>'
+    +(sinDif
+      ?'<span style="font-size:11px;color:#9896A0">Sin diferencia</span>'
+      :'<span style="font-size:11px;font-weight:600;color:'+difColor+';background:'+difBg+';padding:2px 9px;border-radius:5px">'+signo+fmtImporte(dif)+' ('+signo+pct+'%)</span>')
+    +'</div>'
     +'</div>';
 }
 
