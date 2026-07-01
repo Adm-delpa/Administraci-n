@@ -207,9 +207,84 @@ tr:hover td{background:#f9fbff}
       <div class="name" id="tb-nombre">—</div>
       <div class="rol" id="tb-rol">—</div>
     </div>
+    <button class="topbar-logout" style="display:flex;align-items:center;gap:5px" onclick="document.getElementById('modal-ayuda-conc').style.display='flex'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Ayuda
+    </button>
     <button class="topbar-logout" onclick="logout()">Cerrar sesión</button>
   </div>
 </div>
+
+<!-- Modal ayuda -->
+<div id="modal-ayuda-conc" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:14px;max-width:700px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="background:#0D4FA0;border-radius:14px 14px 0 0;padding:1.1rem 1.5rem;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff">Conciliación Bancaria</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Guía de uso</div>
+      </div>
+      <button onclick="document.getElementById('modal-ayuda-conc').style.display='none'" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:18px;line-height:1">×</button>
+    </div>
+    <div style="padding:1.5rem;font-size:13px;color:#18181A;line-height:1.7">
+
+      <div class="h-sec-conc">📋 ¿Para qué sirve?</div>
+      <p style="color:#56555A;margin-bottom:1.25rem">Permite cruzar los movimientos del extracto bancario con los pagos registrados en Chess ERP, identificar a qué cliente corresponde cada acreditación y dejar todo conciliado por período.</p>
+
+      <div class="h-sec-conc">📂 Paso a paso</div>
+      <ol style="color:#56555A;padding-left:1.25rem;margin-bottom:1.25rem">
+        <li style="margin-bottom:.4rem"><strong>Cargar el maestro de clientes</strong> — en el panel izquierdo cargar <em>Clientes Central</em> y <em>Clientes Dolores</em>. Solo se necesitan cargar una vez o cuando se actualicen.</li>
+        <li style="margin-bottom:.4rem"><strong>Importar desde Chess ERP</strong> — seleccionar el rango de fechas y hacer clic en <em>Importar desde Chess ERP</em>. Trae los pagos registrados en el sistema para ese período.</li>
+        <li style="margin-bottom:.4rem"><strong>Cargar el extracto bancario</strong> — seleccionar el archivo Excel o CSV descargado del banco.</li>
+        <li><strong>Procesar</strong> — una vez cargados los tres archivos se habilita el botón <em>Procesar</em>. El sistema aplica las reglas de conciliación automáticamente.</li>
+      </ol>
+
+      <div class="h-sec-conc">⚙️ Lógica de conciliación</div>
+      <p style="color:#56555A;margin-bottom:.75rem">El sistema intenta identificar cada acreditación bancaria aplicando dos reglas <strong>en orden de prioridad</strong>:</p>
+
+      <div style="border:1.5px solid #DBEAFE;border-radius:10px;padding:1rem;margin-bottom:.75rem;background:#F8FBFF">
+        <div style="font-size:11px;font-weight:700;color:#1D4ED8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">Prioridad 1 — CUIT + importe exacto</div>
+        <p style="color:#56555A;font-size:12px;margin:0">Si el CUIT que figura en la descripción del movimiento bancario coincide con un cliente del maestro <strong>y</strong> el importe es exactamente igual al registrado en Chess para ese mismo cliente → se confirma automáticamente, sin importar la fecha.</p>
+      </div>
+
+      <div style="border:1.5px solid #D1FAE5;border-radius:10px;padding:1rem;margin-bottom:1rem;background:#F0FDF4">
+        <div style="font-size:11px;font-weight:700;color:#065F46;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">Prioridad 2 — Importe exacto + fecha hábil</div>
+        <p style="color:#56555A;font-size:12px;margin:0">Si no se encontró coincidencia por CUIT, el sistema busca un movimiento Chess con el mismo importe cuya fecha sea igual o hasta <strong>2 días hábiles anteriores</strong> a la fecha del banco (contemplando feriados y fines de semana) → se confirma automáticamente, identificando el cliente por el código de Chess.</p>
+      </div>
+
+      <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:.6rem .9rem;font-size:12px;color:#92400E;margin-bottom:1.25rem">
+        ⚠ <strong>Importes duplicados:</strong> si dos acreditaciones tienen el mismo importe, el sistema asigna el movimiento Chess disponible a la primera que procesa. La segunda buscará el próximo Chess libre con ese importe. Si no hay otro disponible, quedará sin conciliar y requerirá asignación manual.
+      </div>
+
+      <div class="h-sec-conc">📊 Estados del resultado</div>
+      <div style="border:1px solid #DDDBD6;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#F8F7F5"><th style="padding:.5rem .75rem;text-align:left;font-weight:700;color:#56555A">Estado</th><th style="padding:.5rem .75rem;text-align:left;font-weight:700;color:#56555A">Significado</th></tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid #F0EEEB"><td style="padding:.45rem .75rem;font-weight:600">✅ Confirmado</td><td style="padding:.45rem .75rem;color:#56555A">Conciliado automáticamente por CUIT+importe o importe+fecha hábil</td></tr>
+            <tr style="border-top:1px solid #F0EEEB;background:#FAFAF9"><td style="padding:.45rem .75rem;font-weight:600">⏳ Pendiente</td><td style="padding:.45rem .75rem;color:#56555A">El importe coincide con un pendiente registrado pero todavía no aparece en Chess</td></tr>
+            <tr style="border-top:1px solid #F0EEEB"><td style="padding:.45rem .75rem;font-weight:600">🟡 Sugerido</td><td style="padding:.45rem .75rem;color:#56555A">El CUIT es conocido pero el importe no coincide exactamente — requiere confirmación</td></tr>
+            <tr style="border-top:1px solid #F0EEEB;background:#FAFAF9"><td style="padding:.45rem .75rem;font-weight:600">⚪ Sin identificar</td><td style="padding:.45rem .75rem;color:#56555A">Sin coincidencia — requiere asignación manual</td></tr>
+            <tr style="border-top:1px solid #F0EEEB"><td style="padding:.45rem .75rem;font-weight:600">✏️ Manual</td><td style="padding:.45rem .75rem;color:#56555A">Asignado manualmente por el usuario</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="h-sec-conc">⏳ Pendientes</div>
+      <p style="color:#56555A;margin-bottom:1.25rem">El botón <strong>Pendientes</strong> permite registrar acreditaciones que llegaron al banco pero todavía no figuran en Chess. Se guardan y en la próxima conciliación el sistema los cruza automáticamente.</p>
+
+      <div class="h-sec-conc">🗂 Períodos guardados</div>
+      <p style="color:#56555A;margin-bottom:1.25rem">Cada conciliación procesada queda guardada en el panel izquierdo. Se puede consultar cualquier período anterior haciendo clic en él.</p>
+
+      <div class="h-sec-conc">📤 Exportar</div>
+      <p style="color:#56555A">Genera un Excel con todos los movimientos del período conciliado, incluyendo el cliente asignado a cada acreditación.</p>
+
+    </div>
+  </div>
+</div>
+<style>
+.h-sec-conc{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D4FA0;background:#EFF6FF;border-left:3px solid #1E6FD9;padding:.4rem .75rem;border-radius:0 6px 6px 0;margin:1.25rem 0 .6rem}
+.h-sec-conc:first-child{margin-top:0}
+</style>
 
 <div class="layout">
 
