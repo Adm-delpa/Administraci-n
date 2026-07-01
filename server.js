@@ -493,6 +493,13 @@ app.put('/api/tickets/:id/finalizar', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al finalizar' }); }
 });
 
+app.delete('/api/tickets/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM tickets WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al eliminar' }); }
+});
+
 app.get('/api/usuarios-lista', async (req, res) => {
   try {
     const r = await pool.query('SELECT username, nombre FROM usuarios ORDER BY nombre ASC');
