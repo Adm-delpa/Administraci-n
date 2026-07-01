@@ -21,7 +21,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 
 .page{max-width:860px;margin:0 auto;padding:2rem 1rem}
-
 .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
 .page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
 
@@ -30,7 +29,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 
 .form-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;display:none}
 .form-title{font-size:14px;font-weight:700;color:#18181A;margin-bottom:1rem}
-.form-grid{display:grid;grid-template-columns:1fr 160px;gap:10px;margin-bottom:10px}
+.form-grid{display:grid;grid-template-columns:1fr 200px;gap:10px;margin-bottom:10px}
 .field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
 .field input,.field textarea{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .15s;background:#fff;color:#18181A}
 .field input:focus,.field textarea:focus{border-color:#1E6FD9}
@@ -45,23 +44,50 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .section-title{font-size:12px;font-weight:700;color:#18181A}
 .section-count{font-size:11px;color:#9896A0;background:#F2F1EE;padding:1px 8px;border-radius:20px;margin-left:2px}
 
-.item{padding:.9rem 1.1rem;border-bottom:1px solid #F5F5F7;display:flex;align-items:flex-start;gap:14px}
+.item{padding:.9rem 1.1rem;border-bottom:1px solid #F5F5F7}
 .item:last-child{border-bottom:none}
+.item-top{display:flex;align-items:flex-start;gap:14px}
 .item-body{flex:1;min-width:0}
 .item-concepto{font-size:13px;font-weight:600;color:#18181A;margin-bottom:3px}
 .item-detalle{font-size:12px;color:#56555A;margin-bottom:4px;line-height:1.45}
 .item-meta{font-size:11px;color:#9896A0}
 .item-meta span{color:#56555A}
 .item-right{flex-shrink:0;text-align:right}
-.item-importe{font-size:14px;font-weight:700;color:#18181A;margin-bottom:6px;white-space:nowrap}
+.item-importe{font-size:14px;font-weight:700;color:#18181A;margin-bottom:2px;white-space:nowrap}
+.item-importe-real{font-size:11px;color:#065F46;font-weight:600;margin-bottom:6px}
 .btn-confirmar{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:5px 12px;background:#D4F2E8;color:#075C41;border:1px solid #A7E3CC;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
 .btn-confirmar:hover{background:#A7E3CC}
 .btn-borrar{background:none;border:none;color:#C0392B;font-size:11px;cursor:pointer;padding:4px 6px;margin-top:3px;display:block;margin-left:auto;font-family:'Inter',sans-serif}
 .btn-borrar:hover{text-decoration:underline}
 .badge-confirmado{font-size:11px;padding:4px 10px;background:#D4F2E8;color:#075C41;border-radius:6px;white-space:nowrap}
-.item.confirmado{opacity:.7}
+.item.confirmado .item-concepto{color:#56555A}
 .empty{padding:2rem;text-align:center;color:#9896A0;font-size:13px}
 .msg-err{background:#FAE0E0;color:#8A1F1F;padding:.5rem .85rem;border-radius:6px;font-size:12px;font-weight:500;margin-top:.5rem;display:none}
+
+/* Notas */
+.notas-section{margin-top:.75rem;border-top:1px solid #F5F5F7;padding-top:.75rem}
+.notas-toggle{background:none;border:none;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:#1E6FD9;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px}
+.notas-toggle:hover{text-decoration:underline}
+.notas-body{margin-top:.6rem;display:none}
+.notas-body.open{display:block}
+.nota-item{display:flex;gap:8px;margin-bottom:.5rem;align-items:flex-start}
+.nota-dot{width:7px;height:7px;border-radius:50%;background:#F59E0B;flex-shrink:0;margin-top:4px}
+.nota-content{flex:1}
+.nota-meta{font-size:10px;color:#9896A0;font-weight:600;margin-bottom:2px}
+.nota-texto{font-size:12px;color:#56555A;background:#F8F7F5;border:1px solid #DDDBD6;border-radius:7px;padding:.4rem .65rem;line-height:1.5}
+.add-nota{display:flex;gap:8px;margin-top:.5rem;align-items:flex-start}
+.nota-input{flex:1;padding:.45rem .7rem;border-radius:7px;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;font-size:12px;color:#18181A;resize:none;line-height:1.5}
+.nota-input:focus{outline:none;border-color:#F59E0B}
+.btn-add-nota{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#1E6FD9;color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;align-self:flex-end}
+
+/* Modal confirmar */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:.25rem}
+.modal-sub{font-size:12px;color:#9896A0;margin-bottom:1.25rem}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem}
+.msg-err-modal{background:#FAE0E0;color:#8A1F1F;padding:.45rem .8rem;border-radius:6px;font-size:12px;margin-top:.5rem;display:none}
 
 @media(max-width:600px){.topbar{padding:.75rem 1rem}.form-grid{grid-template-columns:1fr}}
 </style>
@@ -85,6 +111,23 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
   </div>
 </div>
 
+<!-- Modal confirmar -->
+<div class="modal-overlay" id="modal-confirmar">
+  <div class="modal-box">
+    <div class="modal-title">Confirmar acreditación</div>
+    <div class="modal-sub" id="modal-confirmar-sub">Ingresá el importe real que se acreditó.</div>
+    <div class="field">
+      <label>Importe real acreditado</label>
+      <input type="text" id="modal-importe-real" placeholder="0,00">
+    </div>
+    <div class="msg-err-modal" id="modal-err"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalConfirmar()">Cancelar</button>
+      <button class="btn-save" onclick="confirmarConImporte()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div class="page">
   <div class="page-header">
     <div class="page-title">Pendientes de acreditación</div>
@@ -98,7 +141,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     <div class="form-title">Nuevo pendiente</div>
     <div class="form-grid">
       <div class="field"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Ej: NC Quilmes mayo 2026"></div>
-      <div class="field"><label>Importe</label><input type="text" id="f-importe" placeholder="0,00"></div>
+      <div class="field"><label>Importe aproximado de acreditación</label><input type="text" id="f-importe" placeholder="0,00"></div>
     </div>
     <div class="field" style="margin-bottom:10px"><label>Detalle <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
       <textarea id="f-detalle" placeholder="Información adicional, referencia, observaciones..."></textarea>
@@ -137,7 +180,8 @@ document.getElementById('user-avatar').textContent = (USER.nombre||USER.username
 
 function fmtImporte(n){ return '$'+parseFloat(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
-function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(iso); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T')); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function toggleForm(){
   var f=document.getElementById('form-card');
@@ -166,13 +210,31 @@ async function guardar(){
   }catch(e){ showErr('Error de conexión.'); }
 }
 
-async function confirmar(id){
-  if(!confirm('¿Confirmar esta acreditación?')) return;
+// Modal confirmar
+var pendienteAConfirmar = null;
+function abrirModalConfirmar(id, concepto, importe){
+  pendienteAConfirmar = id;
+  document.getElementById('modal-confirmar-sub').textContent = '"'+concepto+'" — aprox. '+fmtImporte(importe);
+  document.getElementById('modal-importe-real').value = '';
+  document.getElementById('modal-err').style.display = 'none';
+  document.getElementById('modal-confirmar').classList.add('open');
+  setTimeout(function(){ document.getElementById('modal-importe-real').focus(); }, 100);
+}
+function cerrarModalConfirmar(){
+  document.getElementById('modal-confirmar').classList.remove('open');
+  pendienteAConfirmar = null;
+}
+async function confirmarConImporte(){
+  var importeStr = document.getElementById('modal-importe-real').value.trim().replace(/\./g,'').replace(',','.');
+  var importe_real = parseFloat(importeStr);
+  var errEl = document.getElementById('modal-err');
+  if(isNaN(importe_real)||importe_real<=0){ errEl.textContent='Ingresá el importe real acreditado.'; errEl.style.display='block'; return; }
   try{
-    var r=await fetch('/api/pendientes-acreditacion/'+id+'/confirmar',{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username:USER.username,nombre:USER.nombre})});
-    if(r.ok) await cargar();
-  }catch(e){ alert('Error de conexión.'); }
+    var r=await fetch('/api/pendientes-acreditacion/'+pendienteAConfirmar+'/confirmar',{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:USER.username,nombre:USER.nombre,importe_real})});
+    if(r.ok){ cerrarModalConfirmar(); await cargar(); }
+    else { errEl.textContent='Error al confirmar.'; errEl.style.display='block'; }
+  }catch(e){ errEl.textContent='Error de conexión.'; errEl.style.display='block'; }
 }
 
 async function borrar(id){
@@ -181,6 +243,46 @@ async function borrar(id){
     var r=await fetch('/api/pendientes-acreditacion/'+id,{method:'DELETE'});
     if(r.ok) await cargar();
   }catch(e){ alert('Error de conexión.'); }
+}
+
+function toggleNotas(id){
+  var b=document.getElementById('notas-body-'+id);
+  if(!b) return;
+  b.classList.toggle('open');
+  var btn=document.getElementById('notas-toggle-'+id);
+  if(btn) btn.textContent = b.classList.contains('open') ? '▲ Ocultar notas' : '▼ Ver notas';
+}
+
+async function agregarNota(id){
+  var inp=document.getElementById('nota-input-'+id);
+  var texto=inp.value.trim();
+  if(!texto) return;
+  try{
+    var r=await fetch('/api/pendientes-acreditacion/'+id+'/notas',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({texto,username:USER.username,nombre:USER.nombre})});
+    if(r.ok){ inp.value=''; await cargar(); document.getElementById('notas-body-'+id).classList.add('open'); }
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function renderNotas(it){
+  var notas=it.notas||[];
+  var notasHtml=notas.map(function(n){
+    return '<div class="nota-item">'
+      +'<div class="nota-dot"></div>'
+      +'<div class="nota-content">'
+      +'<div class="nota-meta">'+esc(n.nombre||n.username)+' · '+fmtFechaHora(n.created_at)+'</div>'
+      +'<div class="nota-texto">'+esc(n.texto)+'</div>'
+      +'</div></div>';
+  }).join('');
+  var label=notas.length>0?'▼ Ver notas ('+notas.length+')':'▼ Agregar nota';
+  return '<div class="notas-section">'
+    +'<button class="notas-toggle" id="notas-toggle-'+it.id+'" onclick="toggleNotas('+it.id+')">'+label+'</button>'
+    +'<div class="notas-body" id="notas-body-'+it.id+'">'
+    +notasHtml
+    +'<div class="add-nota">'
+    +'<textarea class="nota-input" id="nota-input-'+it.id+'" rows="2" placeholder="Escribir nota..."></textarea>'
+    +'<button class="btn-add-nota" onclick="agregarNota('+it.id+')">Agregar</button>'
+    +'</div></div></div>';
 }
 
 async function cargar(){
@@ -196,22 +298,26 @@ async function cargar(){
     var lp=document.getElementById('list-pendientes');
     lp.innerHTML=pendientes.length===0?'<div class="empty">Sin pendientes.</div>':pendientes.map(function(it){
       return '<div class="item">'
+        +'<div class="item-top">'
         +'<div class="item-body">'
         +'<div class="item-concepto">'+esc(it.concepto)+'</div>'
         +(it.detalle?'<div class="item-detalle">'+esc(it.detalle)+'</div>':'')
         +'<div class="item-meta">Cargado por <span>'+esc(it.cargado_por_nombre||it.cargado_por)+'</span> · '+fmtFechaHora(it.cargado_at)+'</div>'
         +'</div>'
         +'<div class="item-right">'
-        +'<div class="item-importe">'+fmtImporte(it.importe)+'</div>'
-        +'<button class="btn-confirmar" onclick="confirmar('+it.id+')">✓ Confirmar</button>'
+        +'<div class="item-importe">~'+fmtImporte(it.importe)+'</div>'
+        +'<button class="btn-confirmar" onclick="abrirModalConfirmar('+it.id+',\''+esc(it.concepto)+'\','+it.importe+')">✓ Confirmar</button>'
         +'<button class="btn-borrar" onclick="borrar('+it.id+')">Eliminar</button>'
         +'</div>'
+        +'</div>'
+        +renderNotas(it)
         +'</div>';
     }).join('');
 
     var lc=document.getElementById('list-confirmados');
     lc.innerHTML=confirmados.length===0?'<div class="empty">Sin confirmados aún.</div>':confirmados.map(function(it){
       return '<div class="item confirmado">'
+        +'<div class="item-top">'
         +'<div class="item-body">'
         +'<div class="item-concepto">'+esc(it.concepto)+'</div>'
         +(it.detalle?'<div class="item-detalle">'+esc(it.detalle)+'</div>':'')
@@ -219,17 +325,18 @@ async function cargar(){
         +' · Confirmado por <span>'+esc(it.confirmado_por_nombre||it.confirmado_por)+'</span> · '+fmtFecha(it.confirmado_at)+'</div>'
         +'</div>'
         +'<div class="item-right">'
-        +'<div class="item-importe">'+fmtImporte(it.importe)+'</div>'
+        +'<div class="item-importe" style="text-decoration:line-through;color:#9896A0;font-size:12px">~'+fmtImporte(it.importe)+'</div>'
+        +(it.importe_real?'<div class="item-importe-real">✓ '+fmtImporte(it.importe_real)+' acreditado</div>':'')
         +'<span class="badge-confirmado">Acreditado</span>'
         +'</div>'
+        +'</div>'
+        +renderNotas(it)
         +'</div>';
     }).join('');
   }catch(e){
     document.getElementById('list-pendientes').innerHTML='<div class="empty" style="color:#C0392B">Error al cargar.</div>';
   }
 }
-
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 cargar();
 fetch('/api/novedades/pendientes/marcar-visto',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:USER.username})}).catch(()=>{});

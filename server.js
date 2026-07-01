@@ -115,8 +115,18 @@ async function initDB() {
         confirmado_por VARCHAR(50),
         confirmado_por_nombre VARCHAR(100),
         confirmado_at DATE,
-        estado VARCHAR(20) DEFAULT 'pendiente'
+        estado VARCHAR(20) DEFAULT 'pendiente',
+        importe_real NUMERIC(14,2)
       );
+      CREATE TABLE IF NOT EXISTS pendientes_acreditacion_notas (
+        id SERIAL PRIMARY KEY,
+        pendiente_id INTEGER REFERENCES pendientes_acreditacion(id) ON DELETE CASCADE,
+        texto TEXT NOT NULL,
+        username VARCHAR(50) NOT NULL,
+        nombre VARCHAR(100),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      ALTER TABLE pendientes_acreditacion ADD COLUMN IF NOT EXISTS importe_real NUMERIC(14,2);
 
       CREATE TABLE IF NOT EXISTS activity_log (
         id SERIAL PRIMARY KEY,
@@ -350,7 +360,10 @@ async function log(username, nombre, accion, detalle) {
 app.get('/api/pendientes-acreditacion', async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM pendientes_acreditacion ORDER BY estado ASC, cargado_at DESC');
-    res.json(r.rows);
+    const notas = await pool.query('SELECT * FROM pendientes_acreditacion_notas ORDER BY created_at ASC');
+    const notasMap = {};
+    notas.rows.forEach(n => { if(!notasMap[n.pendiente_id]) notasMap[n.pendiente_id]=[]; notasMap[n.pendiente_id].push(n); });
+    res.json(r.rows.map(row => ({ ...row, notas: notasMap[row.id] || [] })));
   } catch(e) { res.status(500).json({ error: 'Error al leer' }); }
 });
 
@@ -367,17 +380,30 @@ app.post('/api/pendientes-acreditacion', async (req, res) => {
 });
 
 app.put('/api/pendientes-acreditacion/:id/confirmar', async (req, res) => {
-  const { username, nombre } = req.body;
+  const { username, nombre, importe_real } = req.body;
   const { id } = req.params;
   if (!username) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const r = await pool.query(
-      'UPDATE pendientes_acreditacion SET estado=$1, confirmado_por=$2, confirmado_por_nombre=$3, confirmado_at=CURRENT_DATE WHERE id=$4 RETURNING *',
-      ['confirmado', username, nombre||username, id]
+      'UPDATE pendientes_acreditacion SET estado=$1, confirmado_por=$2, confirmado_por_nombre=$3, confirmado_at=CURRENT_DATE, importe_real=$5 WHERE id=$4 RETURNING *',
+      ['confirmado', username, nombre||username, id, importe_real||null]
     );
     if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al confirmar' }); }
+});
+
+app.post('/api/pendientes-acreditacion/:id/notas', async (req, res) => {
+  const { texto, username, nombre } = req.body;
+  const { id } = req.params;
+  if (!texto || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO pendientes_acreditacion_notas (pendiente_id, texto, username, nombre) VALUES ($1,$2,$3,$4) RETURNING *',
+      [id, texto, username, nombre||username]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al guardar nota' }); }
 });
 
 app.delete('/api/pendientes-acreditacion/:id', async (req, res) => {
