@@ -717,8 +717,17 @@ function renderSidebarUsuarios(){
   cont.innerHTML=keys.map(function(k){
     var u=mapa[k];
     var isActive=currentFilter===k;
+    var total=u.a+u.p+u.f;
+    var pct=total?Math.round((u.f/total)*100):0;
+    var barColor=pct===100?'#10B981':pct>=50?'#F59E0B':'#1E6FD9';
     return '<div class="side-user'+(isActive?' active':'')+'" onclick="filtrarPorUsuarioSide(\''+k+'\')">'
-      +'<div class="side-user-name">'+esc(u.nombre)+'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">'
+      +'<div class="side-user-name" style="margin-bottom:0">'+esc(u.nombre)+'</div>'
+      +'<span style="font-size:11px;font-weight:700;color:'+barColor+'">'+pct+'%</span>'
+      +'</div>'
+      +'<div style="height:4px;background:#F2F1EE;border-radius:3px;overflow:hidden;margin-bottom:5px">'
+      +'<div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:3px;transition:width .3s"></div>'
+      +'</div>'
       +'<div class="side-stats">'
       +(u.a?'<span class="side-stat ss-a">'+u.a+' Ab.</span>':'')
       +(u.p?'<span class="side-stat ss-p">'+u.p+' Proc.</span>':'')
