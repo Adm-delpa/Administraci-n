@@ -1493,7 +1493,7 @@ async function procesar(){
 
 /* STATS */
 function calcStats(){
-  var resultados=(state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[];
+  var resultados=((state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[]).filter(function(r){return !estaExcluida(r.desc);});
   var n1=0,n2=0,nc=0,pend=0,conc=0,mN1=0,mN2=0,mNc=0,mPend=0,mConc=0,tot=resultados.length;
   resultados.forEach(function(r){
     if(r.nivel==='N1'||r.nivel==='MAN'){n1++;mN1+=r.importe;}
