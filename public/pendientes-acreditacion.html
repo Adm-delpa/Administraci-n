@@ -179,7 +179,7 @@ document.getElementById('user-nombre').textContent = USER.nombre || USER.usernam
 document.getElementById('user-avatar').textContent = (USER.nombre||USER.username).charAt(0).toUpperCase();
 
 function fmtImporte(n){ return '$'+parseFloat(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(iso+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T').slice(0,10)+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
 function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T')); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -264,7 +264,7 @@ async function agregarNota(id){
   }catch(e){ alert('Error de conexión.'); }
 }
 
-function renderNotas(it){
+function renderNotas(it, confirmado){
   var notas=it.notas||[];
   var notasHtml=notas.map(function(n){
     return '<div class="nota-item">'
@@ -275,14 +275,18 @@ function renderNotas(it){
       +'</div></div>';
   }).join('');
   var label=notas.length>0?'▼ Ver notas ('+notas.length+')':'▼ Agregar nota';
+  var addNota=confirmado?''
+    :'<div class="add-nota">'
+    +'<textarea class="nota-input" id="nota-input-'+it.id+'" rows="2" placeholder="Escribir nota..."></textarea>'
+    +'<button class="btn-add-nota" onclick="agregarNota('+it.id+')">Agregar</button>'
+    +'</div>';
+  if(confirmado && notas.length===0) return '';
   return '<div class="notas-section">'
     +'<button class="notas-toggle" id="notas-toggle-'+it.id+'" onclick="toggleNotas('+it.id+')">'+label+'</button>'
     +'<div class="notas-body" id="notas-body-'+it.id+'">'
     +notasHtml
-    +'<div class="add-nota">'
-    +'<textarea class="nota-input" id="nota-input-'+it.id+'" rows="2" placeholder="Escribir nota..."></textarea>'
-    +'<button class="btn-add-nota" onclick="agregarNota('+it.id+')">Agregar</button>'
-    +'</div></div></div>';
+    +addNota
+    +'</div></div>';
 }
 
 async function cargar(){
@@ -310,7 +314,7 @@ async function cargar(){
         +'<button class="btn-borrar" onclick="borrar('+it.id+')">Eliminar</button>'
         +'</div>'
         +'</div>'
-        +renderNotas(it)
+        +renderNotas(it, false)
         +'</div>';
     }).join('');
 
@@ -330,7 +334,7 @@ async function cargar(){
         +'<span class="badge-confirmado">Acreditado</span>'
         +'</div>'
         +'</div>'
-        +renderNotas(it)
+        +renderNotas(it, true)
         +'</div>';
     }).join('');
   }catch(e){
