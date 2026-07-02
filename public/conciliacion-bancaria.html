@@ -1020,16 +1020,6 @@ async function cargarArchivo(tipo,inp){
         if(descUp.indexOf('REVERSA RETENCION')>=0) return;
         state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
       });
-      // Detectar mes principal y filtrar entradas de otros meses
-      var mesCount={};
-      state.banco.forEach(function(b){ var m=b.fecha.slice(0,7); mesCount[m]=(mesCount[m]||0)+1; });
-      var mesPrincipal=Object.keys(mesCount).sort(function(a,b){return mesCount[b]-mesCount[a];})[0];
-      var excluidos=state.banco.filter(function(b){return b.fecha.slice(0,7)!==mesPrincipal;});
-      state.banco=state.banco.filter(function(b){return b.fecha.slice(0,7)===mesPrincipal;});
-      if(excluidos.length>0){
-        var mesesExtra=[...new Set(excluidos.map(function(b){return b.fecha.slice(0,7);}))].join(', ');
-        showAlert('alert-info','Se excluyeron '+excluidos.length+' movimiento(s) de otros meses ('+mesesExtra+') para evitar duplicados entre períodos. El extracto se procesó solo para '+mesPrincipal+'.');
-      }
       markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
       document.getElementById('fname-banco').textContent=file.name;
       document.getElementById('ftime-banco').textContent=fmtTs(now);
@@ -1456,6 +1446,13 @@ async function procesar(){
   });
   console.log('[DEBUG byMonth keys]:', Object.keys(byMonth), Object.keys(byMonth).map(function(k){return k+':'+byMonth[k].length;}));
 
+  // Índice global de fingerprints de todos los períodos existentes (para evitar duplicados entre períodos)
+  var fpGlobal={};
+  Object.keys(state.periodos).forEach(function(per){
+    var res=(state.periodos[per]&&state.periodos[per].resultados)||[];
+    res.forEach(function(r){ fpGlobal[fingerprint(r)]=per; });
+  });
+
   var movAdded=0,movDups=0;
   var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PEND':2,'NC':1};
   for(var periodo in byMonth){
@@ -1464,12 +1461,13 @@ async function procesar(){
     existing.forEach(function(r){ fpMap[fingerprint(r)]=r; });
     byMonth[periodo].forEach(function(r){
       var fp=fingerprint(r);
+      // Si el fingerprint ya existe en OTRO período, no duplicar
+      if(fpGlobal[fp] && fpGlobal[fp]!==periodo){ movDups++; return; }
       if(fpMap[fp]){
         var oldPeso=nivelPeso[fpMap[fp].nivel]||0;
         var newPeso=nivelPeso[r.nivel]||0;
         if(newPeso>oldPeso){ fpMap[fp]=r; movAdded++; }
         else {
-          // Aunque se mantenga el resultado viejo, actualizar sugerido si el nuevo lo tiene
           if(r.sugerido) fpMap[fp].sugerido=r.sugerido;
           movDups++;
         }
