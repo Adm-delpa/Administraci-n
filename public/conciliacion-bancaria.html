@@ -374,7 +374,7 @@ tr:hover td{background:#f9fbff}
     </div>
 
     <div class="divider"></div>
-    <div class="sec-label">Períodos guardados</div>
+    <div class="sec-label">Filtrar por mes</div>
     <div class="period-list" id="period-list">
       <div class="no-periods">Sin datos aún</div>
     </div>
@@ -493,7 +493,7 @@ tr:hover td{background:#f9fbff}
 
   <div class="panel" id="panel-conc">
     <div class="panel-header">
-      <h3>Registros del período seleccionado</h3>
+      <h3>Registros de conciliación</h3>
       <div class="filters">
         <select id="fil-est" onchange="filtrar()">
           <option value="">Todos los estados</option>
@@ -599,8 +599,9 @@ var state = {
   clientes: {},
   chess: [], banco: [],
   checksumChess: null, checksumBanco: null,
-  periodos: {},
-  periodoActivo: null,
+  resultados: [],
+  filtroMes: null,
+  _savedAt: null,
   filtradas: [], pagina: 0, POR_PAG: 100,
   modalIdx: null, clienteSel: null,
   pendientes: []
@@ -710,7 +711,7 @@ async function init(){
   document.getElementById('chess-desde').value=yy+'-'+mm+'-01';
   document.getElementById('chess-hasta').value=yy+'-'+mm+'-'+dd;
   try{
-    await Promise.all([loadClientes(),loadPeriodos(),cargarPendientes()]);
+    await Promise.all([loadClientes(),loadResultados(),cargarPendientes()]);
   }catch(e){
     showAlert('alert-dup','Error al conectar con el servidor: '+e.message);
   }
@@ -735,15 +736,44 @@ async function loadClientes(){
   }
 }
 
-async function loadPeriodos(){
+async function loadResultados(){
   var res=await fetch('/api/datos/conciliacion');
   var data=await res.json();
-  state.periodos={};
-  Object.keys(data).forEach(function(k){ state.periodos[k]=data[k]; });
+  // Aplanar todos los períodos en una lista global
+  state.resultados=[];
+  var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PEND':2,'NC':1};
+  var fpMap={};
+  Object.keys(data).sort().forEach(function(k){
+    var rs=(data[k]&&data[k].resultados)||[];
+    rs.forEach(function(r){
+      var fp=fingerprint(r);
+      if(!fpMap[fp]){ fpMap[fp]=r; state.resultados.push(r); }
+      else {
+        var oldPeso=nivelPeso[fpMap[fp].nivel]||0;
+        var newPeso=nivelPeso[r.nivel]||0;
+        if(newPeso>oldPeso) Object.assign(fpMap[fp],r);
+      }
+    });
+    // Restaurar banco/chess del período más reciente
+    if(data[k].banco&&data[k].banco.length>0&&state.banco.length===0){
+      state.banco=data[k].banco;
+      markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones (guardado)',null);
+      verificarListo();
+    }
+    if(data[k].chess&&data[k].chess.length>0){
+      state.chess=mergeChess(state.chess,data[k].chess);
+    }
+  });
+  if(state.chess.length>0){
+    markFileCard('chess','Reporte Chess',state.chess.length+' COBRs (guardado)',null);
+    document.getElementById('sb-chess').textContent='Chess: '+state.chess.length+' COBRs';
+    verificarListo();
+  }
   renderPeriodList();
-  var keys=Object.keys(state.periodos).sort();
-  if(keys.length){
-    selectPeriodo(keys[keys.length-1]);
+  if(state.resultados.length){
+    // Auto-seleccionar el mes más reciente
+    var meses=Object.keys(getMesesDisponibles()).sort();
+    if(meses.length) setFiltroMes(meses[meses.length-1]);
     showAlert(null);
   } else {
     showAlert('alert-info','Cargá el Reporte Chess y el Extracto bancario, luego presioná "Procesar y guardar".');
@@ -762,66 +792,58 @@ function markFileCard(id, title, hint, timestamp){
   }
 }
 
-/* PERIOD LIST */
+/* FILTRO POR MES */
+function getMesesDisponibles(){
+  var meses={};
+  state.resultados.forEach(function(r){
+    if(r.fecha){ var m=r.fecha.slice(0,7); meses[m]=(meses[m]||0)+1; }
+  });
+  return meses;
+}
+
 function renderPeriodList(){
-  var keys=Object.keys(state.periodos).sort().reverse();
+  var meses=getMesesDisponibles();
+  var keys=Object.keys(meses).sort().reverse();
   var list=document.getElementById('period-list');
-  if(!keys.length){list.innerHTML='<div class="no-periods">Sin períodos guardados aún</div>';return;}
-  list.innerHTML=keys.map(function(k){
-    var cnt=(state.periodos[k].resultados||[]).length;
+  if(!keys.length){list.innerHTML='<div class="no-periods">Sin datos guardados aún</div>';return;}
+  var html='<div style="margin-bottom:4px">'
+    +'<button class="period-btn'+(state.filtroMes===null?' active':'')+'" onclick="setFiltroMes(null)" style="width:100%">'
+    +'<span>Todos los períodos</span>'
+    +'<span class="pcount">'+state.resultados.length+'</span>'
+    +'</button></div>';
+  html+=keys.map(function(k){
     return '<div style="display:flex;align-items:center;gap:4px">'
-      +'<button class="period-btn'+(state.periodoActivo===k?' active':'')+'" onclick="selectPeriodo(\''+k+'\')" style="flex:1">'
+      +'<button class="period-btn'+(state.filtroMes===k?' active':'')+'" onclick="setFiltroMes(\''+k+'\')" style="flex:1">'
       +'<span>'+fmtPeriodo(k)+'</span>'
-      +'<span class="pcount">'+cnt+'</span>'
+      +'<span class="pcount">'+meses[k]+'</span>'
       +'</button>'
-      +'<button onclick="borrarPeriodo(\''+k+'\')" title="Borrar período" style="flex-shrink:0;background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:12px;line-height:1">✕</button>'
+      +'<button onclick="borrarPeriodo(\''+k+'\')" title="Borrar mes" style="flex-shrink:0;background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:12px;line-height:1">✕</button>'
       +'</div>';
   }).join('');
+  list.innerHTML=html;
 }
 
 async function borrarPeriodo(ym){
-  if(!confirm('¿Borrar el período '+fmtPeriodo(ym)+'? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Borrar los datos de '+fmtPeriodo(ym)+'? Esta acción no se puede deshacer.')) return;
   await fetch('/api/datos/conciliacion/'+ym,{method:'DELETE'});
-  delete state.periodos[ym];
-  if(state.periodoActivo===ym){ state.periodoActivo=null; document.getElementById('main-panel').style.display='none'; }
+  state.resultados=state.resultados.filter(function(r){ return !r.fecha||r.fecha.slice(0,7)!==ym; });
+  if(state.filtroMes===ym) setFiltroMes(null);
   renderPeriodList();
-  toast('Período '+fmtPeriodo(ym)+' eliminado','ok-t');
+  toast('Datos de '+fmtPeriodo(ym)+' eliminados','ok-t');
 }
 
-function selectPeriodo(ym){
-  state.periodoActivo=ym;
+function setFiltroMes(ym){
+  state.filtroMes=ym;
   renderPeriodList();
   var label=document.getElementById('periodo-label');
-  label.textContent='📅 '+fmtPeriodo(ym);
-  label.style.display='inline-flex';
-  document.getElementById('sb-periodo').textContent='Período: '+fmtPeriodo(ym);
-  var d=state.periodos[ym];
-  var savedAt=d&&d._savedAt?new Date(d._savedAt):null;
+  if(ym){ label.textContent='📅 '+fmtPeriodo(ym); label.style.display='inline-flex'; }
+  else { label.textContent='📅 Todos los períodos'; label.style.display='inline-flex'; }
+  document.getElementById('sb-periodo').textContent=ym?'Período: '+fmtPeriodo(ym):'Todos los períodos';
+  var savedAt=state._savedAt?new Date(state._savedAt):null;
   document.getElementById('upd-label').textContent=savedAt?
     'Última actualización: '+savedAt.toLocaleDateString('es-AR')+' a las '+savedAt.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):
     '';
   document.getElementById('btn-export').disabled=false;
-  // Restaurar banco guardado si no hay uno cargado en memoria
-  var d=state.periodos[ym];
-  if(state.banco.length===0&&d){
-    var bancoRecup=[];
-    if(d.banco&&d.banco.length>0){
-      bancoRecup=d.banco;
-    } else if(d.resultados&&d.resultados.length>0){
-      bancoRecup=d.resultados.map(function(r){return {fecha:r.fecha,desc:r.desc,importe:r.importe};});
-    }
-    if(bancoRecup.length>0){
-      state.banco=bancoRecup;
-      markFileCard('banco','Extracto bancario',bancoRecup.length+' acreditaciones (período guardado)',null);
-      verificarListo();
-    }
-  }
-  if(d&&d.chess&&d.chess.length>0){
-    state.chess=mergeChess(state.chess,d.chess);
-    markFileCard('chess','Reporte Chess',state.chess.length+' COBRs (guardado)',null);
-    document.getElementById('sb-chess').textContent='Chess: '+state.chess.length+' COBRs';
-    verificarListo();
-  }
   calcStats(); filtrar();
 }
 
@@ -1042,7 +1064,7 @@ async function cargarArchivo(tipo,inp){
 
 function verificarSecuencias(banco){
   // Solo considerar movimientos del mes activo para evitar falsos saltos por movimientos de otros meses
-  var mesActivo=state.periodoActivo||(banco.length>0?banco[banco.length-1].fecha.slice(0,7):null);
+  var mesActivo=state.filtroMes||(banco.length>0?banco[banco.length-1].fecha.slice(0,7):null);
   var bancoFiltrado=mesActivo?banco.filter(function(b){return b.fecha&&b.fecha.slice(0,7)===mesActivo;}):banco;
   var seqs=bancoFiltrado.map(function(b){return parseInt(b.seq,10);}).filter(function(n){return !isNaN(n)&&n>0;});
   if(seqs.length<2){document.getElementById('alert-seq').style.display='none';return;}
@@ -1168,7 +1190,7 @@ function mpQuitarPendiente(i){
 }
 
 function findBancoCercano(imp){
-  var resultados=(state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[];
+  var resultados=state.resultados;
   var mejor=null,mejorDif=null;
   resultados.forEach(function(r){
     if(r.nivel!=='NC'&&r.nivel!=='PEND') return;
@@ -1195,13 +1217,7 @@ async function confirmarMatchPendiente(i){
   state.pendientes.splice(i,1);
   loading(true);
   try{
-    var resultados=state.periodos[state.periodoActivo].resultados;
-    var savedAt=new Date().toISOString();
-    state.periodos[state.periodoActivo]._savedAt=savedAt;
-    await fetch('/api/datos/conciliacion',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco,chess:state.chess}})
-    });
+    await guardarResultados();
     await guardarPendientes();
     registrarAccion('confirmar_match_pend','Confirmó match pendiente de '+(cliInfo?cliInfo.n:p.cod)+' ($'+fmtNum(p.imp)+')');
     toast('Vinculado como pendiente: '+(cliInfo?cliInfo.n:p.cod),'ok-t');
@@ -1306,8 +1322,6 @@ async function procesar(){
   var banco=state.banco.map(function(b){
     return Object.assign({},b,{fecha:parseFecha(String(b.fecha||''))});
   });
-  console.log('[DEBUG] Chess cargados:', chess.length, chess.slice(0,5));
-  console.log('[DEBUG] Banco cargados:', banco.length, banco.slice(0,5));
   var cuitMap={},codMap=state.clientes;
   Object.values(state.clientes).forEach(function(c){if(c.cuit) cuitMap[normCUIT(c.cuit)]=c;});
   // mapa normalizado por código numérico para tolerar diferencias de ceros al inicio
@@ -1431,77 +1445,67 @@ async function procesar(){
   // Eliminar pendientes que ya pasaron a N1 (encontraron match en Chess y banco)
   state.pendientes=state.pendientes.filter(function(p){return !p._toDelete;});
 
-  var jun30banco=banco.filter(function(b){return b.fecha==='2026-06-30';});
-  var jun30nuevos=nuevos.filter(function(r){return r.fecha==='2026-06-30';});
-  var jun30chess=chess.filter(function(c){return c.fecha==='2026-06-30'||c.fecha==='2026-07-01';});
-  console.log('[DEBUG 30/06] banco entries:',jun30banco.length,jun30banco.slice(0,3));
-  console.log('[DEBUG 30/06] nuevos results:',jun30nuevos.length,jun30nuevos.slice(0,3));
-  console.log('[DEBUG 30/06] chess (30/06+01/07):',jun30chess.length,jun30chess.slice(0,3));
   loading(true);
-  var byMonth={};
-  nuevos.forEach(function(r){
-    var m=r.fecha.slice(0,7);
-    if(!byMonth[m]) byMonth[m]=[];
-    byMonth[m].push(r);
-  });
-  console.log('[DEBUG byMonth keys]:', Object.keys(byMonth), Object.keys(byMonth).map(function(k){return k+':'+byMonth[k].length;}));
-
-  // Índice global de fingerprints de todos los períodos existentes (para evitar duplicados entre períodos)
-  var fpGlobal={};
-  Object.keys(state.periodos).forEach(function(per){
-    var res=(state.periodos[per]&&state.periodos[per].resultados)||[];
-    res.forEach(function(r){ fpGlobal[fingerprint(r)]=per; });
-  });
-
-  var movAdded=0,movDups=0;
+  // Merge nuevos en la lista plana global usando fingerprint
   var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PEND':2,'NC':1};
-  for(var periodo in byMonth){
-    var existing=(state.periodos[periodo]&&state.periodos[periodo].resultados)||[];
-    var fpMap={};
-    existing.forEach(function(r){ fpMap[fingerprint(r)]=r; });
-    byMonth[periodo].forEach(function(r){
-      var fp=fingerprint(r);
-      // Si el fingerprint ya existe en OTRO período, no duplicar
-      if(fpGlobal[fp] && fpGlobal[fp]!==periodo){ movDups++; return; }
-      if(fpMap[fp]){
-        var oldPeso=nivelPeso[fpMap[fp].nivel]||0;
-        var newPeso=nivelPeso[r.nivel]||0;
-        if(newPeso>oldPeso){ fpMap[fp]=r; movAdded++; }
-        else {
-          if(r.sugerido) fpMap[fp].sugerido=r.sugerido;
-          movDups++;
-        }
-      } else {
-        fpMap[fp]=r; movAdded++;
-      }
-    });
-    var merged=Object.values(fpMap);
-    var savedAt=new Date().toISOString();
-    state.periodos[periodo]={resultados:merged,_savedAt:savedAt,banco:state.banco.slice(),chess:state.chess.slice()};
-    try{
-      await fetch('/api/datos/conciliacion',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({periodo:periodo,datos:{resultados:merged,_savedAt:savedAt,banco:state.banco,chess:state.chess}})
-      });
-    }catch(e){toast('Error al guardar '+periodo,'err-t');}
-  }
+  var fpMap={};
+  state.resultados.forEach(function(r){ fpMap[fingerprint(r)]=r; });
+  var movAdded=0,movDups=0;
+  nuevos.forEach(function(r){
+    var fp=fingerprint(r);
+    if(fpMap[fp]){
+      var oldPeso=nivelPeso[fpMap[fp].nivel]||0;
+      var newPeso=nivelPeso[r.nivel]||0;
+      if(newPeso>oldPeso){ Object.assign(fpMap[fp],r); movAdded++; }
+      else { if(r.sugerido) fpMap[fp].sugerido=r.sugerido; movDups++; }
+    } else {
+      fpMap[fp]=r; state.resultados.push(r); movAdded++;
+    }
+  });
+  await guardarResultados();
   loading(false);
   guardarPendientes();
   renderPendientes();
   renderPeriodList();
-  var maxPeriodo=Object.keys(byMonth).sort().pop();
-  if(maxPeriodo) selectPeriodo(maxPeriodo);
+  // Activar filtro del mes principal del extracto (mes más frecuente en banco)
+  var mesCounts={};
+  banco.forEach(function(b){ if(b.fecha){ var m=b.fecha.slice(0,7); mesCounts[m]=(mesCounts[m]||0)+1; } });
+  var mesPrincipal=Object.keys(mesCounts).sort(function(a,b){ return mesCounts[b]-mesCounts[a]; })[0]||null;
+  if(mesPrincipal) setFiltroMes(mesPrincipal);
   var msg=movAdded+' movimientos nuevos guardados';
-  if(movDups>0) msg+=' ('+movDups+' duplicados omitidos)';
+  if(movDups>0) msg+=' ('+movDups+' actualizados)';
   var pendConf=state.pendientes.filter(function(p){return p.confirmado;}).length;
   if(pendConf>0) msg+=' — '+pendConf+' pendiente(s) confirmado(s)';
   showAlert('alert-ok',msg);
   toast('Conciliación guardada','ok-t');
 }
 
+async function guardarResultados(){
+  var byMes={};
+  state.resultados.forEach(function(r){
+    var m=r.fecha?r.fecha.slice(0,7):'unknown';
+    if(!byMes[m]) byMes[m]=[];
+    byMes[m].push(r);
+  });
+  var savedAt=new Date().toISOString();
+  state._savedAt=savedAt;
+  for(var mes in byMes){
+    try{
+      await fetch('/api/datos/conciliacion',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({periodo:mes,datos:{resultados:byMes[mes],_savedAt:savedAt,banco:state.banco,chess:state.chess}})
+      });
+    }catch(e){ toast('Error al guardar '+mes,'err-t'); }
+  }
+}
+
 /* STATS */
 function calcStats(){
-  var resultados=((state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[]).filter(function(r){return !estaExcluida(r.desc);});
+  var resultados=state.resultados.filter(function(r){
+    if(estaExcluida(r.desc)) return false;
+    if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes) return false;
+    return true;
+  });
   var n1=0,n2=0,nc=0,pend=0,conc=0,mN1=0,mN2=0,mNc=0,mPend=0,mConc=0,tot=resultados.length;
   resultados.forEach(function(r){
     if(r.nivel==='N1'||r.nivel==='MAN'){n1++;mN1+=r.importe;}
@@ -1531,11 +1535,11 @@ function estaExcluida(desc){
 }
 
 function filtrar(){
-  var resultados=(state.periodoActivo&&state.periodos[state.periodoActivo])?state.periodos[state.periodoActivo].resultados:[];
   var est=document.getElementById('fil-est').value;
   var q=(document.getElementById('fil-q').value||'').toLowerCase();
-  state.filtradas=resultados.filter(function(r){
+  state.filtradas=state.resultados.filter(function(r){
     if(estaExcluida(r.desc)) return false;
+    if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes) return false;
     if(est==='CONC_ALL'){if(r.nivel!=='N1'&&r.nivel!=='MAN'&&r.nivel!=='CONC') return false;}
     else if(est&&r.nivel!==est) return false;
     if(q){
@@ -1553,7 +1557,7 @@ function renderTabla(){
   var pag=state.filtradas.slice(ini,ini+state.POR_PAG);
   var html='';
   if(!pag.length){
-    html='<tr class="empty-row"><td colspan="8">'+(state.periodoActivo?'Sin resultados para el filtro aplicado':'Seleccioná un período o procesá nuevos archivos')+'</td></tr>';
+    html='<tr class="empty-row"><td colspan="8">'+(state.resultados.length?'Sin resultados para el filtro aplicado':'Seleccioná un filtro o procesá nuevos archivos')+'</td></tr>';
   } else {
     pag.forEach(function(r,li){
       var gi=ini+li;
@@ -1653,13 +1657,7 @@ async function confirmarPend(gi){
   r.nivel='CONC';
   loading(true);
   try{
-    var resultados=state.periodos[state.periodoActivo].resultados;
-    var savedAt=new Date().toISOString();
-    state.periodos[state.periodoActivo]._savedAt=savedAt;
-    await fetch('/api/datos/conciliacion',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco,chess:state.chess}})
-    });
+    await guardarResultados();
     toast('Conciliado: '+(r.nomCli||r.codCli||r.desc),'ok-t');
   }catch(e){toast('Error al guardar','err-t');}
   loading(false);
@@ -1672,11 +1670,7 @@ async function confirmarSugerido(gi){
   r.codCli=r.sugerido.cod; r.nomCli=r.sugerido.nom; r.cuit=r.sugerido.cuit; r.nivel='MAN'; r.motivo=''; r.sugerido=null;
   loading(true);
   try{
-    var resultados=state.periodos[state.periodoActivo].resultados;
-    var savedAt=new Date().toISOString();
-    state.periodos[state.periodoActivo]._savedAt=savedAt;
-    await fetch('/api/datos/conciliacion',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt,banco:state.banco,chess:state.chess}})});
+    await guardarResultados();
     registrarAccion('confirmar_sugerido','Confirmó cliente sugerido '+r.nomCli+' ('+r.codCli+') en movimiento $'+fmtNum(r.importe)+' del '+r.fecha);
     toast('Confirmado: '+r.nomCli,'ok-t');
   }catch(e){toast('Error al guardar','err-t');}
@@ -1690,13 +1684,7 @@ async function confirmarN2(gi){
   r.nivel='N1';
   loading(true);
   try{
-    var resultados=state.periodos[state.periodoActivo].resultados;
-    var savedAt=new Date().toISOString();
-    state.periodos[state.periodoActivo]._savedAt=savedAt;
-    await fetch('/api/datos/conciliacion',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt}})
-    });
+    await guardarResultados();
     toast('Confirmado: '+(r.nomCli||r.codCli),'ok-t');
   }catch(e){toast('Error al guardar','err-t');}
   loading(false);
@@ -1709,13 +1697,7 @@ async function confirmar(){
   r.codCli=state.clienteSel.c; r.nomCli=state.clienteSel.n; r.cuit=state.clienteSel.cuit; r.nivel='MAN';
   loading(true);
   try{
-    var resultados=state.periodos[state.periodoActivo].resultados;
-    var savedAt=new Date().toISOString();
-    state.periodos[state.periodoActivo]._savedAt=savedAt;
-    await fetch('/api/datos/conciliacion',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({periodo:state.periodoActivo,datos:{resultados:resultados,_savedAt:savedAt}})
-    });
+    await guardarResultados();
     registrarAccion('asignar_manual','Asignó manualmente cliente '+state.clienteSel.n+' ('+state.clienteSel.c+') a movimiento $'+fmtNum(r.importe)+' del '+r.fecha);
     toast('Asignado: '+state.clienteSel.n,'ok-t');
   }catch(e){toast('Error al guardar','err-t');}
@@ -1725,8 +1707,10 @@ async function confirmar(){
 
 /* EXPORTAR */
 function exportar(){
-  if(!state.periodoActivo) return;
-  var resultados=(state.periodos[state.periodoActivo]&&state.periodos[state.periodoActivo].resultados)||[];
+  var resultados=state.filtroMes
+    ?state.resultados.filter(function(r){return r.fecha&&r.fecha.slice(0,7)===state.filtroMes;})
+    :state.resultados;
+  if(!resultados.length){ toast('Sin datos para exportar','err-t'); return; }
   var rows=[['Fecha','Descripción banco','Importe','Código cliente','Nombre cliente','CUIT','Estado','Referencia Chess']];
   resultados.forEach(function(r){
     var est=r.nivel==='N1'?'N1 - Confirmado':r.nivel==='N2'?'N2 - Probable':r.nivel==='MAN'?'Manual':'No conciliado';
@@ -1735,9 +1719,9 @@ function exportar(){
   var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download='conciliacion_'+state.periodoActivo+'.csv';
+  a.download='conciliacion_'+(state.filtroMes||'todos')+'.csv';
   a.click();
-  toast('Exportado: '+fmtPeriodo(state.periodoActivo),'ok-t');
+  toast('Exportado: '+(state.filtroMes?fmtPeriodo(state.filtroMes):'todos los períodos'),'ok-t');
 }
 
 window.addEventListener('load',init);
