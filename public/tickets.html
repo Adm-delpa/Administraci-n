@@ -71,6 +71,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .dot-reclamo{background:#DC2626}
 .dot-solicitud{background:#7C3AED}
 .dot-alta{background:#059669}
+.dot-cheque{background:#D97706}
 .dot-otro{background:#9896A0}
 .t-body{flex:1;min-width:0}
 .t-id{font-size:10px;color:#9896A0;font-weight:600;margin-bottom:2px}
@@ -249,6 +250,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
           <option value="reclamo">Reclamo de cliente</option>
           <option value="solicitud">Solicitud de cliente</option>
           <option value="alta_cliente">Alta cliente nuevo</option>
+          <option value="cheque_pendiente">Cheque pendiente de cobro</option>
           <option value="otro">Otro</option>
         </select>
       </div>
@@ -268,6 +270,40 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     <div class="field" style="margin-bottom:10px">
       <label>Motivo / descripción</label>
       <textarea id="f-desc" placeholder="Detallá el motivo del ticket..."></textarea>
+    </div>
+
+    <div class="alta-section" id="cheque-fields" style="display:none">
+      <div class="alta-title">Datos del cheque</div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:10px;font-weight:700;color:#56555A;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px">N° de cliente</label>
+        <input type="text" id="f-chq-cliente" placeholder="Ej: 00087" style="font-size:24px;font-weight:700;color:#1E6FD9;border:2px solid #DDDBD6;border-radius:8px;padding:10px 14px;width:100%;font-family:'Inter',sans-serif;outline:none">
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Motivo</label>
+        <select id="f-chq-motivo">
+          <option value="CHEQUE VENCIDO">Cheque vencido</option>
+          <option value="CHEQUE MAL CONFECCIONADO">Cheque mal confeccionado</option>
+          <option value="OTRO">Otro</option>
+        </select>
+      </div>
+      <div class="f-grid" style="margin-bottom:8px">
+        <div class="field"><label>Banco</label>
+          <select id="f-chq-banco">
+            <option value="Provincia">Banco Provincia</option>
+            <option value="Santander">Banco Santander</option>
+            <option value="Nacion">Banco Nación</option>
+          </select>
+        </div>
+        <div class="field"><label>Importe</label><input type="number" id="f-chq-importe" placeholder="0.00" min="0" step="0.01"></div>
+      </div>
+      <div class="f-grid-3" style="margin-bottom:8px">
+        <div class="field"><label>Sucursal</label><input type="text" id="f-chq-suc" placeholder="Ej: 0450"></div>
+        <div class="field" style="grid-column:span 2"><label>N° cheque</label><input type="text" id="f-chq-num" placeholder="Ej: 00012345"></div>
+      </div>
+      <div class="f-grid" style="margin-bottom:8px">
+        <div class="field"><label>Fecha de confección</label><input type="date" id="f-chq-fconf"></div>
+        <div class="field"><label>Fecha de cobro</label><input type="date" id="f-chq-fcobro"></div>
+      </div>
     </div>
 
     <div class="alta-section" id="alta-fields" style="display:none">
@@ -330,6 +366,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <option value="reclamo">Reclamo</option>
       <option value="solicitud">Solicitud</option>
       <option value="alta_cliente">Alta cliente nuevo</option>
+      <option value="cheque_pendiente">Cheque pendiente de cobro</option>
       <option value="otro">Otro</option>
     </select>
     <select class="fil-sel" id="fil-asignado" onchange="cargar()">
@@ -361,12 +398,14 @@ var filtroEstado = '';
 var openTicketId = null;
 var usuarios = [];
 
-const TIPO_LABEL = { reclamo:'Reclamo de cliente', solicitud:'Solicitud de cliente', alta_cliente:'Alta cliente nuevo', otro:'Otro' };
-const TIPO_DOT = { reclamo:'dot-reclamo', solicitud:'dot-solicitud', alta_cliente:'dot-alta', otro:'dot-otro' };
+const TIPO_LABEL = { reclamo:'Reclamo de cliente', solicitud:'Solicitud de cliente', alta_cliente:'Alta cliente nuevo', cheque_pendiente:'Cheque pendiente de cobro', otro:'Otro' };
+const TIPO_DOT = { reclamo:'dot-reclamo', solicitud:'dot-solicitud', alta_cliente:'dot-alta', cheque_pendiente:'dot-cheque', otro:'dot-otro' };
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T')); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
 function fmtFecha(iso){ if(!iso) return '—'; var s=String(iso).replace(' ','T'); if(s.length>10) s=s.slice(0,10); var d=new Date(s+'T12:00:00'); if(isNaN(d)) return '—'; return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtFechaDMY(s){ if(!s) return '—'; var p=String(s).slice(0,10).split('-'); if(p.length<3) return s; return p[2]+'/'+p[1]+'/'+p[0]; }
+function fmtN(n){ return Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 function setFiltro(btn, estado){
   document.querySelectorAll('.fil-btn').forEach(function(b){b.classList.remove('active')});
@@ -463,6 +502,17 @@ function renderDetail(t, el){
     if(t.alta_telefono) html += '<div class="d-row"><span class="d-lbl">Teléfono</span><span class="d-val">'+esc(t.alta_telefono)+'</span></div>';
     if(t.alta_direccion) html += '<div class="d-row"><span class="d-lbl">Dirección</span><span class="d-val">'+esc(t.alta_direccion)+(t.alta_localidad?', '+esc(t.alta_localidad):'')+'</span></div>';
     if(t.alta_rubro) html += '<div class="d-row"><span class="d-lbl">Rubro</span><span class="d-val">'+esc(t.alta_rubro)+'</span></div>';
+  }
+  if(t.tipo==='cheque_pendiente'){
+    html += '<div class="d-section">Datos del cheque</div>';
+    if(t.num_cliente) html += '<div class="d-row"><span class="d-lbl">N° cliente</span><span style="font-size:22px;font-weight:700;color:#1E6FD9">'+esc(t.num_cliente)+'</span></div>';
+    if(t.chq_motivo) html += '<div class="d-row"><span class="d-lbl">Motivo</span><span class="d-val" style="font-weight:600;color:#DC2626">'+esc(t.chq_motivo)+'</span></div>';
+    if(t.chq_banco) html += '<div class="d-row"><span class="d-lbl">Banco</span><span class="d-val">'+esc(t.chq_banco)+'</span></div>';
+    var chqId=(t.chq_suc?esc(t.chq_suc)+' - ':'')+esc(t.chq_numero||'');
+    if(chqId.trim()) html += '<div class="d-row"><span class="d-lbl">N° cheque</span><span class="d-val" style="font-family:monospace;font-size:14px">'+chqId+'</span></div>';
+    if(t.chq_fecha_conf) html += '<div class="d-row"><span class="d-lbl">Fecha confección</span><span class="d-val">'+fmtFechaDMY(t.chq_fecha_conf)+'</span></div>';
+    if(t.chq_fecha_cobro) html += '<div class="d-row"><span class="d-lbl">Fecha de cobro</span><span class="d-val">'+fmtFechaDMY(t.chq_fecha_cobro)+'</span></div>';
+    if(t.chq_importe) html += '<div class="d-row"><span class="d-lbl">Importe</span><span class="d-val" style="font-weight:700;font-size:15px">$'+fmtN(t.chq_importe)+'</span></div>';
   }
 
   html += '<div class="d-section">Motivo del ticket</div>';
@@ -629,9 +679,12 @@ function toggleForm(){
 function toggleAltaFields(){
   var tipo=document.getElementById('f-tipo').value;
   var esAlta=tipo==='alta_cliente';
+  var esChq=tipo==='cheque_pendiente';
   document.getElementById('alta-fields').style.display=esAlta?'block':'none';
-  document.getElementById('f-cliente-row').style.display=esAlta?'none':'grid';
-  document.getElementById('f-titulo-row').style.display=esAlta?'none':'block';
+  document.getElementById('cheque-fields').style.display=esChq?'block':'none';
+  document.getElementById('f-cliente-row').style.display=(esAlta||esChq)?'none':'grid';
+  document.getElementById('f-titulo-row').style.display=(esAlta||esChq)?'none':'block';
+  document.getElementById('f-desc').placeholder=esChq?'Detalle adicional sobre el cheque...':'Detallá el motivo del ticket...';
 }
 function showErr(msg){ var el=document.getElementById('form-err'); el.textContent=msg; el.style.display=msg?'block':'none'; }
 
@@ -646,13 +699,23 @@ async function crearTicket(){
   if(tipo==='alta_cliente'){
     var altaNombre=document.getElementById('f-alta-nombre').value.trim();
     titulo='Alta cliente nuevo'+(altaNombre?' — '+altaNombre:'');
+  } else if(tipo==='cheque_pendiente'){
+    var chqCliente=document.getElementById('f-chq-cliente').value.trim();
+    var chqMotivo=document.getElementById('f-chq-motivo').value;
+    var chqNum=document.getElementById('f-chq-num').value.trim();
+    if(!chqCliente){ showErr('Ingresá el número de cliente.'); return; }
+    if(!chqNum){ showErr('Ingresá el número de cheque.'); return; }
+    if(!document.getElementById('f-chq-importe').value){ showErr('Ingresá el importe del cheque.'); return; }
+    if(!document.getElementById('f-chq-fconf').value){ showErr('Ingresá la fecha de confección.'); return; }
+    if(!document.getElementById('f-chq-fcobro').value){ showErr('Ingresá la fecha de cobro.'); return; }
+    titulo='Cheque pendiente — '+chqMotivo+' — Cliente '+chqCliente;
   } else {
     titulo=document.getElementById('f-titulo').value.trim();
     if(!titulo){ showErr('Ingresá un título.'); return; }
   }
   var body={tipo,titulo,descripcion:desc||null,username:USER.username,nombre:USER.nombre,
     asignado_a:asignado_a||null,asignado_a_nombre:asignado_a?asignado_a_nombre:null,
-    num_cliente:document.getElementById('f-num-cliente').value.trim()||null,
+    num_cliente:tipo==='cheque_pendiente'?document.getElementById('f-chq-cliente').value.trim()||null:document.getElementById('f-num-cliente').value.trim()||null,
     nombre_cliente:document.getElementById('f-nombre-cliente').value.trim()||null};
   if(tipo==='alta_cliente'){
     body.alta_nombre=document.getElementById('f-alta-nombre').value.trim()||null;
@@ -662,12 +725,22 @@ async function crearTicket(){
     body.alta_localidad=document.getElementById('f-alta-loc').value.trim()||null;
     body.alta_rubro=document.getElementById('f-alta-rubro').value.trim()||null;
   }
+  if(tipo==='cheque_pendiente'){
+    body.chq_motivo=document.getElementById('f-chq-motivo').value||null;
+    body.chq_banco=document.getElementById('f-chq-banco').value||null;
+    body.chq_suc=document.getElementById('f-chq-suc').value.trim()||null;
+    body.chq_numero=document.getElementById('f-chq-num').value.trim()||null;
+    body.chq_fecha_conf=document.getElementById('f-chq-fconf').value||null;
+    body.chq_fecha_cobro=document.getElementById('f-chq-fcobro').value||null;
+    body.chq_importe=parseFloat(document.getElementById('f-chq-importe').value)||null;
+  }
   try{
     var r=await fetch('/api/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     var d=await r.json();
     if(!r.ok){ showErr(d.error||'Error al guardar.'); return; }
     toggleForm();
-    ['f-titulo','f-desc','f-num-cliente','f-nombre-cliente','f-alta-nombre','f-alta-tel','f-alta-fantasia','f-alta-dir','f-alta-loc','f-alta-rubro'].forEach(function(id){
+    ['f-titulo','f-desc','f-num-cliente','f-nombre-cliente','f-alta-nombre','f-alta-tel','f-alta-fantasia','f-alta-dir','f-alta-loc','f-alta-rubro',
+     'f-chq-cliente','f-chq-suc','f-chq-num','f-chq-importe','f-chq-fconf','f-chq-fcobro'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.value='';
     });
     showErr('');

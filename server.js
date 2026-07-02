@@ -157,8 +157,14 @@ async function initDB() {
         alta_direccion VARCHAR(200),
         alta_localidad VARCHAR(100),
         alta_rubro VARCHAR(100),
+        chq_motivo VARCHAR(100),
+        chq_banco VARCHAR(100),
+        chq_suc VARCHAR(50),
+        chq_numero VARCHAR(100),
+        chq_fecha_conf DATE,
+        chq_fecha_cobro DATE,
+        chq_importe NUMERIC(14,2),
         asignado_a VARCHAR(50),
-
         asignado_a_nombre VARCHAR(100),
         cargado_por VARCHAR(50) NOT NULL,
         cargado_por_nombre VARCHAR(100),
@@ -173,6 +179,13 @@ async function initDB() {
       );
 
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS alta_fantasia VARCHAR(200);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_motivo VARCHAR(100);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_banco VARCHAR(100);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_suc VARCHAR(50);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_numero VARCHAR(100);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_conf DATE;
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_cobro DATE;
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_importe NUMERIC(14,2);
 
       CREATE TABLE IF NOT EXISTS ticket_notas (
         id SERIAL PRIMARY KEY,
@@ -446,16 +459,19 @@ app.get('/api/tickets/:id', async (req, res) => {
 app.post('/api/tickets', async (req, res) => {
   const { tipo, titulo, descripcion, num_cliente, nombre_cliente,
           alta_nombre, alta_telefono, alta_fantasia, alta_direccion, alta_localidad, alta_rubro,
+          chq_motivo, chq_banco, chq_suc, chq_numero, chq_fecha_conf, chq_fecha_cobro, chq_importe,
           asignado_a, asignado_a_nombre, username, nombre } = req.body;
   if (!tipo || !titulo || !username) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const r = await pool.query(`
       INSERT INTO tickets (tipo, titulo, descripcion, num_cliente, nombre_cliente,
         alta_nombre, alta_telefono, alta_fantasia, alta_direccion, alta_localidad, alta_rubro,
+        chq_motivo, chq_banco, chq_suc, chq_numero, chq_fecha_conf, chq_fecha_cobro, chq_importe,
         asignado_a, asignado_a_nombre, cargado_por, cargado_por_nombre)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
       [tipo, titulo, descripcion||null, num_cliente||null, nombre_cliente||null,
        alta_nombre||null, alta_telefono||null, alta_fantasia||null, alta_direccion||null, alta_localidad||null, alta_rubro||null,
+       chq_motivo||null, chq_banco||null, chq_suc||null, chq_numero||null, chq_fecha_conf||null, chq_fecha_cobro||null, chq_importe||null,
        asignado_a||null, asignado_a_nombre||null, username, nombre||username]);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al crear ticket' }); }
