@@ -468,7 +468,6 @@ async function cargar(){
         +'<div class="t-body">'
         +'<div class="t-id">#'+t.id+' · '+esc(TIPO_LABEL[t.tipo])+'</div>'
         +'<div class="t-title">'+esc(t.titulo)+'</div>'
-        +ticketResumen(t)
         +'<div class="t-meta">'
         +(t.asignado_a_nombre?'<span>Asignado a '+esc(t.asignado_a_nombre)+'</span>':'')
         +'<span>'+fmtFecha(t.cargado_at)+'</span>'
