@@ -46,6 +46,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .fil-btn{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #DDDBD6;background:#fff;color:#56555A;font-family:'Inter',sans-serif}
 .fil-btn.active{background:#1E6FD9;color:#fff;border-color:#1E6FD9}
 .fil-sel{padding:5px 10px;border-radius:8px;font-size:12px;border:1.5px solid #DDDBD6;background:#fff;color:#18181A;font-family:'Inter',sans-serif;outline:none}
+.fil-search{padding:5px 12px;border-radius:8px;font-size:12px;border:1.5px solid #DDDBD6;background:#fff;color:#18181A;font-family:'Inter',sans-serif;outline:none;min-width:200px}
+.fil-search:focus{border-color:#1E6FD9}
 
 .form-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:none}
 .form-title{font-size:14px;font-weight:700;margin-bottom:1rem}
@@ -378,6 +380,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     <select class="fil-sel" id="fil-asignado" onchange="cargar()">
       <option value="">Todos los asignados</option>
     </select>
+    <input class="fil-search" id="fil-q" type="text" placeholder="Buscar ticket..." oninput="cargar()">
   </div>
 
   <div class="tickets-list" id="tickets-list">
@@ -453,9 +456,14 @@ async function cargar(){
   var asignado = document.getElementById('fil-asignado').value;
   if(tipo) params.set('tipo', tipo);
   if(asignado) params.set('asignado', asignado);
+  var q = (document.getElementById('fil-q').value||'').toLowerCase().trim();
   try{
     var r = await fetch('/api/tickets?' + params.toString());
     var tickets = await r.json();
+    if(q) tickets = tickets.filter(function(t){
+      return [t.titulo,t.num_cliente,t.nombre_cliente,t.descripcion,t.alta_nombre,t.alta_fantasia,t.chq_numero,t.chq_banco,t.chq_motivo,t.asignado_a_nombre,String(t.id)]
+        .some(function(v){ return v&&String(v).toLowerCase().indexOf(q)>=0; });
+    });
     if(!tickets.length){ list.innerHTML='<div class="empty">Sin tickets para los filtros seleccionados.</div>'; return; }
     list.innerHTML = '';
     tickets.forEach(function(t){
