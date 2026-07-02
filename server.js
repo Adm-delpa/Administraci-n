@@ -153,10 +153,12 @@ async function initDB() {
         nombre_cliente VARCHAR(200),
         alta_nombre VARCHAR(100),
         alta_telefono VARCHAR(50),
+        alta_fantasia VARCHAR(200),
         alta_direccion VARCHAR(200),
         alta_localidad VARCHAR(100),
         alta_rubro VARCHAR(100),
         asignado_a VARCHAR(50),
+
         asignado_a_nombre VARCHAR(100),
         cargado_por VARCHAR(50) NOT NULL,
         cargado_por_nombre VARCHAR(100),
@@ -169,6 +171,8 @@ async function initDB() {
         cerrado_por_nombre VARCHAR(100),
         cerrado_at TIMESTAMP
       );
+
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS alta_fantasia VARCHAR(200);
 
       CREATE TABLE IF NOT EXISTS ticket_notas (
         id SERIAL PRIMARY KEY,
@@ -441,17 +445,17 @@ app.get('/api/tickets/:id', async (req, res) => {
 
 app.post('/api/tickets', async (req, res) => {
   const { tipo, titulo, descripcion, num_cliente, nombre_cliente,
-          alta_nombre, alta_telefono, alta_direccion, alta_localidad, alta_rubro,
+          alta_nombre, alta_telefono, alta_fantasia, alta_direccion, alta_localidad, alta_rubro,
           asignado_a, asignado_a_nombre, username, nombre } = req.body;
   if (!tipo || !titulo || !username) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const r = await pool.query(`
       INSERT INTO tickets (tipo, titulo, descripcion, num_cliente, nombre_cliente,
-        alta_nombre, alta_telefono, alta_direccion, alta_localidad, alta_rubro,
+        alta_nombre, alta_telefono, alta_fantasia, alta_direccion, alta_localidad, alta_rubro,
         asignado_a, asignado_a_nombre, cargado_por, cargado_por_nombre)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
       [tipo, titulo, descripcion||null, num_cliente||null, nombre_cliente||null,
-       alta_nombre||null, alta_telefono||null, alta_direccion||null, alta_localidad||null, alta_rubro||null,
+       alta_nombre||null, alta_telefono||null, alta_fantasia||null, alta_direccion||null, alta_localidad||null, alta_rubro||null,
        asignado_a||null, asignado_a_nombre||null, username, nombre||username]);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al crear ticket' }); }

@@ -276,6 +276,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
         <div class="field"><label>Nombre completo</label><input type="text" id="f-alta-nombre" placeholder="Ej: Juan Pérez"></div>
         <div class="field"><label>Teléfono</label><input type="text" id="f-alta-tel" placeholder="Ej: 11 1234-5678"></div>
       </div>
+      <div class="field" style="margin-bottom:8px"><label>Nombre de fantasía</label><input type="text" id="f-alta-fantasia" placeholder="Ej: Almacén Don Juan"></div>
       <div class="f-grid-3">
         <div class="field" style="grid-column:span 2"><label>Dirección</label><input type="text" id="f-alta-dir" placeholder="Av. San Martín 450"></div>
         <div class="field"><label>Localidad</label><input type="text" id="f-alta-loc" placeholder="Quilmes"></div>
@@ -458,6 +459,7 @@ function renderDetail(t, el){
   if(t.tipo==='alta_cliente' && (t.alta_nombre||t.alta_telefono||t.alta_direccion)){
     html += '<div class="d-section">Datos del solicitante</div>';
     if(t.alta_nombre) html += '<div class="d-row"><span class="d-lbl">Nombre</span><span class="d-val">'+esc(t.alta_nombre)+'</span></div>';
+    if(t.alta_fantasia) html += '<div class="d-row"><span class="d-lbl">Nombre de fantasía</span><span class="d-val">'+esc(t.alta_fantasia)+'</span></div>';
     if(t.alta_telefono) html += '<div class="d-row"><span class="d-lbl">Teléfono</span><span class="d-val">'+esc(t.alta_telefono)+'</span></div>';
     if(t.alta_direccion) html += '<div class="d-row"><span class="d-lbl">Dirección</span><span class="d-val">'+esc(t.alta_direccion)+(t.alta_localidad?', '+esc(t.alta_localidad):'')+'</span></div>';
     if(t.alta_rubro) html += '<div class="d-row"><span class="d-lbl">Rubro</span><span class="d-val">'+esc(t.alta_rubro)+'</span></div>';
@@ -654,6 +656,7 @@ async function crearTicket(){
   if(tipo==='alta_cliente'){
     body.alta_nombre=document.getElementById('f-alta-nombre').value.trim()||null;
     body.alta_telefono=document.getElementById('f-alta-tel').value.trim()||null;
+    body.alta_fantasia=document.getElementById('f-alta-fantasia').value.trim()||null;
     body.alta_direccion=document.getElementById('f-alta-dir').value.trim()||null;
     body.alta_localidad=document.getElementById('f-alta-loc').value.trim()||null;
     body.alta_rubro=document.getElementById('f-alta-rubro').value.trim()||null;
@@ -663,7 +666,7 @@ async function crearTicket(){
     var d=await r.json();
     if(!r.ok){ showErr(d.error||'Error al guardar.'); return; }
     toggleForm();
-    ['f-titulo','f-desc','f-num-cliente','f-nombre-cliente','f-alta-nombre','f-alta-tel','f-alta-dir','f-alta-loc','f-alta-rubro'].forEach(function(id){
+    ['f-titulo','f-desc','f-num-cliente','f-nombre-cliente','f-alta-nombre','f-alta-tel','f-alta-fantasia','f-alta-dir','f-alta-loc','f-alta-rubro'].forEach(function(id){
       var el=document.getElementById(id); if(el) el.value='';
     });
     showErr('');
