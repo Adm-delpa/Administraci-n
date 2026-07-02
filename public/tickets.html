@@ -72,6 +72,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .dot-solicitud{background:#7C3AED}
 .dot-alta{background:#059669}
 .dot-cheque{background:#D97706}
+.t-chips{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0 2px}
+.t-chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:#F5F5F7;color:#56555A;white-space:nowrap}
+.t-chip-blue{background:#DBEAFE;color:#1D4ED8}
+.t-chip-red{background:#FEE2E2;color:#B91C1C}
+.t-chip-green{background:#D1FAE5;color:#065F46}
 .dot-otro{background:#9896A0}
 .t-body{flex:1;min-width:0}
 .t-id{font-size:10px;color:#9896A0;font-weight:600;margin-bottom:2px}
@@ -398,6 +403,29 @@ var filtroEstado = '';
 var openTicketId = null;
 var usuarios = [];
 
+function ticketResumen(t){
+  var chips=[];
+  if(t.tipo==='cheque_pendiente'){
+    if(t.num_cliente) chips.push('<span class="t-chip t-chip-blue">Cliente '+esc(t.num_cliente)+'</span>');
+    if(t.chq_motivo) chips.push('<span class="t-chip t-chip-red">'+esc(t.chq_motivo)+'</span>');
+    if(t.chq_banco) chips.push('<span class="t-chip">'+esc(t.chq_banco)+'</span>');
+    if(t.chq_numero) chips.push('<span class="t-chip">Nº '+(t.chq_suc?esc(t.chq_suc)+'-':'')+esc(t.chq_numero)+'</span>');
+    if(t.chq_importe) chips.push('<span class="t-chip t-chip-green">$'+fmtN(t.chq_importe)+'</span>');
+    if(t.chq_fecha_cobro) chips.push('<span class="t-chip">Cobro: '+fmtFechaDMY(t.chq_fecha_cobro)+'</span>');
+  } else if(t.tipo==='alta_cliente'){
+    if(t.alta_nombre) chips.push('<span class="t-chip t-chip-blue">'+esc(t.alta_nombre)+'</span>');
+    if(t.alta_fantasia) chips.push('<span class="t-chip">'+esc(t.alta_fantasia)+'</span>');
+    if(t.alta_telefono) chips.push('<span class="t-chip">'+esc(t.alta_telefono)+'</span>');
+    if(t.alta_localidad) chips.push('<span class="t-chip">'+esc(t.alta_localidad)+'</span>');
+    if(t.alta_rubro) chips.push('<span class="t-chip">'+esc(t.alta_rubro)+'</span>');
+  } else {
+    if(t.num_cliente) chips.push('<span class="t-chip t-chip-blue">Cliente '+esc(t.num_cliente)+'</span>');
+    if(t.nombre_cliente) chips.push('<span class="t-chip">'+esc(t.nombre_cliente)+'</span>');
+  }
+  if(!chips.length) return '';
+  return '<div class="t-chips">'+chips.join('')+'</div>';
+}
+
 const TIPO_LABEL = { reclamo:'Reclamo de cliente', solicitud:'Solicitud de cliente', alta_cliente:'Alta cliente nuevo', cheque_pendiente:'Cheque pendiente de cobro', otro:'Otro' };
 const TIPO_DOT = { reclamo:'dot-reclamo', solicitud:'dot-solicitud', alta_cliente:'dot-alta', cheque_pendiente:'dot-cheque', otro:'dot-otro' };
 
@@ -440,6 +468,7 @@ async function cargar(){
         +'<div class="t-body">'
         +'<div class="t-id">#'+t.id+' · '+esc(TIPO_LABEL[t.tipo])+'</div>'
         +'<div class="t-title">'+esc(t.titulo)+'</div>'
+        +ticketResumen(t)
         +'<div class="t-meta">'
         +(t.asignado_a_nombre?'<span>Asignado a '+esc(t.asignado_a_nombre)+'</span>':'')
         +'<span>'+fmtFecha(t.cargado_at)+'</span>'
