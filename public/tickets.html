@@ -254,7 +254,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       </div>
       <div class="field">
         <label>Asignado a</label>
-        <select id="f-asignado"><option value="">Sin asignar</option></select>
+        <select id="f-asignado"><option value="">— Seleccioná un responsable —</option></select>
       </div>
     </div>
     <div class="f-grid" id="f-cliente-row">
@@ -641,6 +641,7 @@ async function crearTicket(){
   var sel=document.getElementById('f-asignado');
   var asignado_a=sel.value;
   var asignado_a_nombre=sel.options[sel.selectedIndex].text;
+  if(!asignado_a){ showErr('Seleccioná un responsable para el ticket.'); return; }
   var titulo;
   if(tipo==='alta_cliente'){
     var altaNombre=document.getElementById('f-alta-nombre').value.trim();
