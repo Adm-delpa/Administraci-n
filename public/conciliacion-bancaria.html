@@ -1020,6 +1020,16 @@ async function cargarArchivo(tipo,inp){
         if(descUp.indexOf('REVERSA RETENCION')>=0) return;
         state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
       });
+      // Detectar mes principal y filtrar entradas de otros meses
+      var mesCount={};
+      state.banco.forEach(function(b){ var m=b.fecha.slice(0,7); mesCount[m]=(mesCount[m]||0)+1; });
+      var mesPrincipal=Object.keys(mesCount).sort(function(a,b){return mesCount[b]-mesCount[a];})[0];
+      var excluidos=state.banco.filter(function(b){return b.fecha.slice(0,7)!==mesPrincipal;});
+      state.banco=state.banco.filter(function(b){return b.fecha.slice(0,7)===mesPrincipal;});
+      if(excluidos.length>0){
+        var mesesExtra=[...new Set(excluidos.map(function(b){return b.fecha.slice(0,7);}))].join(', ');
+        showAlert('alert-info','Se excluyeron '+excluidos.length+' movimiento(s) de otros meses ('+mesesExtra+') para evitar duplicados entre períodos. El extracto se procesó solo para '+mesPrincipal+'.');
+      }
       markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
       document.getElementById('fname-banco').textContent=file.name;
       document.getElementById('ftime-banco').textContent=fmtTs(now);
