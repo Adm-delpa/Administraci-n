@@ -1494,7 +1494,7 @@ async function procesar(){
   });
 
   // Eliminar pendientes que ya pasaron a N1 (encontraron match en Chess y banco)
-  state.pendientes=state.pendientes.filter(function(p){return !p._toDelete;});
+  state.pendientes=state.pendientes.filter(function(p){return !p._toDelete&&!p.confirmado;});
 
   loading(true);
   // Merge nuevos en la lista plana global usando fingerprint
