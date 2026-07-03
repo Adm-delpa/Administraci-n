@@ -1001,6 +1001,24 @@ async function sincronizarChess(){
 async function cargarArchivo(tipo,inp){
   var file=inp.files[0]; if(!file) return;
   var now=new Date().toISOString();
+  // Para banco: leer workbook directamente para detectar hojas
+  if(tipo==='banco'){
+    leerWorkbook(file).then(function(wb){
+      var sheets=wb.SheetNames;
+      if(sheets.length===1){
+        var raw=XLSX.utils.sheet_to_json(wb.Sheets[sheets[0]],{defval:null,raw:false});
+        procesarRawBanco(raw,file,now);
+      } else {
+        _pendingBanco={wb:wb,file:file,now:now};
+        var list=document.getElementById('sheet-list');
+        list.innerHTML=sheets.map(function(s){
+          return '<button onclick="elegirHoja(\''+s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="padding:10px 14px;background:#0f1628;border:1px solid #3a3f5c;color:#e2e8f0;border-radius:7px;font-size:13px;cursor:pointer;text-align:left" onmouseover="this.style.borderColor=\'#6d28d9\'" onmouseout="this.style.borderColor=\'#3a3f5c\'">📄 '+s+'</button>';
+        }).join('');
+        document.getElementById('modal-sheet').style.display='flex';
+      }
+    }).catch(function(e){toast('Error al leer el archivo: '+e.message,'err-t');inp.value='';});
+    return;
+  }
   leerExcel(file).then(async function(raw){
     var cs=checksum(raw);
     if(cs===(tipo==='chess'?state.checksumChess:state.checksumBanco)){
@@ -1038,24 +1056,6 @@ async function cargarArchivo(tipo,inp){
       document.getElementById('fname-chess').textContent=file.name;
       document.getElementById('ftime-chess').textContent=fmtTs(now);
       toast('Chess: '+agregadosXls+' nuevos movimientos agregados. Total: '+state.chess.length,'ok-t');
-    } else {
-      state.checksumBanco=cs;
-      // Leer workbook para detectar múltiples hojas
-      leerWorkbook(file).then(function(wb){
-        var sheets=wb.SheetNames;
-        if(sheets.length===1){
-          var raw2=XLSX.utils.sheet_to_json(wb.Sheets[sheets[0]],{defval:null,raw:false});
-          procesarRawBanco(raw2,file,now);
-        } else {
-          _pendingBanco={wb:wb,file:file,now:now};
-          var list=document.getElementById('sheet-list');
-          list.innerHTML=sheets.map(function(s){
-            return '<button onclick="elegirHoja(\''+s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="padding:10px 14px;background:#0f1628;border:1px solid #3a3f5c;color:#e2e8f0;border-radius:7px;font-size:13px;cursor:pointer;text-align:left" onmouseover="this.style.borderColor=\'#6d28d9\'" onmouseout="this.style.borderColor=\'#3a3f5c\'">📄 '+s+'</button>';
-          }).join('');
-          document.getElementById('modal-sheet').style.display='flex';
-        }
-      }).catch(function(e){toast('Error al leer el archivo: '+e.message,'err-t');inp.value='';});
-      return;
     }
     verificarListo();
     inp.value='';
