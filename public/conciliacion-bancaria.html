@@ -593,6 +593,16 @@ tr:hover td{background:#f9fbff}
   </div>
 </div>
 
+<!-- Modal selección de hoja Excel -->
+<div id="modal-sheet" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:#1e2235;border-radius:12px;padding:24px;min-width:320px;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    <div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:6px">Seleccioná la hoja del extracto</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:16px">El archivo tiene varias hojas. Elegí cuál corresponde al extracto bancario.</div>
+    <div id="sheet-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    <button onclick="cerrarModalSheet()" style="margin-top:16px;width:100%;padding:8px;background:none;border:1px solid #3a3f5c;color:#94a3b8;border-radius:7px;font-size:13px;cursor:pointer">Cancelar</button>
+  </div>
+</div>
+
 <script>
 var USER = null;
 var state = {
@@ -694,6 +704,32 @@ function leerExcel(file){
     };
     r.onerror=rej; r.readAsArrayBuffer(file);
   });
+}
+
+function leerWorkbook(file){
+  return new Promise(function(res,rej){
+    var r=new FileReader();
+    r.onload=function(e){
+      try{ res(XLSX.read(e.target.result,{type:'array',cellDates:true})); }
+      catch(err){rej(err);}
+    };
+    r.onerror=rej; r.readAsArrayBuffer(file);
+  });
+}
+
+var _pendingBanco={wb:null,file:null,now:null};
+
+function cerrarModalSheet(){
+  document.getElementById('modal-sheet').style.display='none';
+  _pendingBanco={wb:null,file:null,now:null};
+  document.getElementById('f-banco').value='';
+}
+
+function elegirHoja(sheetName){
+  document.getElementById('modal-sheet').style.display='none';
+  var raw=XLSX.utils.sheet_to_json(_pendingBanco.wb.Sheets[sheetName],{defval:null,raw:false});
+  procesarRawBanco(raw,_pendingBanco.file,_pendingBanco.now);
+  _pendingBanco={wb:null,file:null,now:null};
 }
 
 /* INIT */
@@ -1004,62 +1040,77 @@ async function cargarArchivo(tipo,inp){
       toast('Chess: '+agregadosXls+' nuevos movimientos agregados. Total: '+state.chess.length,'ok-t');
     } else {
       state.checksumBanco=cs;
-      // Formato fijo banco: filas 0-1 = títulos, fila 2 = encabezados reales
-      // Columnas: Número Secuencia | Fecha | Importe | Saldo | Descripción | Descripción Extendida | ...
-      var headerIdx=0;
-      for(var i=0;i<Math.min(raw.length,10);i++){
-        var vals=Object.values(raw[i]||{}).map(function(v){return String(v||'').toLowerCase().trim();});
-        if(vals.some(function(v){return v==='fecha';})){headerIdx=i;break;}
-      }
-      var hkeys=Object.keys(raw[headerIdx]||{});
-      var dataRows=raw.slice(headerIdx+1).map(function(r2){
-        var obj={};
-        hkeys.forEach(function(k){obj[String(raw[headerIdx][k]||k).trim()]=r2[k];});
-        return obj;
-      });
-      state.banco=[];
-      var todasLasSeqs=[];
-      dataRows.forEach(function(r2){
-        var seq=String(r2['Número Secuencia']||r2['Numero Secuencia']||'').trim();
-        var fecha=parseFecha(String(r2['Fecha']||''));
-        // Guardar todas las secuencias para verificación (débitos y créditos)
-        if(seq) todasLasSeqs.push({seq:seq,fecha:fecha});
-        var impStr=String(r2['Importe']||'').replace(/[^\d.,-]/g,'');
-        var imp;
-        if(impStr.indexOf(',')>-1 && impStr.indexOf('.')>-1){
-          if(impStr.lastIndexOf('.')>impStr.lastIndexOf(',')){ imp=parseFloat(impStr.replace(/,/g,'')); }
-          else { imp=parseFloat(impStr.replace(/\./g,'').replace(',','.')); }
+      // Leer workbook para detectar múltiples hojas
+      leerWorkbook(file).then(function(wb){
+        var sheets=wb.SheetNames;
+        if(sheets.length===1){
+          var raw2=XLSX.utils.sheet_to_json(wb.Sheets[sheets[0]],{defval:null,raw:false});
+          procesarRawBanco(raw2,file,now);
         } else {
-          imp=parseFloat(impStr.replace(',','.'));
+          _pendingBanco={wb:wb,file:file,now:now};
+          var list=document.getElementById('sheet-list');
+          list.innerHTML=sheets.map(function(s){
+            return '<button onclick="elegirHoja(\''+s.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="padding:10px 14px;background:#0f1628;border:1px solid #3a3f5c;color:#e2e8f0;border-radius:7px;font-size:13px;cursor:pointer;text-align:left" onmouseover="this.style.borderColor=\'#6d28d9\'" onmouseout="this.style.borderColor=\'#3a3f5c\'">📄 '+s+'</button>';
+          }).join('');
+          document.getElementById('modal-sheet').style.display='flex';
         }
-        if(isNaN(imp)||imp<=0) return;
-        var desc=String(r2['Descripción Extendida']||r2['Descripcion Extendida']||r2['Descripción']||r2['Descripcion']||'').trim();
-        var descUp=desc.toUpperCase();
-        if(descUp.indexOf('DEPOSITO CHEQUE')>=0) return;
-        if(descUp.indexOf('DEPOSITO POR CAJA CUIT 30566130633')>=0) return;
-        if(descUp.indexOf('REV. IMP.DEBITO')>=0) return;
-        if(descUp.indexOf('REV. IMP.CREDITO')>=0) return;
-        if(descUp.indexOf('REVERSA RETENCION')>=0) return;
-        state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
-      });
-      markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
-      document.getElementById('fname-banco').textContent=file.name;
-      document.getElementById('ftime-banco').textContent=fmtTs(now);
-      verificarSecuencias(todasLasSeqs);
-      if(state.chess.length>0){
-        await procesar();
-      } else {
-        // Auto-importar Chess si hay fechas configuradas, luego procesar
-        var desde=document.getElementById('chess-desde').value;
-        var hasta=document.getElementById('chess-hasta').value;
-        if(desde&&hasta){ await sincronizarChess(); }
-      }
-      registrarAccion('banco_upload','Subió extracto bancario: '+state.banco.length+' acreditaciones ('+file.name+')');
-      toast('Extracto bancario: '+state.banco.length+' acreditaciones','ok-t');
+      }).catch(function(e){toast('Error al leer el archivo: '+e.message,'err-t');inp.value='';});
+      return;
     }
     verificarListo();
     inp.value='';
   }).catch(function(e){toast('Error: '+e.message,'err-t');inp.value='';});
+}
+
+async function procesarRawBanco(raw,file,now){
+  var headerIdx=0;
+  for(var i=0;i<Math.min(raw.length,10);i++){
+    var vals=Object.values(raw[i]||{}).map(function(v){return String(v||'').toLowerCase().trim();});
+    if(vals.some(function(v){return v==='fecha';})){headerIdx=i;break;}
+  }
+  var hkeys=Object.keys(raw[headerIdx]||{});
+  var dataRows=raw.slice(headerIdx+1).map(function(r2){
+    var obj={};
+    hkeys.forEach(function(k){obj[String(raw[headerIdx][k]||k).trim()]=r2[k];});
+    return obj;
+  });
+  state.banco=[];
+  var todasLasSeqs=[];
+  dataRows.forEach(function(r2){
+    var seq=String(r2['Número Secuencia']||r2['Numero Secuencia']||'').trim();
+    var fecha=parseFecha(String(r2['Fecha']||''));
+    if(seq) todasLasSeqs.push({seq:seq,fecha:fecha});
+    var impStr=String(r2['Importe']||'').replace(/[^\d.,-]/g,'');
+    var imp;
+    if(impStr.indexOf(',')>-1&&impStr.indexOf('.')>-1){
+      if(impStr.lastIndexOf('.')>impStr.lastIndexOf(',')){ imp=parseFloat(impStr.replace(/,/g,'')); }
+      else{ imp=parseFloat(impStr.replace(/\./g,'').replace(',','.')); }
+    } else { imp=parseFloat(impStr.replace(',','.')); }
+    if(isNaN(imp)||imp<=0) return;
+    var desc=String(r2['Descripción Extendida']||r2['Descripcion Extendida']||r2['Descripción']||r2['Descripcion']||'').trim();
+    var descUp=desc.toUpperCase();
+    if(descUp.indexOf('DEPOSITO CHEQUE')>=0) return;
+    if(descUp.indexOf('DEPOSITO POR CAJA CUIT 30566130633')>=0) return;
+    if(descUp.indexOf('REV. IMP.DEBITO')>=0) return;
+    if(descUp.indexOf('REV. IMP.CREDITO')>=0) return;
+    if(descUp.indexOf('REVERSA RETENCION')>=0) return;
+    state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
+  });
+  markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
+  document.getElementById('fname-banco').textContent=file.name;
+  document.getElementById('ftime-banco').textContent=fmtTs(now);
+  verificarSecuencias(todasLasSeqs);
+  verificarListo();
+  if(state.chess.length>0){
+    await procesar();
+  } else {
+    var desde=document.getElementById('chess-desde').value;
+    var hasta=document.getElementById('chess-hasta').value;
+    if(desde&&hasta){ await sincronizarChess(); }
+  }
+  registrarAccion('banco_upload','Subió extracto bancario: '+state.banco.length+' acreditaciones ('+file.name+')');
+  toast('Extracto bancario: '+state.banco.length+' acreditaciones','ok-t');
+  document.getElementById('f-banco').value='';
 }
 
 function verificarSecuencias(banco){
