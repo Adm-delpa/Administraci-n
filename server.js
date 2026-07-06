@@ -441,11 +441,18 @@ app.get('/api/tickets', async (req, res) => {
   try {
     let where = [];
     let params = [];
-    if (estado) { params.push(estado); where.push(`estado=$${params.length}`); }
-    if (tipo) { params.push(tipo); where.push(`tipo=$${params.length}`); }
-    if (asignado) { params.push(asignado); where.push(`asignado_a=$${params.length}`); }
+    if (estado) { params.push(estado); where.push(`t.estado=$${params.length}`); }
+    if (tipo) { params.push(tipo); where.push(`t.tipo=$${params.length}`); }
+    if (asignado) { params.push(asignado); where.push(`t.asignado_a=$${params.length}`); }
     const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
-    const r = await pool.query(`SELECT * FROM tickets ${whereClause} ORDER BY cargado_at DESC`, params);
+    const r = await pool.query(`
+      SELECT t.*,
+        GREATEST(
+          t.cargado_at,
+          t.en_proceso_at,
+          (SELECT MAX(n.created_at) FROM ticket_notas n WHERE n.ticket_id = t.id)
+        ) AS ultimo_movimiento
+      FROM tickets t ${whereClause} ORDER BY t.cargado_at DESC`, params);
     res.json(r.rows);
   } catch(e) { res.status(500).json({ error: 'Error al leer tickets' }); }
 });

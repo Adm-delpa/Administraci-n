@@ -137,6 +137,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .cierre-label-ok{color:#065F46}
 .cierre-label-no{color:#8A1F1F}
 
+.tmov-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px}
+.tmov-verde{background:#D1FAE5;color:#065F46}
+.tmov-amarillo{background:#FEF3C7;color:#92400E}
+.tmov-rojo{background:#FEE2E2;color:#B91C1C}
 @media(max-width:600px){.topbar{padding:.75rem 1rem}.f-grid,.f-grid-3{grid-template-columns:1fr}}
 </style>
 </head>
@@ -382,6 +386,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     </select>
     <input class="fil-search" id="fil-q" type="text" placeholder="Buscar ticket..." oninput="cargar()">
   </div>
+  <div class="filters" id="filtros-tardanza" style="margin-top:-.5rem;margin-bottom:1rem;align-items:center">
+    <span style="font-size:11px;color:#9896A0;font-weight:600;white-space:nowrap">Sin movimiento:</span>
+    <button class="fil-btn active" onclick="setFiltroTardanza(this,'')">Todos</button>
+    <button class="fil-btn" onclick="setFiltroTardanza(this,'verde')" style="border-color:#6EE7B7;color:#065F46">Al día <span style="font-size:10px;opacity:.7">(&lt;24h)</span></button>
+    <button class="fil-btn" onclick="setFiltroTardanza(this,'amarillo')" style="border-color:#FDE68A;color:#92400E">1–3 días</button>
+    <button class="fil-btn" onclick="setFiltroTardanza(this,'rojo')" style="border-color:#FECACA;color:#B91C1C">Más de 3 días</button>
+  </div>
 
   <div class="tickets-list" id="tickets-list">
     <div class="empty">Cargando...</div>
@@ -404,8 +415,41 @@ document.getElementById('user-nombre').textContent = USER.nombre || USER.usernam
 document.getElementById('user-avatar').textContent = (USER.nombre||USER.username).charAt(0).toUpperCase();
 
 var filtroEstado = '';
+var filtroTardanza = '';
 var openTicketId = null;
 var usuarios = [];
+
+function horasSinMovimiento(t){
+  var um=t.ultimo_movimiento;
+  if(!um) return 0;
+  var d=new Date(String(um).replace(' ','T'));
+  if(isNaN(d)) return 0;
+  return (Date.now()-d.getTime())/3600000;
+}
+function tiempoSinMovimientoBadge(t){
+  if(t.estado==='finalizado') return '';
+  var h=horasSinMovimiento(t);
+  var cls,txt;
+  if(h<24){
+    cls='tmov-verde';
+    txt=h<1?Math.round(h*60)+'m sin movimiento':Math.round(h)+'h sin movimiento';
+  } else if(h<72){
+    var d=Math.floor(h/24);
+    cls='tmov-amarillo';
+    txt=d+(d===1?' día':' días')+' sin movimiento';
+  } else {
+    cls='tmov-rojo';
+    txt=Math.floor(h/24)+' días sin movimiento';
+  }
+  return '<span class="tmov-badge '+cls+'">⏱ '+txt+'</span>';
+}
+function setFiltroTardanza(btn,val){
+  document.querySelectorAll('#filtros-tardanza .fil-btn').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  filtroTardanza=val;
+  openTicketId=null;
+  cargar();
+}
 
 function ticketResumen(t){
   var chips=[];
@@ -464,6 +508,14 @@ async function cargar(){
       return [t.titulo,t.num_cliente,t.nombre_cliente,t.descripcion,t.alta_nombre,t.alta_fantasia,t.chq_numero,t.chq_banco,t.chq_motivo,t.asignado_a_nombre,String(t.id)]
         .some(function(v){ return v&&String(v).toLowerCase().indexOf(q)>=0; });
     });
+    if(filtroTardanza) tickets = tickets.filter(function(t){
+      if(t.estado==='finalizado') return false;
+      var h=horasSinMovimiento(t);
+      if(filtroTardanza==='verde') return h<24;
+      if(filtroTardanza==='amarillo') return h>=24&&h<72;
+      if(filtroTardanza==='rojo') return h>=72;
+      return true;
+    });
     if(!tickets.length){ list.innerHTML='<div class="empty">Sin tickets para los filtros seleccionados.</div>'; return; }
     list.innerHTML = '';
     tickets.forEach(function(t){
@@ -482,6 +534,7 @@ async function cargar(){
         +'<span>'+fmtFecha(t.cargado_at)+'</span>'
         +'<span>Cargado por '+esc(t.cargado_por_nombre||t.cargado_por)+'</span>'
         +'</div>'
+        +(t.estado!=='finalizado'?'<div style="margin-top:5px">'+tiempoSinMovimientoBadge(t)+'</div>':'')
         +'</div>'
         +'<span class="badge '+badgeCls+'">'+badgeTxt+'</span>'
         +'</div>'
