@@ -1090,10 +1090,12 @@ async function procesarRawBanco(raw,file,now){
     var desc=String(r2['Descripción Extendida']||r2['Descripcion Extendida']||r2['Descripción']||r2['Descripcion']||'').trim();
     var descUp=desc.toUpperCase();
     if(descUp.indexOf('DEPOSITO CHEQUE')>=0) return;
-    if(descUp.indexOf('DEPOSITO POR CAJA CUIT 30566130633')>=0) return;
     if(descUp.indexOf('REV. IMP.DEBITO')>=0) return;
     if(descUp.indexOf('REV. IMP.CREDITO')>=0) return;
     if(descUp.indexOf('REVERSA RETENCION')>=0) return;
+    if(descUp.indexOf('11730349')>=0) return;
+    if(descUp.indexOf('TRASP/ACREDITACION PRESTAMO')>=0) return;
+    if(extraerCUIT(desc)==='30566130633') return;
     state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
   });
   markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
