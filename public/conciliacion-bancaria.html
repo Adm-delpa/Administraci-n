@@ -776,12 +776,17 @@ async function loadResultados(){
   var res=await fetch('/api/datos/conciliacion');
   var data=await res.json();
   // Aplanar todos los períodos en una lista global
+  var totalOriginal=Object.values(data).reduce(function(s,v){return s+((v&&v.resultados&&v.resultados.length)||0);},0);
   state.resultados=[];
   var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PEND':2,'NC':1};
   var fpMap={};
   Object.keys(data).sort().forEach(function(k){
     var rs=(data[k]&&data[k].resultados)||[];
     rs.forEach(function(r){
+      var descUp=String(r.desc||'').toUpperCase();
+      if(descUp.indexOf('11730349')>=0) return;
+      if(descUp.indexOf('TRASP/ACREDITACION PRESTAMO')>=0) return;
+      if(extraerCUIT(r.desc||'')==='30566130633') return;
       var fp=fingerprint(r);
       if(!fpMap[fp]){ fpMap[fp]=r; state.resultados.push(r); }
       else {
@@ -806,6 +811,10 @@ async function loadResultados(){
     verificarListo();
   }
   renderPeriodList();
+  // Si se filtraron registros excluidos, re-guardar para limpiar la DB
+  if(state.resultados.length < totalOriginal){
+    try{ await guardarResultados(); }catch(e){}
+  }
   if(state.resultados.length){
     // Auto-seleccionar el mes más reciente
     var meses=Object.keys(getMesesDisponibles()).sort();
