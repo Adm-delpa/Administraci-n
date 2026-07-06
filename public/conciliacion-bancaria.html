@@ -412,19 +412,24 @@ tr:hover td{background:#f9fbff}
 
   <div class="stats-row">
     <div class="stat n">
-      <div class="lbl">Total banco</div>
+      <div class="lbl">Banco</div>
       <div class="val" id="st-tot">—</div>
-      <div class="sub2">acreditaciones</div>
+      <div class="sub2">movimientos extracto</div>
+    </div>
+    <div class="stat n">
+      <div class="lbl">Chess</div>
+      <div class="val" id="st-chess">—</div>
+      <div class="sub2">movimientos Chess</div>
     </div>
     <div class="stat g">
-      <div class="lbl">Conciliado</div>
+      <div class="lbl">Conciliados</div>
       <div class="val" id="st-conf">—</div>
       <div class="monto" id="st-conf-m"></div>
     </div>
     <div class="stat r">
-      <div class="lbl">No conciliados</div>
+      <div class="lbl">No conciliado</div>
       <div class="val" id="st-nc">—</div>
-      <div class="monto" id="st-nc-m"></div>
+      <div class="sub2">no se encontró movimiento en Chess</div>
     </div>
     <div class="stat y" id="stat-n2-card" style="display:none">
       <div class="lbl">Probables N2</div>
@@ -1579,6 +1584,7 @@ function calcStats(){
     else{nc++;mNc+=r.importe;}
   });
   document.getElementById('st-tot').textContent=tot||'—';
+  document.getElementById('st-chess').textContent=state.chess.length||'—';
   document.getElementById('st-conf').textContent=(n1+conc)||'—';
   document.getElementById('st-conf-m').textContent=(n1+conc)?'$'+fmtN(mN1+mConc):'';
   document.getElementById('st-nc').textContent=nc||'—';
