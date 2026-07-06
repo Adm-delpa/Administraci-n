@@ -570,7 +570,7 @@ function renderDetail(t, el){
         html += '<div class="nota">'
           +'<div class="nota-line"><div class="nota-dot"></div><div class="nota-connector"></div></div>'
           +'<div class="nota-body"><div class="nota-meta">'+esc(n.autor_nombre||n.autor)+' · '+fmtFechaHora(n.created_at)+'</div>'
-          +'<div class="nota-texto">'+esc(n.texto)+'</div></div></div>';
+          +'<div class="nota-texto">'+esc(n.texto)+(n.imagen?'<br><img src="'+n.imagen+'" style="max-width:100%;border-radius:6px;margin-top:6px;cursor:pointer" onclick="verImagen(this.src)">':'')+'</div></div></div>';
       });
       html += '</div>';
     } else {
@@ -580,7 +580,13 @@ function renderDetail(t, el){
       +'<div class="add-dot"></div>'
       +'<div style="flex:1">'
       +'<textarea class="nota-input" id="nota-input-'+t.id+'" rows="2" placeholder="Agregá una nota de seguimiento..."></textarea>'
-      +'<button class="btn-add-nota" onclick="agregarNota('+t.id+')">Agregar nota</button>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-top:5px">'
+      +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#9896A0;cursor:pointer;padding:3px 8px;border:1px dashed #DDDBD6;border-radius:6px;white-space:nowrap">'
+      +'📎 <span id="nota-img-label-'+t.id+'">Adjuntar imagen</span>'
+      +'<input type="file" accept="image/*" id="nota-img-'+t.id+'" style="display:none" onchange="document.getElementById(\'nota-img-label-'+t.id+'\').textContent=this.files[0]?this.files[0].name:\'Adjuntar imagen\'">'
+      +'</label>'
+      +'<button class="btn-add-nota" style="margin-top:0" onclick="agregarNota('+t.id+')">Agregar nota</button>'
+      +'</div>'
       +'</div></div>';
     html += '<div class="fin-form" id="fin-form-'+t.id+'">'
       +'<div class="fin-title">Cerrar ticket</div>'
@@ -591,6 +597,10 @@ function renderDetail(t, el){
       +'</div>'
       +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.4rem">Motivo del cierre</div>'
       +'<textarea class="fin-textarea" id="fin-motivo-'+t.id+'" rows="2" placeholder="Explicá cómo se resolvió o por qué no fue posible..."></textarea>'
+      +'<label style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#9896A0;cursor:pointer;padding:3px 8px;border:1px dashed #DDDBD6;border-radius:6px;margin-top:6px">'
+      +'📎 <span id="fin-img-label-'+t.id+'">Adjuntar imagen (opcional)</span>'
+      +'<input type="file" accept="image/*" id="fin-img-'+t.id+'" style="display:none" onchange="document.getElementById(\'fin-img-label-'+t.id+'\').textContent=this.files[0]?this.files[0].name:\'Adjuntar imagen (opcional)\'">'
+      +'</label>'
       +'<div id="fin-err-'+t.id+'" class="msg-err"></div>'
       +'<div class="fin-btns">'
       +'<button class="btn-cancel" onclick="cancelarFin('+t.id+')">Cancelar</button>'
@@ -608,7 +618,7 @@ function renderDetail(t, el){
         html += '<div class="nota">'
           +'<div class="nota-line"><div class="nota-dot"></div><div class="nota-connector"></div></div>'
           +'<div class="nota-body"><div class="nota-meta">'+esc(n.autor_nombre||n.autor)+' · '+fmtFechaHora(n.created_at)+'</div>'
-          +'<div class="nota-texto">'+esc(n.texto)+'</div></div></div>';
+          +'<div class="nota-texto">'+esc(n.texto)+(n.imagen?'<br><img src="'+n.imagen+'" style="max-width:100%;border-radius:6px;margin-top:6px;cursor:pointer" onclick="verImagen(this.src)">':'')+'</div></div></div>';
       });
       html += '</div>';
     }
@@ -619,6 +629,7 @@ function renderDetail(t, el){
     html += '<div class="'+cierreCls+'">'
       +'<div class="cierre-label '+cierreLblCls+'">'+cierreTxt+'</div>'
       +'<div style="font-size:12px;color:#18181A;margin-bottom:.35rem">'+esc(t.motivo_cierre)+'</div>'
+      +(t.cierre_imagen?'<img src="'+t.cierre_imagen+'" style="max-width:100%;border-radius:6px;margin-bottom:.35rem;cursor:pointer" onclick="verImagen(this.src)">':'')
       +'<div style="font-size:11px;color:#9896A0">Cerrado por <strong>'+esc(t.cerrado_por_nombre||t.cerrado_por)+'</strong> · '+fmtFechaHora(t.cerrado_at)+'</div>'
       +'</div>';
   }
@@ -646,13 +657,36 @@ async function pasarAProceso(id){
   }catch(e){}
 }
 
+function comprimirImagen(file){
+  return new Promise(function(res){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var MAX=900;
+        var w=img.width,h=img.height;
+        if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+        var canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        res(canvas.toDataURL('image/jpeg',0.75));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function agregarNota(id){
   var input=document.getElementById('nota-input-'+id);
   var texto=input.value.trim();
   if(!texto) return;
+  var imgInput=document.getElementById('nota-img-'+id);
+  var imagen=null;
+  if(imgInput&&imgInput.files[0]) imagen=await comprimirImagen(imgInput.files[0]);
   try{
     var r=await fetch('/api/tickets/'+id+'/notas',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({texto,username:USER.username,nombre:USER.nombre})});
+      body:JSON.stringify({texto,username:USER.username,nombre:USER.nombre,imagen})});
     if(r.ok){
       var nota=await r.json();
       var list=document.getElementById('notas-list-'+id);
@@ -660,9 +694,12 @@ async function agregarNota(id){
       div.className='nota';
       div.innerHTML='<div class="nota-line"><div class="nota-dot"></div><div class="nota-connector"></div></div>'
         +'<div class="nota-body"><div class="nota-meta">'+esc(nota.autor_nombre||nota.autor)+' · '+fmtFechaHora(nota.created_at)+'</div>'
-        +'<div class="nota-texto">'+esc(nota.texto)+'</div></div>';
+        +'<div class="nota-texto">'+esc(nota.texto)
+        +(nota.imagen?'<br><img src="'+nota.imagen+'" style="max-width:100%;border-radius:6px;margin-top:6px;cursor:pointer" onclick="verImagen(this.src)">':'')
+        +'</div></div>';
       list.appendChild(div);
       input.value='';
+      if(imgInput){ imgInput.value=''; document.getElementById('nota-img-label-'+id).textContent=''; }
     }
   }catch(e){}
 }
@@ -683,12 +720,26 @@ async function finalizarTicket(id){
   if(resolucionMap[id]===undefined){ showFinErr(id,'Indicá si se resolvió o no.'); return; }
   var motivo=document.getElementById('fin-motivo-'+id).value.trim();
   if(!motivo){ showFinErr(id,'Ingresá el motivo del cierre.'); return; }
+  var imgInput=document.getElementById('fin-img-'+id);
+  var cierre_imagen=null;
+  if(imgInput&&imgInput.files[0]) cierre_imagen=await comprimirImagen(imgInput.files[0]);
   try{
     var r=await fetch('/api/tickets/'+id+'/finalizar',{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({resuelto:resolucionMap[id],motivo_cierre:motivo,username:USER.username,nombre:USER.nombre})});
+      body:JSON.stringify({resuelto:resolucionMap[id],motivo_cierre:motivo,username:USER.username,nombre:USER.nombre,cierre_imagen})});
     if(r.ok){ await reloadDetail(id); actualizarBadge(id,'finalizado'); }
     else{ var d=await r.json(); showFinErr(id,d.error||'Error al finalizar.'); }
   }catch(e){ showFinErr(id,'Error de conexión.'); }
+}
+
+function verImagen(src){
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  ov.onclick=function(){document.body.removeChild(ov);};
+  var img=document.createElement('img');
+  img.src=src;
+  img.style.cssText='max-width:92vw;max-height:92vh;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)';
+  ov.appendChild(img);
+  document.body.appendChild(ov);
 }
 function showFinErr(id,msg){ var el=document.getElementById('fin-err-'+id); el.textContent=msg; el.style.display='block'; }
 

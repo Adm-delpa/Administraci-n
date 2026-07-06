@@ -186,6 +186,7 @@ async function initDB() {
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_conf DATE;
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_cobro DATE;
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_importe NUMERIC(14,2);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS cierre_imagen TEXT;
 
       CREATE TABLE IF NOT EXISTS ticket_notas (
         id SERIAL PRIMARY KEY,
@@ -193,8 +194,10 @@ async function initDB() {
         texto TEXT NOT NULL,
         autor VARCHAR(50) NOT NULL,
         autor_nombre VARCHAR(100),
+        imagen TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
+      ALTER TABLE ticket_notas ADD COLUMN IF NOT EXISTS imagen TEXT;
     `);
 
     // Crear usuarios por defecto si no existen
@@ -489,25 +492,25 @@ app.put('/api/tickets/:id/proceso', async (req, res) => {
 });
 
 app.post('/api/tickets/:id/notas', async (req, res) => {
-  const { texto, username, nombre } = req.body;
+  const { texto, username, nombre, imagen } = req.body;
   if (!texto || !username) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const r = await pool.query(
-      'INSERT INTO ticket_notas (ticket_id, texto, autor, autor_nombre) VALUES ($1,$2,$3,$4) RETURNING *',
-      [req.params.id, texto, username, nombre||username]);
+      'INSERT INTO ticket_notas (ticket_id, texto, autor, autor_nombre, imagen) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [req.params.id, texto, username, nombre||username, imagen||null]);
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al guardar nota' }); }
 });
 
 app.put('/api/tickets/:id/finalizar', async (req, res) => {
-  const { resuelto, motivo_cierre, username, nombre } = req.body;
+  const { resuelto, motivo_cierre, username, nombre, cierre_imagen } = req.body;
   if (resuelto === undefined || !motivo_cierre || !username) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const r = await pool.query(
       `UPDATE tickets SET estado='finalizado', resuelto=$1, motivo_cierre=$2,
-       cerrado_por=$3, cerrado_por_nombre=$4, cerrado_at=NOW()
+       cerrado_por=$3, cerrado_por_nombre=$4, cerrado_at=NOW(), cierre_imagen=$6
        WHERE id=$5 AND estado='en_proceso' RETURNING *`,
-      [resuelto, motivo_cierre, username, nombre||username, req.params.id]);
+      [resuelto, motivo_cierre, username, nombre||username, req.params.id, cierre_imagen||null]);
     if (!r.rows.length) return res.status(400).json({ error: 'No se puede finalizar' });
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al finalizar' }); }
