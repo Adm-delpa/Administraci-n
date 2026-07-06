@@ -536,6 +536,28 @@ tr:hover td{background:#f9fbff}
     </div>
   </div>
 
+  <!-- PANEL CHESS SIN BANCO -->
+  <div id="panel-chess-huerfanos" style="display:none;margin-top:14px">
+    <div class="panel" style="border-color:#fde68a">
+      <div class="panel-header" style="background:#fffbeb">
+        <h3 style="color:#92400e">⚠ En Chess sin acreditación en extracto</h3>
+        <span id="chess-huerfanos-count" style="font-size:12px;color:#d97706;font-weight:600"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:88px">Fecha Chess</th>
+            <th>Cliente</th>
+            <th style="width:60px">Cód.</th>
+            <th style="width:115px;text-align:right">Importe</th>
+            <th>Referencia</th>
+          </tr></thead>
+          <tbody id="tbl-chess-huerfanos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </main>
 </div>
 
@@ -614,7 +636,8 @@ var state = {
   _savedAt: null,
   filtradas: [], pagina: 0, POR_PAG: 100,
   modalIdx: null, clienteSel: null,
-  pendientes: []
+  pendientes: [],
+  chessHuerfanos: []
 };
 
 /* UTILS */
@@ -889,7 +912,7 @@ function setFiltroMes(ym){
     'Última actualización: '+savedAt.toLocaleDateString('es-AR')+' a las '+savedAt.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):
     '';
   document.getElementById('btn-export').disabled=false;
-  calcStats(); filtrar();
+  calcStats(); filtrar(); renderChessHuerfanos();
 }
 
 /* CARGAR CLIENTES (reemplaza sucursal completa) */
@@ -1474,11 +1497,9 @@ async function procesar(){
       var diasDif=match?(new Date(b.fecha)-new Date(match.fecha))/(1000*60*60*24):0;
       motivo='Importe exacto $'+b.importe+(match?' — Chess: '+(match.nomCli||match.codCli||'')+' ('+match.fecha+(diasDif>0?', +'+diasDif+'d':'')+')':'');
     } else if(nivel==='NC'){
-      // Buscar motivo: si el CUIT está en el maestro, mostrar la diferencia con el importe Chess más cercano
       var cuitBcoNC=extraerCUIT(b.desc);
       if(cuitBcoNC&&cuitMap[cuitBcoNC]){
         var cliNC=cuitMap[cuitBcoNC];
-        // Buscar el movimiento Chess del mismo cliente con importe más cercano (usado o no)
         var mejorDif=null,mejorChess=null;
         for(var i=0;i<chess.length;i++){
           var dif=Math.abs(chess[i].haber-b.importe);
@@ -1487,11 +1508,13 @@ async function procesar(){
           }
         }
         if(mejorChess){
-          motivo='Cliente: '+cliNC.c+' - '+(cliNC.n||cliNC.c)+' — Chess más cercano: $'+fmtN(mejorChess.haber)+' (dif: $'+fmtN(mejorDif)+', fecha '+mejorChess.fecha+')';
+          motivo='Cliente: '+cliNC.c+' — Banco: $'+fmtN(b.importe)+' / Chess: $'+fmtN(mejorChess.haber)+' (dif: $'+fmtN(mejorDif)+', fecha '+mejorChess.fecha+')';
           sugerido={cod:cliNC.c,nom:cliNC.n||cliNC.c,cuit:cliNC.cuit||''};
         } else {
-          motivo='Cliente '+(cliNC.n||cliNC.c)+' encontrado pero sin movimiento Chess en el período';
+          motivo='Cliente: '+cliNC.c+' - '+(cliNC.n||cliNC.c)+' — En banco, falta en Chess ERP';
         }
+      } else {
+        motivo='Sin CUIT identificado — falta en Chess ERP o movimiento propio';
       }
     }
     nuevos.push({
@@ -1506,6 +1529,9 @@ async function procesar(){
 
   // Eliminar pendientes que ya pasaron a N1 (encontraron match en Chess y banco)
   state.pendientes=state.pendientes.filter(function(p){return !p._toDelete&&!p.confirmado;});
+
+  // Recopilar Chess sin match bancario
+  state.chessHuerfanos=chess.filter(function(m,i){ return !sisUsado[i]&&m.haber>0; });
 
   loading(true);
   // Merge nuevos en la lista plana global usando fingerprint
@@ -1540,6 +1566,7 @@ async function procesar(){
   if(pendConf>0) msg+=' — '+pendConf+' pendiente(s) confirmado(s)';
   showAlert('alert-ok',msg);
   toast('Conciliación guardada','ok-t');
+  renderChessHuerfanos();
 }
 
 async function guardarResultados(){
@@ -1559,6 +1586,31 @@ async function guardarResultados(){
       });
     }catch(e){ toast('Error al guardar '+mes,'err-t'); }
   }
+}
+
+/* CHESS HUERFANOS */
+function renderChessHuerfanos(){
+  var panel=document.getElementById('panel-chess-huerfanos');
+  var tbody=document.getElementById('tbl-chess-huerfanos');
+  var countEl=document.getElementById('chess-huerfanos-count');
+  var items=state.chessHuerfanos||[];
+  if(state.filtroMes) items=items.filter(function(m){return m.fecha&&m.fecha.slice(0,7)===state.filtroMes;});
+  if(!items.length){panel.style.display='none';return;}
+  panel.style.display='';
+  countEl.textContent=items.length+' movimiento(s) registrado(s) en Chess sin acreditación bancaria';
+  var totalMonto=items.reduce(function(s,m){return s+m.haber;},0);
+  countEl.textContent+=' — Total: $'+fmtN(totalMonto);
+  tbody.innerHTML=items.map(function(m){
+    var cliInfo=state.clientes[m.codCli]||Object.values(state.clientes).find(function(c){return parseInt(c.c,10)===parseInt(m.codCli,10);})||null;
+    var nom=m.nomCli||(cliInfo?cliInfo.n:'');
+    return '<tr style="background:#fffbeb">'
+      +'<td>'+fmtFechaDisplay(m.fecha)+'</td>'
+      +'<td style="font-weight:600">'+esc(nom)+'</td>'
+      +'<td><span class="cod">'+esc(m.codCli)+'</span></td>'
+      +'<td style="text-align:right;font-family:monospace;font-weight:600;color:#d97706">$'+fmtN(m.haber)+'</td>'
+      +'<td style="font-size:11px;color:#94a3b8">'+esc(trunc(m.ref||'',60))+'</td>'
+      +'</tr>';
+  }).join('');
 }
 
 /* STATS */
