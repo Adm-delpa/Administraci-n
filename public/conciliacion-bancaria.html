@@ -1645,7 +1645,7 @@ function renderTabla(){
                 r.nivel==='PEND'?'<span class="badge b-nc" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5">⏳ Pendiente de liquidación</span>':
                 r.nivel==='N2'?'<span class="badge b-n2">~ N2 probable</span>'+motivoTxt:
                 '<span class="badge b-nc">✕ Sin conciliar</span>'+motivoTxt;
-      var accion=r.nivel==='PEND'?''
+      var accion=r.nivel==='PEND'?'<button class="btn-asi" style="background:#7c3aed;color:#fff;border-color:#6d28d9" onclick="confirmarPend('+gi+')">✓ Confirmar</button>'
         :r.nivel==='N2'
         ?'<button class="btn-asi" style="background:#d97706" onclick="confirmarN2('+gi+')">✓ Confirmar</button> <button class="btn-asi" onclick="abrirModal('+gi+')">Cambiar</button>'
         :r.nivel==='NC'?
