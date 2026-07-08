@@ -654,7 +654,7 @@ function renderTareas() {
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           ${completarBtn}
           <button class="btn-secondary btn-sm" onclick="editarTarea(${t.id})">Editar</button>
-          <button class="btn-danger btn-sm" onclick="eliminarTarea(${t.id})">✕</button>
+          ${userData.rol === 'admin' ? `<button class="btn-danger btn-sm" onclick="eliminarTarea(${t.id})">✕</button>` : ''}
         </div>
       </td>
     </tr>`;
