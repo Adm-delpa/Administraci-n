@@ -76,12 +76,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .badge-vence-hoy{background:#FEF3C7;color:#92400E}
 .badge-tipo{background:#EDE9FE;color:#5B21B6}
 
-/* SUBTAREAS INLINE */
-.subtarea-item{display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:11px}
-.subtarea-item input[type=checkbox]{accent-color:#1E6FD9;cursor:pointer}
-.subtarea-item span{color:#56555A}
-.subtarea-item span.done{text-decoration:line-through;color:#9896A0}
-
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-start;justify-content:center;backdrop-filter:blur(4px);padding:2rem 1rem;overflow-y:auto}
 .modal-overlay.show{display:flex}
@@ -101,15 +95,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .toggle-group{display:flex;border:1.5px solid #DDDBD6;border-radius:7px;overflow:hidden;margin-bottom:.85rem}
 .toggle-btn{flex:1;padding:.55rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:none;background:#fff;cursor:pointer;color:#56555A;transition:all .15s}
 .toggle-btn.active{background:#1E6FD9;color:#fff}
-
-/* SUBTAREAS EDIT */
-.sub-list{border:1.5px solid #DDDBD6;border-radius:7px;padding:.5rem;min-height:40px;margin-bottom:.5rem}
-.sub-edit-item{display:flex;align-items:center;gap:6px;margin-bottom:4px}
-.sub-edit-item input{flex:1;padding:.4rem .6rem;border:1px solid #DDDBD6;border-radius:5px;font-family:'Inter',sans-serif;font-size:12px;outline:none}
-.sub-edit-item input:focus{border-color:#1E6FD9}
-.sub-edit-item button{padding:3px 8px;font-size:11px;background:#FAE0E0;color:#8A1F1F;border:none;border-radius:4px;cursor:pointer}
-.add-sub-btn{font-size:12px;color:#1E6FD9;background:none;border:none;cursor:pointer;font-weight:600;padding:0}
-.add-sub-btn:hover{text-decoration:underline}
 
 /* CALENDAR */
 .cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
@@ -228,12 +213,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
             <th>Responsable</th>
             <th>Estado</th>
             <th>Último registro</th>
-            <th>Subtareas</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody id="tareas-tbody">
-          <tr><td colspan="9" class="empty">Cargando...</td></tr>
+          <tr><td colspan="8" class="empty">Cargando...</td></tr>
         </tbody>
       </table>
     </div>
@@ -367,12 +351,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       </div>
     </div>
 
-    <div class="field">
-      <label>Subtareas</label>
-      <div class="sub-list" id="sub-edit-list"></div>
-      <button type="button" class="add-sub-btn" onclick="addSubtareaEdit()">+ Agregar subtarea</button>
-    </div>
-
     <div class="msg" id="modal-msg"></div>
     <div class="modal-btns">
       <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
@@ -482,7 +460,7 @@ async function cargarTareas() {
     tareas = await r.json();
     renderTareas();
   } catch(e) {
-    document.getElementById('tareas-tbody').innerHTML = '<tr><td colspan="9" class="empty">Error al cargar.</td></tr>';
+    document.getElementById('tareas-tbody').innerHTML = '<tr><td colspan="8" class="empty">Error al cargar.</td></tr>';
   }
 }
 
@@ -532,7 +510,7 @@ function renderTareas() {
 
   const tbody = document.getElementById('tareas-tbody');
   if (!filtradas.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty">No hay tareas que coincidan con los filtros.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">No hay tareas que coincidan con los filtros.</td></tr>';
     return;
   }
 
@@ -542,15 +520,6 @@ function renderTareas() {
     const catNombre = t.categoria_nombre ? `<span class="badge" style="background:${t.categoria_color||'#E0E7F0'};color:#18181A;opacity:.85">${t.categoria_nombre}</span>` : '<span style="color:#9896A0">—</span>';
     const resp = t.responsable === 'cualquiera' ? '<span style="color:#9896A0">Cualquiera</span>' : (usuarios.find(u => u.username === t.responsable)?.nombre || t.responsable);
     const ultReg = t.ultimo_fecha ? `${t.ultimo_fecha}${t.ultimo_persona ? ' · ' + (usuarios.find(u=>u.username===t.ultimo_persona)?.nombre || t.ultimo_persona) : ''}` : '<span style="color:#9896A0">Nunca</span>';
-
-    // Subtareas
-    const subs = t.subtareas || [];
-    const subsHtml = subs.length ? subs.map(s =>
-      `<div class="subtarea-item">
-        <input type="checkbox" ${s.completada_hoy ? 'checked' : ''} onchange="toggleSubtarea(${s.id}, ${t.id}, this.checked)">
-        <span class="${s.completada_hoy ? 'done' : ''}">${escHtml(s.texto)}</span>
-      </div>`
-    ).join('') : '<span style="color:#9896A0;font-size:11px">—</span>';
 
     const completarBtn = est.cls !== 'badge-hecho'
       ? `<button class="btn-primary btn-sm" onclick="completarTarea(${t.id})">✓ Marcar hecho</button>`
@@ -564,7 +533,6 @@ function renderTareas() {
       <td style="font-size:11px">${resp}</td>
       <td><span class="badge ${est.cls}">${est.label}</span></td>
       <td style="font-size:11px;white-space:nowrap">${ultReg}</td>
-      <td style="min-width:140px">${subsHtml}</td>
       <td style="white-space:nowrap">
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           ${completarBtn}
@@ -578,27 +546,6 @@ function renderTareas() {
 
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── SUBTAREA TOGGLE ──
-async function toggleSubtarea(subtareaId, tareaId, completada) {
-  try {
-    await fetch(`/api/tareas/subtareas/${subtareaId}/estado`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fecha: hoy, completada })
-    });
-    // Actualizar local
-    const t = tareas.find(x => x.id === tareaId);
-    if (t) {
-      const s = (t.subtareas || []).find(x => x.id === subtareaId);
-      if (s) s.completada_hoy = completada;
-      // Auto-completar si todas marcadas
-      if (t.subtareas.length > 0 && t.subtareas.every(x => x.completada_hoy)) {
-        await completarTarea(tareaId);
-      }
-    }
-  } catch(e) {}
 }
 
 // ── COMPLETAR TAREA ──
@@ -636,10 +583,6 @@ function abrirModal(tarea) {
   document.getElementById('t-fecha-inicio').value = tarea ? (tarea.fecha_inicio || '') : hoy;
   document.getElementById('t-dia-mes').value = tarea ? (tarea.dia_del_mes || '') : '';
   document.getElementById('t-proxima-fecha').value = tarea ? (tarea.proxima_fecha || '') : '';
-  // Subtareas
-  const list = document.getElementById('sub-edit-list');
-  list.innerHTML = '';
-  (tarea ? tarea.subtareas || [] : []).forEach(s => addSubtareaEdit(s.texto));
   document.getElementById('nueva-cat-panel').style.display = 'none';
   showModalMsg('', '');
   document.getElementById('modal-tarea').classList.add('show');
@@ -658,18 +601,6 @@ function setTipo(tipo) {
   document.getElementById('campo-diaria').style.display = tipo === 'diaria' ? '' : 'none';
   document.getElementById('campo-mensual').style.display = tipo === 'mensual' ? '' : 'none';
   document.getElementById('campo-proxima').style.display = tipo === 'mensual' ? '' : 'none';
-}
-
-function addSubtareaEdit(texto) {
-  const list = document.getElementById('sub-edit-list');
-  const div = document.createElement('div');
-  div.className = 'sub-edit-item';
-  div.innerHTML = `<input type="text" placeholder="Texto de la subtarea" value="${escHtml(texto||'')}"><button type="button" onclick="this.parentElement.remove()">✕</button>`;
-  list.appendChild(div);
-}
-
-function getSubtareasEdit() {
-  return [...document.querySelectorAll('#sub-edit-list .sub-edit-item input')].map((inp, i) => ({ texto: inp.value.trim(), orden: i })).filter(s => s.texto);
 }
 
 function showModalMsg(type, txt) {
@@ -691,7 +622,6 @@ async function guardarTarea() {
     proxima_fecha: tipoActual === 'mensual' ? (document.getElementById('t-proxima-fecha').value || null) : null,
     responsable: document.getElementById('t-responsable').value,
     categoria_id: document.getElementById('t-categoria').value || null,
-    subtareas: getSubtareasEdit()
   };
   try {
     const url = editingId ? `/api/tareas/${editingId}` : '/api/tareas';
