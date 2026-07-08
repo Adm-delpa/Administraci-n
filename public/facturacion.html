@@ -222,9 +222,13 @@ document.getElementById('user-avatar').textContent = (userData.nombre || userDat
 document.getElementById('rol-badge').textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
 document.getElementById('rol-badge').className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
 
+const ORDER = ['edea-total','e-neto','e-iibb','e-iva','e-perc-iva','e-ley1','e-ley2','e-ley3','e-ley4','e-ley5','e-ley6'];
+
 function parseMonto(val) {
   if (!val || !val.trim()) return 0;
-  let v = val.trim().replace(/\s/g, '');
+  // quitar $ y espacios
+  let v = val.trim().replace(/\$/g, '').replace(/\s/g, '');
+  // formato argentino: punto = miles, coma = decimal
   if (v.includes('.') && v.includes(',')) {
     v = v.replace(/\./g, '').replace(',', '.');
   } else if (v.includes(',')) {
@@ -234,10 +238,43 @@ function parseMonto(val) {
   return isNaN(n) ? 0 : n;
 }
 
+function fmtInput(n) {
+  if (n === 0) return '';
+  return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function fmt(n) {
   if (n === 0) return '—';
   return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+// Al salir de un campo: formatea el valor y pasa al siguiente con Enter
+document.addEventListener('DOMContentLoaded', () => {
+  ORDER.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Formatear al perder foco
+    el.addEventListener('blur', () => {
+      const n = parseMonto(el.value);
+      el.value = n > 0 ? fmtInput(n) : '';
+      calcEdea();
+    });
+    // Al hacer foco: mostrar solo el número para editar
+    el.addEventListener('focus', () => {
+      const n = parseMonto(el.value);
+      el.value = n > 0 ? String(n).replace('.', ',') : '';
+      setTimeout(() => el.select(), 0);
+    });
+    // Enter: pasar al siguiente campo
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const next = document.getElementById(ORDER[i + 1]);
+        if (next) next.focus();
+      }
+    });
+  });
+});
 
 function calcEdea() {
   const neto    = parseMonto(document.getElementById('e-neto').value);
