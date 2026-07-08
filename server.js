@@ -864,6 +864,14 @@ app.get('/api/tareas/historial', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error' }); }
 });
 
+// DELETE historial completo
+app.delete('/api/tareas/historial', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM tareas_historial');
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // Tareas atrasadas count
 app.get('/api/tareas/atrasadas/count', async (req, res) => {
   try {

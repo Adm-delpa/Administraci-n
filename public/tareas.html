@@ -251,12 +251,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 
   <!-- TAB HISTORIAL -->
   <div class="tab-panel" id="tab-historial">
-    <div class="toolbar" style="margin-bottom:1rem">
+    <div class="toolbar" style="margin-bottom:1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <select id="hist-persona" onchange="cargarHistorial()">
         <option value="">Todas las personas</option>
       </select>
       <input type="date" id="hist-desde" onchange="cargarHistorial()" placeholder="Desde">
       <input type="date" id="hist-hasta" onchange="cargarHistorial()" placeholder="Hasta">
+      <button id="btn-borrar-historial" style="display:none;margin-left:auto;background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer" onclick="borrarHistorial()">Borrar historial</button>
     </div>
     <div class="card">
       <table class="tbl">
@@ -373,6 +374,7 @@ document.getElementById('user-nombre').textContent = userData.nombre || userData
 document.getElementById('user-avatar').textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
 document.getElementById('rol-badge').textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
 document.getElementById('rol-badge').className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
+if (userData.rol === 'admin') document.getElementById('btn-borrar-historial').style.display = 'block';
 
 let tareas = [];
 let categorias = [];
@@ -712,6 +714,16 @@ function renderCalendario() {
 
 function calPrev() { if (calMonth === 0) { calMonth = 11; calYear--; } else calMonth--; renderCalendario(); }
 function calNext() { if (calMonth === 11) { calMonth = 0; calYear++; } else calMonth++; renderCalendario(); }
+
+// ── BORRAR HISTORIAL ──
+async function borrarHistorial() {
+  if (!confirm('¿Borrar todo el historial de tareas? Esta acción no se puede deshacer.')) return;
+  try {
+    const r = await fetch('/api/tareas/historial', { method: 'DELETE' });
+    if (!r.ok) throw new Error();
+    cargarHistorial();
+  } catch(e) { alert('Error al borrar el historial.'); }
+}
 
 // ── HISTORIAL ──
 async function cargarHistorial() {
