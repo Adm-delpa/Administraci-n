@@ -200,6 +200,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
         <option value="atrasado">Atrasadas</option>
         <option value="hecho">Hechas hoy</option>
       </select>
+      <input type="text" id="fil-buscar" placeholder="Buscar tarea..." oninput="renderTareas()" style="padding:6px 10px;border:1px solid #DDDBD6;border-radius:6px;font-size:13px;font-family:inherit;min-width:180px">
     </div>
 
     <div id="subtab-lista" class="card">
@@ -534,12 +535,14 @@ function renderTareas() {
   const filPersona = document.getElementById('fil-persona').value;
   const filCat = document.getElementById('fil-categoria').value;
   const filEst = document.getElementById('fil-estado').value;
+  const filBuscar = (document.getElementById('fil-buscar').value || '').toLowerCase().trim();
 
   const filtradas = tareas.filter(t => {
     if (filPersona === 'cualquiera' && t.responsable !== 'cualquiera') return false;
     if (filPersona && filPersona !== 'cualquiera' && t.responsable !== 'cualquiera' && t.responsable !== filPersona) return false;
     if (filCat && String(t.categoria_id) !== filCat) return false;
     if (!matchEstadoFiltro(t, filEst)) return false;
+    if (filBuscar && !t.nombre.toLowerCase().includes(filBuscar)) return false;
     return true;
   });
 
