@@ -351,6 +351,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       </div>
     </div>
 
+    <div class="field">
+      <label>Descripción / Indicaciones</label>
+      <textarea id="t-descripcion" rows="3" placeholder="Instrucciones o detalles de la tarea (opcional)" style="resize:vertical"></textarea>
+    </div>
+
     <div class="msg" id="modal-msg"></div>
     <div class="modal-btns">
       <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
@@ -583,6 +588,7 @@ function abrirModal(tarea) {
   document.getElementById('t-fecha-inicio').value = tarea ? (tarea.fecha_inicio || '') : hoy;
   document.getElementById('t-dia-mes').value = tarea ? (tarea.dia_del_mes || '') : '';
   document.getElementById('t-proxima-fecha').value = tarea ? (tarea.proxima_fecha || '') : '';
+  document.getElementById('t-descripcion').value = tarea ? (tarea.descripcion || '') : '';
   document.getElementById('nueva-cat-panel').style.display = 'none';
   showModalMsg('', '');
   document.getElementById('modal-tarea').classList.add('show');
@@ -622,6 +628,7 @@ async function guardarTarea() {
     proxima_fecha: tipoActual === 'mensual' ? (document.getElementById('t-proxima-fecha').value || null) : null,
     responsable: document.getElementById('t-responsable').value,
     categoria_id: document.getElementById('t-categoria').value || null,
+    descripcion: document.getElementById('t-descripcion').value.trim() || null,
   };
   try {
     const url = editingId ? `/api/tareas/${editingId}` : '/api/tareas';

@@ -198,6 +198,7 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT NOW()
       );
       ALTER TABLE ticket_notas ADD COLUMN IF NOT EXISTS imagen TEXT;
+      ALTER TABLE tareas ADD COLUMN IF NOT EXISTS descripcion TEXT;
 
       CREATE TABLE IF NOT EXISTS tareas_categorias (
         id SERIAL PRIMARY KEY,
@@ -216,6 +217,7 @@ async function initDB() {
         proxima_fecha TEXT,
         responsable TEXT DEFAULT 'cualquiera',
         categoria_id INTEGER REFERENCES tareas_categorias(id) ON DELETE SET NULL,
+        descripcion TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
@@ -936,9 +938,9 @@ app.post('/api/tareas', async (req, res) => {
   if (!nombre) return res.status(400).json({ error: 'Falta nombre' });
   try {
     const r = await pool.query(`
-      INSERT INTO tareas (nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *
-    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null]);
+      INSERT INTO tareas (nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, descripcion)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
+    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null]);
     const tarea = r.rows[0];
     if (subtareas && subtareas.length) {
       for (const s of subtareas) {
@@ -955,9 +957,9 @@ app.put('/api/tareas/:id', async (req, res) => {
   const { id } = req.params;
   try {
     const r = await pool.query(`
-      UPDATE tareas SET nombre=$1, prioridad=$2, tipo=$3, fecha_inicio=$4, dia_del_mes=$5, proxima_fecha=$6, responsable=$7, categoria_id=$8
-      WHERE id=$9 RETURNING *
-    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, id]);
+      UPDATE tareas SET nombre=$1, prioridad=$2, tipo=$3, fecha_inicio=$4, dia_del_mes=$5, proxima_fecha=$6, responsable=$7, categoria_id=$8, descripcion=$9
+      WHERE id=$10 RETURNING *
+    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null, id]);
     if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
     // Reemplazar subtareas
     await pool.query('DELETE FROM tareas_subtareas WHERE tarea_id=$1', [id]);
