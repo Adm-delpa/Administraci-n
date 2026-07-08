@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario de Tareas — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.rol-badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700}
+.rol-admin{background:rgba(196,130,10,.3);color:#FCD34D}
+.rol-vista{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+/* PAGE */
+.page{max-width:1200px;margin:0 auto;padding:2rem 1rem}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1.5rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb-sep{color:#DDDBD6}
+
+/* TABS */
+.tabs{display:flex;gap:4px;border-bottom:2px solid #DDDBD6;margin-bottom:1.5rem}
+.tab-btn{padding:.6rem 1.2rem;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;border:none;background:none;cursor:pointer;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:6px 6px 0 0}
+.tab-btn:hover{color:#1E6FD9;background:#F0EEEb}
+.tab-btn.active{color:#1E6FD9;border-bottom-color:#1E6FD9;background:#fff}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* SUBTABS */
+.subtabs{display:flex;gap:6px;margin-bottom:1rem}
+.subtab-btn{padding:.4rem .9rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:1.5px solid #DDDBD6;background:#fff;cursor:pointer;color:#56555A;border-radius:20px;transition:all .15s}
+.subtab-btn:hover,.subtab-btn.active{background:#1E6FD9;color:#fff;border-color:#1E6FD9}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem}
+.toolbar select,.toolbar input{padding:.45rem .75rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;color:#18181A;background:#fff;outline:none}
+.toolbar select:focus,.toolbar input:focus{border-color:#1E6FD9}
+.btn-primary{padding:.55rem 1.1rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-primary:hover{background:#0D4FA0}
+.btn-secondary{padding:.55rem 1rem;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-secondary:hover{background:#DDDBD6}
+.btn-danger{padding:.55rem 1rem;background:#FAE0E0;color:#8A1F1F;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-danger:hover{background:#f5c0c0}
+.btn-sm{padding:.35rem .7rem;font-size:11px;border-radius:5px}
+.ml-auto{margin-left:auto}
+
+/* TABLE */
+.card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:.6rem .85rem;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;border-bottom:1.5px solid #DDDBD6;white-space:nowrap}
+.tbl td{padding:.65rem .85rem;border-bottom:1px solid #F5F5F7;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#FAFAF9}
+
+/* BADGES */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.badge-alta{background:#FAE0E0;color:#8A1F1F}
+.badge-media{background:#FEF3C7;color:#92400E}
+.badge-baja{background:#F2F1EE;color:#56555A}
+.badge-hecho{background:#D4F2E8;color:#075C41}
+.badge-atrasado{background:#FAE0E0;color:#8A1F1F}
+.badge-pendiente{background:#F2F1EE;color:#56555A}
+.badge-vence-hoy{background:#FEF3C7;color:#92400E}
+.badge-tipo{background:#EDE9FE;color:#5B21B6}
+
+/* SUBTAREAS INLINE */
+.subtarea-item{display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:11px}
+.subtarea-item input[type=checkbox]{accent-color:#1E6FD9;cursor:pointer}
+.subtarea-item span{color:#56555A}
+.subtarea-item span.done{text-decoration:line-through;color:#9896A0}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-start;justify-content:center;backdrop-filter:blur(4px);padding:2rem 1rem;overflow-y:auto}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.75rem;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:.25rem}
+.modal-sub{font-size:12px;color:#9896A0;margin-bottom:1.25rem}
+.field{margin-bottom:.85rem}
+.field label{display:block;font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem}
+.field input,.field select,.field textarea{width:100%;padding:.65rem .9rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#1E6FD9}
+.modal-btns{display:flex;gap:8px;margin-top:1.1rem}
+.msg{display:none;padding:.5rem .75rem;border-radius:6px;font-size:12px;font-weight:500;margin-top:.5rem}
+.msg-ok{background:#D4F2E8;color:#075C41}
+.msg-err{background:#FAE0E0;color:#8A1F1F}
+
+/* TIPO TOGGLE */
+.toggle-group{display:flex;border:1.5px solid #DDDBD6;border-radius:7px;overflow:hidden;margin-bottom:.85rem}
+.toggle-btn{flex:1;padding:.55rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:none;background:#fff;cursor:pointer;color:#56555A;transition:all .15s}
+.toggle-btn.active{background:#1E6FD9;color:#fff}
+
+/* SUBTAREAS EDIT */
+.sub-list{border:1.5px solid #DDDBD6;border-radius:7px;padding:.5rem;min-height:40px;margin-bottom:.5rem}
+.sub-edit-item{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.sub-edit-item input{flex:1;padding:.4rem .6rem;border:1px solid #DDDBD6;border-radius:5px;font-family:'Inter',sans-serif;font-size:12px;outline:none}
+.sub-edit-item input:focus{border-color:#1E6FD9}
+.sub-edit-item button{padding:3px 8px;font-size:11px;background:#FAE0E0;color:#8A1F1F;border:none;border-radius:4px;cursor:pointer}
+.add-sub-btn{font-size:12px;color:#1E6FD9;background:none;border:none;cursor:pointer;font-weight:600;padding:0}
+.add-sub-btn:hover{text-decoration:underline}
+
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+.cal-nav button{padding:.4rem .8rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:1.5px solid #DDDBD6;background:#fff;border-radius:6px;cursor:pointer}
+.cal-nav button:hover{background:#F0EEEb}
+.cal-title{font-size:15px;font-weight:700;color:#18181A}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-header{font-size:10px;font-weight:700;text-transform:uppercase;color:#9896A0;text-align:center;padding:.4rem 0}
+.cal-day{background:#fff;border:1px solid #DDDBD6;border-radius:8px;min-height:80px;padding:.4rem;position:relative}
+.cal-day.other-month{background:#F8F7F5;opacity:.6}
+.cal-day.today{border-color:#1E6FD9;border-width:2px}
+.cal-day-num{font-size:11px;font-weight:700;color:#56555A;margin-bottom:3px}
+.cal-task{font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-task.hecho{background:#D4F2E8;color:#075C41}
+.cal-task.atrasado{background:#FAE0E0;color:#8A1F1F}
+.cal-task.pendiente{background:#F2F1EE;color:#56555A}
+.cal-task.vence-hoy{background:#FEF3C7;color:#92400E}
+
+/* PRODUCTIVIDAD */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:1.5rem}
+.metric-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:1rem 1.1rem}
+.metric-label{font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem}
+.metric-val{font-size:26px;font-weight:700;color:#18181A}
+.metric-sub{font-size:11px;color:#9896A0;margin-top:2px}
+
+/* PERSONA TOGGLE */
+.persona-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.persona-tab{padding:.4rem .9rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:1.5px solid #DDDBD6;background:#fff;cursor:pointer;color:#56555A;border-radius:20px;transition:all .15s}
+.persona-tab:hover,.persona-tab.active{background:#1E6FD9;color:#fff;border-color:#1E6FD9}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:3rem 1rem;color:#9896A0;font-size:13px}
+.empty svg{display:block;margin:0 auto 1rem;opacity:.3}
+
+@media(max-width:700px){.topbar{padding:.75rem 1rem}.tbl{font-size:11px}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Sistema de Gestión</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+      <span class="rol-badge" id="rol-badge">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="/administracion">Administración</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Calendario de Tareas</span>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em">Calendario de Tareas</div>
+      <div style="font-size:13px;color:#9896A0;margin-top:.2rem">Gestión y seguimiento de tareas diarias y mensuales.</div>
+    </div>
+    <button class="btn-primary" onclick="abrirModal()">+ Nueva tarea</button>
+  </div>
+
+  <!-- TABS PRINCIPALES -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tareas',this)">Tareas</button>
+    <button class="tab-btn" onclick="switchTab('productividad',this)">Productividad</button>
+    <button class="tab-btn" onclick="switchTab('historial',this)">Historial</button>
+  </div>
+
+  <!-- TAB TAREAS -->
+  <div class="tab-panel active" id="tab-tareas">
+    <div class="subtabs">
+      <button class="subtab-btn active" onclick="switchSubtab('lista',this)">Lista por prioridad</button>
+      <button class="subtab-btn" onclick="switchSubtab('calendario',this)">Calendario (mensuales)</button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="toolbar" id="filtros-lista">
+      <select id="fil-persona" onchange="renderTareas()">
+        <option value="">Todas las personas</option>
+      </select>
+      <select id="fil-categoria" onchange="renderTareas()">
+        <option value="">Todas las categorías</option>
+      </select>
+      <select id="fil-estado" onchange="renderTareas()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendientes</option>
+        <option value="atrasado">Atrasadas</option>
+        <option value="hecho">Hechas hoy</option>
+      </select>
+    </div>
+
+    <div id="subtab-lista" class="card">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Prioridad</th>
+            <th>Tarea</th>
+            <th>Tipo</th>
+            <th>Categoría</th>
+            <th>Responsable</th>
+            <th>Estado</th>
+            <th>Último registro</th>
+            <th>Subtareas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tareas-tbody">
+          <tr><td colspan="9" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CALENDAR VIEW -->
+    <div id="subtab-calendario" style="display:none">
+      <div class="cal-nav">
+        <button onclick="calPrev()">‹ Anterior</button>
+        <div class="cal-title" id="cal-title"></div>
+        <button onclick="calNext()">Siguiente ›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </div>
+
+  <!-- TAB PRODUCTIVIDAD -->
+  <div class="tab-panel" id="tab-productividad">
+    <div class="persona-tabs" id="persona-tabs"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem">
+      <button class="btn-secondary btn-sm" onclick="prodPrev()">‹ Mes anterior</button>
+      <div style="font-size:15px;font-weight:700" id="prod-mes-title"></div>
+      <button class="btn-secondary btn-sm" onclick="prodNext()">Mes siguiente ›</button>
+    </div>
+    <div class="metrics-grid" id="metrics-grid">
+      <div class="metric-card"><div class="metric-label">Completadas</div><div class="metric-val" id="m-completadas">—</div><div class="metric-sub">este mes</div></div>
+      <div class="metric-card"><div class="metric-label">A tiempo</div><div class="metric-val" id="m-atiempo">—</div><div class="metric-sub">% de completadas</div></div>
+      <div class="metric-card"><div class="metric-label">Con atraso</div><div class="metric-val" id="m-atraso">—</div><div class="metric-sub">completadas con demora</div></div>
+      <div class="metric-card"><div class="metric-label">Prom. atraso</div><div class="metric-val" id="m-prom">—</div><div class="metric-sub">días promedio de demora</div></div>
+    </div>
+  </div>
+
+  <!-- TAB HISTORIAL -->
+  <div class="tab-panel" id="tab-historial">
+    <div class="toolbar" style="margin-bottom:1rem">
+      <select id="hist-persona" onchange="cargarHistorial()">
+        <option value="">Todas las personas</option>
+      </select>
+      <input type="date" id="hist-desde" onchange="cargarHistorial()" placeholder="Desde">
+      <input type="date" id="hist-hasta" onchange="cargarHistorial()" placeholder="Hasta">
+    </div>
+    <div class="card">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Tarea</th>
+            <th>Categoría</th>
+            <th>Tipo</th>
+            <th>Hecha por</th>
+            <th>A tiempo</th>
+          </tr>
+        </thead>
+        <tbody id="hist-tbody">
+          <tr><td colspan="7" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA/EDITAR TAREA -->
+<div class="modal-overlay" id="modal-tarea">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+      <div>
+        <div class="modal-title" id="modal-title">Nueva tarea</div>
+        <div class="modal-sub">Completá los campos para agregar la tarea.</div>
+      </div>
+      <button class="btn-secondary" onclick="cerrarModal()" style="padding:6px 12px">✕</button>
+    </div>
+
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="t-nombre" placeholder="Nombre de la tarea">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field">
+        <label>Prioridad</label>
+        <select id="t-prioridad">
+          <option value="Alta">Alta</option>
+          <option value="Media" selected>Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Responsable</label>
+        <select id="t-responsable">
+          <option value="cualquiera">Cualquiera</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Tipo</label>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn active" id="tipo-diaria" onclick="setTipo('diaria')">Diaria</button>
+        <button type="button" class="toggle-btn" id="tipo-mensual" onclick="setTipo('mensual')">Mensual</button>
+      </div>
+    </div>
+
+    <div id="campo-diaria" class="field">
+      <label>Fecha de inicio</label>
+      <input type="date" id="t-fecha-inicio">
+    </div>
+    <div id="campo-mensual" class="field" style="display:none">
+      <label>Día del mes</label>
+      <input type="number" id="t-dia-mes" min="1" max="31" placeholder="Ej: 15">
+    </div>
+    <div id="campo-proxima" class="field" style="display:none">
+      <label>Próxima fecha</label>
+      <input type="date" id="t-proxima-fecha">
+    </div>
+
+    <div class="field">
+      <label>Categoría</label>
+      <div style="display:flex;gap:6px">
+        <select id="t-categoria" style="flex:1;padding:.65rem .9rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none">
+          <option value="">Sin categoría</option>
+        </select>
+        <button type="button" class="btn-secondary" onclick="crearCategoriaInline()" style="white-space:nowrap;font-size:12px">+ Nueva</button>
+      </div>
+      <div id="nueva-cat-panel" style="display:none;margin-top:.5rem;display:none">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="nueva-cat-nombre" placeholder="Nombre categoría" style="flex:1;padding:.5rem .7rem;border:1.5px solid #DDDBD6;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;outline:none">
+          <input type="color" id="nueva-cat-color" value="#1E6FD9" style="height:34px;width:40px;border:1.5px solid #DDDBD6;border-radius:6px;cursor:pointer;padding:2px">
+          <button type="button" class="btn-primary btn-sm" onclick="guardarNuevaCat()">Guardar</button>
+          <button type="button" class="btn-secondary btn-sm" onclick="document.getElementById('nueva-cat-panel').style.display='none'">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Subtareas</label>
+      <div class="sub-list" id="sub-edit-list"></div>
+      <button type="button" class="add-sub-btn" onclick="addSubtareaEdit()">+ Agregar subtarea</button>
+    </div>
+
+    <div class="msg" id="modal-msg"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarTarea()" style="flex:1">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ESTADO ──
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) window.location.href = '/';
+
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
+document.getElementById('rol-badge').textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
+document.getElementById('rol-badge').className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
+
+let tareas = [];
+let categorias = [];
+let usuarios = [];
+let editingId = null;
+let tipoActual = 'diaria';
+const hoy = new Date().toISOString().slice(0, 10);
+
+// Cal state
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+// Prod state
+let prodPersona = userData.username;
+let prodYear = new Date().getFullYear();
+let prodMonth = new Date().getMonth();
+
+// ── TABS ──
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'historial') cargarHistorial();
+  if (id === 'productividad') cargarProductividad();
+}
+
+function switchSubtab(id, btn) {
+  document.querySelectorAll('.subtab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('subtab-lista').style.display = id === 'lista' ? '' : 'none';
+  document.getElementById('subtab-calendario').style.display = id === 'calendario' ? '' : 'none';
+  document.getElementById('filtros-lista').style.display = id === 'lista' ? '' : 'none';
+  if (id === 'calendario') renderCalendario();
+}
+
+// ── INIT ──
+async function init() {
+  await Promise.all([cargarCategorias(), cargarUsuarios()]);
+  await cargarTareas();
+}
+
+async function cargarUsuarios() {
+  try {
+    const r = await fetch('/api/usuarios/con-acceso/administracion');
+    usuarios = await r.json();
+    // Llenar selects de persona
+    ['fil-persona', 'hist-persona'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      const cur = sel.value;
+      while (sel.options.length > 1) sel.remove(1);
+      usuarios.forEach(u => {
+        const o = new Option(u.nombre || u.username, u.username);
+        sel.add(o);
+      });
+      if (cur) sel.value = cur;
+    });
+    // Responsable en modal
+    const selResp = document.getElementById('t-responsable');
+    while (selResp.options.length > 1) selResp.remove(1);
+    usuarios.forEach(u => selResp.add(new Option(u.nombre || u.username, u.username)));
+    // Persona tabs productividad
+    const tabs = document.getElementById('persona-tabs');
+    tabs.innerHTML = usuarios.map(u =>
+      `<button class="persona-tab ${u.username === prodPersona ? 'active' : ''}" onclick="setProdPersona('${u.username}',this)">${u.nombre || u.username}</button>`
+    ).join('');
+  } catch(e) {}
+}
+
+async function cargarCategorias() {
+  try {
+    const r = await fetch('/api/tareas/categorias');
+    categorias = await r.json();
+    ['fil-categoria'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      while (sel.options.length > 1) sel.remove(1);
+      categorias.forEach(c => sel.add(new Option(c.nombre, c.id)));
+    });
+    const tcat = document.getElementById('t-categoria');
+    while (tcat.options.length > 1) tcat.remove(1);
+    categorias.forEach(c => tcat.add(new Option(c.nombre, c.id)));
+  } catch(e) {}
+}
+
+async function cargarTareas() {
+  try {
+    const r = await fetch('/api/tareas');
+    tareas = await r.json();
+    renderTareas();
+  } catch(e) {
+    document.getElementById('tareas-tbody').innerHTML = '<tr><td colspan="9" class="empty">Error al cargar.</td></tr>';
+  }
+}
+
+// ── ESTADO DE TAREA ──
+function estadoTarea(t) {
+  if (t.tipo === 'diaria') {
+    if (t.ultimo_fecha === hoy) return { label: 'Hecho hoy', cls: 'badge-hecho' };
+    if (!t.ultimo_fecha && (!t.fecha_inicio || t.fecha_inicio > hoy)) return { label: 'Pendiente', cls: 'badge-pendiente' };
+    const base = t.ultimo_fecha || t.fecha_inicio;
+    if (!base || base > hoy) return { label: 'Pendiente', cls: 'badge-pendiente' };
+    const diff = Math.floor((new Date(hoy) - new Date(base)) / 86400000);
+    if (diff <= 0) return { label: 'Pendiente', cls: 'badge-pendiente' };
+    return { label: `Atrasado ${diff}d`, cls: 'badge-atrasado' };
+  } else {
+    if (!t.proxima_fecha) return { label: 'Sin fecha', cls: 'badge-pendiente' };
+    if (t.proxima_fecha > hoy) {
+      const diff = Math.floor((new Date(t.proxima_fecha) - new Date(hoy)) / 86400000);
+      return { label: `Vence en ${diff}d`, cls: 'badge-pendiente' };
+    }
+    if (t.proxima_fecha === hoy) return { label: 'Vence hoy', cls: 'badge-vence-hoy' };
+    const diff = Math.floor((new Date(hoy) - new Date(t.proxima_fecha)) / 86400000);
+    return { label: `Atrasado ${diff}d`, cls: 'badge-atrasado' };
+  }
+}
+
+function matchEstadoFiltro(t, fil) {
+  if (!fil) return true;
+  const est = estadoTarea(t);
+  if (fil === 'hecho') return est.cls === 'badge-hecho';
+  if (fil === 'atrasado') return est.cls === 'badge-atrasado';
+  if (fil === 'pendiente') return est.cls !== 'badge-hecho' && est.cls !== 'badge-atrasado';
+  return true;
+}
+
+// ── RENDER TABLA ──
+function renderTareas() {
+  const filPersona = document.getElementById('fil-persona').value;
+  const filCat = document.getElementById('fil-categoria').value;
+  const filEst = document.getElementById('fil-estado').value;
+
+  const filtradas = tareas.filter(t => {
+    if (filPersona && t.responsable !== 'cualquiera' && t.responsable !== filPersona) return false;
+    if (filCat && String(t.categoria_id) !== filCat) return false;
+    if (!matchEstadoFiltro(t, filEst)) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('tareas-tbody');
+  if (!filtradas.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">No hay tareas que coincidan con los filtros.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtradas.map(t => {
+    const est = estadoTarea(t);
+    const priCls = t.prioridad === 'Alta' ? 'badge-alta' : t.prioridad === 'Media' ? 'badge-media' : 'badge-baja';
+    const catNombre = t.categoria_nombre ? `<span class="badge" style="background:${t.categoria_color||'#E0E7F0'};color:#18181A;opacity:.85">${t.categoria_nombre}</span>` : '<span style="color:#9896A0">—</span>';
+    const resp = t.responsable === 'cualquiera' ? '<span style="color:#9896A0">Cualquiera</span>' : (usuarios.find(u => u.username === t.responsable)?.nombre || t.responsable);
+    const ultReg = t.ultimo_fecha ? `${t.ultimo_fecha}${t.ultimo_persona ? ' · ' + (usuarios.find(u=>u.username===t.ultimo_persona)?.nombre || t.ultimo_persona) : ''}` : '<span style="color:#9896A0">Nunca</span>';
+
+    // Subtareas
+    const subs = t.subtareas || [];
+    const subsHtml = subs.length ? subs.map(s =>
+      `<div class="subtarea-item">
+        <input type="checkbox" ${s.completada_hoy ? 'checked' : ''} onchange="toggleSubtarea(${s.id}, ${t.id}, this.checked)">
+        <span class="${s.completada_hoy ? 'done' : ''}">${escHtml(s.texto)}</span>
+      </div>`
+    ).join('') : '<span style="color:#9896A0;font-size:11px">—</span>';
+
+    const completarBtn = est.cls !== 'badge-hecho'
+      ? `<button class="btn-primary btn-sm" onclick="completarTarea(${t.id})">✓ Marcar hecho</button>`
+      : `<span class="badge badge-hecho">✓ Hecho</span>`;
+
+    return `<tr>
+      <td><span class="badge ${priCls}">${t.prioridad}</span></td>
+      <td style="font-weight:600;max-width:180px">${escHtml(t.nombre)}</td>
+      <td><span class="badge badge-tipo">${t.tipo}</span></td>
+      <td>${catNombre}</td>
+      <td style="font-size:11px">${resp}</td>
+      <td><span class="badge ${est.cls}">${est.label}</span></td>
+      <td style="font-size:11px;white-space:nowrap">${ultReg}</td>
+      <td style="min-width:140px">${subsHtml}</td>
+      <td style="white-space:nowrap">
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${completarBtn}
+          <button class="btn-secondary btn-sm" onclick="editarTarea(${t.id})">Editar</button>
+          <button class="btn-danger btn-sm" onclick="eliminarTarea(${t.id})">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── SUBTAREA TOGGLE ──
+async function toggleSubtarea(subtareaId, tareaId, completada) {
+  try {
+    await fetch(`/api/tareas/subtareas/${subtareaId}/estado`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fecha: hoy, completada })
+    });
+    // Actualizar local
+    const t = tareas.find(x => x.id === tareaId);
+    if (t) {
+      const s = (t.subtareas || []).find(x => x.id === subtareaId);
+      if (s) s.completada_hoy = completada;
+      // Auto-completar si todas marcadas
+      if (t.subtareas.length > 0 && t.subtareas.every(x => x.completada_hoy)) {
+        await completarTarea(tareaId);
+      }
+    }
+  } catch(e) {}
+}
+
+// ── COMPLETAR TAREA ──
+async function completarTarea(id) {
+  try {
+    const r = await fetch(`/api/tareas/${id}/completar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ persona: userData.username, hoy })
+    });
+    if (r.ok) {
+      await cargarTareas();
+    }
+  } catch(e) {}
+}
+
+// ── ELIMINAR TAREA ──
+async function eliminarTarea(id) {
+  if (!confirm('¿Eliminar esta tarea?')) return;
+  try {
+    await fetch(`/api/tareas/${id}`, { method: 'DELETE' });
+    await cargarTareas();
+  } catch(e) {}
+}
+
+// ── MODAL ──
+function abrirModal(tarea) {
+  editingId = tarea ? tarea.id : null;
+  document.getElementById('modal-title').textContent = tarea ? 'Editar tarea' : 'Nueva tarea';
+  document.getElementById('t-nombre').value = tarea ? tarea.nombre : '';
+  document.getElementById('t-prioridad').value = tarea ? tarea.prioridad : 'Media';
+  document.getElementById('t-responsable').value = tarea ? tarea.responsable : 'cualquiera';
+  document.getElementById('t-categoria').value = tarea ? (tarea.categoria_id || '') : '';
+  setTipo(tarea ? tarea.tipo : 'diaria');
+  document.getElementById('t-fecha-inicio').value = tarea ? (tarea.fecha_inicio || '') : hoy;
+  document.getElementById('t-dia-mes').value = tarea ? (tarea.dia_del_mes || '') : '';
+  document.getElementById('t-proxima-fecha').value = tarea ? (tarea.proxima_fecha || '') : '';
+  // Subtareas
+  const list = document.getElementById('sub-edit-list');
+  list.innerHTML = '';
+  (tarea ? tarea.subtareas || [] : []).forEach(s => addSubtareaEdit(s.texto));
+  document.getElementById('nueva-cat-panel').style.display = 'none';
+  showModalMsg('', '');
+  document.getElementById('modal-tarea').classList.add('show');
+  document.getElementById('t-nombre').focus();
+}
+
+function cerrarModal() {
+  document.getElementById('modal-tarea').classList.remove('show');
+  editingId = null;
+}
+
+function setTipo(tipo) {
+  tipoActual = tipo;
+  document.getElementById('tipo-diaria').classList.toggle('active', tipo === 'diaria');
+  document.getElementById('tipo-mensual').classList.toggle('active', tipo === 'mensual');
+  document.getElementById('campo-diaria').style.display = tipo === 'diaria' ? '' : 'none';
+  document.getElementById('campo-mensual').style.display = tipo === 'mensual' ? '' : 'none';
+  document.getElementById('campo-proxima').style.display = tipo === 'mensual' ? '' : 'none';
+}
+
+function addSubtareaEdit(texto) {
+  const list = document.getElementById('sub-edit-list');
+  const div = document.createElement('div');
+  div.className = 'sub-edit-item';
+  div.innerHTML = `<input type="text" placeholder="Texto de la subtarea" value="${escHtml(texto||'')}"><button type="button" onclick="this.parentElement.remove()">✕</button>`;
+  list.appendChild(div);
+}
+
+function getSubtareasEdit() {
+  return [...document.querySelectorAll('#sub-edit-list .sub-edit-item input')].map((inp, i) => ({ texto: inp.value.trim(), orden: i })).filter(s => s.texto);
+}
+
+function showModalMsg(type, txt) {
+  const el = document.getElementById('modal-msg');
+  el.className = 'msg' + (type ? ' ' + type : '');
+  el.textContent = txt;
+  el.style.display = type ? 'block' : 'none';
+}
+
+async function guardarTarea() {
+  const nombre = document.getElementById('t-nombre').value.trim();
+  if (!nombre) { showModalMsg('msg-err', 'El nombre es requerido.'); return; }
+  const payload = {
+    nombre,
+    prioridad: document.getElementById('t-prioridad').value,
+    tipo: tipoActual,
+    fecha_inicio: tipoActual === 'diaria' ? (document.getElementById('t-fecha-inicio').value || null) : null,
+    dia_del_mes: tipoActual === 'mensual' ? (parseInt(document.getElementById('t-dia-mes').value) || null) : null,
+    proxima_fecha: tipoActual === 'mensual' ? (document.getElementById('t-proxima-fecha').value || null) : null,
+    responsable: document.getElementById('t-responsable').value,
+    categoria_id: document.getElementById('t-categoria').value || null,
+    subtareas: getSubtareasEdit()
+  };
+  try {
+    const url = editingId ? `/api/tareas/${editingId}` : '/api/tareas';
+    const method = editingId ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!r.ok) { const d = await r.json(); showModalMsg('msg-err', d.error || 'Error.'); return; }
+    cerrarModal();
+    await cargarTareas();
+  } catch(e) { showModalMsg('msg-err', 'Error de conexión.'); }
+}
+
+function editarTarea(id) {
+  const t = tareas.find(x => x.id === id);
+  if (t) abrirModal(t);
+}
+
+// ── CATEGORÍA INLINE ──
+function crearCategoriaInline() {
+  const p = document.getElementById('nueva-cat-panel');
+  p.style.display = p.style.display === 'none' || !p.style.display ? 'block' : 'none';
+}
+
+async function guardarNuevaCat() {
+  const nombre = document.getElementById('nueva-cat-nombre').value.trim();
+  const color = document.getElementById('nueva-cat-color').value;
+  if (!nombre) return;
+  try {
+    const r = await fetch('/api/tareas/categorias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre, color }) });
+    if (r.ok) {
+      await cargarCategorias();
+      const nuevaCat = categorias.find(c => c.nombre === nombre);
+      if (nuevaCat) document.getElementById('t-categoria').value = nuevaCat.id;
+      document.getElementById('nueva-cat-nombre').value = '';
+      document.getElementById('nueva-cat-panel').style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+// ── CALENDARIO ──
+function renderCalendario() {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('cal-title').textContent = `${meses[calMonth]} ${calYear}`;
+  const grid = document.getElementById('cal-grid');
+  const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  let html = dias.map(d => `<div class="cal-header">${d}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+
+  // tareas mensuales
+  const mensuales = tareas.filter(t => t.tipo === 'mensual' && t.dia_del_mes);
+
+  // Celdas del mes anterior
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${prevDays - firstDay + i + 1}</div></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const fecha = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = fecha === hoy;
+    const tasksThisDay = mensuales.filter(t => t.dia_del_mes === d);
+    const taskHtml = tasksThisDay.map(t => {
+      const est = estadoTarea(t);
+      const calCls = est.cls === 'badge-hecho' ? 'hecho' : est.cls === 'badge-atrasado' ? 'atrasado' : est.cls === 'badge-vence-hoy' ? 'vence-hoy' : 'pendiente';
+      return `<div class="cal-task ${calCls}" title="${escHtml(t.nombre)}">${escHtml(t.nombre)}</div>`;
+    }).join('');
+    html += `<div class="cal-day${isToday?' today':''}"><div class="cal-day-num">${d}</div>${taskHtml}</div>`;
+  }
+
+  // Celdas restantes
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function calPrev() { if (calMonth === 0) { calMonth = 11; calYear--; } else calMonth--; renderCalendario(); }
+function calNext() { if (calMonth === 11) { calMonth = 0; calYear++; } else calMonth++; renderCalendario(); }
+
+// ── HISTORIAL ──
+async function cargarHistorial() {
+  const persona = document.getElementById('hist-persona').value;
+  const desde = document.getElementById('hist-desde').value;
+  const hasta = document.getElementById('hist-hasta').value;
+  const params = new URLSearchParams();
+  if (persona) params.set('persona', persona);
+  if (desde) params.set('desde', desde);
+  if (hasta) params.set('hasta', hasta);
+  const tbody = document.getElementById('hist-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="empty">Cargando...</td></tr>';
+  try {
+    const r = await fetch('/api/tareas/historial?' + params);
+    const rows = await r.json();
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Sin registros.</td></tr>'; return; }
+    tbody.innerHTML = rows.map(h => {
+      const atiempo = h.a_tiempo ? '<span class="badge badge-hecho">A tiempo</span>' : `<span class="badge badge-atrasado">${h.dias_atraso}d atraso</span>`;
+      const catHtml = h.categoria_nombre ? `<span class="badge" style="background:${h.categoria_color||'#E0E7F0'};color:#18181A">${h.categoria_nombre}</span>` : '—';
+      const persona = usuarios.find(u => u.username === h.persona)?.nombre || h.persona;
+      return `<tr>
+        <td style="white-space:nowrap">${h.fecha}</td>
+        <td>${h.hora || '—'}</td>
+        <td style="font-weight:600">${escHtml(h.nombre_tarea)}</td>
+        <td>${catHtml}</td>
+        <td><span class="badge badge-tipo">${h.tipo || '—'}</span></td>
+        <td>${escHtml(persona)}</td>
+        <td>${atiempo}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Error al cargar.</td></tr>'; }
+}
+
+// ── PRODUCTIVIDAD ──
+function setProdPersona(username, btn) {
+  prodPersona = username;
+  document.querySelectorAll('.persona-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cargarProductividad();
+}
+
+function prodPrev() { if (prodMonth === 0) { prodMonth = 11; prodYear--; } else prodMonth--; cargarProductividad(); }
+function prodNext() { if (prodMonth === 11) { prodMonth = 0; prodYear++; } else prodMonth++; cargarProductividad(); }
+
+async function cargarProductividad() {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('prod-mes-title').textContent = `${meses[prodMonth]} ${prodYear}`;
+  const desde = `${prodYear}-${String(prodMonth+1).padStart(2,'0')}-01`;
+  const lastDay = new Date(prodYear, prodMonth+1, 0).getDate();
+  const hasta = `${prodYear}-${String(prodMonth+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  try {
+    const r = await fetch(`/api/tareas/historial?persona=${prodPersona}&desde=${desde}&hasta=${hasta}`);
+    const rows = await r.json();
+    const completadas = rows.length;
+    const atiempo = rows.filter(r => r.a_tiempo).length;
+    const conAtraso = rows.filter(r => !r.a_tiempo).length;
+    const promAtraso = conAtraso > 0 ? (rows.filter(r => !r.a_tiempo).reduce((s,r) => s + (r.dias_atraso||0), 0) / conAtraso).toFixed(1) : 0;
+    document.getElementById('m-completadas').textContent = completadas;
+    document.getElementById('m-atiempo').textContent = completadas > 0 ? Math.round(atiempo / completadas * 100) + '%' : '—';
+    document.getElementById('m-atraso').textContent = conAtraso;
+    document.getElementById('m-prom').textContent = conAtraso > 0 ? promAtraso + 'd' : '—';
+  } catch(e) {}
+}
+
+init();
+</script>
+</body>
+</html>

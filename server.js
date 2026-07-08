@@ -198,6 +198,54 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT NOW()
       );
       ALTER TABLE ticket_notas ADD COLUMN IF NOT EXISTS imagen TEXT;
+
+      CREATE TABLE IF NOT EXISTS tareas_categorias (
+        id SERIAL PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        color TEXT DEFAULT '#1E6FD9',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS tareas (
+        id SERIAL PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        prioridad TEXT DEFAULT 'Media',
+        tipo TEXT DEFAULT 'diaria',
+        fecha_inicio TEXT,
+        dia_del_mes INTEGER,
+        proxima_fecha TEXT,
+        responsable TEXT DEFAULT 'cualquiera',
+        categoria_id INTEGER REFERENCES tareas_categorias(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS tareas_subtareas (
+        id SERIAL PRIMARY KEY,
+        tarea_id INTEGER REFERENCES tareas(id) ON DELETE CASCADE,
+        texto TEXT NOT NULL,
+        orden INTEGER DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS tareas_historial (
+        id SERIAL PRIMARY KEY,
+        tarea_id INTEGER,
+        nombre_tarea TEXT NOT NULL,
+        fecha TEXT NOT NULL,
+        hora TEXT,
+        persona TEXT NOT NULL,
+        tipo TEXT,
+        responsable_tarea TEXT,
+        a_tiempo BOOLEAN DEFAULT true,
+        dias_atraso INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS tareas_subtareas_estado (
+        subtarea_id INTEGER REFERENCES tareas_subtareas(id) ON DELETE CASCADE,
+        fecha TEXT NOT NULL,
+        completada BOOLEAN DEFAULT false,
+        PRIMARY KEY (subtarea_id, fecha)
+      );
     `);
 
     // Crear usuarios por defecto si no existen
@@ -753,6 +801,258 @@ app.post('/api/chess/saldos', async (req, res) => {
   }
 });
 
+// ── TAREAS ──
+
+// Usuarios con acceso al módulo administracion
+app.get('/api/usuarios/con-acceso/administracion', async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT username, nombre FROM usuarios
+      WHERE rol='admin' OR (modulos IS NOT NULL AND modulos->>'administracion' IS NOT NULL)
+      ORDER BY nombre ASC
+    `);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// Categorías
+app.get('/api/tareas/categorias', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM tareas_categorias ORDER BY nombre ASC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+app.post('/api/tareas/categorias', async (req, res) => {
+  const { nombre, color } = req.body;
+  if (!nombre) return res.status(400).json({ error: 'Falta nombre' });
+  try {
+    const r = await pool.query('INSERT INTO tareas_categorias (nombre, color) VALUES ($1,$2) RETURNING *', [nombre, color||'#1E6FD9']);
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+app.delete('/api/tareas/categorias/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM tareas_categorias WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// Historial
+app.get('/api/tareas/historial', async (req, res) => {
+  const { persona, desde, hasta } = req.query;
+  try {
+    let where = [];
+    let params = [];
+    if (persona) { params.push(persona); where.push(`h.persona=$${params.length}`); }
+    if (desde) { params.push(desde); where.push(`h.fecha >= $${params.length}`); }
+    if (hasta) { params.push(hasta); where.push(`h.fecha <= $${params.length}`); }
+    const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    const r = await pool.query(`
+      SELECT h.*, tc.nombre AS categoria_nombre, tc.color AS categoria_color
+      FROM tareas_historial h
+      LEFT JOIN tareas t ON t.id = h.tarea_id
+      LEFT JOIN tareas_categorias tc ON tc.id = t.categoria_id
+      ${whereClause}
+      ORDER BY h.fecha DESC, h.hora DESC
+      LIMIT 500
+    `, params);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// Tareas atrasadas count
+app.get('/api/tareas/atrasadas/count', async (req, res) => {
+  try {
+    const hoy = new Date().toISOString().slice(0,10);
+    // diarias: sin historial hoy
+    const diarias = await pool.query(`
+      SELECT COUNT(*) FROM tareas t
+      WHERE t.tipo='diaria'
+        AND (t.fecha_inicio IS NULL OR t.fecha_inicio <= $1)
+        AND NOT EXISTS (
+          SELECT 1 FROM tareas_historial h WHERE h.tarea_id=t.id AND h.fecha=$1
+        )
+    `, [hoy]);
+    // mensuales: proxima_fecha < hoy
+    const mensuales = await pool.query(`
+      SELECT COUNT(*) FROM tareas WHERE tipo='mensual' AND proxima_fecha < $1
+    `, [hoy]);
+    const count = parseInt(diarias.rows[0].count) + parseInt(mensuales.rows[0].count);
+    res.json({ count });
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// GET todas las tareas
+app.get('/api/tareas', async (req, res) => {
+  try {
+    const hoy = new Date().toISOString().slice(0,10);
+    const tareas = await pool.query(`
+      SELECT t.*,
+        tc.nombre AS categoria_nombre,
+        tc.color AS categoria_color,
+        ult.fecha AS ultimo_fecha,
+        ult.persona AS ultimo_persona,
+        ult.hora AS ultimo_hora
+      FROM tareas t
+      LEFT JOIN tareas_categorias tc ON tc.id = t.categoria_id
+      LEFT JOIN LATERAL (
+        SELECT fecha, persona, hora FROM tareas_historial
+        WHERE tarea_id = t.id
+        ORDER BY fecha DESC, hora DESC
+        LIMIT 1
+      ) ult ON true
+      ORDER BY
+        CASE t.prioridad WHEN 'Alta' THEN 1 WHEN 'Media' THEN 2 ELSE 3 END,
+        t.nombre ASC
+    `);
+
+    const subtareas = await pool.query(`
+      SELECT s.*, COALESCE(e.completada, false) AS completada_hoy
+      FROM tareas_subtareas s
+      LEFT JOIN tareas_subtareas_estado e ON e.subtarea_id=s.id AND e.fecha=$1
+      ORDER BY s.tarea_id, s.orden, s.id
+    `, [hoy]);
+
+    const subMap = {};
+    subtareas.rows.forEach(s => {
+      if (!subMap[s.tarea_id]) subMap[s.tarea_id] = [];
+      subMap[s.tarea_id].push(s);
+    });
+
+    const result = tareas.rows.map(t => ({
+      ...t,
+      subtareas: subMap[t.id] || []
+    }));
+
+    res.json(result);
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Error' }); }
+});
+
+// POST crear tarea
+app.post('/api/tareas', async (req, res) => {
+  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, subtareas } = req.body;
+  if (!nombre) return res.status(400).json({ error: 'Falta nombre' });
+  try {
+    const r = await pool.query(`
+      INSERT INTO tareas (nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *
+    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null]);
+    const tarea = r.rows[0];
+    if (subtareas && subtareas.length) {
+      for (const s of subtareas) {
+        await pool.query('INSERT INTO tareas_subtareas (tarea_id, texto, orden) VALUES ($1,$2,$3)', [tarea.id, s.texto, s.orden||0]);
+      }
+    }
+    res.json(tarea);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// PUT actualizar tarea
+app.put('/api/tareas/:id', async (req, res) => {
+  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, subtareas } = req.body;
+  const { id } = req.params;
+  try {
+    const r = await pool.query(`
+      UPDATE tareas SET nombre=$1, prioridad=$2, tipo=$3, fecha_inicio=$4, dia_del_mes=$5, proxima_fecha=$6, responsable=$7, categoria_id=$8
+      WHERE id=$9 RETURNING *
+    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    // Reemplazar subtareas
+    await pool.query('DELETE FROM tareas_subtareas WHERE tarea_id=$1', [id]);
+    if (subtareas && subtareas.length) {
+      for (const s of subtareas) {
+        await pool.query('INSERT INTO tareas_subtareas (tarea_id, texto, orden) VALUES ($1,$2,$3)', [id, s.texto, s.orden||0]);
+      }
+    }
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// DELETE tarea
+app.delete('/api/tareas/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM tareas WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// POST completar tarea
+app.post('/api/tareas/:id/completar', async (req, res) => {
+  const { persona, hoy } = req.body;
+  const { id } = req.params;
+  if (!persona || !hoy) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const tr = await pool.query('SELECT * FROM tareas WHERE id=$1', [id]);
+    if (!tr.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    const tarea = tr.rows[0];
+    const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+    // Calcular a_tiempo y dias_atraso
+    let a_tiempo = true;
+    let dias_atraso = 0;
+    if (tarea.tipo === 'diaria') {
+      const inicio = tarea.fecha_inicio;
+      if (inicio && hoy > inicio) {
+        // Verificar si ya se hizo ayer (último registro)
+        const ult = await pool.query('SELECT fecha FROM tareas_historial WHERE tarea_id=$1 ORDER BY fecha DESC, hora DESC LIMIT 1', [id]);
+        if (ult.rows.length) {
+          const ultFecha = ult.rows[0].fecha;
+          const diff = Math.floor((new Date(hoy) - new Date(ultFecha)) / 86400000);
+          if (diff > 1) { a_tiempo = false; dias_atraso = diff - 1; }
+        }
+      }
+    } else if (tarea.tipo === 'mensual') {
+      if (tarea.proxima_fecha && hoy > tarea.proxima_fecha) {
+        a_tiempo = false;
+        dias_atraso = Math.floor((new Date(hoy) - new Date(tarea.proxima_fecha)) / 86400000);
+      }
+    }
+
+    // Registrar en historial
+    await pool.query(`
+      INSERT INTO tareas_historial (tarea_id, nombre_tarea, fecha, hora, persona, tipo, responsable_tarea, a_tiempo, dias_atraso)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `, [id, tarea.nombre, hoy, hora, persona, tarea.tipo, tarea.responsable, a_tiempo, dias_atraso]);
+
+    // Si mensual, avanzar proxima_fecha
+    if (tarea.tipo === 'mensual' && tarea.dia_del_mes) {
+      const base = new Date(hoy);
+      let nextYear = base.getFullYear();
+      let nextMonth = base.getMonth() + 2; // mes siguiente (1-based)
+      if (nextMonth > 12) { nextMonth = 1; nextYear++; }
+      // Último día del mes siguiente
+      const lastDay = new Date(nextYear, nextMonth, 0).getDate();
+      const day = Math.min(tarea.dia_del_mes, lastDay);
+      const nextFecha = `${nextYear}-${String(nextMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      await pool.query('UPDATE tareas SET proxima_fecha=$1 WHERE id=$2', [nextFecha, id]);
+    }
+
+    // Resetear estados de subtareas (eliminar estado del ciclo actual)
+    const subs = await pool.query('SELECT id FROM tareas_subtareas WHERE tarea_id=$1', [id]);
+    for (const s of subs.rows) {
+      await pool.query('DELETE FROM tareas_subtareas_estado WHERE subtarea_id=$1 AND fecha=$2', [s.id, hoy]);
+    }
+
+    res.json({ ok: true, a_tiempo, dias_atraso });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'Error' }); }
+});
+
+// PUT estado subtarea
+app.put('/api/tareas/subtareas/:subtarea_id/estado', async (req, res) => {
+  const { fecha, completada } = req.body;
+  const { subtarea_id } = req.params;
+  if (!fecha) return res.status(400).json({ error: 'Falta fecha' });
+  try {
+    await pool.query(`
+      INSERT INTO tareas_subtareas_estado (subtarea_id, fecha, completada) VALUES ($1,$2,$3)
+      ON CONFLICT (subtarea_id, fecha) DO UPDATE SET completada=$3
+    `, [subtarea_id, fecha, completada !== false]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
 // Servir páginas
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/panel', (req, res) => res.sendFile(path.join(__dirname, 'public', 'panel.html')));
@@ -763,6 +1063,7 @@ app.get('/actividad', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.get('/pendientes-acreditacion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pendientes-acreditacion.html')));
 app.get('/tickets', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tickets.html')));
 app.get('/administracion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion.html')));
+app.get('/tareas', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tareas.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
