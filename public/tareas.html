@@ -151,9 +151,85 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <span id="user-nombre">—</span>
       <span class="rol-badge" id="rol-badge">—</span>
     </div>
+    <button class="logout-btn" style="display:flex;align-items:center;gap:5px" onclick="document.getElementById('modal-ayuda-tareas').style.display='flex'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Ayuda
+    </button>
     <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
   </div>
 </div>
+
+<!-- Modal ayuda tareas -->
+<div id="modal-ayuda-tareas" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:14px;max-width:700px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="background:#0D4FA0;border-radius:14px 14px 0 0;padding:1.1rem 1.5rem;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff">Calendario de Tareas</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Guía de uso</div>
+      </div>
+      <button onclick="document.getElementById('modal-ayuda-tareas').style.display='none'" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:18px;line-height:1">×</button>
+    </div>
+    <div style="padding:1.5rem;font-size:13px;color:#18181A;line-height:1.7">
+
+      <div class="h-sec-tareas">📋 ¿Para qué sirve?</div>
+      <p style="color:#56555A;margin-bottom:1.25rem">Permite gestionar y hacer seguimiento de las tareas operativas del equipo. Cada tarea tiene un responsable, una frecuencia (diaria o mensual) y un historial de ejecuciones para saber si se cumplió a tiempo.</p>
+
+      <div class="h-sec-tareas">➕ Crear una tarea</div>
+      <p style="color:#56555A;margin-bottom:.5rem">Hacé clic en <strong>+ Nueva tarea</strong> y completá los campos:</p>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:1.25rem">
+        <li style="margin-bottom:.35rem"><strong>Nombre</strong> — descripción corta de la tarea.</li>
+        <li style="margin-bottom:.35rem"><strong>Prioridad</strong> — Alta, Media o Baja. Define el orden en la lista.</li>
+        <li style="margin-bottom:.35rem"><strong>Responsable</strong> — usuario asignado o <em>Cualquiera</em> si cualquier miembro del equipo puede realizarla.</li>
+        <li style="margin-bottom:.35rem"><strong>Tipo</strong> — Diaria (se repite todos los días hábiles) o Mensual (se realiza una vez por mes).</li>
+        <li style="margin-bottom:.35rem"><strong>Fecha de inicio</strong> — a partir de cuándo la tarea debe aparecer en la lista.</li>
+        <li style="margin-bottom:.35rem"><strong>Categoría</strong> — agrupación opcional. Se pueden crear categorías nuevas desde el mismo modal.</li>
+        <li><strong>Descripción / Indicaciones</strong> — instrucciones detalladas opcionales para quien realice la tarea.</li>
+      </ul>
+
+      <div class="h-sec-tareas">✅ Marcar como hecha</div>
+      <p style="color:#56555A;margin-bottom:.5rem">Hacé clic en <strong>✓ Marcar hecho</strong> en la fila de la tarea. El sistema registra quién la completó, a qué hora y si fue a tiempo o con atraso.</p>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:1.25rem">
+        <li style="margin-bottom:.35rem"><strong>Tarea diaria:</strong> una vez marcada hecha, el botón desaparece y la tarea muestra la próxima fecha (mañana o el lunes si hoy es sábado). Al día siguiente vuelve a aparecer lista para marcar.</li>
+        <li><strong>Tarea mensual:</strong> una vez marcada en el mes, el botón desaparece hasta el mes siguiente. A partir del 1º del mes nuevo ya se puede volver a marcar, sin importar el día de vencimiento.</li>
+      </ul>
+
+      <div class="h-sec-tareas">🏷 Estados de las tareas</div>
+      <div style="border:1px solid #DDDBD6;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#F8F7F5"><th style="padding:.5rem .75rem;text-align:left;font-weight:700;color:#56555A">Estado</th><th style="padding:.5rem .75rem;text-align:left;font-weight:700;color:#56555A">Significado</th></tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid #F0EEEB"><td style="padding:.45rem .75rem;font-weight:600">🟡 Vence hoy</td><td style="padding:.45rem .75rem;color:#56555A">La tarea debe realizarse hoy</td></tr>
+            <tr style="border-top:1px solid #F0EEEB;background:#FAFAF9"><td style="padding:.45rem .75rem;font-weight:600">🔵 Vence mañana / Vence en Nd</td><td style="padding:.45rem .75printed;color:#56555A">Ya fue hecha — muestra cuándo toca la próxima</td></tr>
+            <tr style="border-top:1px solid #F0EEEB"><td style="padding:.45rem .75rem;font-weight:600">⚪ Pendiente</td><td style="padding:.45rem .75rem;color:#56555A">Todavía no empezó (fecha de inicio futura)</td></tr>
+            <tr style="border-top:1px solid #F0EEEB;background:#FAFAF9"><td style="padding:.45rem .75rem;font-weight:600">🔴 Atrasado Nd</td><td style="padding:.45rem .75rem;color:#56555A">No se realizó en los días hábiles indicados — N = días de atraso</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="h-sec-tareas">🔍 Filtros y búsqueda</div>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:1.25rem">
+        <li style="margin-bottom:.35rem"><strong>Personas</strong> — filtrá por responsable. <em>Cualquiera</em> muestra solo las tareas sin responsable fijo; elegir una persona muestra las suyas más las de "Cualquiera".</li>
+        <li style="margin-bottom:.35rem"><strong>Categoría</strong> — mostrá solo las tareas de una categoría específica.</li>
+        <li style="margin-bottom:.35rem"><strong>Estado</strong> — filtrá por Pendientes, Atrasadas o Hechas hoy.</li>
+        <li><strong>Buscador</strong> — escribí parte del nombre de la tarea para encontrarla rápidamente.</li>
+      </ul>
+
+      <div class="h-sec-tareas">📅 Calendario (mensuales)</div>
+      <p style="color:#56555A;margin-bottom:1.25rem">La vista <strong>Calendario (mensuales)</strong> muestra todas las tareas mensuales sobre el mes actual, con el día de vencimiento de cada una. Es útil para planificar el mes de un vistazo.</p>
+
+      <div class="h-sec-tareas">📊 Productividad e Historial</div>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:0">
+        <li style="margin-bottom:.35rem"><strong>Productividad</strong> — estadísticas de cumplimiento por persona y período.</li>
+        <li><strong>Historial</strong> — registro completo de todas las ejecuciones con fecha, hora, quién lo hizo y si fue a tiempo. Los administradores pueden borrar el historial desde esta sección.</li>
+      </ul>
+
+    </div>
+  </div>
+</div>
+<style>
+.h-sec-tareas{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#0D4FA0;background:#EFF6FF;border-left:3px solid #1E6FD9;padding:.4rem .75rem;border-radius:0 6px 6px 0;margin:1.25rem 0 .6rem}
+.h-sec-tareas:first-child{margin-top:0}
+</style>
 
 <div class="page">
   <div class="breadcrumb">
