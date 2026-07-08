@@ -934,7 +934,7 @@ app.get('/api/tareas', async (req, res) => {
 
 // POST crear tarea
 app.post('/api/tareas', async (req, res) => {
-  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, subtareas } = req.body;
+  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, descripcion } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Falta nombre' });
   try {
     const r = await pool.query(`
@@ -953,7 +953,7 @@ app.post('/api/tareas', async (req, res) => {
 
 // PUT actualizar tarea
 app.put('/api/tareas/:id', async (req, res) => {
-  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, subtareas } = req.body;
+  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, descripcion } = req.body;
   const { id } = req.params;
   try {
     const r = await pool.query(`
