@@ -348,6 +348,9 @@ if(userData.rol==='admin'){
   document.getElementById('card-actividad').style.display='block';
   document.getElementById('card-administracion').style.display='block';
 } else {
+  if(userData.modulos&&userData.modulos['administracion']){
+    document.getElementById('card-administracion').style.display='block';
+  }
   document.getElementById('rol-badge').textContent='Vista';
   document.getElementById('rol-badge').className='rol-badge rol-vista';
   document.getElementById('stat-vista').style.display='block';
