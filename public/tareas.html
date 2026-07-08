@@ -480,6 +480,7 @@ function estadoTarea(t) {
     if (diff <= 0) return { label: 'Pendiente', cls: 'badge-pendiente' };
     return { label: `Atrasado ${diff}d`, cls: 'badge-atrasado' };
   } else {
+    if (t.ultimo_fecha === hoy) return { label: 'Hecho hoy', cls: 'badge-hecho' };
     if (!t.proxima_fecha) return { label: 'Sin fecha', cls: 'badge-pendiente' };
     if (t.proxima_fecha > hoy) {
       const diff = Math.floor((new Date(t.proxima_fecha) - new Date(hoy)) / 86400000);
