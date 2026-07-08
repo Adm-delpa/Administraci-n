@@ -942,13 +942,8 @@ app.post('/api/tareas', async (req, res) => {
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
     `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null]);
     const tarea = r.rows[0];
-    if (subtareas && subtareas.length) {
-      for (const s of subtareas) {
-        await pool.query('INSERT INTO tareas_subtareas (tarea_id, texto, orden) VALUES ($1,$2,$3)', [tarea.id, s.texto, s.orden||0]);
-      }
-    }
     res.json(tarea);
-  } catch(e) { res.status(500).json({ error: 'Error' }); }
+  } catch(e) { console.error('POST /api/tareas error:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 // PUT actualizar tarea
@@ -961,15 +956,8 @@ app.put('/api/tareas/:id', async (req, res) => {
       WHERE id=$10 RETURNING *
     `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null, id]);
     if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
-    // Reemplazar subtareas
-    await pool.query('DELETE FROM tareas_subtareas WHERE tarea_id=$1', [id]);
-    if (subtareas && subtareas.length) {
-      for (const s of subtareas) {
-        await pool.query('INSERT INTO tareas_subtareas (tarea_id, texto, orden) VALUES ($1,$2,$3)', [id, s.texto, s.orden||0]);
-      }
-    }
     res.json(r.rows[0]);
-  } catch(e) { res.status(500).json({ error: 'Error' }); }
+  } catch(e) { console.error('PUT /api/tareas error:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 // DELETE tarea
