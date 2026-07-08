@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuentas por Pagar — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.rol-badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700}
+.rol-admin{background:rgba(196,130,10,.3);color:#FCD34D}
+.rol-vista{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:1100px;margin:0 auto;padding:2rem 1rem}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1.5rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb-sep{color:#DDDBD6}
+
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
+.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+.page-sub{font-size:13px;color:#9896A0;font-weight:500;margin-top:.2rem}
+
+/* UPLOAD ZONE */
+.upload-zone{background:#fff;border:2px dashed #DDDBD6;border-radius:12px;padding:2.5rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1.5rem}
+.upload-zone:hover,.upload-zone.drag{border-color:#1E6FD9;background:#F5F9FF}
+.upload-zone svg{color:#9896A0;margin-bottom:.75rem}
+.upload-title{font-size:14px;font-weight:600;color:#18181A;margin-bottom:.25rem}
+.upload-sub{font-size:12px;color:#9896A0}
+.upload-sub span{color:#1E6FD9;font-weight:600;cursor:pointer}
+.upload-sub span:hover{text-decoration:underline}
+#file-input{display:none}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.9rem 1.1rem}
+.stat-label{font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem}
+.stat-val{font-size:18px;font-weight:700;color:#18181A}
+.stat-val.red{color:#C53030}
+.stat-val.green{color:#075C41}
+.stat-sub{font-size:11px;color:#9896A0;margin-top:2px;font-weight:500}
+
+/* CONTROLES */
+.controles{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:180px;padding:.55rem .85rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+.search-box:focus{border-color:#1E6FD9}
+.filter-btn{padding:.5rem .9rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#56555A;transition:all .15s}
+.filter-btn:hover{border-color:#1E6FD9;color:#1E6FD9}
+.filter-btn.active{background:#1E6FD9;border-color:#1E6FD9;color:#fff}
+
+/* TABLA PROVEEDORES */
+.tabla-wrap{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
+.tabla-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;gap:0;padding:.65rem 1rem;background:#F8F7F5;border-bottom:1px solid #DDDBD6;font-size:11px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em}
+.proveedor-row{border-bottom:1px solid #EEECEA}
+.proveedor-row:last-child{border-bottom:none}
+.proveedor-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;gap:0;padding:.8rem 1rem;cursor:pointer;transition:background .15s;align-items:center}
+.proveedor-header:hover{background:#F8F7F5}
+.proveedor-nombre{font-size:13px;font-weight:600;color:#18181A}
+.proveedor-nombre span{font-size:11px;font-weight:500;color:#9896A0;margin-left:6px}
+.col-num{font-size:12px;font-weight:500;color:#56555A;text-align:center}
+.col-importe{font-size:13px;font-weight:700;text-align:right}
+.col-vencido{font-size:13px;font-weight:700;text-align:right;color:#C53030}
+.col-saldo{font-size:13px;font-weight:700;text-align:right;color:#18181A}
+.col-chevron{display:flex;justify-content:flex-end;align-items:center;color:#DDDBD6;transition:transform .2s}
+.col-chevron.open{transform:rotate(90deg);color:#1E6FD9}
+
+/* DETALLE */
+.detalle{display:none;border-top:1px solid #EEECEA;background:#FAFAF9}
+.detalle.open{display:block}
+.detalle-tabla{width:100%;border-collapse:collapse}
+.detalle-tabla th{padding:.5rem .8rem;text-align:left;font-size:10px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #EEECEA;background:#F8F7F5}
+.detalle-tabla td{padding:.55rem .8rem;font-size:12px;color:#56555A;border-bottom:1px solid #F0EFED}
+.detalle-tabla tr:last-child td{border-bottom:none}
+.detalle-tabla tr:hover td{background:#F5F4F2}
+.badge-tipo{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px}
+.badge-FC{background:#DCE9FA;color:#1E6FD9}
+.badge-NC{background:#D4F2E8;color:#075C41}
+.badge-ND{background:#FEF3C7;color:#92400E}
+.badge-AD{background:#EDE5FA;color:#6B3FC8}
+.badge-ME,.badge-MI{background:#F2F1EE;color:#56555A}
+.badge-vencido{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#FAE0E0;color:#8A1F1F}
+.badge-ok{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#D4F2E8;color:#075C41}
+.text-right{text-align:right}
+.text-red{color:#C53030;font-weight:700}
+.text-neg{color:#075C41}
+
+/* EMPTY / ERROR */
+.empty-state{padding:3rem;text-align:center;color:#9896A0}
+.empty-state svg{margin-bottom:.75rem;opacity:.4}
+.empty-title{font-size:14px;font-weight:600;margin-bottom:.25rem}
+.empty-sub{font-size:12px}
+
+.chip-file{display:flex;align-items:center;gap:8px;background:#F2F1EE;border:1px solid #DDDBD6;border-radius:8px;padding:.5rem .85rem;font-size:12px;color:#56555A;font-weight:500}
+.chip-file strong{color:#18181A}
+
+@media(max-width:700px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .tabla-header,.proveedor-header{grid-template-columns:1fr 80px 100px 30px}
+  .th-comp,.th-total,.col-num,.col-importe{display:none}
+  .topbar{padding:.75rem 1rem}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Cuentas por Pagar</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+      <span class="rol-badge" id="rol-badge">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Cuentas por Pagar</span>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Cuentas por Pagar</div>
+      <div class="page-sub" id="sub-fecha">Cargá el reporte exportado desde Chess para ver el estado actualizado.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div id="chip-archivo" style="display:none" class="chip-file">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <strong id="chip-nombre">—</strong>
+      </div>
+      <button id="btn-cargar" onclick="document.getElementById('file-input').click()" style="padding:.55rem 1.1rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
+        Cargar CSV
+      </button>
+      <input type="file" id="file-input" accept=".csv" onchange="cargarArchivo(this)">
+    </div>
+  </div>
+
+  <!-- UPLOAD ZONE (inicial) -->
+  <div id="upload-zone" class="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="e=>{e.preventDefault();this.classList.add('drag')}" ondragleave="this.classList.remove('drag')" ondrop="e=>{e.preventDefault();this.classList.remove('drag');if(e.dataTransfer.files[0])procesarArchivo(e.dataTransfer.files[0])}">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <div class="upload-title">Arrastrá el CSV o <span>seleccioná un archivo</span></div>
+    <div class="upload-sub" style="margin-top:.25rem">Exportá desde Chess ERP → Acreencias. Formato semicolon-separado.</div>
+  </div>
+
+  <!-- CONTENIDO (oculto hasta que hay datos) -->
+  <div id="contenido" style="display:none">
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total a pagar</div>
+        <div class="stat-val" id="stat-total">—</div>
+        <div class="stat-sub" id="stat-proveedores-count">— proveedores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Vencido</div>
+        <div class="stat-val red" id="stat-vencido">—</div>
+        <div class="stat-sub" id="stat-vencido-count">— comprobantes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Por vencer</div>
+        <div class="stat-val" id="stat-por-vencer">—</div>
+        <div class="stat-sub" id="stat-pv-count">— comprobantes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Comprobantes</div>
+        <div class="stat-val" id="stat-comprobantes">—</div>
+        <div class="stat-sub">en total</div>
+      </div>
+    </div>
+
+    <!-- CONTROLES -->
+    <div class="controles">
+      <input type="text" class="search-box" id="buscar" placeholder="Buscar proveedor..." oninput="renderTabla()">
+      <button class="filter-btn active" id="fil-todos" onclick="setFiltro('todos')">Todos</button>
+      <button class="filter-btn" id="fil-vencido" onclick="setFiltro('vencido')">Solo vencidos</button>
+      <button class="filter-btn" id="fil-por-vencer" onclick="setFiltro('por-vencer')">Por vencer</button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="tabla-wrap">
+      <div class="tabla-header">
+        <div>Proveedor</div>
+        <div class="col-num" style="text-align:center">Comp.</div>
+        <div class="th-total" style="text-align:right">Total</div>
+        <div style="text-align:right">Pagado</div>
+        <div style="text-align:right;color:#C53030">Saldo</div>
+        <div></div>
+      </div>
+      <div id="tabla-body"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) { window.location.href = '/'; }
+
+const av = document.getElementById('user-avatar');
+const nb = document.getElementById('user-nombre');
+const rb = document.getElementById('rol-badge');
+nb.textContent = userData.nombre || userData.username;
+av.textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
+rb.textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
+rb.className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
+
+let datos = [];
+let filtro = 'todos';
+let proveedoresAbiertos = new Set();
+
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  const parts = abs.toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (neg ? '-' : '') + '$ ' + parts[0] + ',' + parts[1];
+}
+
+function parseMonto(s) {
+  if (!s || s.trim() === '') return 0;
+  s = s.trim().replace(/\$/g, '').trim();
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  }
+  return parseFloat(s) || 0;
+}
+
+function parseFecha(s) {
+  if (!s || s.trim() === '') return null;
+  const p = s.trim().split('/');
+  if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  return null;
+}
+
+function cargarArchivo(input) {
+  if (input.files && input.files[0]) procesarArchivo(input.files[0]);
+}
+
+function procesarArchivo(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const texto = e.target.result;
+      const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+      // detectar separador
+      const sep = lineas[0].includes(';') ? ';' : ',';
+      // skip header
+      const filas = lineas.slice(1);
+      datos = [];
+      for (const fila of filas) {
+        const cols = fila.split(sep);
+        if (cols.length < 9) continue;
+        const acreencia = cols[0]?.trim();
+        const razonSocial = cols[1]?.trim();
+        const comprobante = cols[2]?.trim();
+        const fecha = parseFecha(cols[3]?.trim());
+        const cuotas = cols[4]?.trim();
+        const vence = parseFecha(cols[5]?.trim());
+        const total = parseMonto(cols[6]);
+        const pagado = parseMonto(cols[7]);
+        const saldo = parseMonto(cols[8]);
+        const vencido = cols[9]?.trim().toUpperCase() === 'SI';
+        if (!razonSocial || !comprobante) continue;
+        datos.push({ acreencia, razonSocial, comprobante, fecha, cuotas, vence, total, pagado, saldo, vencido });
+      }
+      if (datos.length === 0) { alert('No se encontraron datos válidos en el archivo.'); return; }
+      document.getElementById('chip-nombre').textContent = file.name;
+      document.getElementById('chip-archivo').style.display = 'flex';
+      document.getElementById('upload-zone').style.display = 'none';
+      document.getElementById('contenido').style.display = 'block';
+      document.getElementById('sub-fecha').textContent = `Archivo: ${file.name} · ${datos.length} comprobantes`;
+      calcularStats();
+      renderTabla();
+    } catch(err) {
+      alert('Error al procesar el archivo: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function calcularStats() {
+  const totalSaldo = datos.reduce((a,d) => a + d.saldo, 0);
+  const vencidos = datos.filter(d => d.vencido);
+  const porVencer = datos.filter(d => !d.vencido && d.saldo > 0);
+  const proveedores = new Set(datos.map(d => d.razonSocial)).size;
+
+  document.getElementById('stat-total').textContent = fmt(totalSaldo);
+  document.getElementById('stat-vencido').textContent = fmt(vencidos.reduce((a,d)=>a+d.saldo,0));
+  document.getElementById('stat-vencido-count').textContent = `${vencidos.length} comprobantes`;
+  document.getElementById('stat-por-vencer').textContent = fmt(porVencer.reduce((a,d)=>a+d.saldo,0));
+  document.getElementById('stat-pv-count').textContent = `${porVencer.length} comprobantes`;
+  document.getElementById('stat-comprobantes').textContent = datos.length.toLocaleString('es');
+  document.getElementById('stat-proveedores-count').textContent = `${proveedores} proveedores`;
+}
+
+function setFiltro(f) {
+  filtro = f;
+  ['todos','vencido','por-vencer'].forEach(id => {
+    document.getElementById('fil-'+id).classList.toggle('active', id === f);
+  });
+  renderTabla();
+}
+
+function agrupar(filas) {
+  const mapa = {};
+  for (const d of filas) {
+    const k = d.razonSocial;
+    if (!mapa[k]) mapa[k] = { razonSocial: k, items: [], saldo: 0, pagado: 0, total: 0, vencidoSaldo: 0, vencidoCount: 0 };
+    mapa[k].items.push(d);
+    mapa[k].saldo += d.saldo;
+    mapa[k].pagado += d.pagado;
+    mapa[k].total += d.total;
+    if (d.vencido) { mapa[k].vencidoSaldo += d.saldo; mapa[k].vencidoCount++; }
+  }
+  return Object.values(mapa).sort((a,b) => b.saldo - a.saldo);
+}
+
+function tipoBadge(comp) {
+  const tipo = comp.slice(0,2).toUpperCase();
+  return `<span class="badge-tipo badge-${tipo}">${tipo}</span>`;
+}
+
+function renderTabla() {
+  const buscar = document.getElementById('buscar').value.toLowerCase().trim();
+  let filas = datos.slice();
+  if (filtro === 'vencido') filas = filas.filter(d => d.vencido);
+  if (filtro === 'por-vencer') filas = filas.filter(d => !d.vencido && d.saldo > 0);
+  if (buscar) filas = filas.filter(d => d.razonSocial.toLowerCase().includes(buscar));
+
+  const grupos = agrupar(filas);
+  const tbody = document.getElementById('tabla-body');
+
+  if (grupos.length === 0) {
+    tbody.innerHTML = `<div class="empty-state">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div class="empty-title">Sin resultados</div>
+      <div class="empty-sub">Probá con otro filtro o búsqueda.</div>
+    </div>`;
+    return;
+  }
+
+  tbody.innerHTML = grupos.map(g => {
+    const abierto = proveedoresAbiertos.has(g.razonSocial);
+    const detalleHtml = g.items.map(d => {
+      const negativo = d.saldo < 0;
+      return `<tr>
+        <td>${tipoBadge(d.comprobante)} ${d.comprobante}</td>
+        <td>${d.fecha ? d.fecha.split('-').reverse().join('/') : '—'}</td>
+        <td>${d.vence ? d.vence.split('-').reverse().join('/') : '—'}</td>
+        <td class="text-right">${fmt(d.total)}</td>
+        <td class="text-right">${d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
+        <td class="text-right ${negativo ? 'text-neg' : (d.saldo > 0 ? '' : '')}" style="font-weight:700">${fmt(d.saldo)}</td>
+        <td><span class="${d.vencido ? 'badge-vencido' : 'badge-ok'}">${d.vencido ? 'Vencido' : 'Al día'}</span></td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="proveedor-row" id="row-${CSS.escape(g.razonSocial)}">
+      <div class="proveedor-header" onclick="toggleProveedor('${g.razonSocial.replace(/'/g,"\\'")}')">
+        <div class="proveedor-nombre">${g.razonSocial}<span>${g.items.length} comp.</span>${g.vencidoCount > 0 ? `<span style="color:#C53030;font-weight:700;font-size:11px;margin-left:4px">⚠ ${g.vencidoCount} vencido${g.vencidoCount>1?'s':''}</span>` : ''}</div>
+        <div class="col-num">${g.items.length}</div>
+        <div class="col-importe th-total" style="text-align:right;font-size:13px;font-weight:600;color:#56555A">${fmt(g.total)}</div>
+        <div class="col-importe" style="text-align:right;font-size:13px;font-weight:600;color:#56555A">${fmt(g.pagado)}</div>
+        <div class="col-saldo">${fmt(g.saldo)}</div>
+        <div class="col-chevron ${abierto?'open':''}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+      <div class="detalle ${abierto?'open':''}">
+        <table class="detalle-tabla">
+          <thead><tr>
+            <th>Comprobante</th><th>Fecha</th><th>Vencimiento</th>
+            <th class="text-right">Total</th><th class="text-right">Pagado</th>
+            <th class="text-right">Saldo</th><th>Estado</th>
+          </tr></thead>
+          <tbody>${detalleHtml}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleProveedor(nombre) {
+  if (proveedoresAbiertos.has(nombre)) {
+    proveedoresAbiertos.delete(nombre);
+  } else {
+    proveedoresAbiertos.add(nombre);
+  }
+  renderTabla();
+}
+</script>
+</body>
+</html>
