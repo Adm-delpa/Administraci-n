@@ -503,9 +503,10 @@ function estadoTarea(t) {
     }
     if (!t.ultimo_fecha && (!t.fecha_inicio || t.fecha_inicio > hoy)) return { label: 'Pendiente', cls: 'badge-pendiente' };
     const base = t.ultimo_fecha || t.fecha_inicio;
-    if (!base || base >= hoy) return { label: 'Pendiente', cls: 'badge-pendiente' };
+    if (!base || base > hoy) return { label: 'Pendiente', cls: 'badge-pendiente' };
+    if (base === hoy) return { label: 'Vence hoy', cls: 'badge-vence-hoy' };
     const late = workingDaysLate(base, hoy);
-    if (late <= 0) return { label: 'Pendiente', cls: 'badge-pendiente' };
+    if (late <= 0) return { label: 'Vence hoy', cls: 'badge-vence-hoy' };
     return { label: `Atrasado ${late}d`, cls: 'badge-atrasado' };
   } else {
     if (!t.proxima_fecha) return { label: 'Sin fecha', cls: 'badge-pendiente' };
