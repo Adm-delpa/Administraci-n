@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administración — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.rol-badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700}
+.rol-admin{background:rgba(196,130,10,.3);color:#FCD34D}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:1000px;margin:0 auto;padding:2rem 1rem}
+
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1.5rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb-sep{color:#DDDBD6}
+
+.welcome-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em;margin-bottom:.25rem}
+.welcome-sub{font-size:13px;color:#9896A0;font-weight:500;margin-bottom:2rem}
+
+.modulos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.modulo-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.4rem;cursor:pointer;transition:all .2s;text-decoration:none;display:block;position:relative;overflow:hidden}
+.modulo-card:hover{border-color:#1E6FD9;box-shadow:0 4px 20px rgba(30,111,217,.12);transform:translateY(-2px)}
+.modulo-card.coming-soon{cursor:default;opacity:.6}
+.modulo-card.coming-soon:hover{transform:none;box-shadow:none;border-color:#DDDBD6}
+.modulo-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1rem;flex-shrink:0}
+.modulo-nombre{font-size:15px;font-weight:700;color:#18181A;margin-bottom:.3rem}
+.modulo-desc{font-size:12px;color:#9896A0;font-weight:500;line-height:1.5}
+.modulo-badge{position:absolute;top:.85rem;right:.85rem;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge-activo{background:#D4F2E8;color:#075C41}
+.badge-pronto{background:#F2F1EE;color:#9896A0}
+.modulo-arrow{position:absolute;bottom:1rem;right:1rem;color:#DDDBD6;transition:color .15s}
+.modulo-card:hover .modulo-arrow{color:#1E6FD9}
+
+@media(max-width:600px){.topbar{padding:.75rem 1rem}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Sistema de Gestión</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+      <span class="rol-badge rol-admin" id="rol-badge">Admin</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Administración</span>
+  </div>
+
+  <div class="welcome-title">Administración</div>
+  <div class="welcome-sub">Herramientas y módulos de gestión interna.</div>
+
+  <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9896A0;margin-bottom:.75rem">Módulos</div>
+  <div class="modulos-grid">
+
+    <!-- CARGA DE FACTURAS -->
+    <a href="#" class="modulo-card coming-soon">
+      <span class="modulo-badge badge-pronto">Próximamente</span>
+      <div class="modulo-icon" style="background:#DCE9FA">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1E6FD9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      </div>
+      <div class="modulo-nombre">Carga de Facturas</div>
+      <div class="modulo-desc">Registro y gestión de facturas de proveedores y gastos internos.</div>
+    </a>
+
+    <!-- CALENDARIO DE TAREAS -->
+    <a href="#" class="modulo-card coming-soon">
+      <span class="modulo-badge badge-pronto">Próximamente</span>
+      <div class="modulo-icon" style="background:#D4F2E8">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#075C41" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      </div>
+      <div class="modulo-nombre">Calendario de Tareas</div>
+      <div class="modulo-desc">Planificación y seguimiento de tareas y vencimientos administrativos.</div>
+    </a>
+
+  </div>
+</div>
+
+<script>
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) { window.location.href = '/'; }
+if (userData.rol !== 'admin') { window.location.href = '/panel'; }
+
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
+</script>
+</body>
+</html>

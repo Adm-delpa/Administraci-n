@@ -762,6 +762,7 @@ app.get('/conciliacion-bancaria', (req, res) => res.sendFile(path.join(__dirname
 app.get('/actividad', (req, res) => res.sendFile(path.join(__dirname, 'public', 'actividad.html')));
 app.get('/pendientes-acreditacion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pendientes-acreditacion.html')));
 app.get('/tickets', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tickets.html')));
+app.get('/administracion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
