@@ -427,6 +427,7 @@ async function cargarUsuarios() {
       if (!sel) return;
       const cur = sel.value;
       while (sel.options.length > 1) sel.remove(1);
+      if (id === 'fil-persona') sel.add(new Option('Cualquiera', 'cualquiera'));
       usuarios.forEach(u => {
         const o = new Option(u.nombre || u.username, u.username);
         sel.add(o);
@@ -534,7 +535,8 @@ function renderTareas() {
   const filEst = document.getElementById('fil-estado').value;
 
   const filtradas = tareas.filter(t => {
-    if (filPersona && t.responsable !== 'cualquiera' && t.responsable !== filPersona) return false;
+    if (filPersona === 'cualquiera' && t.responsable !== 'cualquiera') return false;
+    if (filPersona && filPersona !== 'cualquiera' && t.responsable !== 'cualquiera' && t.responsable !== filPersona) return false;
     if (filCat && String(t.categoria_id) !== filCat) return false;
     if (!matchEstadoFiltro(t, filEst)) return false;
     return true;
