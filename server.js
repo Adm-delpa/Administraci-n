@@ -199,6 +199,8 @@ async function initDB() {
       );
       ALTER TABLE ticket_notas ADD COLUMN IF NOT EXISTS imagen TEXT;
       ALTER TABLE tareas ADD COLUMN IF NOT EXISTS descripcion TEXT;
+      ALTER TABLE tareas ADD COLUMN IF NOT EXISTS dia_semana INTEGER;
+      ALTER TABLE tareas ADD COLUMN IF NOT EXISTS completada BOOLEAN DEFAULT false;
 
       CREATE TABLE IF NOT EXISTS tareas_categorias (
         id SERIAL PRIMARY KEY,
@@ -885,11 +887,14 @@ app.get('/api/tareas/atrasadas/count', async (req, res) => {
           SELECT 1 FROM tareas_historial h WHERE h.tarea_id=t.id AND h.fecha=$1
         )
     `, [hoy]);
-    // mensuales: proxima_fecha < hoy
-    const mensuales = await pool.query(`
-      SELECT COUNT(*) FROM tareas WHERE tipo='mensual' AND proxima_fecha < $1
+    // mensuales/semanales/unicas: proxima_fecha vencida o unica sin completar y vencida
+    const otras = await pool.query(`
+      SELECT COUNT(*) FROM tareas WHERE
+        (tipo='mensual' AND proxima_fecha < $1) OR
+        (tipo='semanal' AND proxima_fecha < $1) OR
+        (tipo='unica' AND proxima_fecha < $1 AND (completada IS NULL OR completada=false))
     `, [hoy]);
-    const count = parseInt(diarias.rows[0].count) + parseInt(mensuales.rows[0].count);
+    const count = parseInt(diarias.rows[0].count) + parseInt(otras.rows[0].count);
     res.json({ count });
   } catch(e) { res.status(500).json({ error: 'Error' }); }
 });
@@ -942,27 +947,26 @@ app.get('/api/tareas', async (req, res) => {
 
 // POST crear tarea
 app.post('/api/tareas', async (req, res) => {
-  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, descripcion } = req.body;
+  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, dia_semana, proxima_fecha, responsable, categoria_id, descripcion } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Falta nombre' });
   try {
     const r = await pool.query(`
-      INSERT INTO tareas (nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, descripcion)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
-    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null]);
-    const tarea = r.rows[0];
-    res.json(tarea);
+      INSERT INTO tareas (nombre, prioridad, tipo, fecha_inicio, dia_del_mes, dia_semana, proxima_fecha, responsable, categoria_id, descripcion)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *
+    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, dia_semana||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null]);
+    res.json(r.rows[0]);
   } catch(e) { console.error('POST /api/tareas error:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 // PUT actualizar tarea
 app.put('/api/tareas/:id', async (req, res) => {
-  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, proxima_fecha, responsable, categoria_id, descripcion } = req.body;
+  const { nombre, prioridad, tipo, fecha_inicio, dia_del_mes, dia_semana, proxima_fecha, responsable, categoria_id, descripcion } = req.body;
   const { id } = req.params;
   try {
     const r = await pool.query(`
-      UPDATE tareas SET nombre=$1, prioridad=$2, tipo=$3, fecha_inicio=$4, dia_del_mes=$5, proxima_fecha=$6, responsable=$7, categoria_id=$8, descripcion=$9
+      UPDATE tareas SET nombre=$1, prioridad=$2, tipo=$3, fecha_inicio=$4, dia_del_mes=$5, dia_semana=$6, proxima_fecha=$7, responsable=$8, categoria_id=$9, descripcion=$10, completada=false
       WHERE id=$10 RETURNING *
-    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null, id]);
+    `, [nombre, prioridad||'Media', tipo||'diaria', fecha_inicio||null, dia_del_mes||null, dia_semana||null, proxima_fecha||null, responsable||'cualquiera', categoria_id||null, descripcion||null, id]);
     if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json(r.rows[0]);
   } catch(e) { console.error('PUT /api/tareas error:', e.message); res.status(500).json({ error: e.message }); }
@@ -1014,17 +1018,23 @@ app.post('/api/tareas/:id/completar', async (req, res) => {
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
     `, [id, tarea.nombre, hoy, hora, persona, tarea.tipo, tarea.responsable, a_tiempo, dias_atraso]);
 
-    // Si mensual, avanzar proxima_fecha
+    // Avanzar proxima_fecha según tipo
     if (tarea.tipo === 'mensual' && tarea.dia_del_mes) {
       const base = new Date(hoy);
       let nextYear = base.getFullYear();
-      let nextMonth = base.getMonth() + 2; // mes siguiente (1-based)
+      let nextMonth = base.getMonth() + 2;
       if (nextMonth > 12) { nextMonth = 1; nextYear++; }
-      // Último día del mes siguiente
       const lastDay = new Date(nextYear, nextMonth, 0).getDate();
       const day = Math.min(tarea.dia_del_mes, lastDay);
       const nextFecha = `${nextYear}-${String(nextMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       await pool.query('UPDATE tareas SET proxima_fecha=$1 WHERE id=$2', [nextFecha, id]);
+    } else if (tarea.tipo === 'semanal') {
+      const base = new Date(hoy + 'T12:00:00');
+      base.setDate(base.getDate() + 7);
+      const nextFecha = base.toISOString().slice(0, 10);
+      await pool.query('UPDATE tareas SET proxima_fecha=$1 WHERE id=$2', [nextFecha, id]);
+    } else if (tarea.tipo === 'unica') {
+      await pool.query('UPDATE tareas SET completada=true WHERE id=$1', [id]);
     }
 
     // Resetear estados de subtareas (eliminar estado del ciclo actual)

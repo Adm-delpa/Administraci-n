@@ -394,13 +394,26 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <label>Tipo</label>
       <div class="toggle-group">
         <button type="button" class="toggle-btn active" id="tipo-diaria" onclick="setTipo('diaria')">Diaria</button>
+        <button type="button" class="toggle-btn" id="tipo-semanal" onclick="setTipo('semanal')">Semanal</button>
         <button type="button" class="toggle-btn" id="tipo-mensual" onclick="setTipo('mensual')">Mensual</button>
+        <button type="button" class="toggle-btn" id="tipo-unica" onclick="setTipo('unica')">Única vez</button>
       </div>
     </div>
 
     <div id="campo-diaria" class="field">
       <label>Fecha de inicio</label>
       <input type="date" id="t-fecha-inicio">
+    </div>
+    <div id="campo-semanal" class="field" style="display:none">
+      <label>Día de la semana</label>
+      <select id="t-dia-semana" style="width:100%;padding:.65rem .9rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none">
+        <option value="1">Lunes</option>
+        <option value="2">Martes</option>
+        <option value="3">Miércoles</option>
+        <option value="4">Jueves</option>
+        <option value="5">Viernes</option>
+        <option value="6">Sábado</option>
+      </select>
     </div>
     <div id="campo-mensual" class="field" style="display:none">
       <label>Día del mes</label>
@@ -409,6 +422,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     <div id="campo-proxima" class="field" style="display:none">
       <label>Próxima fecha</label>
       <input type="date" id="t-proxima-fecha">
+    </div>
+    <div id="campo-unica" class="field" style="display:none">
+      <label>Fecha límite</label>
+      <input type="date" id="t-fecha-unica">
     </div>
 
     <div class="field">
@@ -549,6 +566,17 @@ async function cargarTareas() {
   }
 }
 
+// Calcula la próxima fecha para el día de semana dado (1=Lun..6=Sab)
+function calcProximaSemanal(diaSemana) {
+  const d = new Date(hoy + 'T12:00:00');
+  const jsDay = d.getDay(); // 0=Dom,1=Lun...6=Sab
+  // Convertir: dia_semana 1=Lun→jsDay1, 6=Sab→jsDay6
+  let diff = diaSemana - jsDay;
+  if (diff <= 0) diff += 7;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
 // ── HELPERS DÍAS HÁBILES (Lun–Sab) ──
 function nextWorkingDay(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
@@ -585,6 +613,29 @@ function estadoTarea(t) {
     const late = workingDaysLate(base, hoy);
     if (late <= 0) return { label: 'Vence hoy', cls: 'badge-vence-hoy' };
     return { label: `Atrasado ${late}d`, cls: 'badge-atrasado' };
+  } else if (t.tipo === 'semanal') {
+    if (t.ultimo_fecha === hoy) {
+      const next = nextWorkingDay(hoy);
+      return { label: 'Vence mañana', cls: 'badge-pendiente' };
+    }
+    if (!t.proxima_fecha) return { label: 'Sin fecha', cls: 'badge-pendiente' };
+    if (t.proxima_fecha > hoy) {
+      const diff = Math.floor((new Date(t.proxima_fecha) - new Date(hoy)) / 86400000);
+      return { label: `Vence en ${diff}d`, cls: 'badge-pendiente' };
+    }
+    if (t.proxima_fecha === hoy) return { label: 'Vence hoy', cls: 'badge-vence-hoy' };
+    const diffS = Math.floor((new Date(hoy) - new Date(t.proxima_fecha)) / 86400000);
+    return { label: `Atrasado ${diffS}d`, cls: 'badge-atrasado' };
+  } else if (t.tipo === 'unica') {
+    if (t.completada) return { label: 'Hecho', cls: 'badge-hecho' };
+    if (!t.proxima_fecha) return { label: 'Sin fecha', cls: 'badge-pendiente' };
+    if (t.proxima_fecha > hoy) {
+      const diff = Math.floor((new Date(t.proxima_fecha) - new Date(hoy)) / 86400000);
+      return { label: `Vence en ${diff}d`, cls: 'badge-pendiente' };
+    }
+    if (t.proxima_fecha === hoy) return { label: 'Vence hoy', cls: 'badge-vence-hoy' };
+    const diffU = Math.floor((new Date(hoy) - new Date(t.proxima_fecha)) / 86400000);
+    return { label: `Atrasado ${diffU}d`, cls: 'badge-atrasado' };
   } else {
     if (!t.proxima_fecha) return { label: 'Sin fecha', cls: 'badge-pendiente' };
     if (t.proxima_fecha > hoy) {
@@ -634,7 +685,9 @@ function renderTareas() {
     const catNombre = t.categoria_nombre ? `<span class="badge" style="background:${t.categoria_color||'#E0E7F0'};color:#18181A;opacity:.85">${t.categoria_nombre}</span>` : '<span style="color:#9896A0">—</span>';
     const resp = t.responsable === 'cualquiera' ? '<span style="color:#9896A0">Cualquiera</span>' : (usuarios.find(u => u.username === t.responsable)?.nombre || t.responsable);
     const isDoneToday = (t.tipo === 'diaria' && t.ultimo_fecha === hoy) ||
-                        (t.tipo === 'mensual' && t.ultimo_fecha && t.ultimo_fecha.slice(0,7) === hoy.slice(0,7));
+                        (t.tipo === 'semanal' && t.ultimo_fecha === hoy) ||
+                        (t.tipo === 'mensual' && t.ultimo_fecha && t.ultimo_fecha.slice(0,7) === hoy.slice(0,7)) ||
+                        (t.tipo === 'unica' && t.completada);
     const mostrarUlt = !isDoneToday && !(t.tipo === 'mensual' && t.proxima_fecha && t.proxima_fecha > hoy);
     const ultReg = mostrarUlt ? (t.ultimo_fecha ? `${t.ultimo_fecha}${t.ultimo_persona ? ' · ' + (usuarios.find(u=>u.username===t.ultimo_persona)?.nombre || t.ultimo_persona) : ''}` : '<span style="color:#9896A0">Nunca</span>') : '<span style="color:#9896A0">—</span>';
 
@@ -699,7 +752,9 @@ function abrirModal(tarea) {
   setTipo(tarea ? tarea.tipo : 'diaria');
   document.getElementById('t-fecha-inicio').value = tarea ? (tarea.fecha_inicio || '') : hoy;
   document.getElementById('t-dia-mes').value = tarea ? (tarea.dia_del_mes || '') : '';
+  document.getElementById('t-dia-semana').value = tarea ? (tarea.dia_semana || '1') : '1';
   document.getElementById('t-proxima-fecha').value = tarea ? (tarea.proxima_fecha || '') : '';
+  document.getElementById('t-fecha-unica').value = tarea ? (tarea.proxima_fecha || '') : '';
   document.getElementById('t-descripcion').value = tarea ? (tarea.descripcion || '') : '';
   document.getElementById('nueva-cat-panel').style.display = 'none';
   showModalMsg('', '');
@@ -714,11 +769,14 @@ function cerrarModal() {
 
 function setTipo(tipo) {
   tipoActual = tipo;
-  document.getElementById('tipo-diaria').classList.toggle('active', tipo === 'diaria');
-  document.getElementById('tipo-mensual').classList.toggle('active', tipo === 'mensual');
-  document.getElementById('campo-diaria').style.display = tipo === 'diaria' ? '' : 'none';
+  ['diaria','semanal','mensual','unica'].forEach(t =>
+    document.getElementById('tipo-'+t).classList.toggle('active', tipo === t)
+  );
+  document.getElementById('campo-diaria').style.display  = tipo === 'diaria'  ? '' : 'none';
+  document.getElementById('campo-semanal').style.display = tipo === 'semanal' ? '' : 'none';
   document.getElementById('campo-mensual').style.display = tipo === 'mensual' ? '' : 'none';
   document.getElementById('campo-proxima').style.display = tipo === 'mensual' ? '' : 'none';
+  document.getElementById('campo-unica').style.display   = tipo === 'unica'   ? '' : 'none';
 }
 
 function showModalMsg(type, txt) {
@@ -736,8 +794,12 @@ async function guardarTarea() {
     prioridad: document.getElementById('t-prioridad').value,
     tipo: tipoActual,
     fecha_inicio: tipoActual === 'diaria' ? (document.getElementById('t-fecha-inicio').value || null) : null,
+    dia_semana: tipoActual === 'semanal' ? (parseInt(document.getElementById('t-dia-semana').value) || null) : null,
     dia_del_mes: tipoActual === 'mensual' ? (parseInt(document.getElementById('t-dia-mes').value) || null) : null,
-    proxima_fecha: tipoActual === 'mensual' ? (document.getElementById('t-proxima-fecha').value || null) : null,
+    proxima_fecha: tipoActual === 'mensual' ? (document.getElementById('t-proxima-fecha').value || null)
+                 : tipoActual === 'unica'   ? (document.getElementById('t-fecha-unica').value || null)
+                 : tipoActual === 'semanal' ? calcProximaSemanal(parseInt(document.getElementById('t-dia-semana').value))
+                 : null,
     responsable: document.getElementById('t-responsable').value,
     categoria_id: document.getElementById('t-categoria').value || null,
     descripcion: document.getElementById('t-descripcion').value.trim() || null,
