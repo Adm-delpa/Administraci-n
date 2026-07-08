@@ -300,9 +300,6 @@ if(userData.rol!=='admin'){
     if(!tieneAcceso){const el=document.querySelector(sel);if(el)el.style.display='none';}
   });
 }
-// Contador dinámico de módulos activos
-const nActivos = document.querySelectorAll('.modulo-card:not(.coming-soon):not([style*="display: none"]):not([style*="display:none"])').length;
-document.getElementById('stat-modulos').textContent = nActivos;
 
 const ACCION_LABELS={'login':'Ingresó al sistema','chess_import':'Importó Chess ERP','banco_upload':'Subió extracto bancario','confirmar_sugerido':'Confirmó cliente sugerido','asignar_manual':'Asignó cliente manual','confirmar_match_pend':'Confirmó match pendiente'};
 
@@ -500,6 +497,9 @@ async function checkNovedadesPendientes(){
   }catch(e){}
 }
 checkNovedadesPendientes();
+
+const nActivos = document.querySelectorAll('.modulo-card:not(.coming-soon):not([style*="display: none"]):not([style*="display:none"])').length;
+document.getElementById('stat-modulos').textContent = nActivos;
 </script>
 </body>
 </html>
