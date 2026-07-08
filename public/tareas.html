@@ -524,7 +524,8 @@ function renderTareas() {
     const priCls = t.prioridad === 'Alta' ? 'badge-alta' : t.prioridad === 'Media' ? 'badge-media' : 'badge-baja';
     const catNombre = t.categoria_nombre ? `<span class="badge" style="background:${t.categoria_color||'#E0E7F0'};color:#18181A;opacity:.85">${t.categoria_nombre}</span>` : '<span style="color:#9896A0">—</span>';
     const resp = t.responsable === 'cualquiera' ? '<span style="color:#9896A0">Cualquiera</span>' : (usuarios.find(u => u.username === t.responsable)?.nombre || t.responsable);
-    const ultReg = t.ultimo_fecha ? `${t.ultimo_fecha}${t.ultimo_persona ? ' · ' + (usuarios.find(u=>u.username===t.ultimo_persona)?.nombre || t.ultimo_persona) : ''}` : '<span style="color:#9896A0">Nunca</span>';
+    const mostrarUlt = !(t.tipo === 'mensual' && t.proxima_fecha && t.proxima_fecha > hoy);
+    const ultReg = mostrarUlt ? (t.ultimo_fecha ? `${t.ultimo_fecha}${t.ultimo_persona ? ' · ' + (usuarios.find(u=>u.username===t.ultimo_persona)?.nombre || t.ultimo_persona) : ''}` : '<span style="color:#9896A0">Nunca</span>') : '<span style="color:#9896A0">—</span>';
 
     const completarBtn = est.cls !== 'badge-hecho'
       ? `<button class="btn-primary btn-sm" onclick="completarTarea(${t.id})">✓ Marcar hecho</button>`
