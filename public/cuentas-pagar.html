@@ -391,61 +391,30 @@ function parsearFila(cols) {
   };
 }
 
-function encontrarHeaderRow(rows) {
-  // Busca la fila que tenga encabezados reconocibles
-  const palabrasClave = ['razon', 'razón', 'social', 'comprobante', 'saldo', 'vence', 'total', 'acreencia'];
-  for (let i = 0; i < Math.min(rows.length, 15); i++) {
-    const fila = rows[i].map(c => String(c || '').toLowerCase());
-    const hits = palabrasClave.filter(p => fila.some(c => c.includes(p)));
-    if (hits.length >= 3) return i;
-  }
-  return 0; // fallback: primera fila
-}
-
-function normalizar(s) {
-  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-}
-
-function mapearColumnas(headerRow) {
-  const h = headerRow.map(c => normalizar(c));
-  const idx = (palabras) => {
-    for (const p of palabras) {
-      const i = h.findIndex(c => c.includes(p));
-      if (i >= 0) return i;
-    }
-    return -1;
-  };
-  return {
-    acreencia: idx(['acreencia']),
-    razonSocial: idx(['razon social', 'razon_social', 'razon social', 'razon', 'proveedor', 'nombre']),
-    comprobante: idx(['comprobante', 'nro', 'numero', 'factura']),
-    fecha: idx(['fecha emision', 'fecha emis', 'fecha']),
-    cuotas: idx(['cuotas', 'cuota']),
-    vence: idx(['vencimiento', 'vence']),
-    total: idx(['total']),
-    pagado: idx(['pagado', 'pago', 'abonado']),
-    saldo: idx(['saldo']),
-    vencido: idx(['vencido']),
-  };
-}
-
-function parsearFilaConMapeo(cols, map) {
-  const get = (i) => i >= 0 ? cols[i] : '';
-  const razonSocial = String(get(map.razonSocial) || '').trim();
-  const comprobante = String(get(map.comprobante) || '').trim();
+// Estructura fija de Chess: Acreencia(0);Razón Social(1);Comprobante(2);Fecha(3);Cuotas(4);Vence(5);Total(6);Pagado(7);Saldo(8);Vencido(9)
+function parsearFila(cols) {
+  const razonSocial = String(cols[1] || '').trim();
+  const comprobante = String(cols[2] || '').trim();
   if (!razonSocial || !comprobante) return null;
   return {
-    acreencia: String(get(map.acreencia) || '').trim(),
+    acreencia: String(cols[0] || '').trim(),
     razonSocial,
     comprobante,
-    fecha: parseFecha(get(map.fecha)),
-    cuotas: String(get(map.cuotas) || '').trim(),
-    vence: parseFecha(get(map.vence)),
-    total: parseMonto(get(map.total)),
-    pagado: parseMonto(get(map.pagado)),
-    saldo: parseMonto(get(map.saldo)),
-    vencido: String(get(map.vencido) || '').trim().toUpperCase() === 'SI',
+    fecha: parseFecha(cols[3]),
+    cuotas: String(cols[4] || '').trim(),
+    vence: parseFecha(cols[5]),
+    total: parseMonto(cols[6]),
+    pagado: parseMonto(cols[7]),
+    saldo: parseMonto(cols[8]),
+    vencido: String(cols[9] || '').trim().toUpperCase() === 'SI',
   };
+}
+
+function esFilaHeader(cols) {
+  // Detecta la fila de encabezado para saltearla (independiente del encoding)
+  const c0 = String(cols[0] || '').toLowerCase();
+  const c2 = String(cols[2] || '').toLowerCase();
+  return c0.includes('acreencia') || c2.includes('comprobante');
 }
 
 function procesarArchivo(file) {
@@ -453,41 +422,37 @@ function procesarArchivo(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      let allRows = [];
+      let filas = [];
+
       if (esExcel) {
         const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        for (const row of rows) {
+          if (esFilaHeader(row)) continue;
+          const f = parsearFila(row);
+          if (f) filas.push(f);
+        }
       } else {
-        const texto = new TextDecoder('UTF-8').decode(e.target.result);
+        // CSV: probar windows-1252 primero (encoding de Chess), luego UTF-8
+        let texto;
+        try {
+          texto = new TextDecoder('windows-1252').decode(e.target.result);
+        } catch(_) {
+          texto = new TextDecoder('utf-8').decode(e.target.result);
+        }
         const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
         const sep = lineas[0].includes(';') ? ';' : ',';
-        allRows = lineas.map(l => l.split(sep));
-      }
-
-      const headerIdx = encontrarHeaderRow(allRows);
-      const map = mapearColumnas(allRows[headerIdx]);
-
-      // Si no encontró columnas clave, mostrar diagnóstico
-      if (map.razonSocial < 0 || map.comprobante < 0) {
-        const preview = allRows.slice(0, 6).map((r,i) =>
-          `Fila ${i+1}: [${r.map(c=>JSON.stringify(c)).join(', ')}]`
-        ).join('\n');
-        alert(`No se reconocieron las columnas del archivo.\n\nPrimeras filas del archivo:\n${preview}\n\nCompartí esta información para ajustar el parseo.`);
-        return;
-      }
-
-      let filas = [];
-      for (let i = headerIdx + 1; i < allRows.length; i++) {
-        const f = parsearFilaConMapeo(allRows[i], map);
-        if (f) filas.push(f);
+        for (const linea of lineas) {
+          const cols = linea.split(sep);
+          if (esFilaHeader(cols)) continue;
+          const f = parsearFila(cols);
+          if (f) filas.push(f);
+        }
       }
 
       if (filas.length === 0) {
-        const preview = allRows.slice(headerIdx, headerIdx + 4).map((r,i) =>
-          `Fila ${headerIdx+i+1}: [${r.slice(0,10).map(c=>JSON.stringify(c)).join(', ')}]`
-        ).join('\n');
-        alert(`Se encontró el encabezado en fila ${headerIdx+1} pero ninguna fila de datos fue válida.\n\nVista del encabezado y datos:\n${preview}`);
+        alert('No se encontraron datos válidos en el archivo. Verificá que sea el reporte de Acreencias de Chess.');
         return;
       }
 
