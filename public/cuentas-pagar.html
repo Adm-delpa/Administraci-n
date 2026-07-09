@@ -520,14 +520,13 @@ async function subirDatos() {
 function calcularStats() {
   const vencidosRaw = datos.filter(d => d.vencido);
   const porVencerRaw = datos.filter(d => !d.vencido && d.saldo !== 0);
-  const vencidoNeto = vencidosRaw.reduce((a,d) => a + d.saldo, 0);
-  const porVencerNeto = porVencerRaw.reduce((a,d) => a + d.saldo, 0);
-  const totalNeto = vencidoNeto + porVencerNeto;
+  const vencidoAbs = Math.abs(vencidosRaw.reduce((a,d) => a + d.saldo, 0));
+  const porVencerAbs = Math.abs(porVencerRaw.reduce((a,d) => a + d.saldo, 0));
   const proveedores = new Set(datos.map(d => d.razonSocial)).size;
-  document.getElementById('stat-total').textContent = fmt(Math.abs(totalNeto));
-  document.getElementById('stat-vencido').textContent = fmt(Math.abs(vencidoNeto));
+  document.getElementById('stat-total').textContent = fmt(vencidoAbs + porVencerAbs);
+  document.getElementById('stat-vencido').textContent = fmt(vencidoAbs);
   document.getElementById('stat-vencido-count').textContent = `${vencidosRaw.length} comprobantes`;
-  document.getElementById('stat-por-vencer').textContent = fmt(Math.abs(porVencerNeto));
+  document.getElementById('stat-por-vencer').textContent = fmt(porVencerAbs);
   document.getElementById('stat-pv-count').textContent = `${porVencerRaw.length} comprobantes`;
   document.getElementById('stat-comprobantes').textContent = datos.length.toLocaleString('es');
   document.getElementById('stat-proveedores-count').textContent = `${proveedores} proveedores`;
