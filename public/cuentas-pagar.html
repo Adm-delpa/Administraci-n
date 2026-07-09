@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cuentas por Pagar — Del Palacio S.A.</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -155,15 +156,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <button id="btn-cargar" onclick="document.getElementById('file-input').click()" style="padding:.55rem 1.1rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
         Cargar CSV
       </button>
-      <input type="file" id="file-input" accept=".csv" onchange="cargarArchivo(this)">
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="cargarArchivo(this)">
     </div>
   </div>
 
   <!-- UPLOAD ZONE (inicial) -->
   <div id="upload-zone" class="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="e=>{e.preventDefault();this.classList.add('drag')}" ondragleave="this.classList.remove('drag')" ondrop="e=>{e.preventDefault();this.classList.remove('drag');if(e.dataTransfer.files[0])procesarArchivo(e.dataTransfer.files[0])}">
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    <div class="upload-title">Arrastrá el CSV o <span>seleccioná un archivo</span></div>
-    <div class="upload-sub" style="margin-top:.25rem">Exportá desde Chess ERP → Acreencias. Formato semicolon-separado.</div>
+    <div class="upload-title">Arrastrá el Excel o <span>seleccioná un archivo</span></div>
+    <div class="upload-sub" style="margin-top:.25rem">Exportá desde Chess ERP → Acreencias. Acepta .xlsx, .xls o .csv.</div>
   </div>
 
   <!-- CONTENIDO (oculto hasta que hay datos) -->
@@ -263,33 +264,64 @@ function cargarArchivo(input) {
   if (input.files && input.files[0]) procesarArchivo(input.files[0]);
 }
 
+function parsearFila(cols) {
+  // Busca las columnas por posición (0-indexed): Acreencia;Razón Social;Comprobante;Fecha;Cuotas;Vence;Total;Pagado;Saldo;Vencido
+  const razonSocial = String(cols[1] || '').trim();
+  const comprobante = String(cols[2] || '').trim();
+  if (!razonSocial || !comprobante) return null;
+  // Las fechas pueden venir como string dd/mm/yyyy o como número serial de Excel
+  function toFecha(v) {
+    if (!v && v !== 0) return null;
+    if (typeof v === 'number') {
+      // Serial de Excel → JS Date
+      const d = XLSX.SSF.parse_date_code(v);
+      if (!d) return null;
+      return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    }
+    return parseFecha(String(v));
+  }
+  return {
+    acreencia: String(cols[0] || '').trim(),
+    razonSocial,
+    comprobante,
+    fecha: toFecha(cols[3]),
+    cuotas: String(cols[4] || '').trim(),
+    vence: toFecha(cols[5]),
+    total: typeof cols[6] === 'number' ? cols[6] : parseMonto(String(cols[6] || '')),
+    pagado: typeof cols[7] === 'number' ? cols[7] : parseMonto(String(cols[7] || '')),
+    saldo: typeof cols[8] === 'number' ? cols[8] : parseMonto(String(cols[8] || '')),
+    vencido: String(cols[9] || '').trim().toUpperCase() === 'SI',
+  };
+}
+
 function procesarArchivo(file) {
+  const esExcel = /\.(xlsx|xls)$/i.test(file.name);
   const reader = new FileReader();
+
   reader.onload = (e) => {
     try {
-      const texto = e.target.result;
-      const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
-      // detectar separador
-      const sep = lineas[0].includes(';') ? ';' : ',';
-      // skip header
-      const filas = lineas.slice(1);
       datos = [];
-      for (const fila of filas) {
-        const cols = fila.split(sep);
-        if (cols.length < 9) continue;
-        const acreencia = cols[0]?.trim();
-        const razonSocial = cols[1]?.trim();
-        const comprobante = cols[2]?.trim();
-        const fecha = parseFecha(cols[3]?.trim());
-        const cuotas = cols[4]?.trim();
-        const vence = parseFecha(cols[5]?.trim());
-        const total = parseMonto(cols[6]);
-        const pagado = parseMonto(cols[7]);
-        const saldo = parseMonto(cols[8]);
-        const vencido = cols[9]?.trim().toUpperCase() === 'SI';
-        if (!razonSocial || !comprobante) continue;
-        datos.push({ acreencia, razonSocial, comprobante, fecha, cuotas, vence, total, pagado, saldo, vencido });
+
+      if (esExcel) {
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const filas = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        // Saltar header (primera fila)
+        for (let i = 1; i < filas.length; i++) {
+          const fila = parsearFila(filas[i]);
+          if (fila) datos.push(fila);
+        }
+      } else {
+        // CSV
+        const texto = new TextDecoder('UTF-8').decode(e.target.result);
+        const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+        const sep = lineas[0].includes(';') ? ';' : ',';
+        for (let i = 1; i < lineas.length; i++) {
+          const fila = parsearFila(lineas[i].split(sep));
+          if (fila) datos.push(fila);
+        }
       }
+
       if (datos.length === 0) { alert('No se encontraron datos válidos en el archivo.'); return; }
       document.getElementById('chip-nombre').textContent = file.name;
       document.getElementById('chip-archivo').style.display = 'flex';
@@ -302,7 +334,8 @@ function procesarArchivo(file) {
       alert('Error al procesar el archivo: ' + err.message);
     }
   };
-  reader.readAsText(file, 'UTF-8');
+
+  reader.readAsArrayBuffer(file);
 }
 
 function calcularStats() {
