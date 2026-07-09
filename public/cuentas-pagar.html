@@ -77,37 +77,40 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 
 /* TABLA */
 .tabla-wrap{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
-.tabla-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;padding:.65rem 1rem;background:#F8F7F5;border-bottom:1px solid #DDDBD6;font-size:11px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em}
+.tabla-header{display:grid;grid-template-columns:1fr 130px 130px 130px 28px;padding:.6rem 1rem;background:#F8F7F5;border-bottom:1px solid #DDDBD6;font-size:10px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em}
 .proveedor-row{border-bottom:1px solid #EEECEA}
 .proveedor-row:last-child{border-bottom:none}
-.proveedor-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;padding:.8rem 1rem;cursor:pointer;transition:background .15s;align-items:center}
+.proveedor-header{display:grid;grid-template-columns:1fr 130px 130px 130px 28px;padding:.85rem 1rem;cursor:pointer;transition:background .15s;align-items:center;gap:0}
 .proveedor-header:hover{background:#F8F7F5}
-.proveedor-nombre{font-size:13px;font-weight:600;color:#18181A}
-.proveedor-nombre span{font-size:11px;font-weight:500;color:#9896A0;margin-left:6px}
-.col-num{font-size:12px;font-weight:500;color:#56555A;text-align:center}
-.col-importe{font-size:13px;font-weight:700;text-align:right}
-.col-vencido{font-size:13px;font-weight:700;text-align:right;color:#C53030}
-.col-saldo{font-size:13px;font-weight:700;text-align:right}
-.col-chevron{display:flex;justify-content:flex-end;align-items:center;color:#DDDBD6;transition:transform .2s}
-.col-chevron.open{transform:rotate(90deg);color:#1E6FD9}
+.prv-nombre{font-size:13px;font-weight:600;color:#18181A}
+.prv-meta{font-size:11px;color:#9896A0;margin-top:1px}
+.prv-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:4px}
+.prv-badge.vencido{background:#FAE0E0;color:#8A1F1F}
+.prv-badge.pv{background:#FEF3C7;color:#92400E}
+.col-r{font-size:13px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.col-danger{color:#C53030}
+.col-warn{color:#B45309}
+.col-total{color:#18181A}
+.col-muted{color:#9896A0;text-align:right}
+.col-chev{display:flex;justify-content:flex-end;align-items:center;color:#DDDBD6;transition:transform .2s}
+.col-chev.open{transform:rotate(90deg);color:#1E6FD9}
 .detalle{display:none;border-top:1px solid #EEECEA;background:#FAFAF9}
 .detalle.open{display:block}
-.detalle-tabla{width:100%;border-collapse:collapse}
-.detalle-tabla th{padding:.5rem .8rem;text-align:left;font-size:10px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #EEECEA;background:#F8F7F5}
-.detalle-tabla td{padding:.55rem .8rem;font-size:12px;color:#56555A;border-bottom:1px solid #F0EFED}
+.detalle-tabla{width:100%;border-collapse:collapse;table-layout:fixed}
+.detalle-tabla th{padding:.45rem .85rem;text-align:left;font-size:10px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #EEECEA;background:#F2F1EE}
+.detalle-tabla td{padding:.5rem .85rem;font-size:12px;color:#56555A;border-bottom:1px solid #F0EFED;font-variant-numeric:tabular-nums}
 .detalle-tabla tr:last-child td{border-bottom:none}
-.detalle-tabla tr:hover td{background:#F5F4F2}
-.text-right{text-align:right}
-.text-red{color:#C53030;font-weight:700}
-.text-neg{color:#075C41}
-.badge-tipo{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px}
+.detalle-tabla tr:hover td{background:#F0EFED}
+.td-r{text-align:right}
+.td-danger{color:#C53030;font-weight:600}
+.td-warn{color:#B45309}
+.td-ok{color:#075C41}
+.badge-tipo{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;margin-right:3px}
 .badge-FC{background:#DCE9FA;color:#1E6FD9}
 .badge-NC{background:#D4F2E8;color:#075C41}
 .badge-ND{background:#FEF3C7;color:#92400E}
 .badge-AD{background:#EDE5FA;color:#6B3FC8}
 .badge-ME,.badge-MI{background:#F2F1EE;color:#56555A}
-.badge-vencido{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#FAE0E0;color:#8A1F1F}
-.badge-ok{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#D4F2E8;color:#075C41}
 .empty-state{padding:3rem;text-align:center;color:#9896A0}
 .empty-state svg{margin-bottom:.75rem;opacity:.4}
 .empty-title{font-size:14px;font-weight:600;margin-bottom:.25rem}
@@ -241,10 +244,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     <div class="tabla-wrap">
       <div class="tabla-header">
         <div>Proveedor</div>
-        <div class="col-num" style="text-align:center">Comp.</div>
         <div style="text-align:right">Vencido</div>
         <div style="text-align:right">Por vencer</div>
-        <div style="text-align:right;color:#C53030">Saldo total</div>
+        <div style="text-align:right">Saldo total</div>
         <div></div>
       </div>
       <div id="tabla-body"></div>
@@ -289,6 +291,14 @@ function fmt(n) {
   const parts = abs.toFixed(2).split('.');
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return (neg ? '-' : '') + '$ ' + parts[0] + ',' + parts[1];
+}
+
+function fmtK(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  const s = Math.round(abs).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (neg ? '-' : '') + '$ ' + s;
 }
 
 function parseMonto(s) {
@@ -606,10 +616,16 @@ function renderTabla() {
     return;
   }
 
-  // Ordenar comprobantes dentro de cada grupo: vencidos primero, por días de atraso
   tbody.innerHTML = grupos.map(g => {
     const abierto = proveedoresAbiertos.has(g.razonSocial);
     const escapado = g.razonSocial.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+    let badge = '';
+    if (g.vencidoCount > 0) {
+      badge = `<div><span class="prv-badge vencido">▲ ${g.vencidoCount} vencido${g.vencidoCount>1?'s':''} · ${g.maxDiasAtraso}d atraso</span></div>`;
+    } else if (g.porVencerSaldo > 0 && g.minDiasParaVencer !== Infinity) {
+      badge = `<div><span class="prv-badge pv">● Vence en ${Math.abs(g.minDiasParaVencer)}d</span></div>`;
+    }
 
     const itemsOrdenados = [...g.items].sort((a, b) => {
       if (a.vencido && !b.vencido) return -1;
@@ -620,33 +636,42 @@ function renderTabla() {
 
     const detalleHtml = itemsOrdenados.map(d => {
       const dias = diasDesdeVence(d.vence);
-      const diasLabel = d.vencido
-        ? `<span style="color:#C53030;font-size:10px;font-weight:700">${dias}d atraso</span>`
-        : (d.vence ? `<span style="color:#B45309;font-size:10px">vence en ${Math.abs(dias)}d</span>` : '');
+      const atrasoCell = d.vencido
+        ? `<span class="td-danger">${dias}d atraso</span>`
+        : (d.vence ? `<span class="td-warn">en ${Math.abs(dias)}d</span>` : '—');
+      const saldoClass = d.saldo < 0 ? 'td-ok' : (d.vencido ? 'td-danger' : '');
       return `<tr>
-        <td>${tipoBadge(d.comprobante)} ${d.comprobante}</td>
-        <td>${d.fecha ? d.fecha.split('-').reverse().join('/') : '—'}</td>
-        <td>${d.vence ? d.vence.split('-').reverse().join('/') : '—'} ${diasLabel}</td>
-        <td class="text-right">${fmt(d.total)}</td>
-        <td class="text-right">${d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
-        <td class="text-right" style="font-weight:700;${d.saldo < 0 ? 'color:#075C41' : ''}">${fmt(d.saldo)}</td>
-        <td><span class="${d.vencido ? 'badge-vencido' : 'badge-ok'}">${d.vencido ? 'Vencido' : 'Al día'}</span></td>
+        <td>${tipoBadge(d.comprobante)}${d.comprobante}</td>
+        <td>${d.vence ? d.vence.split('-').reverse().join('/') : '—'}</td>
+        <td class="td-r">${atrasoCell}</td>
+        <td class="td-r">${fmt(d.total)}</td>
+        <td class="td-r ${saldoClass}">${fmt(d.saldo)}</td>
       </tr>`;
     }).join('');
 
     return `<div class="proveedor-row">
       <div class="proveedor-header" onclick="toggleProveedor('${escapado}')">
-        <div class="proveedor-nombre"><span style="color:#9896A0;font-size:11px;font-weight:600;margin-right:6px">#${g.items[0]?.acreencia || '—'}</span>${g.razonSocial}<span style="color:#9896A0;font-size:11px;margin-left:6px">${g.items.length} comp.</span>${urgenciaLabel(g)}</div>
-        <div class="col-num" style="text-align:right;font-size:13px;font-weight:700;color:#C53030">${g.vencidoSaldo > 0 ? fmt(g.vencidoSaldo) : '—'}</div>
-        <div class="col-importe" style="text-align:right;font-size:13px;font-weight:600;color:#B45309">${g.porVencerSaldo > 0 ? fmt(g.porVencerSaldo) : '—'}</div>
-        <div class="col-saldo">${fmt(g.saldo)}</div>
-        <div class="col-chevron ${abierto?'open':''}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <div>
+          <div class="prv-nombre"><span style="color:#9896A0;font-size:11px;font-weight:500;margin-right:5px">#${g.items[0]?.acreencia||'—'}</span>${g.razonSocial}</div>
+          <div class="prv-meta">${g.items.length} comprobantes</div>
+          ${badge}
+        </div>
+        <div class="col-r col-danger">${g.vencidoSaldo > 0 ? fmtK(g.vencidoSaldo) : '<span class="col-muted">—</span>'}</div>
+        <div class="col-r col-warn">${g.porVencerSaldo > 0 ? fmtK(g.porVencerSaldo) : '<span class="col-muted">—</span>'}</div>
+        <div class="col-r col-total">${fmtK(g.saldo)}</div>
+        <div class="col-chev ${abierto?'open':''}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
       </div>
       <div class="detalle ${abierto?'open':''}">
         <table class="detalle-tabla">
-          <thead><tr><th>Comprobante</th><th>Fecha</th><th>Vencimiento</th><th class="text-right">Total</th><th class="text-right">Pagado</th><th class="text-right">Saldo</th><th>Estado</th></tr></thead>
+          <thead><tr>
+            <th style="width:38%">Comprobante</th>
+            <th style="width:16%">Vencimiento</th>
+            <th style="width:14%;text-align:right">Atraso</th>
+            <th style="width:16%;text-align:right">Total</th>
+            <th style="width:16%;text-align:right">Saldo</th>
+          </tr></thead>
           <tbody>${detalleHtml}</tbody>
         </table>
       </div>
