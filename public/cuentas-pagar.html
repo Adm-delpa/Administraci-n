@@ -476,6 +476,8 @@ function cerrarModal() {
 
 async function subirDatos() {
   if (!datosParaSubir) return;
+  const filasASubir = datosParaSubir;
+  const archivoASubir = archivoNombre;
   cerrarModal();
   const prog = document.getElementById('upload-progress');
   prog.style.display = 'block';
@@ -484,8 +486,8 @@ async function subirDatos() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        filas: datosParaSubir,
-        archivo: archivoNombre,
+        filas: filasASubir,
+        archivo: archivoASubir,
         subido_por: userData.nombre || userData.username,
       })
     });
