@@ -636,7 +636,7 @@ function renderTabla() {
 
     return `<div class="proveedor-row">
       <div class="proveedor-header" onclick="toggleProveedor('${escapado}')">
-        <div class="proveedor-nombre">${g.razonSocial}<span style="color:#9896A0;font-size:11px;margin-left:6px">${g.items.length} comp.</span>${urgenciaLabel(g)}</div>
+        <div class="proveedor-nombre"><span style="color:#9896A0;font-size:11px;font-weight:600;margin-right:6px">#${g.items[0]?.acreencia || '—'}</span>${g.razonSocial}<span style="color:#9896A0;font-size:11px;margin-left:6px">${g.items.length} comp.</span>${urgenciaLabel(g)}</div>
         <div class="col-num" style="text-align:right;font-size:13px;font-weight:700;color:#C53030">${g.vencidoSaldo > 0 ? fmt(g.vencidoSaldo) : '—'}</div>
         <div class="col-importe" style="text-align:right;font-size:13px;font-weight:600;color:#B45309">${g.porVencerSaldo > 0 ? fmt(g.porVencerSaldo) : '—'}</div>
         <div class="col-saldo">${fmt(g.saldo)}</div>
