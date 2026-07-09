@@ -520,7 +520,7 @@ async function subirDatos() {
 function calcularStats() {
   const totalSaldo = datos.reduce((a,d) => a + d.saldo, 0);
   const vencidos = datos.filter(d => d.vencido);
-  const porVencer = datos.filter(d => !d.vencido && d.saldo > 0);
+  const porVencer = datos.filter(d => !d.vencido && d.saldo !== 0);
   const proveedores = new Set(datos.map(d => d.razonSocial)).size;
   document.getElementById('stat-total').textContent = fmt(Math.abs(totalSaldo));
   document.getElementById('stat-vencido').textContent = fmt(Math.abs(vencidos.reduce((a,d)=>a+d.saldo,0)));
@@ -598,9 +598,9 @@ function renderTabla() {
   const buscar = document.getElementById('buscar').value.toLowerCase().trim();
   let filas = datos.slice();
 
-  if (filtro === 'urgentes') filas = filas.filter(d => d.saldo > 0);
-  else if (filtro === 'vencido') filas = filas.filter(d => d.vencido && d.saldo > 0);
-  else if (filtro === 'por-vencer') filas = filas.filter(d => !d.vencido && d.saldo > 0);
+  if (filtro === 'urgentes') filas = filas.filter(d => d.saldo !== 0);
+  else if (filtro === 'vencido') filas = filas.filter(d => d.vencido);
+  else if (filtro === 'por-vencer') filas = filas.filter(d => !d.vencido && d.saldo !== 0);
 
   if (buscar) filas = filas.filter(d => d.razonSocial.toLowerCase().includes(buscar));
 
