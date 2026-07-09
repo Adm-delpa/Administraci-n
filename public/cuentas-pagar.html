@@ -391,31 +391,102 @@ function parsearFila(cols) {
   };
 }
 
+function encontrarHeaderRow(rows) {
+  // Busca la fila que tenga encabezados reconocibles
+  const palabrasClave = ['razon', 'razón', 'social', 'comprobante', 'saldo', 'vence', 'total', 'acreencia'];
+  for (let i = 0; i < Math.min(rows.length, 15); i++) {
+    const fila = rows[i].map(c => String(c || '').toLowerCase());
+    const hits = palabrasClave.filter(p => fila.some(c => c.includes(p)));
+    if (hits.length >= 3) return i;
+  }
+  return 0; // fallback: primera fila
+}
+
+function mapearColumnas(headerRow) {
+  // Devuelve índices para cada columna buscando por nombre
+  const h = headerRow.map(c => String(c || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
+  const idx = (palabras) => {
+    for (const p of palabras) {
+      const i = h.findIndex(c => c.includes(p));
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+  return {
+    acreencia: idx(['acreencia']),
+    razonSocial: idx(['razon social', 'razon_social', 'razon', 'proveedor', 'nombre']),
+    comprobante: idx(['comprobante', 'nro', 'numero', 'factura']),
+    fecha: idx(['fecha emision', 'fecha', 'emision']),
+    cuotas: idx(['cuotas', 'cuota']),
+    vence: idx(['vence', 'vencimiento', 'fecha venc']),
+    total: idx(['total', 'importe total', 'monto total']),
+    pagado: idx(['pagado', 'pago', 'abonado']),
+    saldo: idx(['saldo']),
+    vencido: idx(['vencido']),
+  };
+}
+
+function parsearFilaConMapeo(cols, map) {
+  const get = (i) => i >= 0 ? cols[i] : '';
+  const razonSocial = String(get(map.razonSocial) || '').trim();
+  const comprobante = String(get(map.comprobante) || '').trim();
+  if (!razonSocial || !comprobante) return null;
+  return {
+    acreencia: String(get(map.acreencia) || '').trim(),
+    razonSocial,
+    comprobante,
+    fecha: parseFecha(get(map.fecha)),
+    cuotas: String(get(map.cuotas) || '').trim(),
+    vence: parseFecha(get(map.vence)),
+    total: parseMonto(get(map.total)),
+    pagado: parseMonto(get(map.pagado)),
+    saldo: parseMonto(get(map.saldo)),
+    vencido: String(get(map.vencido) || '').trim().toUpperCase() === 'SI',
+  };
+}
+
 function procesarArchivo(file) {
   const esExcel = /\.(xlsx|xls)$/i.test(file.name);
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      let filas = [];
+      let allRows = [];
       if (esExcel) {
         const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-        for (let i = 1; i < rows.length; i++) {
-          const f = parsearFila(rows[i]);
-          if (f) filas.push(f);
-        }
+        allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
       } else {
         const texto = new TextDecoder('UTF-8').decode(e.target.result);
         const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
         const sep = lineas[0].includes(';') ? ';' : ',';
-        for (let i = 1; i < lineas.length; i++) {
-          const f = parsearFila(lineas[i].split(sep));
-          if (f) filas.push(f);
-        }
+        allRows = lineas.map(l => l.split(sep));
       }
 
-      if (filas.length === 0) { alert('No se encontraron datos válidos.'); return; }
+      const headerIdx = encontrarHeaderRow(allRows);
+      const map = mapearColumnas(allRows[headerIdx]);
+
+      // Si no encontró columnas clave, mostrar diagnóstico
+      if (map.razonSocial < 0 || map.comprobante < 0) {
+        const preview = allRows.slice(0, 6).map((r,i) =>
+          `Fila ${i+1}: [${r.map(c=>JSON.stringify(c)).join(', ')}]`
+        ).join('\n');
+        alert(`No se reconocieron las columnas del archivo.\n\nPrimeras filas del archivo:\n${preview}\n\nCompartí esta información para ajustar el parseo.`);
+        return;
+      }
+
+      let filas = [];
+      for (let i = headerIdx + 1; i < allRows.length; i++) {
+        const f = parsearFilaConMapeo(allRows[i], map);
+        if (f) filas.push(f);
+      }
+
+      if (filas.length === 0) {
+        const preview = allRows.slice(headerIdx, headerIdx + 4).map((r,i) =>
+          `Fila ${headerIdx+i+1}: [${r.slice(0,10).map(c=>JSON.stringify(c)).join(', ')}]`
+        ).join('\n');
+        alert(`Se encontró el encabezado en fila ${headerIdx+1} pero ninguna fila de datos fue válida.\n\nVista del encabezado y datos:\n${preview}`);
+        return;
+      }
 
       datosParaSubir = filas;
       archivoNombre = file.name;
