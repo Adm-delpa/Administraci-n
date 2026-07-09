@@ -402,9 +402,12 @@ function encontrarHeaderRow(rows) {
   return 0; // fallback: primera fila
 }
 
+function normalizar(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
 function mapearColumnas(headerRow) {
-  // Devuelve índices para cada columna buscando por nombre
-  const h = headerRow.map(c => String(c || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
+  const h = headerRow.map(c => normalizar(c));
   const idx = (palabras) => {
     for (const p of palabras) {
       const i = h.findIndex(c => c.includes(p));
@@ -414,12 +417,12 @@ function mapearColumnas(headerRow) {
   };
   return {
     acreencia: idx(['acreencia']),
-    razonSocial: idx(['razon social', 'razon_social', 'razon', 'proveedor', 'nombre']),
+    razonSocial: idx(['razon social', 'razon_social', 'razon social', 'razon', 'proveedor', 'nombre']),
     comprobante: idx(['comprobante', 'nro', 'numero', 'factura']),
-    fecha: idx(['fecha emision', 'fecha', 'emision']),
+    fecha: idx(['fecha emision', 'fecha emis', 'fecha']),
     cuotas: idx(['cuotas', 'cuota']),
-    vence: idx(['vence', 'vencimiento', 'fecha venc']),
-    total: idx(['total', 'importe total', 'monto total']),
+    vence: idx(['vencimiento', 'vence']),
+    total: idx(['total']),
     pagado: idx(['pagado', 'pago', 'abonado']),
     saldo: idx(['saldo']),
     vencido: idx(['vencido']),
