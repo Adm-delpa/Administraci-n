@@ -231,9 +231,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     <!-- CONTROLES -->
     <div class="controles">
       <input type="text" class="search-box" id="buscar" placeholder="Buscar proveedor..." oninput="renderTabla()">
-      <button class="filter-btn active" id="fil-todos" onclick="setFiltro('todos')">Todos</button>
+      <button class="filter-btn active" id="fil-urgentes" onclick="setFiltro('urgentes')">Pendientes</button>
       <button class="filter-btn" id="fil-vencido" onclick="setFiltro('vencido')">Solo vencidos</button>
       <button class="filter-btn" id="fil-por-vencer" onclick="setFiltro('por-vencer')">Por vencer</button>
+      <button class="filter-btn" id="fil-todos" onclick="setFiltro('todos')">Todos</button>
     </div>
 
     <!-- TABLA -->
@@ -241,9 +242,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <div class="tabla-header">
         <div>Proveedor</div>
         <div class="col-num" style="text-align:center">Comp.</div>
-        <div class="th-total" style="text-align:right">Total</div>
-        <div style="text-align:right">Pagado</div>
-        <div style="text-align:right;color:#C53030">Saldo</div>
+        <div style="text-align:right">Vencido</div>
+        <div style="text-align:right">Por vencer</div>
+        <div style="text-align:right;color:#C53030">Saldo total</div>
         <div></div>
       </div>
       <div id="tabla-body"></div>
@@ -275,7 +276,7 @@ rb.textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
 rb.className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
 
 let datos = [];
-let filtro = 'todos';
+let filtro = 'urgentes';
 let proveedoresAbiertos = new Set();
 let datosParaSubir = null;
 let archivoNombre = '';
@@ -522,23 +523,48 @@ function calcularStats() {
 
 function setFiltro(f) {
   filtro = f;
-  ['todos','vencido','por-vencer'].forEach(id =>
+  ['urgentes','vencido','por-vencer','todos'].forEach(id =>
     document.getElementById('fil-'+id).classList.toggle('active', id === f));
   renderTabla();
+}
+
+function diasDesdeVence(vence) {
+  if (!vence) return 0;
+  return Math.floor((new Date() - new Date(vence + 'T12:00:00')) / 86400000);
 }
 
 function agrupar(filas) {
   const mapa = {};
   for (const d of filas) {
     const k = d.razonSocial;
-    if (!mapa[k]) mapa[k] = { razonSocial: k, items: [], saldo: 0, pagado: 0, total: 0, vencidoSaldo: 0, vencidoCount: 0 };
+    if (!mapa[k]) mapa[k] = { razonSocial: k, items: [], saldo: 0, pagado: 0, total: 0, vencidoSaldo: 0, vencidoCount: 0, porVencerSaldo: 0, maxDiasAtraso: 0, minDiasParaVencer: Infinity };
     mapa[k].items.push(d);
     mapa[k].saldo += d.saldo;
     mapa[k].pagado += d.pagado;
     mapa[k].total += d.total;
-    if (d.vencido) { mapa[k].vencidoSaldo += d.saldo; mapa[k].vencidoCount++; }
+    if (d.vencido && d.saldo > 0) {
+      mapa[k].vencidoSaldo += d.saldo;
+      mapa[k].vencidoCount++;
+      const dias = diasDesdeVence(d.vence);
+      if (dias > mapa[k].maxDiasAtraso) mapa[k].maxDiasAtraso = dias;
+    } else if (!d.vencido && d.saldo > 0) {
+      mapa[k].porVencerSaldo += d.saldo;
+      const dias = diasDesdeVence(d.vence); // negativo = faltan días
+      if (dias < mapa[k].minDiasParaVencer) mapa[k].minDiasParaVencer = dias;
+    }
   }
-  return Object.values(mapa).sort((a,b) => b.saldo - a.saldo);
+  const grupos = Object.values(mapa);
+
+  // Ordenar por urgencia: primero los que tienen vencido (por días de atraso desc), luego por vencer (por días restantes asc)
+  grupos.sort((a, b) => {
+    const aVencido = a.vencidoSaldo > 0;
+    const bVencido = b.vencidoSaldo > 0;
+    if (aVencido && !bVencido) return -1;
+    if (!aVencido && bVencido) return 1;
+    if (aVencido && bVencido) return b.maxDiasAtraso - a.maxDiasAtraso;
+    return a.minDiasParaVencer - b.minDiasParaVencer;
+  });
+  return grupos;
 }
 
 function tipoBadge(comp) {
@@ -546,11 +572,26 @@ function tipoBadge(comp) {
   return `<span class="badge-tipo badge-${tipo}">${tipo}</span>`;
 }
 
+function urgenciaLabel(g) {
+  if (g.vencidoCount > 0) {
+    const d = g.maxDiasAtraso;
+    return `<span style="color:#C53030;font-size:11px;font-weight:700;margin-left:6px">⚠ ${g.vencidoCount} vencido${g.vencidoCount>1?'s':''} · ${d}d atraso</span>`;
+  }
+  if (g.minDiasParaVencer !== Infinity) {
+    const d = Math.abs(g.minDiasParaVencer);
+    return `<span style="color:#B45309;font-size:11px;font-weight:600;margin-left:6px">Vence en ${d}d</span>`;
+  }
+  return '';
+}
+
 function renderTabla() {
   const buscar = document.getElementById('buscar').value.toLowerCase().trim();
   let filas = datos.slice();
-  if (filtro === 'vencido') filas = filas.filter(d => d.vencido);
-  if (filtro === 'por-vencer') filas = filas.filter(d => !d.vencido && d.saldo > 0);
+
+  if (filtro === 'urgentes') filas = filas.filter(d => d.saldo > 0);
+  else if (filtro === 'vencido') filas = filas.filter(d => d.vencido && d.saldo > 0);
+  else if (filtro === 'por-vencer') filas = filas.filter(d => !d.vencido && d.saldo > 0);
+
   if (buscar) filas = filas.filter(d => d.razonSocial.toLowerCase().includes(buscar));
 
   const grupos = agrupar(filas);
@@ -565,25 +606,39 @@ function renderTabla() {
     return;
   }
 
+  // Ordenar comprobantes dentro de cada grupo: vencidos primero, por días de atraso
   tbody.innerHTML = grupos.map(g => {
     const abierto = proveedoresAbiertos.has(g.razonSocial);
     const escapado = g.razonSocial.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    const detalleHtml = g.items.map(d => `<tr>
-      <td>${tipoBadge(d.comprobante)} ${d.comprobante}</td>
-      <td>${d.fecha ? d.fecha.split('-').reverse().join('/') : '—'}</td>
-      <td>${d.vence ? d.vence.split('-').reverse().join('/') : '—'}</td>
-      <td class="text-right">${fmt(d.total)}</td>
-      <td class="text-right">${d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
-      <td class="text-right" style="font-weight:700;${d.saldo < 0 ? 'color:#075C41' : ''}">${fmt(d.saldo)}</td>
-      <td><span class="${d.vencido ? 'badge-vencido' : 'badge-ok'}">${d.vencido ? 'Vencido' : 'Al día'}</span></td>
-    </tr>`).join('');
+
+    const itemsOrdenados = [...g.items].sort((a, b) => {
+      if (a.vencido && !b.vencido) return -1;
+      if (!a.vencido && b.vencido) return 1;
+      if (a.vencido && b.vencido) return diasDesdeVence(b.vence) - diasDesdeVence(a.vence);
+      return diasDesdeVence(a.vence) - diasDesdeVence(b.vence);
+    });
+
+    const detalleHtml = itemsOrdenados.map(d => {
+      const dias = diasDesdeVence(d.vence);
+      const diasLabel = d.vencido
+        ? `<span style="color:#C53030;font-size:10px;font-weight:700">${dias}d atraso</span>`
+        : (d.vence ? `<span style="color:#B45309;font-size:10px">vence en ${Math.abs(dias)}d</span>` : '');
+      return `<tr>
+        <td>${tipoBadge(d.comprobante)} ${d.comprobante}</td>
+        <td>${d.fecha ? d.fecha.split('-').reverse().join('/') : '—'}</td>
+        <td>${d.vence ? d.vence.split('-').reverse().join('/') : '—'} ${diasLabel}</td>
+        <td class="text-right">${fmt(d.total)}</td>
+        <td class="text-right">${d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
+        <td class="text-right" style="font-weight:700;${d.saldo < 0 ? 'color:#075C41' : ''}">${fmt(d.saldo)}</td>
+        <td><span class="${d.vencido ? 'badge-vencido' : 'badge-ok'}">${d.vencido ? 'Vencido' : 'Al día'}</span></td>
+      </tr>`;
+    }).join('');
 
     return `<div class="proveedor-row">
       <div class="proveedor-header" onclick="toggleProveedor('${escapado}')">
-        <div class="proveedor-nombre">${g.razonSocial}<span>${g.items.length} comp.</span>${g.vencidoCount > 0 ? `<span style="color:#C53030;font-weight:700;font-size:11px;margin-left:4px">⚠ ${g.vencidoCount} vencido${g.vencidoCount>1?'s':''}</span>` : ''}</div>
-        <div class="col-num">${g.items.length}</div>
-        <div class="col-importe th-total" style="text-align:right;font-size:13px;font-weight:600;color:#56555A">${fmt(g.total)}</div>
-        <div class="col-importe" style="text-align:right;font-size:13px;font-weight:600;color:#56555A">${fmt(g.pagado)}</div>
+        <div class="proveedor-nombre">${g.razonSocial}<span style="color:#9896A0;font-size:11px;margin-left:6px">${g.items.length} comp.</span>${urgenciaLabel(g)}</div>
+        <div class="col-num" style="text-align:right;font-size:13px;font-weight:700;color:#C53030">${g.vencidoSaldo > 0 ? fmt(g.vencidoSaldo) : '—'}</div>
+        <div class="col-importe" style="text-align:right;font-size:13px;font-weight:600;color:#B45309">${g.porVencerSaldo > 0 ? fmt(g.porVencerSaldo) : '—'}</div>
         <div class="col-saldo">${fmt(g.saldo)}</div>
         <div class="col-chevron ${abierto?'open':''}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
