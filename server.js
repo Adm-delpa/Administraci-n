@@ -250,6 +250,28 @@ async function initDB() {
         completada BOOLEAN DEFAULT false,
         PRIMARY KEY (subtarea_id, fecha)
       );
+
+      CREATE TABLE IF NOT EXISTS cuentas_pagar (
+        id SERIAL PRIMARY KEY,
+        acreencia VARCHAR(50),
+        razon_social VARCHAR(200) NOT NULL,
+        comprobante VARCHAR(100) NOT NULL,
+        fecha DATE,
+        cuotas VARCHAR(50),
+        vence DATE,
+        total NUMERIC(14,2) DEFAULT 0,
+        pagado NUMERIC(14,2) DEFAULT 0,
+        saldo NUMERIC(14,2) DEFAULT 0,
+        vencido BOOLEAN DEFAULT false
+      );
+
+      CREATE TABLE IF NOT EXISTS cuentas_pagar_sync (
+        id SERIAL PRIMARY KEY,
+        archivo VARCHAR(200),
+        filas INTEGER,
+        subido_por VARCHAR(100),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
     `);
 
     // Crear usuarios por defecto si no existen
@@ -1059,6 +1081,44 @@ app.put('/api/tareas/subtareas/:subtarea_id/estado', async (req, res) => {
     `, [subtarea_id, fecha, completada !== false]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error' }); }
+});
+
+// ── CUENTAS POR PAGAR ──
+app.post('/api/cuentas-pagar/sync', async (req, res) => {
+  const { filas, archivo, subido_por } = req.body;
+  if (!filas || !Array.isArray(filas) || filas.length === 0) return res.status(400).json({ error: 'Sin datos' });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM cuentas_pagar');
+    for (const f of filas) {
+      await client.query(
+        `INSERT INTO cuentas_pagar (acreencia,razon_social,comprobante,fecha,cuotas,vence,total,pagado,saldo,vencido)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [f.acreencia||null, f.razonSocial, f.comprobante, f.fecha||null, f.cuotas||null, f.vence||null,
+         f.total||0, f.pagado||0, f.saldo||0, f.vencido||false]
+      );
+    }
+    await client.query(
+      'INSERT INTO cuentas_pagar_sync (archivo, filas, subido_por) VALUES ($1,$2,$3)',
+      [archivo||'desconocido', filas.length, subido_por||'sistema']
+    );
+    await client.query('COMMIT');
+    res.json({ ok: true, filas: filas.length });
+  } catch(e) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: e.message });
+  } finally { client.release(); }
+});
+
+app.get('/api/cuentas-pagar', async (req, res) => {
+  try {
+    const [datos, sync] = await Promise.all([
+      pool.query('SELECT * FROM cuentas_pagar ORDER BY razon_social, fecha'),
+      pool.query('SELECT * FROM cuentas_pagar_sync ORDER BY created_at DESC LIMIT 1')
+    ]);
+    res.json({ filas: datos.rows, ultimaSync: sync.rows[0] || null });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // Servir páginas

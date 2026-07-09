@@ -34,23 +34,37 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
 .page-sub{font-size:13px;color:#9896A0;font-weight:500;margin-top:.2rem}
 
+.btn-primary{padding:.55rem 1.1rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+.btn-primary:hover{background:#0D4FA0}
+.btn-primary:disabled{background:#9896A0;cursor:default}
+.btn-secondary{padding:.55rem 1rem;background:#F2F1EE;color:#56555A;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
+.btn-secondary:hover{border-color:#1E6FD9;color:#1E6FD9}
+
 /* UPLOAD ZONE */
 .upload-zone{background:#fff;border:2px dashed #DDDBD6;border-radius:12px;padding:2.5rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1.5rem}
 .upload-zone:hover,.upload-zone.drag{border-color:#1E6FD9;background:#F5F9FF}
 .upload-zone svg{color:#9896A0;margin-bottom:.75rem}
 .upload-title{font-size:14px;font-weight:600;color:#18181A;margin-bottom:.25rem}
 .upload-sub{font-size:12px;color:#9896A0}
-.upload-sub span{color:#1E6FD9;font-weight:600;cursor:pointer}
-.upload-sub span:hover{text-decoration:underline}
-#file-input{display:none}
+.upload-sub span{color:#1E6FD9;font-weight:600}
+
+/* LOADING */
+.loading-wrap{padding:3rem;text-align:center;color:#9896A0}
+.spinner{width:28px;height:28px;border:3px solid #DDDBD6;border-top-color:#1E6FD9;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto .75rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SYNC INFO */
+.sync-bar{background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;gap:1rem;flex-wrap:wrap}
+.sync-info{font-size:12px;color:#56555A;display:flex;align-items:center;gap:6px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;flex-shrink:0}
+.sync-dot.stale{background:#F59E0B}
 
 /* STATS */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
 .stat-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.9rem 1.1rem}
 .stat-label{font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem}
 .stat-val{font-size:18px;font-weight:700;color:#18181A}
 .stat-val.red{color:#C53030}
-.stat-val.green{color:#075C41}
 .stat-sub{font-size:11px;color:#9896A0;margin-top:2px;font-weight:500}
 
 /* CONTROLES */
@@ -61,23 +75,21 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .filter-btn:hover{border-color:#1E6FD9;color:#1E6FD9}
 .filter-btn.active{background:#1E6FD9;border-color:#1E6FD9;color:#fff}
 
-/* TABLA PROVEEDORES */
+/* TABLA */
 .tabla-wrap{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
-.tabla-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;gap:0;padding:.65rem 1rem;background:#F8F7F5;border-bottom:1px solid #DDDBD6;font-size:11px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em}
+.tabla-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;padding:.65rem 1rem;background:#F8F7F5;border-bottom:1px solid #DDDBD6;font-size:11px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em}
 .proveedor-row{border-bottom:1px solid #EEECEA}
 .proveedor-row:last-child{border-bottom:none}
-.proveedor-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;gap:0;padding:.8rem 1rem;cursor:pointer;transition:background .15s;align-items:center}
+.proveedor-header{display:grid;grid-template-columns:2fr 80px 120px 120px 120px 40px;padding:.8rem 1rem;cursor:pointer;transition:background .15s;align-items:center}
 .proveedor-header:hover{background:#F8F7F5}
 .proveedor-nombre{font-size:13px;font-weight:600;color:#18181A}
 .proveedor-nombre span{font-size:11px;font-weight:500;color:#9896A0;margin-left:6px}
 .col-num{font-size:12px;font-weight:500;color:#56555A;text-align:center}
 .col-importe{font-size:13px;font-weight:700;text-align:right}
 .col-vencido{font-size:13px;font-weight:700;text-align:right;color:#C53030}
-.col-saldo{font-size:13px;font-weight:700;text-align:right;color:#18181A}
+.col-saldo{font-size:13px;font-weight:700;text-align:right}
 .col-chevron{display:flex;justify-content:flex-end;align-items:center;color:#DDDBD6;transition:transform .2s}
 .col-chevron.open{transform:rotate(90deg);color:#1E6FD9}
-
-/* DETALLE */
 .detalle{display:none;border-top:1px solid #EEECEA;background:#FAFAF9}
 .detalle.open{display:block}
 .detalle-tabla{width:100%;border-collapse:collapse}
@@ -85,6 +97,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .detalle-tabla td{padding:.55rem .8rem;font-size:12px;color:#56555A;border-bottom:1px solid #F0EFED}
 .detalle-tabla tr:last-child td{border-bottom:none}
 .detalle-tabla tr:hover td{background:#F5F4F2}
+.text-right{text-align:right}
+.text-red{color:#C53030;font-weight:700}
+.text-neg{color:#075C41}
 .badge-tipo{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px}
 .badge-FC{background:#DCE9FA;color:#1E6FD9}
 .badge-NC{background:#D4F2E8;color:#075C41}
@@ -93,23 +108,22 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .badge-ME,.badge-MI{background:#F2F1EE;color:#56555A}
 .badge-vencido{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#FAE0E0;color:#8A1F1F}
 .badge-ok{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;background:#D4F2E8;color:#075C41}
-.text-right{text-align:right}
-.text-red{color:#C53030;font-weight:700}
-.text-neg{color:#075C41}
-
-/* EMPTY / ERROR */
 .empty-state{padding:3rem;text-align:center;color:#9896A0}
 .empty-state svg{margin-bottom:.75rem;opacity:.4}
 .empty-title{font-size:14px;font-weight:600;margin-bottom:.25rem}
 .empty-sub{font-size:12px}
 
-.chip-file{display:flex;align-items:center;gap:8px;background:#F2F1EE;border:1px solid #DDDBD6;border-radius:8px;padding:.5rem .85rem;font-size:12px;color:#56555A;font-weight:500}
-.chip-file strong{color:#18181A}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.75rem;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:.25rem}
+.modal-sub{font-size:12px;color:#9896A0;margin-bottom:1.5rem}
 
 @media(max-width:700px){
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .tabla-header,.proveedor-header{grid-template-columns:1fr 80px 100px 30px}
-  .th-comp,.th-total,.col-num,.col-importe{display:none}
+  .th-total,.col-importe{display:none}
   .topbar{padding:.75rem 1rem}
 }
 </style>
@@ -146,29 +160,49 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
   <div class="page-header">
     <div>
       <div class="page-title">Cuentas por Pagar</div>
-      <div class="page-sub" id="sub-fecha">Cargá el reporte exportado desde Chess para ver el estado actualizado.</div>
+      <div class="page-sub" id="sub-fecha">Cargando datos...</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div id="chip-archivo" style="display:none" class="chip-file">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <strong id="chip-nombre">—</strong>
-      </div>
-      <button id="btn-cargar" onclick="document.getElementById('file-input').click()" style="padding:.55rem 1.1rem;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">
-        Cargar CSV
+      <button class="btn-secondary" onclick="document.getElementById('file-input').click()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Actualizar desde Excel
       </button>
-      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" onchange="cargarArchivo(this)">
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="cargarArchivo(this)">
     </div>
   </div>
 
-  <!-- UPLOAD ZONE (inicial) -->
-  <div id="upload-zone" class="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="e=>{e.preventDefault();this.classList.add('drag')}" ondragleave="this.classList.remove('drag')" ondrop="e=>{e.preventDefault();this.classList.remove('drag');if(e.dataTransfer.files[0])procesarArchivo(e.dataTransfer.files[0])}">
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    <div class="upload-title">Arrastrá el Excel o <span>seleccioná un archivo</span></div>
-    <div class="upload-sub" style="margin-top:.25rem">Exportá desde Chess ERP → Acreencias. Acepta .xlsx, .xls o .csv.</div>
+  <!-- LOADING -->
+  <div id="zona-loading" class="loading-wrap">
+    <div class="spinner"></div>
+    <div>Cargando datos...</div>
   </div>
 
-  <!-- CONTENIDO (oculto hasta que hay datos) -->
+  <!-- SIN DATOS -->
+  <div id="zona-vacia" style="display:none">
+    <div id="upload-zone" class="upload-zone"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');if(event.dataTransfer.files[0])procesarArchivo(event.dataTransfer.files[0])">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="upload-title">Todavía no hay datos cargados</div>
+      <div class="upload-sub">Exportá desde Chess ERP → Acreencias y <span>subí el Excel aquí</span>.</div>
+    </div>
+  </div>
+
+  <!-- CONTENIDO -->
   <div id="contenido" style="display:none">
+
+    <!-- BARRA DE SYNC -->
+    <div class="sync-bar">
+      <div class="sync-info">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-texto">—</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="upload-progress" style="font-size:12px;color:#1E6FD9;display:none">Subiendo...</span>
+      </div>
+    </div>
 
     <!-- STATS -->
     <div class="stats-row">
@@ -216,25 +250,37 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     </div>
 
   </div>
+</div>
 
+<!-- MODAL CONFIRMACIÓN -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-title">Actualizar datos</div>
+    <div class="modal-sub" id="modal-sub-texto">—</div>
+    <div style="display:flex;gap:8px;margin-top:1rem">
+      <button class="btn-secondary" style="flex:1" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" style="flex:2;justify-content:center" id="btn-confirmar-upload">Sí, actualizar</button>
+    </div>
+  </div>
 </div>
 
 <script>
 const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!userData) { window.location.href = '/'; }
 
-const av = document.getElementById('user-avatar');
-const nb = document.getElementById('user-nombre');
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
 const rb = document.getElementById('rol-badge');
-nb.textContent = userData.nombre || userData.username;
-av.textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
 rb.textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
 rb.className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
 
 let datos = [];
 let filtro = 'todos';
 let proveedoresAbiertos = new Set();
+let datosParaSubir = null;
+let archivoNombre = '';
 
+// ── FORMATO ──
 function fmt(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   const neg = n < 0;
@@ -245,51 +291,102 @@ function fmt(n) {
 }
 
 function parseMonto(s) {
-  if (!s || s.trim() === '') return 0;
-  s = s.trim().replace(/\$/g, '').trim();
-  if (s.includes(',')) {
-    s = s.replace(/\./g, '').replace(',', '.');
-  }
+  if (!s && s !== 0) return 0;
+  if (typeof s === 'number') return s;
+  s = String(s).trim().replace(/\$/g, '').trim();
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
   return parseFloat(s) || 0;
 }
 
-function parseFecha(s) {
-  if (!s || s.trim() === '') return null;
-  const p = s.trim().split('/');
+function parseFecha(v) {
+  if (!v && v !== 0) return null;
+  if (typeof v === 'number') {
+    const d = XLSX.SSF.parse_date_code(v);
+    if (!d) return null;
+    return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const s = String(v).trim();
+  const p = s.split('/');
   if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
   return null;
 }
 
+function tiempoAtras(isoStr) {
+  const d = new Date(isoStr);
+  const diff = Math.floor((Date.now() - d) / 60000);
+  if (diff < 2) return 'hace un momento';
+  if (diff < 60) return `hace ${diff} min`;
+  const h = Math.floor(diff / 60);
+  if (h < 24) return `hace ${h}h`;
+  const days = Math.floor(h / 24);
+  return `hace ${days} día${days > 1 ? 's' : ''}`;
+}
+
+// ── CARGA DESDE API ──
+async function cargarDesdeBD() {
+  try {
+    const res = await fetch('/api/cuentas-pagar');
+    const json = await res.json();
+    document.getElementById('zona-loading').style.display = 'none';
+
+    if (!json.filas || json.filas.length === 0) {
+      document.getElementById('zona-vacia').style.display = 'block';
+      document.getElementById('sub-fecha').textContent = 'Todavía no hay datos cargados.';
+      return;
+    }
+
+    datos = json.filas.map(f => ({
+      acreencia: f.acreencia,
+      razonSocial: f.razon_social,
+      comprobante: f.comprobante,
+      fecha: f.fecha ? f.fecha.slice(0,10) : null,
+      cuotas: f.cuotas,
+      vence: f.vence ? f.vence.slice(0,10) : null,
+      total: parseFloat(f.total) || 0,
+      pagado: parseFloat(f.pagado) || 0,
+      saldo: parseFloat(f.saldo) || 0,
+      vencido: f.vencido,
+    }));
+
+    if (json.ultimaSync) {
+      const sync = json.ultimaSync;
+      const cuando = tiempoAtras(sync.created_at);
+      const stale = (Date.now() - new Date(sync.created_at)) > 7 * 24 * 3600000;
+      document.getElementById('sync-dot').className = 'sync-dot' + (stale ? ' stale' : '');
+      document.getElementById('sync-texto').textContent =
+        `Última actualización: ${cuando} · ${sync.filas} comprobantes · por ${sync.subido_por}`;
+      document.getElementById('sub-fecha').textContent =
+        `Datos actualizados ${cuando}`;
+    }
+
+    document.getElementById('contenido').style.display = 'block';
+    calcularStats();
+    renderTabla();
+  } catch(e) {
+    document.getElementById('zona-loading').innerHTML = `<div style="color:#C53030">Error al cargar datos: ${e.message}</div>`;
+  }
+}
+
+// ── UPLOAD EXCEL ──
 function cargarArchivo(input) {
   if (input.files && input.files[0]) procesarArchivo(input.files[0]);
+  input.value = '';
 }
 
 function parsearFila(cols) {
-  // Busca las columnas por posición (0-indexed): Acreencia;Razón Social;Comprobante;Fecha;Cuotas;Vence;Total;Pagado;Saldo;Vencido
   const razonSocial = String(cols[1] || '').trim();
   const comprobante = String(cols[2] || '').trim();
   if (!razonSocial || !comprobante) return null;
-  // Las fechas pueden venir como string dd/mm/yyyy o como número serial de Excel
-  function toFecha(v) {
-    if (!v && v !== 0) return null;
-    if (typeof v === 'number') {
-      // Serial de Excel → JS Date
-      const d = XLSX.SSF.parse_date_code(v);
-      if (!d) return null;
-      return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
-    }
-    return parseFecha(String(v));
-  }
   return {
     acreencia: String(cols[0] || '').trim(),
     razonSocial,
     comprobante,
-    fecha: toFecha(cols[3]),
+    fecha: parseFecha(cols[3]),
     cuotas: String(cols[4] || '').trim(),
-    vence: toFecha(cols[5]),
-    total: typeof cols[6] === 'number' ? cols[6] : parseMonto(String(cols[6] || '')),
-    pagado: typeof cols[7] === 'number' ? cols[7] : parseMonto(String(cols[7] || '')),
-    saldo: typeof cols[8] === 'number' ? cols[8] : parseMonto(String(cols[8] || '')),
+    vence: parseFecha(cols[5]),
+    total: parseMonto(cols[6]),
+    pagado: parseMonto(cols[7]),
+    saldo: parseMonto(cols[8]),
     vencido: String(cols[9] || '').trim().toUpperCase() === 'SI',
   };
 }
@@ -297,53 +394,82 @@ function parsearFila(cols) {
 function procesarArchivo(file) {
   const esExcel = /\.(xlsx|xls)$/i.test(file.name);
   const reader = new FileReader();
-
   reader.onload = (e) => {
     try {
-      datos = [];
-
+      let filas = [];
       if (esExcel) {
         const wb = XLSX.read(e.target.result, { type: 'array', cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const filas = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-        // Saltar header (primera fila)
-        for (let i = 1; i < filas.length; i++) {
-          const fila = parsearFila(filas[i]);
-          if (fila) datos.push(fila);
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        for (let i = 1; i < rows.length; i++) {
+          const f = parsearFila(rows[i]);
+          if (f) filas.push(f);
         }
       } else {
-        // CSV
         const texto = new TextDecoder('UTF-8').decode(e.target.result);
         const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
         const sep = lineas[0].includes(';') ? ';' : ',';
         for (let i = 1; i < lineas.length; i++) {
-          const fila = parsearFila(lineas[i].split(sep));
-          if (fila) datos.push(fila);
+          const f = parsearFila(lineas[i].split(sep));
+          if (f) filas.push(f);
         }
       }
 
-      if (datos.length === 0) { alert('No se encontraron datos válidos en el archivo.'); return; }
-      document.getElementById('chip-nombre').textContent = file.name;
-      document.getElementById('chip-archivo').style.display = 'flex';
-      document.getElementById('upload-zone').style.display = 'none';
-      document.getElementById('contenido').style.display = 'block';
-      document.getElementById('sub-fecha').textContent = `Archivo: ${file.name} · ${datos.length} comprobantes`;
-      calcularStats();
-      renderTabla();
+      if (filas.length === 0) { alert('No se encontraron datos válidos.'); return; }
+
+      datosParaSubir = filas;
+      archivoNombre = file.name;
+      document.getElementById('modal-sub-texto').textContent =
+        `Se van a reemplazar los datos actuales con ${filas.length} comprobantes del archivo "${file.name}". ¿Continuás?`;
+      document.getElementById('modal-confirm').classList.add('show');
+      document.getElementById('btn-confirmar-upload').onclick = subirDatos;
     } catch(err) {
       alert('Error al procesar el archivo: ' + err.message);
     }
   };
-
   reader.readAsArrayBuffer(file);
 }
 
+function cerrarModal() {
+  document.getElementById('modal-confirm').classList.remove('show');
+  datosParaSubir = null;
+}
+
+async function subirDatos() {
+  if (!datosParaSubir) return;
+  cerrarModal();
+  const prog = document.getElementById('upload-progress');
+  prog.style.display = 'block';
+  try {
+    const res = await fetch('/api/cuentas-pagar/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filas: datosParaSubir,
+        archivo: archivoNombre,
+        subido_por: userData.nombre || userData.username,
+      })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error del servidor');
+    prog.style.display = 'none';
+    // Recargar desde BD
+    document.getElementById('contenido').style.display = 'none';
+    document.getElementById('zona-loading').style.display = 'block';
+    document.getElementById('zona-loading').innerHTML = '<div class="spinner"></div><div>Actualizando...</div>';
+    await cargarDesdeBD();
+  } catch(e) {
+    prog.style.display = 'none';
+    alert('Error al subir los datos: ' + e.message);
+  }
+}
+
+// ── TABLA ──
 function calcularStats() {
   const totalSaldo = datos.reduce((a,d) => a + d.saldo, 0);
   const vencidos = datos.filter(d => d.vencido);
   const porVencer = datos.filter(d => !d.vencido && d.saldo > 0);
   const proveedores = new Set(datos.map(d => d.razonSocial)).size;
-
   document.getElementById('stat-total').textContent = fmt(totalSaldo);
   document.getElementById('stat-vencido').textContent = fmt(vencidos.reduce((a,d)=>a+d.saldo,0));
   document.getElementById('stat-vencido-count').textContent = `${vencidos.length} comprobantes`;
@@ -355,9 +481,8 @@ function calcularStats() {
 
 function setFiltro(f) {
   filtro = f;
-  ['todos','vencido','por-vencer'].forEach(id => {
-    document.getElementById('fil-'+id).classList.toggle('active', id === f);
-  });
+  ['todos','vencido','por-vencer'].forEach(id =>
+    document.getElementById('fil-'+id).classList.toggle('active', id === f));
   renderTabla();
 }
 
@@ -392,7 +517,7 @@ function renderTabla() {
 
   if (grupos.length === 0) {
     tbody.innerHTML = `<div class="empty-state">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <div class="empty-title">Sin resultados</div>
       <div class="empty-sub">Probá con otro filtro o búsqueda.</div>
     </div>`;
@@ -401,21 +526,19 @@ function renderTabla() {
 
   tbody.innerHTML = grupos.map(g => {
     const abierto = proveedoresAbiertos.has(g.razonSocial);
-    const detalleHtml = g.items.map(d => {
-      const negativo = d.saldo < 0;
-      return `<tr>
-        <td>${tipoBadge(d.comprobante)} ${d.comprobante}</td>
-        <td>${d.fecha ? d.fecha.split('-').reverse().join('/') : '—'}</td>
-        <td>${d.vence ? d.vence.split('-').reverse().join('/') : '—'}</td>
-        <td class="text-right">${fmt(d.total)}</td>
-        <td class="text-right">${d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
-        <td class="text-right ${negativo ? 'text-neg' : (d.saldo > 0 ? '' : '')}" style="font-weight:700">${fmt(d.saldo)}</td>
-        <td><span class="${d.vencido ? 'badge-vencido' : 'badge-ok'}">${d.vencido ? 'Vencido' : 'Al día'}</span></td>
-      </tr>`;
-    }).join('');
+    const escapado = g.razonSocial.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const detalleHtml = g.items.map(d => `<tr>
+      <td>${tipoBadge(d.comprobante)} ${d.comprobante}</td>
+      <td>${d.fecha ? d.fecha.split('-').reverse().join('/') : '—'}</td>
+      <td>${d.vence ? d.vence.split('-').reverse().join('/') : '—'}</td>
+      <td class="text-right">${fmt(d.total)}</td>
+      <td class="text-right">${d.pagado > 0 ? fmt(d.pagado) : '—'}</td>
+      <td class="text-right" style="font-weight:700;${d.saldo < 0 ? 'color:#075C41' : ''}">${fmt(d.saldo)}</td>
+      <td><span class="${d.vencido ? 'badge-vencido' : 'badge-ok'}">${d.vencido ? 'Vencido' : 'Al día'}</span></td>
+    </tr>`).join('');
 
-    return `<div class="proveedor-row" id="row-${CSS.escape(g.razonSocial)}">
-      <div class="proveedor-header" onclick="toggleProveedor('${g.razonSocial.replace(/'/g,"\\'")}')">
+    return `<div class="proveedor-row">
+      <div class="proveedor-header" onclick="toggleProveedor('${escapado}')">
         <div class="proveedor-nombre">${g.razonSocial}<span>${g.items.length} comp.</span>${g.vencidoCount > 0 ? `<span style="color:#C53030;font-weight:700;font-size:11px;margin-left:4px">⚠ ${g.vencidoCount} vencido${g.vencidoCount>1?'s':''}</span>` : ''}</div>
         <div class="col-num">${g.items.length}</div>
         <div class="col-importe th-total" style="text-align:right;font-size:13px;font-weight:600;color:#56555A">${fmt(g.total)}</div>
@@ -427,11 +550,7 @@ function renderTabla() {
       </div>
       <div class="detalle ${abierto?'open':''}">
         <table class="detalle-tabla">
-          <thead><tr>
-            <th>Comprobante</th><th>Fecha</th><th>Vencimiento</th>
-            <th class="text-right">Total</th><th class="text-right">Pagado</th>
-            <th class="text-right">Saldo</th><th>Estado</th>
-          </tr></thead>
+          <thead><tr><th>Comprobante</th><th>Fecha</th><th>Vencimiento</th><th class="text-right">Total</th><th class="text-right">Pagado</th><th class="text-right">Saldo</th><th>Estado</th></tr></thead>
           <tbody>${detalleHtml}</tbody>
         </table>
       </div>
@@ -440,13 +559,13 @@ function renderTabla() {
 }
 
 function toggleProveedor(nombre) {
-  if (proveedoresAbiertos.has(nombre)) {
-    proveedoresAbiertos.delete(nombre);
-  } else {
-    proveedoresAbiertos.add(nombre);
-  }
+  if (proveedoresAbiertos.has(nombre)) proveedoresAbiertos.delete(nombre);
+  else proveedoresAbiertos.add(nombre);
   renderTabla();
 }
+
+// Iniciar
+cargarDesdeBD();
 </script>
 </body>
 </html>
