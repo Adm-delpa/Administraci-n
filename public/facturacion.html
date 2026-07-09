@@ -105,108 +105,82 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
   </div>
 
   <div class="prov-tabs">
-    <button class="prov-tab active">EDEA</button>
-    <button class="prov-tab pronto" disabled>TVC5 — Próximamente</button>
+    <button class="prov-tab active" onclick="setTab('edea',this)">EDEA</button>
+    <button class="prov-tab" onclick="setTab('cesop',this)">CESOP Gas</button>
   </div>
 
-  <!-- Importe total -->
-  <div class="importe-total-wrap">
-    <div class="importe-total-label">Importe total<br>de factura</div>
-    <span style="font-size:22px;font-weight:700;color:#93C5FD;margin-right:2px">$</span>
-    <input class="importe-total-input" id="edea-total" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-  </div>
-
-  <div class="calc-layout">
-    <!-- Conceptos -->
-    <div class="card">
-      <div class="card-title">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Conceptos de la factura EDEA
+  <!-- ===== EDEA ===== -->
+  <div id="tab-edea">
+    <div class="importe-total-wrap">
+      <div class="importe-total-label">Importe total<br>de factura</div>
+      <span style="font-size:22px;font-weight:700;color:#93C5FD;margin-right:2px">$</span>
+      <input class="importe-total-input" id="edea-total" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
+    </div>
+    <div class="calc-layout">
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Conceptos de la factura EDEA
+        </div>
+        <div class="concepto-row"><span class="concepto-label">SUBTOTAL COSTO ENERGIA</span><input class="concepto-input" id="e-neto" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">PERC. IIBB DN B1 2004</span><input class="concepto-input" id="e-iibb" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">IVA RESP. INSCRIPTO</span><input class="concepto-input" id="e-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">IVA PERCEPCION R.G.3337</span><input class="concepto-input" id="e-perc-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="group-sep">Leyes → suman a Impuestos Internos</div>
+        <div class="concepto-row"><span class="concepto-label">LEY 10740 (1)</span><input class="concepto-input" id="e-ley1" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 10740 (2)</span><input class="concepto-input" id="e-ley2" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 11769 ART 74</span><input class="concepto-input" id="e-ley3" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 11769 ART 75</span><input class="concepto-input" id="e-ley4" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 11769 FDO. COMP</span><input class="concepto-input" id="e-ley5" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY PROV. 7290</span><input class="concepto-input" id="e-ley6" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
       </div>
-
-      <div class="concepto-row">
-        <span class="concepto-label">SUBTOTAL COSTO ENERGIA</span>
-        <input class="concepto-input" id="e-neto" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">PERC. IIBB DN B1 2004</span>
-        <input class="concepto-input" id="e-iibb" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">IVA RESP. INSCRIPTO</span>
-        <input class="concepto-input" id="e-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">IVA PERCEPCION R.G.3337</span>
-        <input class="concepto-input" id="e-perc-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-
-      <div class="group-sep">Leyes → suman a Impuestos Internos</div>
-
-      <div class="concepto-row">
-        <span class="concepto-label">LEY 10740 (1)</span>
-        <input class="concepto-input" id="e-ley1" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">LEY 10740 (2)</span>
-        <input class="concepto-input" id="e-ley2" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">LEY 11769 ART 74</span>
-        <input class="concepto-input" id="e-ley3" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">LEY 11769 ART 75</span>
-        <input class="concepto-input" id="e-ley4" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">LEY 11769 FDO. COMP</span>
-        <input class="concepto-input" id="e-ley5" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
-      </div>
-      <div class="concepto-row">
-        <span class="concepto-label">LEY PROV. 7290</span>
-        <input class="concepto-input" id="e-ley6" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Resultado para cargar en Chess
+        </div>
+        <div class="resultado-row"><span class="resultado-label">NETO</span><span class="resultado-valor" id="r-neto">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IVA 27%</span><span class="resultado-valor" id="r-iva">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">PERC. IVA</span><span class="resultado-valor" id="r-perc-iva">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IMPUESTOS INTERNOS</span><span class="resultado-valor" id="r-imp-int">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">PERC. IIBB</span><span class="resultado-valor" id="r-iibb">—</span></div>
+        <hr class="resultado-divider">
+        <div class="resultado-total-row"><span class="resultado-total-label">TOTAL CALCULADO</span><span class="resultado-total-valor" id="r-total">—</span></div>
+        <div class="comprobacion neutral" id="comprobacion"><span class="comprobacion-icon">📋</span><div>Ingresá el importe total y los conceptos para verificar</div></div>
       </div>
     </div>
+  </div>
 
-    <!-- Resultado -->
-    <div class="card">
-      <div class="card-title">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Resultado para cargar en Chess
+  <!-- ===== CESOP GAS ===== -->
+  <div id="tab-cesop" style="display:none">
+    <div class="importe-total-wrap">
+      <div class="importe-total-label">Importe total<br>de factura</div>
+      <span style="font-size:22px;font-weight:700;color:#93C5FD;margin-right:2px">$</span>
+      <input class="importe-total-input" id="cesop-total" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()">
+    </div>
+    <div class="calc-layout">
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Conceptos de la factura CESOP Gas
+        </div>
+        <div class="concepto-row"><span class="concepto-label">TOTAL SIN IMPUESTOS</span><input class="concepto-input" id="c-neto" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
+        <div class="concepto-row"><span class="concepto-label">IVA 27</span><input class="concepto-input" id="c-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
+        <div class="concepto-row"><span class="concepto-label">FDO FIDUCIARIO ART75 LEY 25565</span><input class="concepto-input" id="c-imp-int" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
+        <div class="concepto-row"><span class="concepto-label">PERCEPCION IIBB PROV. BSAS</span><input class="concepto-input" id="c-iibb" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
       </div>
-
-      <div class="resultado-row">
-        <span class="resultado-label">NETO</span>
-        <span class="resultado-valor" id="r-neto">—</span>
-      </div>
-      <div class="resultado-row">
-        <span class="resultado-label">IVA 27%</span>
-        <span class="resultado-valor" id="r-iva">—</span>
-      </div>
-      <div class="resultado-row">
-        <span class="resultado-label">PERC. IVA</span>
-        <span class="resultado-valor" id="r-perc-iva">—</span>
-      </div>
-      <div class="resultado-row">
-        <span class="resultado-label">IMPUESTOS INTERNOS</span>
-        <span class="resultado-valor" id="r-imp-int">—</span>
-      </div>
-      <div class="resultado-row">
-        <span class="resultado-label">PERC. IIBB</span>
-        <span class="resultado-valor" id="r-iibb">—</span>
-      </div>
-
-      <hr class="resultado-divider">
-
-      <div class="resultado-total-row">
-        <span class="resultado-total-label">TOTAL CALCULADO</span>
-        <span class="resultado-total-valor" id="r-total">—</span>
-      </div>
-
-      <div class="comprobacion neutral" id="comprobacion">
-        <span class="comprobacion-icon">📋</span>
-        <div>Ingresá el importe total y los conceptos para verificar</div>
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Resultado para cargar en Chess
+        </div>
+        <div class="resultado-row"><span class="resultado-label">NETO</span><span class="resultado-valor" id="cr-neto">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IVA 27%</span><span class="resultado-valor" id="cr-iva">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IMPUESTOS INTERNOS</span><span class="resultado-valor" id="cr-imp-int">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">PERC. INGRESOS BRUTOS</span><span class="resultado-valor" id="cr-iibb">—</span></div>
+        <hr class="resultado-divider">
+        <div class="resultado-total-row"><span class="resultado-total-label">TOTAL CALCULADO</span><span class="resultado-total-valor" id="cr-total">—</span></div>
+        <div class="comprobacion neutral" id="cesop-comprobacion"><span class="comprobacion-icon">📋</span><div>Ingresá el importe total y los conceptos para verificar</div></div>
       </div>
     </div>
   </div>
@@ -222,7 +196,19 @@ document.getElementById('user-avatar').textContent = (userData.nombre || userDat
 document.getElementById('rol-badge').textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
 document.getElementById('rol-badge').className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
 
-const ORDER = ['edea-total','e-neto','e-iibb','e-iva','e-perc-iva','e-ley1','e-ley2','e-ley3','e-ley4','e-ley5','e-ley6'];
+let tabActivo = 'edea';
+
+function setTab(tab, btn) {
+  tabActivo = tab;
+  document.querySelectorAll('.prov-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-edea').style.display = tab === 'edea' ? '' : 'none';
+  document.getElementById('tab-cesop').style.display = tab === 'cesop' ? '' : 'none';
+}
+
+const ORDER_EDEA = ['edea-total','e-neto','e-iibb','e-iva','e-perc-iva','e-ley1','e-ley2','e-ley3','e-ley4','e-ley5','e-ley6'];
+const ORDER_CESOP = ['cesop-total','c-neto','c-iva','c-imp-int','c-iibb'];
+const ORDER = [...ORDER_EDEA, ...ORDER_CESOP];
 
 function parseMonto(val) {
   if (!val || !val.trim()) return 0;
@@ -250,29 +236,19 @@ function fmt(n) {
 
 // Al salir de un campo: formatea el valor y pasa al siguiente con Enter
 document.addEventListener('DOMContentLoaded', () => {
-  ORDER.forEach((id, i) => {
+  ORDER_EDEA.forEach((id, i) => {
     const el = document.getElementById(id);
     if (!el) return;
-    // Formatear al perder foco
-    el.addEventListener('blur', () => {
-      const n = parseMonto(el.value);
-      el.value = n > 0 ? fmtInput(n) : '';
-      calcEdea();
-    });
-    // Al hacer foco: mostrar solo el número para editar
-    el.addEventListener('focus', () => {
-      const n = parseMonto(el.value);
-      el.value = n > 0 ? String(n).replace('.', ',') : '';
-      setTimeout(() => el.select(), 0);
-    });
-    // Enter: pasar al siguiente campo
-    el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const next = document.getElementById(ORDER[i + 1]);
-        if (next) next.focus();
-      }
-    });
+    el.addEventListener('blur', () => { const n = parseMonto(el.value); el.value = n > 0 ? fmtInput(n) : ''; calcEdea(); });
+    el.addEventListener('focus', () => { const n = parseMonto(el.value); el.value = n > 0 ? String(n).replace('.', ',') : ''; setTimeout(() => el.select(), 0); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const next = document.getElementById(ORDER_EDEA[i + 1]); if (next) next.focus(); } });
+  });
+  ORDER_CESOP.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', () => { const n = parseMonto(el.value); el.value = n > 0 ? fmtInput(n) : ''; calcCesop(); });
+    el.addEventListener('focus', () => { const n = parseMonto(el.value); el.value = n > 0 ? String(n).replace('.', ',') : ''; setTimeout(() => el.select(), 0); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const next = document.getElementById(ORDER_CESOP[i + 1]); if (next) next.focus(); } });
   });
 });
 
@@ -326,10 +302,54 @@ function calcEdea() {
   }
 }
 
+function calcCesop() {
+  const neto   = parseMonto(document.getElementById('c-neto').value);
+  const iva    = parseMonto(document.getElementById('c-iva').value);
+  const impInt = parseMonto(document.getElementById('c-imp-int').value);
+  const iibb   = parseMonto(document.getElementById('c-iibb').value);
+  const total  = parseMonto(document.getElementById('cesop-total').value);
+
+  const calculado = neto + iva + impInt + iibb;
+
+  document.getElementById('cr-neto').textContent    = fmt(neto);
+  document.getElementById('cr-iva').textContent     = fmt(iva);
+  document.getElementById('cr-imp-int').textContent = fmt(impInt);
+  document.getElementById('cr-iibb').textContent    = fmt(iibb);
+  document.getElementById('cr-total').textContent   = calculado > 0
+    ? '$ ' + calculado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '—';
+
+  const comp = document.getElementById('cesop-comprobacion');
+  if (calculado === 0) {
+    comp.className = 'comprobacion neutral';
+    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`;
+    return;
+  }
+  if (total === 0) {
+    comp.className = 'comprobacion neutral';
+    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`;
+    return;
+  }
+  const diff = Math.round((total - calculado) * 100) / 100;
+  if (diff === 0) {
+    comp.className = 'comprobacion ok';
+    comp.innerHTML = `<span class="comprobacion-icon">✅</span><div>Los importes coinciden — listo para cargar en Chess</div>`;
+  } else {
+    const diffFmt = Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const tipo = diff > 0 ? `faltan $ ${diffFmt} en los conceptos` : `hay $ ${diffFmt} de más en los conceptos`;
+    comp.className = 'comprobacion error';
+    comp.innerHTML = `<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden — revisá los conceptos ingresados</div><div class="comprobacion-diff">Diferencia: $ ${diffFmt} (${tipo})</div></div>`;
+  }
+}
+
 function limpiar() {
-  ['edea-total','e-neto','e-iva','e-perc-iva','e-iibb','e-ley1','e-ley2','e-ley3','e-ley4','e-ley5','e-ley6']
-    .forEach(id => document.getElementById(id).value = '');
-  calcEdea();
+  if (tabActivo === 'edea') {
+    ORDER_EDEA.forEach(id => document.getElementById(id).value = '');
+    calcEdea();
+  } else {
+    ORDER_CESOP.forEach(id => document.getElementById(id).value = '');
+    calcCesop();
+  }
 }
 </script>
 </body>
