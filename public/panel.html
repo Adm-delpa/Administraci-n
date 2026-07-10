@@ -210,19 +210,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       </div>
     </a>
 
-    <!-- PILAR GENTE (DPO) -->
-    <a href="/pilar-gente" class="modulo-card">
-      <span class="modulo-badge badge-activo">Activo</span>
-      <div class="modulo-icon" style="background:#D4F2E8">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#075C41" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      </div>
-      <div class="modulo-nombre">Pilar Gente (DPO)</div>
-      <div class="modulo-desc">Información y seguimiento del pilar Gente del DPO Quilmes, lista para auditoría.</div>
-      <div class="modulo-arrow">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-    </a>
-
     <!-- ADMINISTRACIÓN (solo admin) -->
     <a href="/administracion" class="modulo-card" id="card-administracion" style="display:none">
       <span class="modulo-badge badge-activo">Activo</span>
@@ -320,7 +307,7 @@ document.getElementById('stat-hora').textContent = now.toLocaleTimeString('es-AR
 document.getElementById('stat-acceso').textContent = now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
 
 // Ocultar módulos sin acceso: admin sin modulos configurados = todo, vista sin modulos = nada
-const modMap={'facturacion':'a[href="/facturacion"]','cuentas-corrientes':'a[href="/cuentas-corrientes"]','conciliacion-bancaria':'a[href="/conciliacion-bancaria"]','tickets':'a[href="/tickets"]','pendientes-acreditacion':'a[href="/pendientes-acreditacion"]','pilar-gente':'a[href="/pilar-gente"]','administracion':'a[href="/administracion"]'};
+const modMap={'facturacion':'a[href="/facturacion"]','cuentas-corrientes':'a[href="/cuentas-corrientes"]','conciliacion-bancaria':'a[href="/conciliacion-bancaria"]','tickets':'a[href="/tickets"]','pendientes-acreditacion':'a[href="/pendientes-acreditacion"]','administracion':'a[href="/administracion"]'};
 if(userData.rol!=='admin'){
   Object.entries(modMap).forEach(([id,sel])=>{
     const tieneAcceso=userData.modulos&&userData.modulos[id];
@@ -412,7 +399,7 @@ async function cargarUsuarios(){
     const r=await fetch('/api/usuarios',{headers:{'x-admin':userData.username}});
     const users=await r.json();
     if(!users.length){ list.innerHTML='<div style="padding:.75rem 1rem;font-size:12px;color:#9896A0">Sin usuarios.</div>'; return; }
-    const MODULOS=[{id:'facturacion',label:'Facturación'},{id:'cuentas-corrientes',label:'Cta. Cte.'},{id:'conciliacion-bancaria',label:'Conciliación'},{id:'tickets',label:'Tickets'},{id:'pendientes-acreditacion',label:'Pendientes'},{id:'pilar-gente',label:'Pilar Gente'},{id:'administracion',label:'Administración'}];
+    const MODULOS=[{id:'facturacion',label:'Facturación'},{id:'cuentas-corrientes',label:'Cta. Cte.'},{id:'conciliacion-bancaria',label:'Conciliación'},{id:'tickets',label:'Tickets'},{id:'pendientes-acreditacion',label:'Pendientes'},{id:'administracion',label:'Administración'}];
     list.innerHTML=users.map(u=>{
       const mods=u.modulos||null;
       const isGlobalAdmin=u.rol==='admin';
