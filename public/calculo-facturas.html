@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cálculo de Facturas — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.rol-badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700}
+.rol-admin{background:rgba(196,130,10,.3);color:#FCD34D}
+.rol-vista{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.page{max-width:1000px;margin:0 auto;padding:2rem 1rem}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1.5rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb a:hover{text-decoration:underline}
+.breadcrumb-sep{color:#DDDBD6}
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem}
+.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+.page-sub{font-size:13px;color:#9896A0;font-weight:500;margin-top:.2rem}
+.prov-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.prov-tab{padding:.5rem 1.2rem;border-radius:8px;border:1.5px solid #DDDBD6;background:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#56555A;cursor:pointer;transition:all .15s}
+.prov-tab.active{background:#0D4FA0;color:#fff;border-color:#0D4FA0}
+.prov-tab.pronto{opacity:.45;cursor:default}
+.calc-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start}
+@media(max-width:700px){.calc-layout{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.4rem}
+.card-title{font-size:12px;font-weight:700;color:#56555A;letter-spacing:.06em;text-transform:uppercase;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid #F0EEEB;display:flex;align-items:center;gap:6px}
+.importe-total-wrap{margin-bottom:1.25rem;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;gap:12px}
+.importe-total-label{font-size:11px;font-weight:700;color:#1D4ED8;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;line-height:1.4}
+.importe-total-input{flex:1;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:22px;font-weight:700;color:#1D4ED8;outline:none;min-width:0;text-align:right}
+.importe-total-input::placeholder{color:#93C5FD;font-weight:400;font-size:16px}
+.concepto-row{display:flex;align-items:center;gap:8px;margin-bottom:.55rem}
+.concepto-label{font-size:12px;font-weight:500;color:#56555A;flex:1;min-width:0;line-height:1.3}
+.concepto-input{width:145px;padding:.45rem .75rem;border:1.5px solid #DDDBD6;border-radius:6px;font-family:'Inter',sans-serif;font-size:13px;color:#18181A;outline:none;text-align:right;transition:border-color .15s;flex-shrink:0}
+.concepto-input:focus{border-color:#1E6FD9;box-shadow:0 0 0 3px rgba(30,111,217,.08)}
+.group-sep{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9896A0;margin:1rem 0 .5rem;padding-top:.6rem;border-top:1px dashed #EEECE9}
+.resultado-row{display:flex;justify-content:space-between;align-items:center;padding:.55rem .75rem;border-radius:7px;margin-bottom:.3rem}
+.resultado-row:nth-child(odd){background:#F8F7F5}
+.resultado-label{font-size:13px;font-weight:600;color:#18181A}
+.resultado-valor{font-size:13px;font-weight:700;color:#18181A;font-variant-numeric:tabular-nums;white-space:nowrap}
+.resultado-divider{border:none;border-top:2px solid #E8E6E2;margin:.8rem 0}
+.resultado-total-row{display:flex;justify-content:space-between;align-items:center;padding:.7rem .75rem;background:#EFF6FF;border-radius:8px;margin-bottom:.4rem}
+.resultado-total-label{font-size:13px;font-weight:700;color:#1D4ED8}
+.resultado-total-valor{font-size:16px;font-weight:700;color:#1D4ED8;font-variant-numeric:tabular-nums}
+.comprobacion{margin-top:.85rem;border-radius:10px;padding:.85rem 1rem;display:flex;align-items:flex-start;gap:10px;font-size:13px;font-weight:600;transition:all .2s}
+.comprobacion.ok{background:#D4F2E8;color:#075C41;border:1.5px solid #6EE7B7}
+.comprobacion.error{background:#FAE0E0;color:#8A1F1F;border:1.5px solid #FCA5A5}
+.comprobacion.neutral{background:#F2F1EE;color:#9896A0;border:1.5px solid #DDDBD6}
+.comprobacion-icon{font-size:17px;flex-shrink:0;margin-top:1px}
+.comprobacion-diff{font-size:12px;font-weight:500;margin-top:3px;opacity:.85}
+.btn-limpiar{background:#fff;border:1.5px solid #DDDBD6;color:#56555A;padding:6px 16px;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-limpiar:hover{background:#F2F1EE}
+@media(max-width:600px){.topbar{padding:.75rem 1rem}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Sistema de Gestión</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+      <span class="rol-badge" id="rol-badge">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="/administracion">Administración</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Cálculo de Facturas</span>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Cálculo de Facturas</div>
+      <div class="page-sub">Ingresá los conceptos de la factura — el sistema calcula automáticamente los importes para cargar en Chess.</div>
+    </div>
+    <button class="btn-limpiar" onclick="limpiar()">Limpiar campos</button>
+  </div>
+
+  <div class="prov-tabs">
+    <button class="prov-tab active" onclick="setTab('edea',this)">EDEA</button>
+    <button class="prov-tab" onclick="setTab('cesop',this)">CESOP Gas</button>
+  </div>
+
+  <!-- ===== EDEA ===== -->
+  <div id="tab-edea">
+    <div class="importe-total-wrap">
+      <div class="importe-total-label">Importe total<br>de factura</div>
+      <span style="font-size:22px;font-weight:700;color:#93C5FD;margin-right:2px">$</span>
+      <input class="importe-total-input" id="edea-total" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()">
+    </div>
+    <div class="calc-layout">
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Conceptos de la factura EDEA
+        </div>
+        <div class="concepto-row"><span class="concepto-label">SUBTOTAL COSTO ENERGIA</span><input class="concepto-input" id="e-neto" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">PERC. IIBB DN B1 2004</span><input class="concepto-input" id="e-iibb" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">IVA RESP. INSCRIPTO</span><input class="concepto-input" id="e-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">IVA PERCEPCION R.G.3337</span><input class="concepto-input" id="e-perc-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="group-sep">Leyes → suman a Impuestos Internos</div>
+        <div class="concepto-row"><span class="concepto-label">LEY 10740 (1)</span><input class="concepto-input" id="e-ley1" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 10740 (2)</span><input class="concepto-input" id="e-ley2" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 11769 ART 74</span><input class="concepto-input" id="e-ley3" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 11769 ART 75</span><input class="concepto-input" id="e-ley4" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY 11769 FDO. COMP</span><input class="concepto-input" id="e-ley5" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+        <div class="concepto-row"><span class="concepto-label">LEY PROV. 7290</span><input class="concepto-input" id="e-ley6" type="text" inputmode="decimal" placeholder="0,00" oninput="calcEdea()"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Resultado para cargar en Chess
+        </div>
+        <div class="resultado-row"><span class="resultado-label">NETO</span><span class="resultado-valor" id="r-neto">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IVA 27%</span><span class="resultado-valor" id="r-iva">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">PERC. IVA</span><span class="resultado-valor" id="r-perc-iva">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IMPUESTOS INTERNOS</span><span class="resultado-valor" id="r-imp-int">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">PERC. IIBB</span><span class="resultado-valor" id="r-iibb">—</span></div>
+        <hr class="resultado-divider">
+        <div class="resultado-total-row"><span class="resultado-total-label">TOTAL CALCULADO</span><span class="resultado-total-valor" id="r-total">—</span></div>
+        <div class="comprobacion neutral" id="comprobacion"><span class="comprobacion-icon">📋</span><div>Ingresá el importe total y los conceptos para verificar</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CESOP GAS ===== -->
+  <div id="tab-cesop" style="display:none">
+    <div class="importe-total-wrap">
+      <div class="importe-total-label">Importe total<br>de factura</div>
+      <span style="font-size:22px;font-weight:700;color:#93C5FD;margin-right:2px">$</span>
+      <input class="importe-total-input" id="cesop-total" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()">
+    </div>
+    <div class="calc-layout">
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Conceptos de la factura CESOP Gas
+        </div>
+        <div class="concepto-row"><span class="concepto-label">TOTAL SIN IMPUESTOS</span><input class="concepto-input" id="c-neto" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
+        <div class="concepto-row"><span class="concepto-label">IVA 27</span><input class="concepto-input" id="c-iva" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
+        <div class="concepto-row"><span class="concepto-label">FDO FIDUCIARIO ART75 LEY 25565</span><input class="concepto-input" id="c-imp-int" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
+        <div class="concepto-row"><span class="concepto-label">PERCEPCION IIBB PROV. BSAS</span><input class="concepto-input" id="c-iibb" type="text" inputmode="decimal" placeholder="0,00" oninput="calcCesop()"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Resultado para cargar en Chess
+        </div>
+        <div class="resultado-row"><span class="resultado-label">NETO</span><span class="resultado-valor" id="cr-neto">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IVA 27%</span><span class="resultado-valor" id="cr-iva">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">IMPUESTOS INTERNOS</span><span class="resultado-valor" id="cr-imp-int">—</span></div>
+        <div class="resultado-row"><span class="resultado-label">PERC. INGRESOS BRUTOS</span><span class="resultado-valor" id="cr-iibb">—</span></div>
+        <hr class="resultado-divider">
+        <div class="resultado-total-row"><span class="resultado-total-label">TOTAL CALCULADO</span><span class="resultado-total-valor" id="cr-total">—</span></div>
+        <div class="comprobacion neutral" id="cesop-comprobacion"><span class="comprobacion-icon">📋</span><div>Ingresá el importe total y los conceptos para verificar</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) window.location.href = '/';
+if (userData.rol !== 'admin' && !(userData.modulos && userData.modulos['administracion'])) window.location.href = '/panel';
+
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
+document.getElementById('rol-badge').textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
+document.getElementById('rol-badge').className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
+
+let tabActivo = 'edea';
+
+function setTab(tab, btn) {
+  tabActivo = tab;
+  document.querySelectorAll('.prov-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-edea').style.display = tab === 'edea' ? '' : 'none';
+  document.getElementById('tab-cesop').style.display = tab === 'cesop' ? '' : 'none';
+}
+
+const ORDER_EDEA = ['edea-total','e-neto','e-iibb','e-iva','e-perc-iva','e-ley1','e-ley2','e-ley3','e-ley4','e-ley5','e-ley6'];
+const ORDER_CESOP = ['cesop-total','c-neto','c-iva','c-imp-int','c-iibb'];
+const ORDER = [...ORDER_EDEA, ...ORDER_CESOP];
+
+function parseMonto(val) {
+  if (!val || !val.trim()) return 0;
+  // quitar $ y espacios
+  let v = val.trim().replace(/\$/g, '').replace(/\s/g, '');
+  // formato argentino: punto = miles, coma = decimal
+  if (v.includes('.') && v.includes(',')) {
+    v = v.replace(/\./g, '').replace(',', '.');
+  } else if (v.includes(',')) {
+    v = v.replace(',', '.');
+  }
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
+}
+
+function fmtInput(n) {
+  if (n === 0) return '';
+  return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmt(n) {
+  if (n === 0) return '—';
+  return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Al salir de un campo: formatea el valor y pasa al siguiente con Enter
+document.addEventListener('DOMContentLoaded', () => {
+  ORDER_EDEA.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', () => { const n = parseMonto(el.value); el.value = n > 0 ? fmtInput(n) : ''; calcEdea(); });
+    el.addEventListener('focus', () => { const n = parseMonto(el.value); el.value = n > 0 ? String(n).replace('.', ',') : ''; setTimeout(() => el.select(), 0); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const next = document.getElementById(ORDER_EDEA[i + 1]); if (next) next.focus(); } });
+  });
+  ORDER_CESOP.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', () => { const n = parseMonto(el.value); el.value = n > 0 ? fmtInput(n) : ''; calcCesop(); });
+    el.addEventListener('focus', () => { const n = parseMonto(el.value); el.value = n > 0 ? String(n).replace('.', ',') : ''; setTimeout(() => el.select(), 0); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const next = document.getElementById(ORDER_CESOP[i + 1]); if (next) next.focus(); } });
+  });
+});
+
+function calcEdea() {
+  const neto    = parseMonto(document.getElementById('e-neto').value);
+  const iva     = parseMonto(document.getElementById('e-iva').value);
+  const percIva = parseMonto(document.getElementById('e-perc-iva').value);
+  const iibb    = parseMonto(document.getElementById('e-iibb').value);
+  const ley1    = parseMonto(document.getElementById('e-ley1').value);
+  const ley2    = parseMonto(document.getElementById('e-ley2').value);
+  const ley3    = parseMonto(document.getElementById('e-ley3').value);
+  const ley4    = parseMonto(document.getElementById('e-ley4').value);
+  const ley5    = parseMonto(document.getElementById('e-ley5').value);
+  const ley6    = parseMonto(document.getElementById('e-ley6').value);
+  const total   = parseMonto(document.getElementById('edea-total').value);
+
+  const impInt   = ley1 + ley2 + ley3 + ley4 + ley5 + ley6;
+  const calculado = neto + iva + percIva + iibb + impInt;
+
+  document.getElementById('r-neto').textContent     = fmt(neto);
+  document.getElementById('r-iva').textContent      = fmt(iva);
+  document.getElementById('r-perc-iva').textContent = fmt(percIva);
+  document.getElementById('r-imp-int').textContent  = fmt(impInt);
+  document.getElementById('r-iibb').textContent     = fmt(iibb);
+  document.getElementById('r-total').textContent    = calculado > 0
+    ? '$ ' + calculado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '—';
+
+  const comp = document.getElementById('comprobacion');
+
+  if (calculado === 0) {
+    comp.className = 'comprobacion neutral';
+    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`;
+    return;
+  }
+  if (total === 0) {
+    comp.className = 'comprobacion neutral';
+    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`;
+    return;
+  }
+
+  const diff = Math.round((total - calculado) * 100) / 100;
+  if (diff === 0) {
+    comp.className = 'comprobacion ok';
+    comp.innerHTML = `<span class="comprobacion-icon">✅</span><div><div>Los importes coinciden — listo para cargar en Chess</div></div>`;
+  } else {
+    const diffFmt = Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const tipo = diff > 0 ? `faltan $ ${diffFmt} en los conceptos` : `hay $ ${diffFmt} de más en los conceptos`;
+    comp.className = 'comprobacion error';
+    comp.innerHTML = `<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden — revisá los conceptos ingresados</div><div class="comprobacion-diff">Diferencia: $ ${diffFmt} (${tipo})</div></div>`;
+  }
+}
+
+function calcCesop() {
+  const neto   = parseMonto(document.getElementById('c-neto').value);
+  const iva    = parseMonto(document.getElementById('c-iva').value);
+  const impInt = parseMonto(document.getElementById('c-imp-int').value);
+  const iibb   = parseMonto(document.getElementById('c-iibb').value);
+  const total  = parseMonto(document.getElementById('cesop-total').value);
+
+  const calculado = neto + iva + impInt + iibb;
+
+  document.getElementById('cr-neto').textContent    = fmt(neto);
+  document.getElementById('cr-iva').textContent     = fmt(iva);
+  document.getElementById('cr-imp-int').textContent = fmt(impInt);
+  document.getElementById('cr-iibb').textContent    = fmt(iibb);
+  document.getElementById('cr-total').textContent   = calculado > 0
+    ? '$ ' + calculado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '—';
+
+  const comp = document.getElementById('cesop-comprobacion');
+  if (calculado === 0) {
+    comp.className = 'comprobacion neutral';
+    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`;
+    return;
+  }
+  if (total === 0) {
+    comp.className = 'comprobacion neutral';
+    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`;
+    return;
+  }
+  const diff = Math.round((total - calculado) * 100) / 100;
+  if (diff === 0) {
+    comp.className = 'comprobacion ok';
+    comp.innerHTML = `<span class="comprobacion-icon">✅</span><div>Los importes coinciden — listo para cargar en Chess</div>`;
+  } else {
+    const diffFmt = Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const tipo = diff > 0 ? `faltan $ ${diffFmt} en los conceptos` : `hay $ ${diffFmt} de más en los conceptos`;
+    comp.className = 'comprobacion error';
+    comp.innerHTML = `<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden — revisá los conceptos ingresados</div><div class="comprobacion-diff">Diferencia: $ ${diffFmt} (${tipo})</div></div>`;
+  }
+}
+
+function limpiar() {
+  if (tabActivo === 'edea') {
+    ORDER_EDEA.forEach(id => document.getElementById(id).value = '');
+    calcEdea();
+  } else {
+    ORDER_CESOP.forEach(id => document.getElementById(id).value = '');
+    calcCesop();
+  }
+}
+</script>
+</body>
+</html>
