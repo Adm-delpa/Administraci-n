@@ -264,6 +264,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
       Cargá más meses para ver la evolución.
     </div>
     <div id="evol-content" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+        <label style="font-size:12px;font-weight:600;color:#56555A">Año</label>
+        <select id="evol-año" class="filtro-sel" onchange="renderEvolucion()"></select>
+      </div>
+      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Acumulado anual</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:240px"><canvas id="chart-acum"></canvas></div></div>
       <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Venta neta mensual</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:240px"><canvas id="chart-venta"></canvas></div></div>
       <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Composición (%)</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:220px"><canvas id="chart-pct"></canvas></div></div>
       <div class="chart-card"><div class="chart-hdr"><div class="chart-title">IVA estimado a ingresar</div></div><div style="position:relative;height:200px"><canvas id="chart-iva"></canvas></div></div>
@@ -526,24 +531,43 @@ async function borrar(k){
 }
 
 function renderEvolucion(){
-  const keys=Object.keys(db).sort();
-  if(keys.length<2){document.getElementById('evol-nodata').style.display='block';document.getElementById('evol-content').style.display='none';return;}
+  const allKeys=Object.keys(db).sort();
+  if(allKeys.length<2){document.getElementById('evol-nodata').style.display='block';document.getElementById('evol-content').style.display='none';return;}
   document.getElementById('evol-nodata').style.display='none';
   document.getElementById('evol-content').style.display='block';
+
+  // Poblar selector de año
+  const años=[...new Set(allKeys.map(k=>k.slice(0,4)))].sort();
+  const sel=document.getElementById('evol-año');
+  const añoActual=sel.value||años[años.length-1];
+  if(sel.innerHTML===''){
+    años.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;sel.appendChild(o);});
+  }
+  sel.value=añoActual;
+
+  const keys=allKeys.filter(k=>k.startsWith(añoActual));
   const labels=keys.map(fP);
   const dAB=keys.map(k=>Math.round(db[k].lv_neto));
   const dPres=keys.map(k=>Math.round(db[k].pres_neto));
+  const dAcumAB=dAB.reduce((acc,v,i)=>{acc.push((acc[i-1]||0)+v);return acc;},[]);
+  const dAcumPres=dPres.reduce((acc,v,i)=>{acc.push((acc[i-1]||0)+v);return acc;},[]);
   const dPctAB=keys.map(k=>{const d=db[k];return d.total_venta?+(d.lv_neto/d.total_venta*100).toFixed(2):0;});
   const dPctP=keys.map(k=>{const d=db[k];return d.total_venta?+(d.pres_neto/d.total_venta*100).toFixed(2):0;});
   const dIva=keys.map(k=>Math.round(db[k].iva_fin));
+
   const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11},color:'#9896A0'}},y:{grid:{color:'#DDDBD6'},ticks:{font:{size:11},color:'#9896A0'}}}};
-  if(charts.v)charts.v.destroy();
   const lineOpts={borderWidth:2,pointRadius:5,pointBorderColor:'#fff',pointBorderWidth:2,fill:false,tension:.3};
-  charts.v=new Chart(document.getElementById('chart-venta'),{type:'line',data:{labels,datasets:[{label:'Fact. A y B',data:dAB,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',...lineOpts,pointBackgroundColor:'#1E6FD9'},{label:'Presupuesto',data:dPres,borderColor:'#C4820A',backgroundColor:'rgba(196,130,10,.08)',...lineOpts,pointBackgroundColor:'#C4820A'}]},options:{...base,plugins:{...base.plugins,legend:{display:true,labels:{font:{size:11},color:'#56555A',boxWidth:10}}},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>'$'+(v/1000000).toFixed(0)+'M'}}}}});
+  const legendOpts={display:true,labels:{font:{size:11},color:'#56555A',boxWidth:10}};
+  const mFmt=v=>'$'+(v/1000000).toFixed(0)+'M';
+
+  if(charts.a)charts.a.destroy();
+  charts.a=new Chart(document.getElementById('chart-acum'),{type:'line',data:{labels,datasets:[{label:'Fact. A y B',data:dAcumAB,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',...lineOpts,fill:true,pointBackgroundColor:'#1E6FD9'},{label:'Presupuesto',data:dAcumPres,borderColor:'#C4820A',backgroundColor:'rgba(196,130,10,.08)',...lineOpts,pointBackgroundColor:'#C4820A'}]},options:{...base,plugins:{...base.plugins,legend:legendOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:mFmt}}}}});
+  if(charts.v)charts.v.destroy();
+  charts.v=new Chart(document.getElementById('chart-venta'),{type:'line',data:{labels,datasets:[{label:'Fact. A y B',data:dAB,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',...lineOpts,pointBackgroundColor:'#1E6FD9'},{label:'Presupuesto',data:dPres,borderColor:'#C4820A',backgroundColor:'rgba(196,130,10,.08)',...lineOpts,pointBackgroundColor:'#C4820A'}]},options:{...base,plugins:{...base.plugins,legend:legendOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:mFmt}}}}});
   if(charts.p)charts.p.destroy();
-  charts.p=new Chart(document.getElementById('chart-pct'),{type:'line',data:{labels,datasets:[{label:'Fact. A y B',data:dPctAB,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',...lineOpts,pointBackgroundColor:'#1E6FD9'},{label:'Presupuesto',data:dPctP,borderColor:'#C4820A',backgroundColor:'rgba(196,130,10,.08)',...lineOpts,pointBackgroundColor:'#C4820A'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{font:{size:11},color:'#56555A',boxWidth:10}}},scales:{x:{grid:{display:false},ticks:{font:{size:11},color:'#9896A0'}},y:{max:100,grid:{color:'#DDDBD6'},ticks:{font:{size:11},color:'#9896A0',callback:v=>v+'%'}}}}});
+  charts.p=new Chart(document.getElementById('chart-pct'),{type:'line',data:{labels,datasets:[{label:'Fact. A y B',data:dPctAB,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',...lineOpts,pointBackgroundColor:'#1E6FD9'},{label:'Presupuesto',data:dPctP,borderColor:'#C4820A',backgroundColor:'rgba(196,130,10,.08)',...lineOpts,pointBackgroundColor:'#C4820A'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:legendOpts},scales:{x:{grid:{display:false},ticks:{font:{size:11},color:'#9896A0'}},y:{max:100,grid:{color:'#DDDBD6'},ticks:{font:{size:11},color:'#9896A0',callback:v=>v+'%'}}}}});
   if(charts.i)charts.i.destroy();
-  charts.i=new Chart(document.getElementById('chart-iva'),{type:'line',data:{labels,datasets:[{label:'IVA',data:dIva,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',borderWidth:2,pointRadius:5,pointBackgroundColor:'#1E6FD9',pointBorderColor:'#fff',pointBorderWidth:2,fill:true,tension:.3}]},options:{...base,scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>'$'+(v/1000000).toFixed(0)+'M'}}}}});
+  charts.i=new Chart(document.getElementById('chart-iva'),{type:'line',data:{labels,datasets:[{label:'IVA',data:dIva,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',borderWidth:2,pointRadius:5,pointBackgroundColor:'#1E6FD9',pointBorderColor:'#fff',pointBorderWidth:2,fill:true,tension:.3}]},options:{...base,scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:mFmt}}}}});
 }
 
 function renderSaved(){
