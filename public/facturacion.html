@@ -170,6 +170,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
   </div>
   <div class="topbar-right">
     <span class="user-info" id="topbar-user"></span>
+    <button class="logout-btn" style="display:flex;align-items:center;gap:5px" onclick="document.getElementById('modal-ayuda-fac').style.display='flex'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Ayuda
+    </button>
     <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
   </div>
 </div>
@@ -618,5 +622,54 @@ function renderSaved(){
 // ── INIT ──
 cargarDatos();
 </script>
+
+<!-- Modal ayuda -->
+<div id="modal-ayuda-fac" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="background:#0D4FA0;border-radius:14px 14px 0 0;padding:1.1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#fff">Facturación</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:2px">Guía de uso</div>
+      </div>
+      <button onclick="document.getElementById('modal-ayuda-fac').style.display='none'" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;font-size:18px;line-height:1">×</button>
+    </div>
+    <div style="padding:1.5rem;font-size:13px;color:#18181A;line-height:1.7">
+
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1E6FD9;margin-bottom:.5rem;padding-bottom:.4rem;border-bottom:2px solid #DCE9FA">📋 ¿Para qué sirve?</div>
+      <p style="color:#56555A;margin-bottom:1.25rem">Muestra la facturación neta mensual de la empresa comparada contra el presupuesto. Permite ver el resumen de un período puntual y la evolución a lo largo del año.</p>
+
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1E6FD9;margin-bottom:.5rem;padding-bottom:.4rem;border-bottom:2px solid #DCE9FA">⬆️ Cargar datos</div>
+      <p style="color:#56555A;margin-bottom:.5rem">Solo los administradores pueden cargar datos. Desde la pestaña <strong>Cargar datos</strong>:</p>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:.75rem">
+        <li style="margin-bottom:.4rem">Seleccioná el <strong>mes y año</strong> del período a cargar.</li>
+        <li style="margin-bottom:.4rem">Subí el archivo <strong>Fact. A y B</strong> exportado desde Chess (ventas letra A y B).</li>
+        <li style="margin-bottom:.4rem">Subí el archivo de <strong>Presupuesto</strong> del mismo período.</li>
+        <li style="margin-bottom:.4rem">Opcionalmente subí el archivo de <strong>IVA Compras</strong> para calcular el IVA estimado a ingresar.</li>
+        <li>Hacé clic en <strong>Procesar período</strong>.</li>
+      </ul>
+      <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:.6rem .9rem;font-size:12px;color:#92400E;margin-bottom:1.25rem">⚠ Los datos quedan guardados para todos los usuarios. Cargar el mismo período reemplaza los datos anteriores.</div>
+
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1E6FD9;margin-bottom:.5rem;padding-bottom:.4rem;border-bottom:2px solid #DCE9FA">📑 Pestañas</div>
+      <ul style="color:#56555A;padding-left:1.25rem;margin-bottom:1.25rem">
+        <li style="margin-bottom:.4rem"><strong>Resumen del período</strong> — muestra los KPIs del mes seleccionado: composición de la venta, distribución por tipo de cliente y estimación de IVA. Usá los filtros de año y mes para navegar entre períodos.</li>
+        <li><strong>Evolución mensual</strong> — gráficos de líneas con la venta neta y composición a lo largo del año. Incluye el acumulado anual hasta el último mes cargado. Filtrá por año con el selector de arriba.</li>
+      </ul>
+
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#1E6FD9;margin-bottom:.5rem;padding-bottom:.4rem;border-bottom:2px solid #DCE9FA">📊 Indicadores del resumen</div>
+      <div style="border:1px solid #DDDBD6;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#F8F7F5"><th style="padding:.5rem .75rem;text-align:left;font-weight:700;color:#56555A">Indicador</th><th style="padding:.5rem .75rem;text-align:left;font-weight:700;color:#56555A">Qué muestra</th></tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid #F0EEEB"><td style="padding:.45rem .75rem;font-weight:600">Fact. A y B</td><td style="padding:.45rem .75rem;color:#56555A">Facturación neta (facturas, NC y ND) de clientes letra A y B</td></tr>
+            <tr style="border-top:1px solid #F0EEEB;background:#FAFAF9"><td style="padding:.45rem .75rem;font-weight:600">Presupuesto</td><td style="padding:.45rem .75rem;color:#56555A">Facturación presupuestada neta de devoluciones del período</td></tr>
+            <tr style="border-top:1px solid #F0EEEB"><td style="padding:.45rem .75rem;font-weight:600">Venta neta total</td><td style="padding:.45rem .75rem;color:#56555A">Suma de Fact. A y B + Presupuesto, con barra de composición visual</td></tr>
+            <tr style="border-top:1px solid #F0EEEB;background:#FAFAF9"><td style="padding:.45rem .75rem;font-weight:600">IVA estimado</td><td style="padding:.45rem .75rem;color:#56555A">IVA ventas menos IVA compras y percepciones a favor. Estimación al cierre del período.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
 </HTMLEOF>
 echo "facturacion.html OK"
