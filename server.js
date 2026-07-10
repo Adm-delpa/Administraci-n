@@ -25,6 +25,8 @@ const ROUTE_LABELS = {
   'POST /api/pilar-gente':                      { accion: 'pilar_gente_cargado',   label: (b) => `Cargó seguimiento Pilar Gente: ${b.titulo}` },
   'PUT /api/pilar-gente/:id/estado':            { accion: 'pilar_gente_estado',    label: (b,p) => `Cambió estado de seguimiento #${p.id} a ${b.estado}` },
   'POST /api/pilar-gente/:id/notas':            { accion: 'pilar_gente_nota',      label: (b,p) => `Nota en seguimiento #${p.id}: ${(b.texto||'').slice(0,80)}` },
+  'POST /api/pilar-gente/categorias':           { accion: 'pilar_gente_categoria_creada', label: (b) => `Creó categoría Pilar Gente: ${b.titulo}` },
+  'PUT /api/pilar-gente/categorias/:id':        { accion: 'pilar_gente_categoria_editada', label: (b,p) => `Editó categoría Pilar Gente #${p.id}: ${b.titulo}` },
 };
 
 function matchRoute(method, url) {
@@ -296,6 +298,29 @@ async function initDB() {
         username VARCHAR(50) NOT NULL,
         nombre VARCHAR(100),
         created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS pilar_gente_categorias (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(200) NOT NULL,
+        intro TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS pilar_gente_principios (
+        id SERIAL PRIMARY KEY,
+        categoria_id INTEGER NOT NULL REFERENCES pilar_gente_categorias(id) ON DELETE CASCADE,
+        emoji VARCHAR(10),
+        etiqueta VARCHAR(200) NOT NULL,
+        orden INTEGER DEFAULT 0
+      );
+
+      CREATE TABLE IF NOT EXISTS pilar_gente_secciones (
+        id SERIAL PRIMARY KEY,
+        categoria_id INTEGER NOT NULL REFERENCES pilar_gente_categorias(id) ON DELETE CASCADE,
+        subtitulo VARCHAR(200) NOT NULL,
+        texto TEXT,
+        orden INTEGER DEFAULT 0
       );
     `);
 
@@ -681,6 +706,62 @@ app.delete('/api/pilar-gente/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM pilar_gente_items WHERE id=$1', [id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
+});
+
+app.get('/api/pilar-gente/categorias', async (req, res) => {
+  try {
+    const cats = await pool.query('SELECT * FROM pilar_gente_categorias ORDER BY id ASC');
+    const prin = await pool.query('SELECT * FROM pilar_gente_principios ORDER BY orden ASC, id ASC');
+    const sec = await pool.query('SELECT * FROM pilar_gente_secciones ORDER BY orden ASC, id ASC');
+    const pMap = {}, sMap = {};
+    prin.rows.forEach(p => { (pMap[p.categoria_id] = pMap[p.categoria_id] || []).push(p); });
+    sec.rows.forEach(s => { (sMap[s.categoria_id] = sMap[s.categoria_id] || []).push(s); });
+    res.json(cats.rows.map(c => ({ ...c, principios: pMap[c.id] || [], secciones: sMap[c.id] || [] })));
+  } catch(e) { res.status(500).json({ error: 'Error al leer' }); }
+});
+
+app.post('/api/pilar-gente/categorias', async (req, res) => {
+  const { titulo, username } = req.body;
+  if (!titulo || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query('INSERT INTO pilar_gente_categorias (titulo) VALUES ($1) RETURNING *', [titulo]);
+    res.json({ ...r.rows[0], principios: [], secciones: [] });
+  } catch(e) { res.status(500).json({ error: 'Error al crear' }); }
+});
+
+app.put('/api/pilar-gente/categorias/:id', async (req, res) => {
+  const { titulo, intro, principios, secciones } = req.body;
+  const { id } = req.params;
+  if (!titulo) return res.status(400).json({ error: 'Faltan datos' });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('UPDATE pilar_gente_categorias SET titulo=$1, intro=$2 WHERE id=$3', [titulo, intro||null, id]);
+    await client.query('DELETE FROM pilar_gente_principios WHERE categoria_id=$1', [id]);
+    await client.query('DELETE FROM pilar_gente_secciones WHERE categoria_id=$1', [id]);
+    const princ = Array.isArray(principios) ? principios : [];
+    for (let i = 0; i < princ.length; i++) {
+      if (!princ[i].etiqueta) continue;
+      await client.query('INSERT INTO pilar_gente_principios (categoria_id, emoji, etiqueta, orden) VALUES ($1,$2,$3,$4)',
+        [id, princ[i].emoji||null, princ[i].etiqueta, i]);
+    }
+    const secs = Array.isArray(secciones) ? secciones : [];
+    for (let i = 0; i < secs.length; i++) {
+      if (!secs[i].subtitulo) continue;
+      await client.query('INSERT INTO pilar_gente_secciones (categoria_id, subtitulo, texto, orden) VALUES ($1,$2,$3,$4)',
+        [id, secs[i].subtitulo, secs[i].texto||null, i]);
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch(e) { await client.query('ROLLBACK'); res.status(500).json({ error: 'Error al guardar' }); }
+  finally { client.release(); }
+});
+
+app.delete('/api/pilar-gente/categorias/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM pilar_gente_categorias WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
 });

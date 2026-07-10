@@ -91,6 +91,61 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .btn-add-nota{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#1E6FD9;color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;align-self:flex-end}
 
 @media(max-width:600px){.topbar{padding:.75rem 1rem}.form-grid{grid-template-columns:1fr}.item-top{flex-direction:column}.item-right{flex-direction:row;align-items:center}}
+
+/* MAIN TABS */
+.main-tabs{display:flex;gap:6px;margin-bottom:1.25rem}
+.main-tab-btn{padding:.6rem 1.1rem;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;border:1.5px solid #DDDBD6;background:#fff;cursor:pointer;color:#56555A;border-radius:9px}
+.main-tab-btn.active{background:#1E6FD9;color:#fff;border-color:#1E6FD9}
+.main-panel{display:none}
+.main-panel.active{display:block}
+
+/* CONTENIDO */
+.content-layout{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:start}
+.cat-sidebar{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
+.cat-sidebar-item{display:block;width:100%;text-align:left;padding:.65rem .9rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#56555A;background:none;border:none;border-bottom:1px solid #F5F5F7;cursor:pointer}
+.cat-sidebar-item:last-of-type{border-bottom:none}
+.cat-sidebar-item:hover{background:#F8F7F5}
+.cat-sidebar-item.active{background:#DCE9FA;color:#0D4FA0}
+.cat-sidebar-add{width:100%;padding:.65rem .9rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#1E6FD9;background:#F8F7F5;border:none;cursor:pointer}
+.cat-sidebar-add:hover{background:#F0EEEb}
+.cat-main{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.75rem;min-height:200px}
+.cat-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:1.25rem}
+.cat-titulo{font-size:24px;font-weight:800;letter-spacing:-.02em;color:#18181A}
+.cat-underline{height:5px;background:#0D4FA0;border-radius:3px;margin-top:8px;max-width:340px}
+.btn-editar{display:flex;align-items:center;gap:6px;padding:6px 12px;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-editar:hover{background:#DDDBD6}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:1.5rem}
+.principios-card{border:1px solid #DDDBD6;border-radius:10px;overflow:hidden}
+.principios-head{background:#0D4FA0;color:#fff;padding:.75rem 1rem;font-size:13px;font-weight:800;letter-spacing:.03em}
+.principios-head small{display:block;font-size:10px;font-weight:500;color:rgba(255,255,255,.7);letter-spacing:.02em;margin-top:2px}
+.principio-row{display:flex;align-items:center;gap:10px;padding:.55rem .9rem;border-bottom:1px solid #F5F5F7;font-size:12px}
+.principio-row:last-child{border-bottom:none}
+.principio-num{width:20px;height:20px;border-radius:50%;border:1.5px solid #1E6FD9;color:#1E6FD9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.principio-emoji{flex-shrink:0}
+.principio-etiqueta{font-weight:700;color:#18181A;letter-spacing:.01em}
+.cat-intro-titulo{font-size:19px;font-weight:800;margin-bottom:.6rem;color:#18181A}
+.cat-intro-texto{font-size:13px;line-height:1.7;color:#56555A;white-space:pre-wrap}
+.secciones-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.seccion-subtitulo{font-size:13px;font-weight:700;color:#0D4FA0;margin-bottom:.4rem}
+.seccion-texto{font-size:12.5px;line-height:1.7;color:#56555A;white-space:pre-wrap}
+
+/* CONTENIDO — edición */
+.edit-field{margin-bottom:1rem}
+.edit-field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
+.edit-field input,.edit-field textarea{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;background:#fff;color:#18181A}
+.edit-field input:focus,.edit-field textarea:focus{border-color:#1E6FD9}
+.edit-field textarea{resize:vertical;line-height:1.6}
+.edit-block-title{font-size:12px;font-weight:700;color:#18181A;margin:1.25rem 0 .6rem;padding-top:1rem;border-top:1px solid #F5F5F7}
+.edit-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.edit-row input.emoji-input{width:52px;text-align:center;flex-shrink:0}
+.edit-row .row-fields{flex:1;display:flex;flex-direction:column;gap:6px}
+.btn-x{background:#FAE0E0;color:#8A1F1F;border:none;border-radius:6px;width:28px;height:28px;flex-shrink:0;cursor:pointer;font-size:13px;font-weight:700}
+.btn-x:hover{background:#f5c0c0}
+.btn-add-row{padding:6px 12px;background:#F2F1EE;color:#1E6FD9;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.btn-add-row:hover{background:#DCE9FA}
+.edit-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:1px solid #F5F5F7}
+
+@media(max-width:760px){.content-layout{grid-template-columns:1fr}.cat-grid{grid-template-columns:1fr}.secciones-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -115,41 +170,65 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 <div class="page">
   <div class="page-header">
     <div class="page-title">Pilar Gente (DPO)</div>
-    <button class="btn-nuevo" onclick="toggleForm()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Nuevo seguimiento
-    </button>
   </div>
-  <div class="page-sub">Seguimiento de pedidos del pilar Gente del DPO Quilmes y su evidencia (Drive).</div>
+  <div class="page-sub">Información del pilar Gente del DPO Quilmes, lista para mostrar en auditoría, y seguimiento de pedidos con su evidencia (Drive).</div>
 
-  <div class="form-card" id="form-card">
-    <div class="form-title">Nuevo seguimiento</div>
-    <div class="form-grid">
-      <div class="field"><label>Título</label><input type="text" id="f-titulo" placeholder="Ej: Capacitación seguridad vial"></div>
-      <div class="field"><label>Fecha límite <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="date" id="f-fecha"></div>
-    </div>
-    <div class="field" style="margin-bottom:10px"><label>Descripción <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
-      <textarea id="f-desc" placeholder="Detalle del pedido, contexto, referencia..."></textarea>
-    </div>
-    <div class="field" style="margin-bottom:10px"><label>Link de Drive con evidencia <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
-      <input type="text" id="f-link" placeholder="https://drive.google.com/...">
-    </div>
-    <div class="msg-err" id="form-err"></div>
-    <div class="form-footer">
-      <button class="btn-cancel" onclick="toggleForm()">Cancelar</button>
-      <button class="btn-save" onclick="guardar()">Guardar</button>
+  <div class="main-tabs">
+    <button class="main-tab-btn active" data-panel="contenido" onclick="cambiarPanel('contenido')">Contenido</button>
+    <button class="main-tab-btn" data-panel="seguimientos" onclick="cambiarPanel('seguimientos')">Seguimientos</button>
+  </div>
+
+  <!-- PANEL CONTENIDO -->
+  <div class="main-panel active" id="panel-contenido">
+    <div class="content-layout">
+      <div class="cat-sidebar" id="cat-sidebar">
+        <div class="cat-sidebar-item">Cargando...</div>
+      </div>
+      <div class="cat-main" id="cat-main">
+        <div class="empty">Cargando...</div>
+      </div>
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-estado="todos" onclick="cambiarTab('todos')">Todos <span class="tab-count" id="count-todos">0</span></button>
-    <button class="tab-btn" data-estado="pendiente" onclick="cambiarTab('pendiente')">Pendiente <span class="tab-count" id="count-pendiente">0</span></button>
-    <button class="tab-btn" data-estado="en_proceso" onclick="cambiarTab('en_proceso')">En curso <span class="tab-count" id="count-en_proceso">0</span></button>
-    <button class="tab-btn" data-estado="hecho" onclick="cambiarTab('hecho')">Hecho <span class="tab-count" id="count-hecho">0</span></button>
-  </div>
+  <!-- PANEL SEGUIMIENTOS -->
+  <div class="main-panel" id="panel-seguimientos">
+    <div class="page-header" style="margin-bottom:.75rem">
+      <div></div>
+      <button class="btn-nuevo" onclick="toggleForm()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo seguimiento
+      </button>
+    </div>
 
-  <div class="section" id="sec-items">
-    <div id="list-items"><div class="empty">Cargando...</div></div>
+    <div class="form-card" id="form-card">
+      <div class="form-title">Nuevo seguimiento</div>
+      <div class="form-grid">
+        <div class="field"><label>Título</label><input type="text" id="f-titulo" placeholder="Ej: Capacitación seguridad vial"></div>
+        <div class="field"><label>Fecha límite <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="date" id="f-fecha"></div>
+      </div>
+      <div class="field" style="margin-bottom:10px"><label>Descripción <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
+        <textarea id="f-desc" placeholder="Detalle del pedido, contexto, referencia..."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:10px"><label>Link de Drive con evidencia <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
+        <input type="text" id="f-link" placeholder="https://drive.google.com/...">
+      </div>
+      <div class="msg-err" id="form-err"></div>
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="toggleForm()">Cancelar</button>
+        <button class="btn-save" onclick="guardar()">Guardar</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-estado="todos" onclick="cambiarTab('todos')">Todos <span class="tab-count" id="count-todos">0</span></button>
+      <button class="tab-btn" data-estado="pendiente" onclick="cambiarTab('pendiente')">Pendiente <span class="tab-count" id="count-pendiente">0</span></button>
+      <button class="tab-btn" data-estado="en_proceso" onclick="cambiarTab('en_proceso')">En curso <span class="tab-count" id="count-en_proceso">0</span></button>
+      <button class="tab-btn" data-estado="hecho" onclick="cambiarTab('hecho')">Hecho <span class="tab-count" id="count-hecho">0</span></button>
+    </div>
+
+    <div class="section" id="sec-items">
+      <div id="list-items"><div class="empty">Cargando...</div></div>
+    </div>
   </div>
 </div>
 
@@ -308,7 +387,203 @@ async function cargar(){
   }
 }
 
+function cambiarPanel(panel){
+  document.querySelectorAll('.main-tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.panel===panel); });
+  document.querySelectorAll('.main-panel').forEach(function(p){ p.classList.toggle('active', p.id==='panel-'+panel); });
+}
+
+// ── CONTENIDO ──
+var CATEGORIAS = [];
+var CAT_ACTIVA_ID = null;
+var CAT_EDIT_STATE = null; // {titulo, intro, principios:[], secciones:[]} mientras se edita
+
+function catById(id){ return CATEGORIAS.find(function(c){ return c.id===id; }); }
+
+async function cargarCategorias(){
+  try{
+    var r = await fetch('/api/pilar-gente/categorias');
+    CATEGORIAS = await r.json();
+    if(CAT_ACTIVA_ID===null && CATEGORIAS.length>0) CAT_ACTIVA_ID = CATEGORIAS[0].id;
+    renderSidebar();
+    renderCatMain();
+  }catch(e){
+    document.getElementById('cat-main').innerHTML = '<div class="empty" style="color:#C0392B">Error al cargar.</div>';
+  }
+}
+
+function renderSidebar(){
+  var side = document.getElementById('cat-sidebar');
+  var items = CATEGORIAS.map(function(c){
+    return '<button class="cat-sidebar-item'+(c.id===CAT_ACTIVA_ID?' active':'')+'" onclick="seleccionarCategoria('+c.id+')">'+esc(c.titulo)+'</button>';
+  }).join('');
+  if(!items) items = '<div style="padding:.9rem;font-size:12px;color:#9896A0">Sin categorías todavía.</div>';
+  side.innerHTML = items + '<button class="cat-sidebar-add" onclick="nuevaCategoria()">+ Nueva categoría</button>';
+}
+
+function seleccionarCategoria(id){
+  CAT_ACTIVA_ID = id;
+  CAT_EDIT_STATE = null;
+  renderSidebar();
+  renderCatMain();
+}
+
+async function nuevaCategoria(){
+  var titulo = prompt('Título de la categoría (ej: "2. Seguridad")');
+  if(!titulo || !titulo.trim()) return;
+  try{
+    var r = await fetch('/api/pilar-gente/categorias',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({titulo:titulo.trim(),username:USER.username,nombre:USER.nombre})});
+    var d = await r.json();
+    if(!r.ok){ alert(d.error||'Error al crear.'); return; }
+    await cargarCategorias();
+    CAT_ACTIVA_ID = d.id;
+    entrarEdicion();
+    renderSidebar();
+    renderCatMain();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+async function borrarCategoria(id){
+  if(!confirm('¿Eliminar esta categoría y todo su contenido?')) return;
+  try{
+    await fetch('/api/pilar-gente/categorias/'+id,{method:'DELETE'});
+    CAT_ACTIVA_ID = null;
+    CAT_EDIT_STATE = null;
+    await cargarCategorias();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function entrarEdicion(){
+  var c = catById(CAT_ACTIVA_ID);
+  if(!c) return;
+  CAT_EDIT_STATE = {
+    titulo: c.titulo,
+    intro: c.intro || '',
+    principios: (c.principios||[]).map(function(p){ return { emoji:p.emoji||'', etiqueta:p.etiqueta }; }),
+    secciones: (c.secciones||[]).map(function(s){ return { subtitulo:s.subtitulo, texto:s.texto||'' }; })
+  };
+  renderCatMain();
+}
+
+function salirEdicion(){
+  CAT_EDIT_STATE = null;
+  renderCatMain();
+}
+
+function editAgregarPrincipio(){ CAT_EDIT_STATE.principios.push({emoji:'',etiqueta:''}); renderCatMain(); }
+function editBorrarPrincipio(i){ CAT_EDIT_STATE.principios.splice(i,1); renderCatMain(); }
+function editAgregarSeccion(){ CAT_EDIT_STATE.secciones.push({subtitulo:'',texto:''}); renderCatMain(); }
+function editBorrarSeccion(i){ CAT_EDIT_STATE.secciones.splice(i,1); renderCatMain(); }
+
+function editSyncFromInputs(){
+  CAT_EDIT_STATE.titulo = document.getElementById('edit-titulo').value;
+  CAT_EDIT_STATE.intro = document.getElementById('edit-intro').value;
+  document.querySelectorAll('#edit-principios .edit-row').forEach(function(row,i){
+    CAT_EDIT_STATE.principios[i].emoji = row.querySelector('.emoji-input').value;
+    CAT_EDIT_STATE.principios[i].etiqueta = row.querySelector('.etiqueta-input').value;
+  });
+  document.querySelectorAll('#edit-secciones .edit-row').forEach(function(row,i){
+    CAT_EDIT_STATE.secciones[i].subtitulo = row.querySelector('.subtitulo-input').value;
+    CAT_EDIT_STATE.secciones[i].texto = row.querySelector('.texto-input').value;
+  });
+}
+
+async function guardarCategoria(){
+  editSyncFromInputs();
+  var titulo = CAT_EDIT_STATE.titulo.trim();
+  if(!titulo){ alert('Ingresá un título.'); return; }
+  try{
+    var r = await fetch('/api/pilar-gente/categorias/'+CAT_ACTIVA_ID,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        titulo: titulo,
+        intro: CAT_EDIT_STATE.intro.trim()||null,
+        principios: CAT_EDIT_STATE.principios.filter(function(p){return p.etiqueta&&p.etiqueta.trim();}),
+        secciones: CAT_EDIT_STATE.secciones.filter(function(s){return s.subtitulo&&s.subtitulo.trim();}),
+        username: USER.username, nombre: USER.nombre
+      })});
+    if(!r.ok){ alert('Error al guardar.'); return; }
+    CAT_EDIT_STATE = null;
+    await cargarCategorias();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function renderCatMainEdit(){
+  var s = CAT_EDIT_STATE;
+  var principiosRows = s.principios.map(function(p,i){
+    return '<div class="edit-row">'
+      +'<input class="emoji-input" value="'+escAttr(p.emoji)+'" placeholder="🤝">'
+      +'<div class="row-fields"><input class="etiqueta-input" value="'+escAttr(p.etiqueta)+'" placeholder="Ej: Compromiso con la calidad"></div>'
+      +'<button class="btn-x" onclick="editSyncFromInputs();editBorrarPrincipio('+i+')" title="Eliminar">✕</button>'
+      +'</div>';
+  }).join('');
+  var seccionesRows = s.secciones.map(function(sec,i){
+    return '<div class="edit-row">'
+      +'<div class="row-fields">'
+      +'<input class="subtitulo-input" value="'+escAttr(sec.subtitulo)+'" placeholder="Subtítulo, ej: Compromiso con la calidad">'
+      +'<textarea class="texto-input" rows="3" placeholder="Texto de esta sección...">'+esc(sec.texto)+'</textarea>'
+      +'</div>'
+      +'<button class="btn-x" onclick="editSyncFromInputs();editBorrarSeccion('+i+')" title="Eliminar">✕</button>'
+      +'</div>';
+  }).join('');
+  return '<div class="edit-field"><label>Título de la categoría</label><input id="edit-titulo" value="'+escAttr(s.titulo)+'" placeholder="Ej: 1. Cultura"></div>'
+    +'<div class="edit-block-title">Principios (tabla)</div>'
+    +'<div id="edit-principios">'+principiosRows+'</div>'
+    +'<button class="btn-add-row" onclick="editSyncFromInputs();editAgregarPrincipio()">+ Agregar principio</button>'
+    +'<div class="edit-field" style="margin-top:1.25rem"><label>Texto introductorio</label><textarea id="edit-intro" rows="5" placeholder="Párrafo introductorio de la categoría...">'+esc(s.intro)+'</textarea></div>'
+    +'<div class="edit-block-title">Secciones (subtítulo + texto)</div>'
+    +'<div id="edit-secciones">'+seccionesRows+'</div>'
+    +'<button class="btn-add-row" onclick="editSyncFromInputs();editAgregarSeccion()">+ Agregar sección</button>'
+    +'<div class="edit-footer">'
+    +'<button class="btn-borrar" onclick="borrarCategoria('+CAT_ACTIVA_ID+')" style="margin-right:auto">Eliminar categoría</button>'
+    +'<button class="btn-cancel" onclick="salirEdicion()">Cancelar</button>'
+    +'<button class="btn-save" onclick="guardarCategoria()">Guardar cambios</button>'
+    +'</div>';
+}
+
+function renderCatMainView(c){
+  var principiosHtml = '';
+  if((c.principios||[]).length>0){
+    principiosHtml = '<div class="principios-card">'
+      +'<div class="principios-head">PRINCIPIOS<small>Construyendo un futuro exitoso</small></div>'
+      +c.principios.map(function(p,i){
+        return '<div class="principio-row"><span class="principio-num">'+(i+1)+'</span>'
+          +(p.emoji?'<span class="principio-emoji">'+esc(p.emoji)+'</span>':'')
+          +'<span class="principio-etiqueta">'+esc(p.etiqueta)+'</span></div>';
+      }).join('')
+      +'</div>';
+  }
+  var introHtml = '<div>'
+    +(c.intro?'<div class="cat-intro-texto">'+esc(c.intro)+'</div>':'<div class="empty" style="padding:0;text-align:left">Sin descripción todavía.</div>')
+    +'</div>';
+  var seccionesHtml = '';
+  if((c.secciones||[]).length>0){
+    seccionesHtml = '<div class="secciones-grid">'
+      +c.secciones.map(function(s){
+        return '<div><div class="seccion-subtitulo">'+esc(s.subtitulo)+'</div><div class="seccion-texto">'+esc(s.texto)+'</div></div>';
+      }).join('')
+      +'</div>';
+  }
+  return '<div class="cat-header">'
+    +'<div><div class="cat-titulo">'+esc(c.titulo)+'</div><div class="cat-underline"></div></div>'
+    +'<button class="btn-editar" onclick="entrarEdicion()">✎ Editar</button>'
+    +'</div>'
+    +'<div class="cat-grid">'+(principiosHtml||'<div></div>')+introHtml+'</div>'
+    +seccionesHtml;
+}
+
+function renderCatMain(){
+  var main = document.getElementById('cat-main');
+  if(CATEGORIAS.length===0 && CAT_EDIT_STATE===null){
+    main.innerHTML = '<div class="empty">Todavía no cargaste ninguna categoría. Usá "+ Nueva categoría" para empezar (ej: "1. Cultura").</div>';
+    return;
+  }
+  var c = catById(CAT_ACTIVA_ID);
+  if(!c){ main.innerHTML = '<div class="empty">Elegí una categoría.</div>'; return; }
+  main.innerHTML = CAT_EDIT_STATE ? renderCatMainEdit() : renderCatMainView(c);
+}
+
 cargar();
+cargarCategorias();
 </script>
 </body>
 </html>
