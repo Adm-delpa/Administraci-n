@@ -65,13 +65,40 @@ a{color:inherit}
 .page-body{font-size:14px;line-height:1.8;color:#3A3935;white-space:pre-wrap;margin-bottom:1.5rem}
 .page-empty{text-align:center;color:#9896A0;font-size:13px;padding:1rem 0}
 
-.recursos{display:flex;flex-direction:column;gap:1.5rem;margin-top:1.5rem}
+/* BLOQUES (vista) */
+.blocks{display:flex;flex-direction:column;gap:1.5rem;margin-top:.5rem}
+.block-texto-view{font-size:14px;line-height:1.8;color:#3A3935;white-space:pre-wrap}
+.block-imagen-view img{max-width:100%;border-radius:10px;display:block}
+.block-imagen-caption{font-size:11.5px;color:#9896A0;margin-top:.5rem;text-align:center}
 .recurso-block{border:1px solid #E7E5E1;border-radius:10px;overflow:hidden}
 .recurso-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:.65rem 1rem;background:#F8F7F5;border-bottom:1px solid #E7E5E1}
 .recurso-label{font-size:12.5px;font-weight:700;color:#18181A;display:flex;align-items:center;gap:7px}
 .recurso-abrir{font-size:11.5px;font-weight:600;color:#0D4FA0;text-decoration:none;white-space:nowrap}
 .recurso-abrir:hover{text-decoration:underline}
 .recurso-iframe{width:100%;height:480px;border:none;display:block}
+
+/* BLOQUES (edición + drag&drop) */
+.blocks-edit{display:flex;flex-direction:column;gap:10px;margin-bottom:.75rem}
+.block-card{border:1.5px solid #E7E5E1;border-radius:10px;background:#fff;transition:border-color .12s,box-shadow .12s}
+.block-card.dragging{opacity:.4}
+.block-card.drag-over{border-color:#0D4FA0;box-shadow:0 0 0 3px #EAF1FB}
+.block-card-head{display:flex;align-items:center;gap:8px;padding:.55rem .7rem;background:#F8F7F5;border-bottom:1px solid #E7E5E1;border-radius:9px 9px 0 0}
+.block-drag-handle{cursor:grab;color:#9896A0;font-size:14px;user-select:none;padding:2px 4px}
+.block-drag-handle:active{cursor:grabbing}
+.block-tipo-label{flex:1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#56555A;display:flex;align-items:center;gap:6px}
+.block-card-body{padding:.75rem .9rem}
+.block-card-body input,.block-card-body textarea{width:100%;padding:.5rem .7rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;margin-bottom:6px}
+.block-card-body input:focus,.block-card-body textarea:focus{border-color:#0D4FA0}
+.block-card-body textarea{resize:vertical;line-height:1.6}
+
+.insertar-wrap{position:relative;display:inline-block}
+.btn-insertar{padding:8px 16px;background:#18181A;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-insertar:hover{background:#0D4FA0}
+.insertar-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;background:#fff;border:1px solid #DDDBD6;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.14);padding:.6rem;z-index:60;width:230px}
+.insertar-menu.open{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.insertar-opt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:.9rem .5rem;background:none;border:1px solid #EDEBE7;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;color:#3A3935}
+.insertar-opt:hover{background:#EAF1FB;border-color:#0D4FA0;color:#0D4FA0}
+.insertar-opt .opt-icon{font-size:20px}
 
 .app-footer{border-top:1px solid #E7E5E1;background:#F8F7F5;padding:1rem 2rem;display:flex;align-items:center;justify-content:center;gap:8px}
 .app-footer-text{font-size:11px;font-weight:700;letter-spacing:.06em;color:#9896A0;text-transform:uppercase}
@@ -156,9 +183,6 @@ var EXPANDED = new Set();
 var VISTA = 'inicio'; // 'inicio' | pagina id
 var EDITANDO = false;
 var EDIT_STATE = null;
-
-var TIPO_ICONS = { sheet:'📊', doc:'📄', slides:'📽️', form:'📝', pdf:'📕', imagen:'🖼️', otro:'🔗' };
-var TIPO_LABELS = { sheet:'Sheet', doc:'Doc', slides:'Slides', form:'Form', pdf:'PDF', imagen:'Imagen', otro:'Otro' };
 
 async function cargarTodo(){
   try{
@@ -265,8 +289,7 @@ function toggleEdit(){
     if(!p) return;
     EDIT_STATE = {
       titulo: p.titulo,
-      texto: p.texto || '',
-      recursos: (p.recursos||[]).map(r => ({ tipo:r.tipo||'otro', titulo:r.titulo||'', url:r.url }))
+      bloques: (p.bloques||[]).map(b => ({ tipo:b.tipo, data: Object.assign({}, b.data) }))
     };
   }
   renderMain();
@@ -293,16 +316,59 @@ async function guardarInicio(){
 
 function editSyncPaginaFromInputs(){
   EDIT_STATE.titulo = document.getElementById('e-titulo').value;
-  EDIT_STATE.texto = document.getElementById('e-texto').value;
-  document.querySelectorAll('#e-recursos .edit-row').forEach(function(row,i){
-    EDIT_STATE.recursos[i].tipo = row.querySelector('.rec-tipo').value;
-    EDIT_STATE.recursos[i].titulo = row.querySelector('.rec-titulo').value;
-    EDIT_STATE.recursos[i].url = row.querySelector('.rec-url').value;
+  document.querySelectorAll('#e-bloques .block-card').forEach(function(card,i){
+    const b = EDIT_STATE.bloques[i];
+    if(b.tipo==='texto'){
+      b.data.texto = card.querySelector('.b-texto').value;
+    } else if(b.tipo==='imagen'){
+      b.data.url = card.querySelector('.b-img-url').value;
+      b.data.caption = card.querySelector('.b-img-caption').value;
+    } else if(b.tipo==='embed'){
+      b.data.url = card.querySelector('.b-embed-url').value;
+      b.data.titulo = card.querySelector('.b-embed-titulo').value;
+    }
   });
 }
 
-function editAgregarRecurso(){ EDIT_STATE.recursos.push({tipo:'otro',titulo:'',url:''}); renderMain(); }
-function editBorrarRecurso(i){ EDIT_STATE.recursos.splice(i,1); renderMain(); }
+function toggleInsertarMenu(){
+  document.getElementById('insertar-menu').classList.toggle('open');
+}
+
+function editAgregarBloque(tipo){
+  editSyncPaginaFromInputs();
+  const defaults = { texto:{texto:''}, imagen:{url:'',caption:''}, embed:{url:'',titulo:''} };
+  EDIT_STATE.bloques.push({ tipo, data: defaults[tipo] });
+  document.getElementById('insertar-menu').classList.remove('open');
+  renderMain();
+}
+
+function editBorrarBloque(i){
+  editSyncPaginaFromInputs();
+  EDIT_STATE.bloques.splice(i,1);
+  renderMain();
+}
+
+var DRAG_INDEX = null;
+function blockDragStart(i){ DRAG_INDEX = i; }
+function blockDragOver(ev, i){
+  ev.preventDefault();
+  document.querySelectorAll('.block-card').forEach(function(c){ c.classList.remove('drag-over'); });
+  const card = document.querySelectorAll('.block-card')[i];
+  if(card && i !== DRAG_INDEX) card.classList.add('drag-over');
+}
+function blockDrop(ev, i){
+  ev.preventDefault();
+  if(DRAG_INDEX === null || DRAG_INDEX === i) return;
+  editSyncPaginaFromInputs();
+  const moved = EDIT_STATE.bloques.splice(DRAG_INDEX, 1)[0];
+  EDIT_STATE.bloques.splice(i, 0, moved);
+  DRAG_INDEX = null;
+  renderMain();
+}
+function blockDragEnd(){
+  DRAG_INDEX = null;
+  document.querySelectorAll('.block-card').forEach(function(c){ c.classList.remove('drag-over'); });
+}
 
 async function guardarPagina(){
   editSyncPaginaFromInputs();
@@ -312,8 +378,10 @@ async function guardarPagina(){
     const r = await fetch('/api/paginas/'+VISTA,{method:'PUT',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         titulo: titulo,
-        texto: EDIT_STATE.texto.trim()||null,
-        recursos: EDIT_STATE.recursos.filter(function(x){return x.url && x.url.trim();})
+        bloques: EDIT_STATE.bloques.filter(function(b){
+          if(b.tipo==='texto') return b.data.texto && b.data.texto.trim();
+          return b.data.url && b.data.url.trim();
+        })
       })});
     if(!r.ok){ alert('Error al guardar.'); return; }
     EDITANDO = false; EDIT_STATE = null;
@@ -321,13 +389,22 @@ async function guardarPagina(){
   }catch(e){ alert('Error de conexión.'); }
 }
 
-function renderRecurso(r){
+function renderBloqueView(b){
+  if(b.tipo==='texto'){
+    return '<div class="block-texto-view">'+esc(b.data.texto)+'</div>';
+  }
+  if(b.tipo==='imagen'){
+    return '<div class="block-imagen-view"><img src="'+escAttr(b.data.url)+'" alt="'+escAttr(b.data.caption||'')+'">'
+      +(b.data.caption?'<div class="block-imagen-caption">'+esc(b.data.caption)+'</div>':'')
+      +'</div>';
+  }
+  // embed
   return '<div class="recurso-block">'
     +'<div class="recurso-head">'
-    +'<span class="recurso-label">'+(TIPO_ICONS[r.tipo]||'🔗')+' '+esc(r.titulo || TIPO_LABELS[r.tipo] || 'Recurso')+'</span>'
-    +'<a class="recurso-abrir" href="'+escAttr(r.url)+'" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a>'
+    +'<span class="recurso-label">🔗 '+esc(b.data.titulo || 'Contenido incorporado')+'</span>'
+    +'<a class="recurso-abrir" href="'+escAttr(b.data.url)+'" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a>'
     +'</div>'
-    +'<iframe class="recurso-iframe" src="'+escAttr(r.url)+'" loading="lazy"></iframe>'
+    +'<iframe class="recurso-iframe" src="'+escAttr(b.data.url)+'" loading="lazy"></iframe>'
     +'</div>';
 }
 
@@ -358,35 +435,52 @@ function renderInicioEdit(){
 }
 
 function renderPaginaView(p){
-  const recursos = p.recursos||[];
+  const bloques = p.bloques||[];
   return '<div class="page-title">'+esc(p.titulo)+'</div>'
     +'<div class="page-underline"></div>'
-    +(p.texto?'<div class="page-body">'+esc(p.texto)+'</div>':'')
-    +(recursos.length>0?'<div class="recursos">'+recursos.map(renderRecurso).join('')+'</div>':'')
-    +(!p.texto && recursos.length===0?'<div class="page-empty">Todavía no cargaste contenido acá. Usá el botón ✎ para agregar texto o recursos.</div>':'');
+    +(bloques.length>0?'<div class="blocks">'+bloques.map(renderBloqueView).join('')+'</div>':'<div class="page-empty">Todavía no cargaste contenido acá. Usá el botón ✎ para insertar texto, imágenes o incorporar archivos.</div>');
+}
+
+function renderBloqueEdit(b, i){
+  const drag = 'draggable="true" ondragstart="blockDragStart('+i+')" ondragover="blockDragOver(event,'+i+')" ondrop="blockDrop(event,'+i+')" ondragend="blockDragEnd()"';
+  let label, body;
+  if(b.tipo==='texto'){
+    label = '📝 Texto';
+    body = '<textarea class="b-texto" rows="4" placeholder="Escribí el texto...">'+esc(b.data.texto)+'</textarea>';
+  } else if(b.tipo==='imagen'){
+    label = '🖼️ Imagen';
+    body = '<input class="b-img-url" value="'+escAttr(b.data.url)+'" placeholder="Link de la imagen (Drive, etc.)">'
+      +'<input class="b-img-caption" value="'+escAttr(b.data.caption)+'" placeholder="Descripción (opcional)">';
+  } else {
+    label = '🔗 Incorporar (Drive, Sheets, Docs, Slides, Forms, PDF...)';
+    body = '<input class="b-embed-url" value="'+escAttr(b.data.url)+'" placeholder="Link para incorporar">'
+      +'<input class="b-embed-titulo" value="'+escAttr(b.data.titulo)+'" placeholder="Título (opcional)">';
+  }
+  return '<div class="block-card" '+drag+'>'
+    +'<div class="block-card-head">'
+    +'<span class="block-drag-handle" title="Arrastrar para reordenar">⠿⠿</span>'
+    +'<span class="block-tipo-label">'+label+'</span>'
+    +'<button class="btn-x" style="width:24px;height:24px" onclick="editBorrarBloque('+i+')" title="Eliminar">✕</button>'
+    +'</div>'
+    +'<div class="block-card-body">'+body+'</div>'
+    +'</div>';
 }
 
 function renderPaginaEdit(){
   const s = EDIT_STATE;
-  const recursosRows = s.recursos.map(function(r,i){
-    return '<div class="edit-row">'
-      +'<select class="rec-tipo">'
-      +Object.keys(TIPO_LABELS).map(function(t){return '<option value="'+t+'"'+(t===r.tipo?' selected':'')+'>'+TIPO_ICONS[t]+' '+TIPO_LABELS[t]+'</option>';}).join('')
-      +'</select>'
-      +'<div class="row-fields">'
-      +'<input class="rec-titulo" value="'+escAttr(r.titulo)+'" placeholder="Nombre del recurso (opcional)">'
-      +'<input class="rec-url" value="'+escAttr(r.url)+'" placeholder="Link para insertar/embed (Publicar en la Web de Google)">'
-      +'</div>'
-      +'<button class="btn-x" onclick="editSyncPaginaFromInputs();editBorrarRecurso('+i+')" title="Eliminar">✕</button>'
-      +'</div>';
-  }).join('');
   return '<div class="edit-card">'
     +'<div class="edit-title">Editar sección</div>'
     +'<div class="edit-field"><label>Título</label><input id="e-titulo" value="'+escAttr(s.titulo)+'"></div>'
-    +'<div class="edit-field"><label>Texto</label><textarea id="e-texto" rows="6" placeholder="Descripción de esta sección...">'+esc(s.texto)+'</textarea></div>'
-    +'<div class="edit-block-title">Recursos incrustados (Sheets, Docs, Slides, Forms, PDFs, imágenes)</div>'
-    +'<div id="e-recursos">'+recursosRows+'</div>'
-    +'<button class="btn-add-row" onclick="editSyncPaginaFromInputs();editAgregarRecurso()">+ Agregar recurso</button>'
+    +'<div class="edit-block-title">Contenido</div>'
+    +'<div id="e-bloques" class="blocks-edit">'+s.bloques.map(renderBloqueEdit).join('')+'</div>'
+    +'<div class="insertar-wrap">'
+    +'<button class="btn-insertar" onclick="editSyncPaginaFromInputs();toggleInsertarMenu()">+ Insertar</button>'
+    +'<div class="insertar-menu" id="insertar-menu">'
+    +'<button class="insertar-opt" onclick="editAgregarBloque(\'texto\')"><span class="opt-icon">📝</span>Cuadro de texto</button>'
+    +'<button class="insertar-opt" onclick="editAgregarBloque(\'imagen\')"><span class="opt-icon">🖼️</span>Imagen</button>'
+    +'<button class="insertar-opt" onclick="editAgregarBloque(\'embed\')"><span class="opt-icon">🔗</span>Incorporar</button>'
+    +'</div>'
+    +'</div>'
     +'<div class="edit-footer">'
     +'<button class="btn-borrar-pagina" onclick="borrarPagina('+VISTA+')">Eliminar sección</button>'
     +'<button class="btn-cancel" onclick="toggleEdit()">Cancelar</button>'
@@ -405,6 +499,12 @@ function renderMain(){
   if(!p){ cont.innerHTML = '<div class="page-empty">Elegí una sección del menú.</div>'; return; }
   cont.innerHTML = EDITANDO ? renderPaginaEdit() : renderPaginaView(p);
 }
+
+document.addEventListener('click', function(ev){
+  const menu = document.getElementById('insertar-menu');
+  if(!menu || !menu.classList.contains('open')) return;
+  if(!ev.target.closest('.insertar-wrap')) menu.classList.remove('open');
+});
 
 cargarTodo();
 </script>

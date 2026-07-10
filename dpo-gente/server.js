@@ -95,12 +95,11 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS dpo_recursos (
+      CREATE TABLE IF NOT EXISTS dpo_bloques (
         id SERIAL PRIMARY KEY,
         pagina_id INTEGER NOT NULL REFERENCES dpo_paginas(id) ON DELETE CASCADE,
-        tipo VARCHAR(20) DEFAULT 'otro',
-        titulo VARCHAR(200),
-        url TEXT NOT NULL,
+        tipo VARCHAR(20) NOT NULL,
+        data JSONB NOT NULL DEFAULT '{}',
         orden INTEGER DEFAULT 0
       );
     `);
@@ -144,10 +143,10 @@ app.put('/api/config', async (req, res) => {
 app.get('/api/paginas', async (req, res) => {
   try {
     const pags = await pool.query('SELECT * FROM dpo_paginas ORDER BY parent_id NULLS FIRST, orden ASC, id ASC');
-    const recs = await pool.query('SELECT * FROM dpo_recursos ORDER BY orden ASC, id ASC');
-    const recMap = {};
-    recs.rows.forEach(r => { (recMap[r.pagina_id] = recMap[r.pagina_id] || []).push(r); });
-    res.json(pags.rows.map(p => ({ ...p, recursos: recMap[p.id] || [] })));
+    const bloques = await pool.query('SELECT * FROM dpo_bloques ORDER BY orden ASC, id ASC');
+    const bMap = {};
+    bloques.rows.forEach(b => { (bMap[b.pagina_id] = bMap[b.pagina_id] || []).push(b); });
+    res.json(pags.rows.map(p => ({ ...p, bloques: bMap[p.id] || [] })));
   } catch(e) { res.status(500).json({ error: 'Error al leer' }); }
 });
 
@@ -163,25 +162,27 @@ app.post('/api/paginas', async (req, res) => {
       'INSERT INTO dpo_paginas (titulo, parent_id, orden) VALUES ($1,$2,$3) RETURNING *',
       [titulo.trim(), parent_id || null, ordenRes.rows[0].orden]
     );
-    res.json({ ...r.rows[0], recursos: [] });
+    res.json({ ...r.rows[0], bloques: [] });
   } catch(e) { res.status(500).json({ error: 'Error al crear' }); }
 });
 
+const TIPOS_BLOQUE = ['texto', 'imagen', 'embed'];
+
 app.put('/api/paginas/:id', async (req, res) => {
-  const { titulo, texto, recursos } = req.body;
+  const { titulo, bloques } = req.body;
   const { id } = req.params;
   if (!titulo || !titulo.trim()) return res.status(400).json({ error: 'Faltan datos' });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('UPDATE dpo_paginas SET titulo=$1, texto=$2 WHERE id=$3', [titulo.trim(), texto||null, id]);
-    await client.query('DELETE FROM dpo_recursos WHERE pagina_id=$1', [id]);
-    const list = Array.isArray(recursos) ? recursos : [];
+    await client.query('UPDATE dpo_paginas SET titulo=$1 WHERE id=$2', [titulo.trim(), id]);
+    await client.query('DELETE FROM dpo_bloques WHERE pagina_id=$1', [id]);
+    const list = Array.isArray(bloques) ? bloques : [];
     for (let i = 0; i < list.length; i++) {
-      if (!list[i].url) continue;
+      if (!TIPOS_BLOQUE.includes(list[i].tipo)) continue;
       await client.query(
-        'INSERT INTO dpo_recursos (pagina_id, tipo, titulo, url, orden) VALUES ($1,$2,$3,$4,$5)',
-        [id, list[i].tipo||'otro', list[i].titulo||null, list[i].url, i]
+        'INSERT INTO dpo_bloques (pagina_id, tipo, data, orden) VALUES ($1,$2,$3,$4)',
+        [id, list[i].tipo, JSON.stringify(list[i].data||{}), i]
       );
     }
     await client.query('COMMIT');
