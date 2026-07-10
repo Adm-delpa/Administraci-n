@@ -268,9 +268,32 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
         <label style="font-size:12px;font-weight:600;color:#56555A">Año</label>
         <select id="evol-año" class="filtro-sel" onchange="renderEvolucion()"></select>
       </div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Acumulado anual</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:240px"><canvas id="chart-acum"></canvas></div></div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Venta neta mensual</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:240px"><canvas id="chart-venta"></canvas></div></div>
-      <div class="chart-card"><div class="chart-hdr"><div class="chart-title">Composición (%)</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:220px"><canvas id="chart-pct"></canvas></div></div>
+      <div style="display:flex;gap:10px;align-items:stretch;margin-bottom:10px">
+        <div class="chart-card" style="flex:1;margin-bottom:0"><div class="chart-hdr"><div class="chart-title">Venta neta mensual</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:240px"><canvas id="chart-venta"></canvas></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:155px">
+          <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1E6FD9;margin-bottom:4px">Acum. Fact. A y B</div>
+            <div id="acum-ab" style="font-size:18px;font-weight:700;color:#18181A;font-variant-numeric:tabular-nums">—</div>
+          </div>
+          <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#C4820A;margin-bottom:4px">Acum. Presupuesto</div>
+            <div id="acum-pres" style="font-size:18px;font-weight:700;color:#18181A;font-variant-numeric:tabular-nums">—</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:stretch;margin-bottom:10px">
+        <div class="chart-card" style="flex:1;margin-bottom:0"><div class="chart-hdr"><div class="chart-title">Composición (%)</div><div class="chart-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact. A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div></div><div style="position:relative;height:220px"><canvas id="chart-pct"></canvas></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:155px">
+          <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1E6FD9;margin-bottom:4px">% Acum. Fact.</div>
+            <div id="acum-pct-ab" style="font-size:18px;font-weight:700;color:#18181A;font-variant-numeric:tabular-nums">—</div>
+          </div>
+          <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#C4820A;margin-bottom:4px">% Acum. Pres.</div>
+            <div id="acum-pct-pres" style="font-size:18px;font-weight:700;color:#18181A;font-variant-numeric:tabular-nums">—</div>
+          </div>
+        </div>
+      </div>
       <div class="chart-card"><div class="chart-hdr"><div class="chart-title">IVA estimado a ingresar</div></div><div style="position:relative;height:200px"><canvas id="chart-iva"></canvas></div></div>
     </div>
   </div>
@@ -560,8 +583,14 @@ function renderEvolucion(){
   const legendOpts={display:true,labels:{font:{size:11},color:'#56555A',boxWidth:10}};
   const mFmt=v=>'$'+(v/1000000).toFixed(0)+'M';
 
-  if(charts.a)charts.a.destroy();
-  charts.a=new Chart(document.getElementById('chart-acum'),{type:'line',data:{labels,datasets:[{label:'Fact. A y B',data:dAcumAB,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',...lineOpts,fill:true,pointBackgroundColor:'#1E6FD9'},{label:'Presupuesto',data:dAcumPres,borderColor:'#C4820A',backgroundColor:'rgba(196,130,10,.08)',...lineOpts,pointBackgroundColor:'#C4820A'}]},options:{...base,plugins:{...base.plugins,legend:legendOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:mFmt}}}}});
+  const fmtAcum=v=>'$'+(v/1000000).toFixed(1)+'M';
+  document.getElementById('acum-ab').textContent=fmtAcum(dAcumAB[dAcumAB.length-1]||0);
+  document.getElementById('acum-pres').textContent=fmtAcum(dAcumPres[dAcumPres.length-1]||0);
+  const totalVentaAcum=keys.reduce((s,k)=>s+(db[k].total_venta||0),0);
+  const acumAB=dAcumAB[dAcumAB.length-1]||0;
+  const acumPres=dAcumPres[dAcumPres.length-1]||0;
+  document.getElementById('acum-pct-ab').textContent=totalVentaAcum?(acumAB/totalVentaAcum*100).toFixed(1)+'%':'—';
+  document.getElementById('acum-pct-pres').textContent=totalVentaAcum?(acumPres/totalVentaAcum*100).toFixed(1)+'%':'—';
   if(charts.v)charts.v.destroy();
   charts.v=new Chart(document.getElementById('chart-venta'),{type:'line',data:{labels,datasets:[{label:'Fact. A y B',data:dAB,borderColor:'#1E6FD9',backgroundColor:'rgba(30,111,217,.08)',...lineOpts,pointBackgroundColor:'#1E6FD9'},{label:'Presupuesto',data:dPres,borderColor:'#C4820A',backgroundColor:'rgba(196,130,10,.08)',...lineOpts,pointBackgroundColor:'#C4820A'}]},options:{...base,plugins:{...base.plugins,legend:legendOpts},scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:mFmt}}}}});
   if(charts.p)charts.p.destroy();
