@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pilar Gente (DPO) — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;text-decoration:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 10px;transition:all .15s}
+.topbar-back:hover{background:rgba(255,255,255,.15);color:#fff}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:900px;margin:0 auto;padding:2rem 1rem}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem;flex-wrap:wrap;gap:10px}
+.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+.page-sub{font-size:12px;color:#9896A0;font-weight:500;margin-bottom:1.25rem}
+
+.btn-nuevo{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-nuevo:hover{background:#0D4FA0}
+
+.form-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;display:none}
+.form-title{font-size:14px;font-weight:700;color:#18181A;margin-bottom:1rem}
+.form-grid{display:grid;grid-template-columns:1fr 160px;gap:10px;margin-bottom:10px}
+.field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .15s;background:#fff;color:#18181A}
+.field input:focus,.field textarea:focus{border-color:#1E6FD9}
+.field textarea{resize:vertical;height:72px;line-height:1.5}
+.form-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.btn-cancel{padding:7px 14px;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.btn-save{padding:7px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-save:hover{background:#0D4FA0}
+
+.tabs{display:flex;gap:4px;border-bottom:2px solid #DDDBD6;margin-bottom:1.25rem}
+.tab-btn{padding:.55rem 1rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:none;background:none;cursor:pointer;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:6px 6px 0 0;display:flex;align-items:center;gap:6px}
+.tab-btn:hover{color:#1E6FD9;background:#fff}
+.tab-btn.active{color:#1E6FD9;border-bottom-color:#1E6FD9;background:#fff}
+.tab-count{font-size:10px;background:#F2F1EE;color:#56555A;padding:1px 7px;border-radius:20px;font-weight:700}
+.tab-btn.active .tab-count{background:#DCE9FA;color:#1E6FD9}
+
+.section{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
+.item{padding:.9rem 1.1rem;border-bottom:1px solid #F5F5F7}
+.item:last-child{border-bottom:none}
+.item-top{display:flex;align-items:flex-start;gap:14px}
+.item-body{flex:1;min-width:0}
+.item-titulo{font-size:13px;font-weight:600;color:#18181A;margin-bottom:3px}
+.item-desc{font-size:12px;color:#56555A;margin-bottom:5px;line-height:1.45;white-space:pre-wrap}
+.item-meta{font-size:11px;color:#9896A0}
+.item-meta span{color:#56555A}
+.item-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#1E6FD9;text-decoration:none;font-weight:600;margin-top:4px}
+.item-link:hover{text-decoration:underline}
+.item-right{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.estado-select{padding:.35rem .6rem;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;cursor:pointer;background:#fff}
+.estado-pendiente{background:#DBEAFE;color:#1D4ED8;border-color:#BFDBFE}
+.estado-en_proceso{background:#FEF3C7;color:#92400E;border-color:#FDE68A}
+.estado-hecho{background:#D4F2E8;color:#075C41;border-color:#A7E3CC}
+.btn-borrar{background:none;border:none;color:#C0392B;font-size:11px;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif}
+.btn-borrar:hover{text-decoration:underline}
+.fecha-limite{font-size:11px;font-weight:600}
+.fecha-limite.vencida{color:#A32D2D}
+.empty{padding:2rem;text-align:center;color:#9896A0;font-size:13px}
+.msg-err{background:#FAE0E0;color:#8A1F1F;padding:.5rem .85rem;border-radius:6px;font-size:12px;font-weight:500;margin-top:.5rem;display:none}
+
+.notas-section{margin-top:.75rem;border-top:1px solid #F5F5F7;padding-top:.75rem}
+.notas-toggle{background:none;border:none;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:#1E6FD9;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px}
+.notas-toggle:hover{text-decoration:underline}
+.notas-body{margin-top:.6rem;display:none}
+.notas-body.open{display:block}
+.nota-item{display:flex;gap:8px;margin-bottom:.5rem;align-items:flex-start}
+.nota-dot{width:7px;height:7px;border-radius:50%;background:#1E6FD9;flex-shrink:0;margin-top:4px}
+.nota-content{flex:1}
+.nota-meta{font-size:10px;color:#9896A0;font-weight:600;margin-bottom:2px}
+.nota-texto{font-size:12px;color:#56555A;background:#F8F7F5;border:1px solid #DDDBD6;border-radius:7px;padding:.4rem .65rem;line-height:1.5}
+.nota-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#1E6FD9;text-decoration:none;font-weight:600;margin-top:4px}
+.nota-link:hover{text-decoration:underline}
+.add-nota{display:flex;flex-direction:column;gap:6px;margin-top:.5rem}
+.add-nota-row{display:flex;gap:8px;align-items:flex-start}
+.nota-input{flex:1;padding:.45rem .7rem;border-radius:7px;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;font-size:12px;color:#18181A;resize:none;line-height:1.5}
+.nota-input:focus{outline:none;border-color:#1E6FD9}
+.nota-link-input{padding:.4rem .7rem;border-radius:7px;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;font-size:11px;color:#18181A}
+.nota-link-input:focus{outline:none;border-color:#1E6FD9}
+.btn-add-nota{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#1E6FD9;color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;align-self:flex-end}
+
+@media(max-width:600px){.topbar{padding:.75rem 1rem}.form-grid{grid-template-columns:1fr}.item-top{flex-direction:column}.item-right{flex-direction:row;align-items:center}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/panel" class="topbar-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Panel
+    </a>
+    <div class="topbar-titulo">Pilar Gente (DPO)</div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-title">Pilar Gente (DPO)</div>
+    <button class="btn-nuevo" onclick="toggleForm()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo seguimiento
+    </button>
+  </div>
+  <div class="page-sub">Seguimiento de pedidos del pilar Gente del DPO Quilmes y su evidencia (Drive).</div>
+
+  <div class="form-card" id="form-card">
+    <div class="form-title">Nuevo seguimiento</div>
+    <div class="form-grid">
+      <div class="field"><label>Título</label><input type="text" id="f-titulo" placeholder="Ej: Capacitación seguridad vial"></div>
+      <div class="field"><label>Fecha límite <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="date" id="f-fecha"></div>
+    </div>
+    <div class="field" style="margin-bottom:10px"><label>Descripción <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
+      <textarea id="f-desc" placeholder="Detalle del pedido, contexto, referencia..."></textarea>
+    </div>
+    <div class="field" style="margin-bottom:10px"><label>Link de Drive con evidencia <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
+      <input type="text" id="f-link" placeholder="https://drive.google.com/...">
+    </div>
+    <div class="msg-err" id="form-err"></div>
+    <div class="form-footer">
+      <button class="btn-cancel" onclick="toggleForm()">Cancelar</button>
+      <button class="btn-save" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-estado="todos" onclick="cambiarTab('todos')">Todos <span class="tab-count" id="count-todos">0</span></button>
+    <button class="tab-btn" data-estado="pendiente" onclick="cambiarTab('pendiente')">Pendiente <span class="tab-count" id="count-pendiente">0</span></button>
+    <button class="tab-btn" data-estado="en_proceso" onclick="cambiarTab('en_proceso')">En curso <span class="tab-count" id="count-en_proceso">0</span></button>
+    <button class="tab-btn" data-estado="hecho" onclick="cambiarTab('hecho')">Hecho <span class="tab-count" id="count-hecho">0</span></button>
+  </div>
+
+  <div class="section" id="sec-items">
+    <div id="list-items"><div class="empty">Cargando...</div></div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) { window.location.href = '/'; }
+document.getElementById('user-nombre').textContent = USER.nombre || USER.username;
+document.getElementById('user-avatar').textContent = (USER.nombre||USER.username).charAt(0).toUpperCase();
+
+var ITEMS = [];
+var TAB_ACTIVA = 'todos';
+var ESTADO_LABEL = { pendiente: 'Pendiente', en_proceso: 'En curso', hecho: 'Hecho' };
+
+function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T').slice(0,10)+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T')); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
+
+function toggleForm(){
+  var f=document.getElementById('form-card');
+  var visible=f.style.display==='block';
+  f.style.display=visible?'none':'block';
+  if(!visible){ document.getElementById('f-titulo').focus(); }
+  if(visible){ document.getElementById('f-titulo').value=''; document.getElementById('f-desc').value=''; document.getElementById('f-link').value=''; document.getElementById('f-fecha').value=''; showErr(''); }
+}
+
+function showErr(msg){ var el=document.getElementById('form-err'); el.textContent=msg; el.style.display=msg?'block':'none'; }
+
+async function guardar(){
+  var titulo=document.getElementById('f-titulo').value.trim();
+  var descripcion=document.getElementById('f-desc').value.trim();
+  var link_drive=document.getElementById('f-link').value.trim();
+  var fecha_limite=document.getElementById('f-fecha').value;
+  if(!titulo){ showErr('Ingresá un título.'); return; }
+  try{
+    var r=await fetch('/api/pilar-gente',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({titulo,descripcion:descripcion||null,link_drive:link_drive||null,fecha_limite:fecha_limite||null,username:USER.username,nombre:USER.nombre})});
+    var d=await r.json();
+    if(!r.ok){ showErr(d.error||'Error al guardar.'); return; }
+    toggleForm();
+    await cargar();
+  }catch(e){ showErr('Error de conexión.'); }
+}
+
+async function cambiarEstado(id, estado){
+  try{
+    await fetch('/api/pilar-gente/'+id+'/estado',{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({estado,username:USER.username,nombre:USER.nombre})});
+    await cargar();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+async function borrar(id){
+  if(!confirm('¿Eliminar este seguimiento?')) return;
+  try{
+    var r=await fetch('/api/pilar-gente/'+id,{method:'DELETE'});
+    if(r.ok) await cargar();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function toggleNotas(id){
+  var b=document.getElementById('notas-body-'+id);
+  if(!b) return;
+  b.classList.toggle('open');
+  var btn=document.getElementById('notas-toggle-'+id);
+  if(btn) btn.textContent = b.classList.contains('open') ? '▲ Ocultar seguimiento' : btn.dataset.label;
+}
+
+async function agregarNota(id){
+  var inp=document.getElementById('nota-input-'+id);
+  var linkInp=document.getElementById('nota-link-'+id);
+  var texto=inp.value.trim();
+  var link=linkInp.value.trim();
+  if(!texto){ return; }
+  try{
+    var r=await fetch('/api/pilar-gente/'+id+'/notas',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({texto,link:link||null,username:USER.username,nombre:USER.nombre})});
+    if(r.ok){ inp.value=''; linkInp.value=''; await cargar(); document.getElementById('notas-body-'+id).classList.add('open'); }
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function renderNotas(it){
+  var notas=it.notas||[];
+  var notasHtml=notas.map(function(n){
+    return '<div class="nota-item">'
+      +'<div class="nota-dot"></div>'
+      +'<div class="nota-content">'
+      +'<div class="nota-meta">'+esc(n.nombre||n.username)+' · '+fmtFechaHora(n.created_at)+'</div>'
+      +'<div class="nota-texto">'+esc(n.texto)+'</div>'
+      +(n.link?'<a class="nota-link" href="'+escAttr(n.link)+'" target="_blank" rel="noopener">🔗 Ver evidencia</a>':'')
+      +'</div></div>';
+  }).join('');
+  var label='▼ Seguimiento ('+notas.length+')';
+  return '<div class="notas-section">'
+    +'<button class="notas-toggle" id="notas-toggle-'+it.id+'" data-label="'+escAttr(label)+'" onclick="toggleNotas('+it.id+')">'+label+'</button>'
+    +'<div class="notas-body" id="notas-body-'+it.id+'">'
+    +notasHtml
+    +'<div class="add-nota">'
+    +'<div class="add-nota-row">'
+    +'<textarea class="nota-input" id="nota-input-'+it.id+'" rows="2" placeholder="Agregar avance de seguimiento..."></textarea>'
+    +'<button class="btn-add-nota" onclick="agregarNota('+it.id+')">Agregar</button>'
+    +'</div>'
+    +'<input type="text" class="nota-link-input" id="nota-link-'+it.id+'" placeholder="Link de Drive con evidencia (opcional)">'
+    +'</div>'
+    +'</div></div>';
+}
+
+function renderItem(it){
+  var hoy=new Date().toISOString().slice(0,10);
+  var vencida = it.fecha_limite && String(it.fecha_limite).slice(0,10) < hoy && it.estado!=='hecho';
+  return '<div class="item">'
+    +'<div class="item-top">'
+    +'<div class="item-body">'
+    +'<div class="item-titulo">'+esc(it.titulo)+'</div>'
+    +(it.descripcion?'<div class="item-desc">'+esc(it.descripcion)+'</div>':'')
+    +'<div class="item-meta">Cargado por <span>'+esc(it.cargado_por_nombre||it.cargado_por)+'</span> · '+fmtFechaHora(it.cargado_at)
+    +(it.fecha_limite?' · <span class="fecha-limite'+(vencida?' vencida':'')+'">Vence '+fmtFecha(it.fecha_limite)+(vencida?' (vencida)':'')+'</span>':'')
+    +'</div>'
+    +(it.link_drive?'<a class="item-link" href="'+escAttr(it.link_drive)+'" target="_blank" rel="noopener">🔗 Ver evidencia</a>':'')
+    +'</div>'
+    +'<div class="item-right">'
+    +'<select class="estado-select estado-'+it.estado+'" onchange="cambiarEstado('+it.id+',this.value)">'
+    +['pendiente','en_proceso','hecho'].map(function(e){return '<option value="'+e+'"'+(e===it.estado?' selected':'')+'>'+ESTADO_LABEL[e]+'</option>';}).join('')
+    +'</select>'
+    +'<button class="btn-borrar" onclick="borrar('+it.id+')">Eliminar</button>'
+    +'</div>'
+    +'</div>'
+    +renderNotas(it)
+    +'</div>';
+}
+
+function cambiarTab(estado){
+  TAB_ACTIVA = estado;
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.estado===estado); });
+  render();
+}
+
+function render(){
+  var filtrados = TAB_ACTIVA==='todos' ? ITEMS : ITEMS.filter(function(i){ return i.estado===TAB_ACTIVA; });
+  var lista=document.getElementById('list-items');
+  lista.innerHTML = filtrados.length===0 ? '<div class="empty">Sin seguimientos.</div>' : filtrados.map(renderItem).join('');
+
+  document.getElementById('count-todos').textContent = ITEMS.length;
+  ['pendiente','en_proceso','hecho'].forEach(function(e){
+    document.getElementById('count-'+e).textContent = ITEMS.filter(function(i){return i.estado===e;}).length;
+  });
+}
+
+async function cargar(){
+  try{
+    var r=await fetch('/api/pilar-gente');
+    ITEMS = await r.json();
+    render();
+  }catch(e){
+    document.getElementById('list-items').innerHTML='<div class="empty" style="color:#C0392B">Error al cargar.</div>';
+  }
+}
+
+cargar();
+</script>
+</body>
+</html>

@@ -22,6 +22,9 @@ const ROUTE_LABELS = {
   'PUT /api/tickets/:id/proceso':               { accion: 'ticket_en_proceso',     label: (b,p) => `Pasó ticket #${p.id} a en proceso` },
   'POST /api/tickets/:id/notas':                { accion: 'ticket_nota',           label: (b,p) => `Nota en ticket #${p.id}: ${(b.texto||'').slice(0,80)}` },
   'PUT /api/tickets/:id/finalizar':             { accion: 'ticket_finalizado',     label: (b,p) => `Finalizó ticket #${p.id} (${b.resuelto?'resuelto':'no resuelto'})` },
+  'POST /api/pilar-gente':                      { accion: 'pilar_gente_cargado',   label: (b) => `Cargó seguimiento Pilar Gente: ${b.titulo}` },
+  'PUT /api/pilar-gente/:id/estado':            { accion: 'pilar_gente_estado',    label: (b,p) => `Cambió estado de seguimiento #${p.id} a ${b.estado}` },
+  'POST /api/pilar-gente/:id/notas':            { accion: 'pilar_gente_nota',      label: (b,p) => `Nota en seguimiento #${p.id}: ${(b.texto||'').slice(0,80)}` },
 };
 
 function matchRoute(method, url) {
@@ -270,6 +273,28 @@ async function initDB() {
         archivo VARCHAR(200),
         filas INTEGER,
         subido_por VARCHAR(100),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS pilar_gente_items (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(200) NOT NULL,
+        descripcion TEXT,
+        link_drive TEXT,
+        fecha_limite DATE,
+        estado VARCHAR(20) DEFAULT 'pendiente',
+        cargado_por VARCHAR(50) NOT NULL,
+        cargado_por_nombre VARCHAR(100),
+        cargado_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS pilar_gente_notas (
+        id SERIAL PRIMARY KEY,
+        item_id INTEGER NOT NULL REFERENCES pilar_gente_items(id) ON DELETE CASCADE,
+        texto TEXT NOT NULL,
+        link TEXT,
+        username VARCHAR(50) NOT NULL,
+        nombre VARCHAR(100),
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
@@ -602,6 +627,62 @@ app.delete('/api/tickets/:id', async (req, res) => {
     await pool.query('DELETE FROM tickets WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error al eliminar' }); }
+});
+
+// ── PILAR GENTE (DPO) ──
+
+app.get('/api/pilar-gente', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM pilar_gente_items ORDER BY estado ASC, cargado_at DESC');
+    const notas = await pool.query('SELECT * FROM pilar_gente_notas ORDER BY created_at ASC');
+    const notasMap = {};
+    notas.rows.forEach(n => { if(!notasMap[n.item_id]) notasMap[n.item_id]=[]; notasMap[n.item_id].push(n); });
+    res.json(r.rows.map(row => ({ ...row, notas: notasMap[row.id] || [] })));
+  } catch(e) { res.status(500).json({ error: 'Error al leer' }); }
+});
+
+app.post('/api/pilar-gente', async (req, res) => {
+  const { titulo, descripcion, link_drive, fecha_limite, username, nombre } = req.body;
+  if (!titulo || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO pilar_gente_items (titulo, descripcion, link_drive, fecha_limite, cargado_por, cargado_por_nombre) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+      [titulo, descripcion||null, link_drive||null, fecha_limite||null, username, nombre||username]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al guardar' }); }
+});
+
+app.put('/api/pilar-gente/:id/estado', async (req, res) => {
+  const { estado, username, nombre } = req.body;
+  const { id } = req.params;
+  if (!['pendiente','en_proceso','hecho'].includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
+  try {
+    const r = await pool.query('UPDATE pilar_gente_items SET estado=$1 WHERE id=$2 RETURNING *', [estado, id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al actualizar' }); }
+});
+
+app.post('/api/pilar-gente/:id/notas', async (req, res) => {
+  const { texto, link, username, nombre } = req.body;
+  const { id } = req.params;
+  if (!texto || !username) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO pilar_gente_notas (item_id, texto, link, username, nombre) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [id, texto, link||null, username, nombre||username]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'Error al guardar nota' }); }
+});
+
+app.delete('/api/pilar-gente/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM pilar_gente_items WHERE id=$1', [id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
 });
 
 app.get('/api/usuarios-lista', async (req, res) => {
@@ -1134,6 +1215,7 @@ app.get('/tickets', (req, res) => res.sendFile(path.join(__dirname, 'public', 't
 app.get('/administracion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion.html')));
 app.get('/tareas', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tareas.html')));
 app.get('/cuentas-pagar', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cuentas-pagar.html')));
+app.get('/pilar-gente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pilar-gente.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
