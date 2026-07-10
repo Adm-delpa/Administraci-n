@@ -3,583 +3,410 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pilar Gente (DPO) — Del Palacio S.A.</title>
+<title>Gente — del Palacio S.A</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh}
+body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#18181A}
+a{color:inherit}
 
-.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.topbar-back{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;text-decoration:none;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 10px;transition:all .15s}
-.topbar-back:hover{background:rgba(255,255,255,.15);color:#fff}
-.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
-.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
-.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
-.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+.app{display:flex;min-height:100vh}
 
-.page{max-width:900px;margin:0 auto;padding:2rem 1rem}
-.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem;flex-wrap:wrap;gap:10px}
-.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
-.page-sub{font-size:12px;color:#9896A0;font-weight:500;margin-bottom:1.25rem}
+/* SIDEBAR */
+.sidebar{width:270px;flex-shrink:0;border-right:1px solid #E7E5E1;display:flex;flex-direction:column;height:100vh;position:sticky;top:0}
+.sidebar-header{padding:1.5rem 1.25rem 1.1rem;display:flex;align-items:center;gap:12px}
+.sidebar-logo{width:46px;height:46px;flex-shrink:0}
+.sidebar-logo img{width:100%;height:100%;object-fit:contain}
+.sidebar-empresa{font-size:16px;font-weight:700;color:#18181A;letter-spacing:-.01em}
 
-.btn-nuevo{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
-.btn-nuevo:hover{background:#0D4FA0}
+.sidebar-nav{flex:1;overflow-y:auto;padding:0 .9rem}
+.nav-inicio{display:block;width:100%;text-align:left;background:#18181A;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:.6rem}
+.nav-inicio:hover{background:#000}
+.nav-inicio.active{background:#0D4FA0}
 
-.form-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;display:none}
-.form-title{font-size:14px;font-weight:700;color:#18181A;margin-bottom:1rem}
-.form-grid{display:grid;grid-template-columns:1fr 160px;gap:10px;margin-bottom:10px}
-.field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
-.field input,.field textarea{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .15s;background:#fff;color:#18181A}
-.field input:focus,.field textarea:focus{border-color:#1E6FD9}
-.field textarea{resize:vertical;height:72px;line-height:1.5}
-.form-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
-.btn-cancel{padding:7px 14px;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
-.btn-save{padding:7px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
-.btn-save:hover{background:#0D4FA0}
+.nav-node{margin-bottom:1px}
+.nav-row{display:flex;align-items:center;gap:4px}
+.nav-label{flex:1;display:flex;align-items:center;gap:6px;text-align:left;background:none;border:none;padding:7px 8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:#18181A;cursor:pointer;border-radius:6px;text-transform:uppercase;letter-spacing:.01em;line-height:1.35}
+.nav-node[data-depth="1"] .nav-label{font-size:12px;font-weight:500;text-transform:none;color:#3A3935}
+.nav-node[data-depth="2"] .nav-label{font-size:11.5px;font-weight:500;text-transform:none;color:#56555A}
+.nav-node[data-depth="3"] .nav-label{font-size:11px;font-weight:500;text-transform:none;color:#77756F}
+.nav-label:hover{background:#F5F4F1}
+.nav-label.active{background:#EAF1FB;color:#0D4FA0}
+.nav-chevron{flex-shrink:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:#9896A0;transition:transform .15s}
+.nav-chevron.open{transform:rotate(90deg)}
+.nav-children{margin-left:14px;padding-left:8px;border-left:1px solid #EDEBE7;display:none}
+.nav-children.open{display:block}
+.nav-add-child{display:none}
+.nav-node:hover>.nav-row>.nav-add-child{display:inline-flex}
+.nav-add-child{align-items:center;justify-content:center;width:18px;height:18px;border:none;background:none;color:#9896A0;cursor:pointer;font-size:14px;border-radius:4px;flex-shrink:0}
+.nav-add-child:hover{background:#EAF1FB;color:#0D4FA0}
 
-.tabs{display:flex;gap:4px;border-bottom:2px solid #DDDBD6;margin-bottom:1.25rem}
-.tab-btn{padding:.55rem 1rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border:none;background:none;cursor:pointer;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;border-radius:6px 6px 0 0;display:flex;align-items:center;gap:6px}
-.tab-btn:hover{color:#1E6FD9;background:#fff}
-.tab-btn.active{color:#1E6FD9;border-bottom-color:#1E6FD9;background:#fff}
-.tab-count{font-size:10px;background:#F2F1EE;color:#56555A;padding:1px 7px;border-radius:20px;font-weight:700}
-.tab-btn.active .tab-count{background:#DCE9FA;color:#1E6FD9}
+.sidebar-add-section{margin:.75rem 0;width:100%;text-align:left;padding:7px 8px;background:none;border:1.5px dashed #DDDBD6;border-radius:6px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#0D4FA0;cursor:pointer}
+.sidebar-add-section:hover{background:#EAF1FB;border-color:#0D4FA0}
 
-.section{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
-.item{padding:.9rem 1.1rem;border-bottom:1px solid #F5F5F7}
-.item:last-child{border-bottom:none}
-.item-top{display:flex;align-items:flex-start;gap:14px}
-.item-body{flex:1;min-width:0}
-.item-titulo{font-size:13px;font-weight:600;color:#18181A;margin-bottom:3px}
-.item-desc{font-size:12px;color:#56555A;margin-bottom:5px;line-height:1.45;white-space:pre-wrap}
-.item-meta{font-size:11px;color:#9896A0}
-.item-meta span{color:#56555A}
-.item-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#1E6FD9;text-decoration:none;font-weight:600;margin-top:4px}
-.item-link:hover{text-decoration:underline}
-.item-right{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.estado-select{padding:.35rem .6rem;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;cursor:pointer;background:#fff}
-.estado-pendiente{background:#DBEAFE;color:#1D4ED8;border-color:#BFDBFE}
-.estado-en_proceso{background:#FEF3C7;color:#92400E;border-color:#FDE68A}
-.estado-hecho{background:#D4F2E8;color:#075C41;border-color:#A7E3CC}
-.btn-borrar{background:none;border:none;color:#C0392B;font-size:11px;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif}
-.btn-borrar:hover{text-decoration:underline}
-.fecha-limite{font-size:11px;font-weight:600}
-.fecha-limite.vencida{color:#A32D2D}
-.empty{padding:2rem;text-align:center;color:#9896A0;font-size:13px}
-.msg-err{background:#FAE0E0;color:#8A1F1F;padding:.5rem .85rem;border-radius:6px;font-size:12px;font-weight:500;margin-top:.5rem;display:none}
+.sidebar-footer{padding:.9rem 1.25rem;border-top:1px solid #E7E5E1;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sidebar-user{font-size:11.5px;color:#56555A;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-logout{background:none;border:none;color:#9896A0;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.sidebar-logout:hover{color:#C0392B;text-decoration:underline}
 
-.notas-section{margin-top:.75rem;border-top:1px solid #F5F5F7;padding-top:.75rem}
-.notas-toggle{background:none;border:none;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:#1E6FD9;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px}
-.notas-toggle:hover{text-decoration:underline}
-.notas-body{margin-top:.6rem;display:none}
-.notas-body.open{display:block}
-.nota-item{display:flex;gap:8px;margin-bottom:.5rem;align-items:flex-start}
-.nota-dot{width:7px;height:7px;border-radius:50%;background:#1E6FD9;flex-shrink:0;margin-top:4px}
-.nota-content{flex:1}
-.nota-meta{font-size:10px;color:#9896A0;font-weight:600;margin-bottom:2px}
-.nota-texto{font-size:12px;color:#56555A;background:#F8F7F5;border:1px solid #DDDBD6;border-radius:7px;padding:.4rem .65rem;line-height:1.5}
-.nota-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#1E6FD9;text-decoration:none;font-weight:600;margin-top:4px}
-.nota-link:hover{text-decoration:underline}
-.add-nota{display:flex;flex-direction:column;gap:6px;margin-top:.5rem}
-.add-nota-row{display:flex;gap:8px;align-items:flex-start}
-.nota-input{flex:1;padding:.45rem .7rem;border-radius:7px;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;font-size:12px;color:#18181A;resize:none;line-height:1.5}
-.nota-input:focus{outline:none;border-color:#1E6FD9}
-.nota-link-input{padding:.4rem .7rem;border-radius:7px;border:1.5px solid #DDDBD6;font-family:'Inter',sans-serif;font-size:11px;color:#18181A}
-.nota-link-input:focus{outline:none;border-color:#1E6FD9}
-.btn-add-nota{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:700;background:#1E6FD9;color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;align-self:flex-end}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.main-content{flex:1;max-width:980px;width:100%;margin:0 auto;padding:3.5rem 2rem 3rem}
 
-@media(max-width:600px){.topbar{padding:.75rem 1rem}.form-grid{grid-template-columns:1fr}.item-top{flex-direction:column}.item-right{flex-direction:row;align-items:center}}
+.hero-title{font-size:56px;font-weight:800;letter-spacing:-.02em;text-align:center;color:#18181A;line-height:1.05}
+.hero-underline{height:5px;background:#0D4FA0;border-radius:3px;width:65%;max-width:520px;margin:1.4rem auto 2.2rem}
+.hero-text{max-width:760px;margin:0 auto;text-align:center}
+.hero-text p{font-size:15px;line-height:1.8;color:#3A3935;margin-bottom:1.1rem}
+.hero-banner{margin-top:2.5rem;background:#0D4FA0;border-radius:10px;padding:2rem 2.5rem;text-align:center}
+.hero-banner-text{font-size:17px;font-weight:700;color:#fff;line-height:1.6}
 
-/* MAIN TABS */
-.main-tabs{display:flex;gap:6px;margin-bottom:1.25rem}
-.main-tab-btn{padding:.6rem 1.1rem;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;border:1.5px solid #DDDBD6;background:#fff;cursor:pointer;color:#56555A;border-radius:9px}
-.main-tab-btn.active{background:#1E6FD9;color:#fff;border-color:#1E6FD9}
-.main-panel{display:none}
-.main-panel.active{display:block}
+.page-title{font-size:38px;font-weight:800;letter-spacing:-.02em;text-align:center;color:#18181A;line-height:1.1}
+.page-underline{height:5px;background:#0D4FA0;border-radius:3px;width:50%;max-width:340px;margin:1.2rem auto 2rem}
+.page-body{font-size:14px;line-height:1.8;color:#3A3935;white-space:pre-wrap;margin-bottom:1.5rem}
+.page-empty{text-align:center;color:#9896A0;font-size:13px;padding:1rem 0}
 
-/* CONTENIDO */
-.content-layout{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:start}
-.cat-sidebar{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
-.cat-sidebar-item{display:block;width:100%;text-align:left;padding:.65rem .9rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#56555A;background:none;border:none;border-bottom:1px solid #F5F5F7;cursor:pointer}
-.cat-sidebar-item:last-of-type{border-bottom:none}
-.cat-sidebar-item:hover{background:#F8F7F5}
-.cat-sidebar-item.active{background:#DCE9FA;color:#0D4FA0}
-.cat-sidebar-add{width:100%;padding:.65rem .9rem;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#1E6FD9;background:#F8F7F5;border:none;cursor:pointer}
-.cat-sidebar-add:hover{background:#F0EEEb}
-.cat-main{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.75rem;min-height:200px}
-.cat-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:1.25rem}
-.cat-titulo{font-size:24px;font-weight:800;letter-spacing:-.02em;color:#18181A}
-.cat-underline{height:5px;background:#0D4FA0;border-radius:3px;margin-top:8px;max-width:340px}
-.btn-editar{display:flex;align-items:center;gap:6px;padding:6px 12px;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-.btn-editar:hover{background:#DDDBD6}
-.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:1.5rem}
-.principios-card{border:1px solid #DDDBD6;border-radius:10px;overflow:hidden}
-.principios-head{background:#0D4FA0;color:#fff;padding:.75rem 1rem;font-size:13px;font-weight:800;letter-spacing:.03em}
-.principios-head small{display:block;font-size:10px;font-weight:500;color:rgba(255,255,255,.7);letter-spacing:.02em;margin-top:2px}
-.principio-row{display:flex;align-items:center;gap:10px;padding:.55rem .9rem;border-bottom:1px solid #F5F5F7;font-size:12px}
-.principio-row:last-child{border-bottom:none}
-.principio-num{width:20px;height:20px;border-radius:50%;border:1.5px solid #1E6FD9;color:#1E6FD9;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.principio-emoji{flex-shrink:0}
-.principio-etiqueta{font-weight:700;color:#18181A;letter-spacing:.01em}
-.cat-intro-titulo{font-size:19px;font-weight:800;margin-bottom:.6rem;color:#18181A}
-.cat-intro-texto{font-size:13px;line-height:1.7;color:#56555A;white-space:pre-wrap}
-.secciones-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
-.seccion-subtitulo{font-size:13px;font-weight:700;color:#0D4FA0;margin-bottom:.4rem}
-.seccion-texto{font-size:12.5px;line-height:1.7;color:#56555A;white-space:pre-wrap}
+.recursos{display:flex;flex-direction:column;gap:1.5rem;margin-top:1.5rem}
+.recurso-block{border:1px solid #E7E5E1;border-radius:10px;overflow:hidden}
+.recurso-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:.65rem 1rem;background:#F8F7F5;border-bottom:1px solid #E7E5E1}
+.recurso-label{font-size:12.5px;font-weight:700;color:#18181A;display:flex;align-items:center;gap:7px}
+.recurso-abrir{font-size:11.5px;font-weight:600;color:#0D4FA0;text-decoration:none;white-space:nowrap}
+.recurso-abrir:hover{text-decoration:underline}
+.recurso-iframe{width:100%;height:480px;border:none;display:block}
 
-/* CONTENIDO — edición */
+.app-footer{border-top:1px solid #E7E5E1;background:#F8F7F5;padding:1rem 2rem;display:flex;align-items:center;justify-content:center;gap:8px}
+.app-footer-text{font-size:11px;font-weight:700;letter-spacing:.06em;color:#9896A0;text-transform:uppercase}
+
+.fab-edit{position:fixed;bottom:1.75rem;right:1.75rem;width:52px;height:52px;border-radius:50%;background:#18181A;color:#fff;border:none;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:50}
+.fab-edit:hover{background:#0D4FA0}
+
+/* EDIT PANEL */
+.edit-card{background:#fff;border:1.5px solid #0D4FA0;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.edit-title{font-size:13px;font-weight:700;color:#0D4FA0;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1rem}
 .edit-field{margin-bottom:1rem}
 .edit-field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
-.edit-field input,.edit-field textarea{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;background:#fff;color:#18181A}
-.edit-field input:focus,.edit-field textarea:focus{border-color:#1E6FD9}
+.edit-field input,.edit-field textarea,.edit-field select{width:100%;padding:.55rem .8rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;outline:none;background:#fff;color:#18181A}
+.edit-field input:focus,.edit-field textarea:focus,.edit-field select:focus{border-color:#0D4FA0}
 .edit-field textarea{resize:vertical;line-height:1.6}
 .edit-block-title{font-size:12px;font-weight:700;color:#18181A;margin:1.25rem 0 .6rem;padding-top:1rem;border-top:1px solid #F5F5F7}
 .edit-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
-.edit-row input.emoji-input{width:52px;text-align:center;flex-shrink:0}
+.edit-row .rec-tipo{width:110px;flex-shrink:0}
 .edit-row .row-fields{flex:1;display:flex;flex-direction:column;gap:6px}
-.btn-x{background:#FAE0E0;color:#8A1F1F;border:none;border-radius:6px;width:28px;height:28px;flex-shrink:0;cursor:pointer;font-size:13px;font-weight:700}
+.btn-x{background:#FAE0E0;color:#8A1F1F;border:none;border-radius:6px;width:30px;height:30px;flex-shrink:0;cursor:pointer;font-size:13px;font-weight:700}
 .btn-x:hover{background:#f5c0c0}
-.btn-add-row{padding:6px 12px;background:#F2F1EE;color:#1E6FD9;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
-.btn-add-row:hover{background:#DCE9FA}
+.btn-add-row{padding:6px 12px;background:#F2F1EE;color:#0D4FA0;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer}
+.btn-add-row:hover{background:#EAF1FB}
 .edit-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:1px solid #F5F5F7}
+.btn-cancel{padding:7px 14px;background:#F2F1EE;color:#56555A;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.btn-save{padding:7px 16px;background:#0D4FA0;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-save:hover{background:#093a78}
+.btn-borrar-pagina{background:none;border:none;color:#C0392B;font-size:12px;font-weight:600;cursor:pointer;margin-right:auto}
+.btn-borrar-pagina:hover{text-decoration:underline}
 
-@media(max-width:760px){.content-layout{grid-template-columns:1fr}.cat-grid{grid-template-columns:1fr}.secciones-grid{grid-template-columns:1fr}}
+@media(max-width:860px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:relative;border-right:none;border-bottom:1px solid #E7E5E1}
+  .main-content{padding:2rem 1.25rem}
+  .hero-title{font-size:38px}
+  .page-title{font-size:28px}
+}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-titulo">DPO Gente — Del Palacio S.A.</div>
-  </div>
-  <div class="topbar-right">
-    <div class="user-chip">
-      <div class="user-avatar" id="user-avatar">?</div>
-      <span id="user-nombre">—</span>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo"><img src="/logo.png" alt="Logo"></div>
+      <div class="sidebar-empresa" id="sidebar-empresa">del Palacio S.A</div>
     </div>
-    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
-  </div>
-</div>
-
-<div class="page">
-  <div class="page-header">
-    <div class="page-title">Pilar Gente (DPO)</div>
-  </div>
-  <div class="page-sub">Información del pilar Gente del DPO Quilmes, lista para mostrar en auditoría, y seguimiento de pedidos con su evidencia (Drive).</div>
-
-  <div class="main-tabs">
-    <button class="main-tab-btn active" data-panel="contenido" onclick="cambiarPanel('contenido')">Contenido</button>
-    <button class="main-tab-btn" data-panel="seguimientos" onclick="cambiarPanel('seguimientos')">Seguimientos</button>
-  </div>
-
-  <!-- PANEL CONTENIDO -->
-  <div class="main-panel active" id="panel-contenido">
-    <div class="content-layout">
-      <div class="cat-sidebar" id="cat-sidebar">
-        <div class="cat-sidebar-item">Cargando...</div>
-      </div>
-      <div class="cat-main" id="cat-main">
-        <div class="empty">Cargando...</div>
-      </div>
+    <div class="sidebar-nav">
+      <button class="nav-inicio active" id="nav-inicio" onclick="irAInicio()">Inicio</button>
+      <div id="nav-tree"></div>
+      <button class="sidebar-add-section" onclick="nuevaPagina(null)">+ Nueva sección</button>
+    </div>
+    <div class="sidebar-footer">
+      <span class="sidebar-user" id="sidebar-user">—</span>
+      <button class="sidebar-logout" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
     </div>
   </div>
 
-  <!-- PANEL SEGUIMIENTOS -->
-  <div class="main-panel" id="panel-seguimientos">
-    <div class="page-header" style="margin-bottom:.75rem">
-      <div></div>
-      <button class="btn-nuevo" onclick="toggleForm()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nuevo seguimiento
-      </button>
+  <div class="main">
+    <div class="main-content" id="main-content">
+      <div class="page-empty">Cargando...</div>
     </div>
-
-    <div class="form-card" id="form-card">
-      <div class="form-title">Nuevo seguimiento</div>
-      <div class="form-grid">
-        <div class="field"><label>Título</label><input type="text" id="f-titulo" placeholder="Ej: Capacitación seguridad vial"></div>
-        <div class="field"><label>Fecha límite <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label><input type="date" id="f-fecha"></div>
-      </div>
-      <div class="field" style="margin-bottom:10px"><label>Descripción <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
-        <textarea id="f-desc" placeholder="Detalle del pedido, contexto, referencia..."></textarea>
-      </div>
-      <div class="field" style="margin-bottom:10px"><label>Link de Drive con evidencia <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional)</span></label>
-        <input type="text" id="f-link" placeholder="https://drive.google.com/...">
-      </div>
-      <div class="msg-err" id="form-err"></div>
-      <div class="form-footer">
-        <button class="btn-cancel" onclick="toggleForm()">Cancelar</button>
-        <button class="btn-save" onclick="guardar()">Guardar</button>
-      </div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab-btn active" data-estado="todos" onclick="cambiarTab('todos')">Todos <span class="tab-count" id="count-todos">0</span></button>
-      <button class="tab-btn" data-estado="pendiente" onclick="cambiarTab('pendiente')">Pendiente <span class="tab-count" id="count-pendiente">0</span></button>
-      <button class="tab-btn" data-estado="en_proceso" onclick="cambiarTab('en_proceso')">En curso <span class="tab-count" id="count-en_proceso">0</span></button>
-      <button class="tab-btn" data-estado="hecho" onclick="cambiarTab('hecho')">Hecho <span class="tab-count" id="count-hecho">0</span></button>
-    </div>
-
-    <div class="section" id="sec-items">
-      <div id="list-items"><div class="empty">Cargando...</div></div>
+    <div class="app-footer">
+      <span class="app-footer-text" id="app-footer-text">EQUIPO DE GENTE - DEL PALACIO SA</span>
     </div>
   </div>
 </div>
+
+<button class="fab-edit" id="fab-edit" onclick="toggleEdit()" title="Editar">✎</button>
 
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) { window.location.href = '/'; }
-document.getElementById('user-nombre').textContent = USER.nombre || USER.username;
-document.getElementById('user-avatar').textContent = (USER.nombre||USER.username).charAt(0).toUpperCase();
+document.getElementById('sidebar-user').textContent = USER.nombre || USER.username;
 
-var ITEMS = [];
-var TAB_ACTIVA = 'todos';
-var ESTADO_LABEL = { pendiente: 'Pendiente', en_proceso: 'En curso', hecho: 'Hecho' };
-
-function fmtFecha(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T').slice(0,10)+'T12:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
-function fmtFechaHora(iso){ if(!iso) return '—'; var d=new Date(String(iso).replace(' ','T')); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
 
-function toggleForm(){
-  var f=document.getElementById('form-card');
-  var visible=f.style.display==='block';
-  f.style.display=visible?'none':'block';
-  if(!visible){ document.getElementById('f-titulo').focus(); }
-  if(visible){ document.getElementById('f-titulo').value=''; document.getElementById('f-desc').value=''; document.getElementById('f-link').value=''; document.getElementById('f-fecha').value=''; showErr(''); }
-}
+var CONFIG = {};
+var PAGINAS = [];
+var EXPANDED = new Set();
+var VISTA = 'inicio'; // 'inicio' | pagina id
+var EDITANDO = false;
+var EDIT_STATE = null;
 
-function showErr(msg){ var el=document.getElementById('form-err'); el.textContent=msg; el.style.display=msg?'block':'none'; }
+var TIPO_ICONS = { sheet:'📊', doc:'📄', slides:'📽️', form:'📝', pdf:'📕', imagen:'🖼️', otro:'🔗' };
+var TIPO_LABELS = { sheet:'Sheet', doc:'Doc', slides:'Slides', form:'Form', pdf:'PDF', imagen:'Imagen', otro:'Otro' };
 
-async function guardar(){
-  var titulo=document.getElementById('f-titulo').value.trim();
-  var descripcion=document.getElementById('f-desc').value.trim();
-  var link_drive=document.getElementById('f-link').value.trim();
-  var fecha_limite=document.getElementById('f-fecha').value;
-  if(!titulo){ showErr('Ingresá un título.'); return; }
+async function cargarTodo(){
   try{
-    var r=await fetch('/api/pilar-gente',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({titulo,descripcion:descripcion||null,link_drive:link_drive||null,fecha_limite:fecha_limite||null,username:USER.username,nombre:USER.nombre})});
-    var d=await r.json();
-    if(!r.ok){ showErr(d.error||'Error al guardar.'); return; }
-    toggleForm();
-    await cargar();
-  }catch(e){ showErr('Error de conexión.'); }
+    const [rc, rp] = await Promise.all([fetch('/api/config'), fetch('/api/paginas')]);
+    CONFIG = await rc.json();
+    PAGINAS = await rp.json();
+    document.getElementById('sidebar-empresa').textContent = CONFIG.nombre_empresa || 'del Palacio S.A';
+    document.getElementById('app-footer-text').textContent = CONFIG.footer_texto || '';
+    renderNav();
+    renderMain();
+  }catch(e){
+    document.getElementById('main-content').innerHTML = '<div class="page-empty" style="color:#C0392B">Error al cargar.</div>';
+  }
 }
 
-async function cambiarEstado(id, estado){
-  try{
-    await fetch('/api/pilar-gente/'+id+'/estado',{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({estado,username:USER.username,nombre:USER.nombre})});
-    await cargar();
-  }catch(e){ alert('Error de conexión.'); }
+function hijosDe(id){
+  return PAGINAS.filter(p => p.parent_id === id).sort((a,b)=> (a.orden||0)-(b.orden||0));
+}
+function paginaById(id){ return PAGINAS.find(p => p.id === id); }
+
+function renderNav(){
+  const cont = document.getElementById('nav-tree');
+  cont.innerHTML = hijosDe(null).map(p => renderNavNode(p, 0)).join('');
 }
 
-async function borrar(id){
-  if(!confirm('¿Eliminar este seguimiento?')) return;
-  try{
-    var r=await fetch('/api/pilar-gente/'+id,{method:'DELETE'});
-    if(r.ok) await cargar();
-  }catch(e){ alert('Error de conexión.'); }
-}
-
-function toggleNotas(id){
-  var b=document.getElementById('notas-body-'+id);
-  if(!b) return;
-  b.classList.toggle('open');
-  var btn=document.getElementById('notas-toggle-'+id);
-  if(btn) btn.textContent = b.classList.contains('open') ? '▲ Ocultar seguimiento' : btn.dataset.label;
-}
-
-async function agregarNota(id){
-  var inp=document.getElementById('nota-input-'+id);
-  var linkInp=document.getElementById('nota-link-'+id);
-  var texto=inp.value.trim();
-  var link=linkInp.value.trim();
-  if(!texto){ return; }
-  try{
-    var r=await fetch('/api/pilar-gente/'+id+'/notas',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({texto,link:link||null,username:USER.username,nombre:USER.nombre})});
-    if(r.ok){ inp.value=''; linkInp.value=''; await cargar(); document.getElementById('notas-body-'+id).classList.add('open'); }
-  }catch(e){ alert('Error de conexión.'); }
-}
-
-function renderNotas(it){
-  var notas=it.notas||[];
-  var notasHtml=notas.map(function(n){
-    return '<div class="nota-item">'
-      +'<div class="nota-dot"></div>'
-      +'<div class="nota-content">'
-      +'<div class="nota-meta">'+esc(n.nombre||n.username)+' · '+fmtFechaHora(n.created_at)+'</div>'
-      +'<div class="nota-texto">'+esc(n.texto)+'</div>'
-      +(n.link?'<a class="nota-link" href="'+escAttr(n.link)+'" target="_blank" rel="noopener">🔗 Ver evidencia</a>':'')
-      +'</div></div>';
-  }).join('');
-  var label='▼ Seguimiento ('+notas.length+')';
-  return '<div class="notas-section">'
-    +'<button class="notas-toggle" id="notas-toggle-'+it.id+'" data-label="'+escAttr(label)+'" onclick="toggleNotas('+it.id+')">'+label+'</button>'
-    +'<div class="notas-body" id="notas-body-'+it.id+'">'
-    +notasHtml
-    +'<div class="add-nota">'
-    +'<div class="add-nota-row">'
-    +'<textarea class="nota-input" id="nota-input-'+it.id+'" rows="2" placeholder="Agregar avance de seguimiento..."></textarea>'
-    +'<button class="btn-add-nota" onclick="agregarNota('+it.id+')">Agregar</button>'
+function renderNavNode(p, depth){
+  const hijos = hijosDe(p.id);
+  const tieneHijos = hijos.length > 0;
+  const abierto = EXPANDED.has(p.id);
+  const activo = VISTA === p.id;
+  return '<div class="nav-node" data-depth="'+depth+'">'
+    +'<div class="nav-row">'
+    +'<button class="nav-label'+(activo?' active':'')+'" onclick="seleccionarPagina('+p.id+')">'+esc(p.titulo)+'</button>'
+    +'<button class="nav-add-child" title="Agregar subsección" onclick="event.stopPropagation();nuevaPagina('+p.id+')">+</button>'
+    +(tieneHijos?'<button class="nav-chevron'+(abierto?' open':'')+'" onclick="event.stopPropagation();toggleExpand('+p.id+')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>':'<span style="width:20px"></span>')
     +'</div>'
-    +'<input type="text" class="nota-link-input" id="nota-link-'+it.id+'" placeholder="Link de Drive con evidencia (opcional)">'
+    +(tieneHijos?'<div class="nav-children'+(abierto?' open':'')+'">'+hijos.map(h=>renderNavNode(h, depth+1)).join('')+'</div>':'')
+    +'</div>';
+}
+
+function toggleExpand(id){
+  if(EXPANDED.has(id)) EXPANDED.delete(id); else EXPANDED.add(id);
+  renderNav();
+}
+
+function irAInicio(){
+  VISTA = 'inicio';
+  EDITANDO = false; EDIT_STATE = null;
+  renderNav();
+  renderMain();
+}
+
+function seleccionarPagina(id){
+  VISTA = id;
+  EDITANDO = false; EDIT_STATE = null;
+  if(hijosDe(id).length>0) EXPANDED.add(id);
+  document.getElementById('nav-inicio').classList.remove('active');
+  renderNav();
+  renderMain();
+}
+
+async function nuevaPagina(parentId){
+  const titulo = prompt(parentId ? 'Título de la nueva subsección' : 'Título de la nueva sección (ej: "8. Beneficios")');
+  if(!titulo || !titulo.trim()) return;
+  try{
+    const r = await fetch('/api/paginas',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({titulo:titulo.trim(), parent_id: parentId||null})});
+    const d = await r.json();
+    if(!r.ok){ alert(d.error||'Error al crear.'); return; }
+    if(parentId) EXPANDED.add(parentId);
+    await cargarTodo();
+    seleccionarPagina(d.id);
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+async function borrarPagina(id){
+  const hijos = hijosDe(id);
+  const msg = hijos.length>0
+    ? '¿Eliminar esta sección y sus '+hijos.length+' subsección(es)? Esta acción no se puede deshacer.'
+    : '¿Eliminar esta sección? Esta acción no se puede deshacer.';
+  if(!confirm(msg)) return;
+  try{
+    await fetch('/api/paginas/'+id,{method:'DELETE'});
+    VISTA = 'inicio';
+    EDITANDO = false; EDIT_STATE = null;
+    await cargarTodo();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function toggleEdit(){
+  if(EDITANDO){ EDITANDO = false; EDIT_STATE = null; renderMain(); return; }
+  EDITANDO = true;
+  if(VISTA === 'inicio'){
+    EDIT_STATE = {
+      nombre_empresa: CONFIG.nombre_empresa || '',
+      intro_titulo: CONFIG.intro_titulo || '',
+      intro_parrafo1: CONFIG.intro_parrafo1 || '',
+      intro_parrafo2: CONFIG.intro_parrafo2 || '',
+      frase_destacada: CONFIG.frase_destacada || '',
+      footer_texto: CONFIG.footer_texto || ''
+    };
+  } else {
+    const p = paginaById(VISTA);
+    if(!p) return;
+    EDIT_STATE = {
+      titulo: p.titulo,
+      texto: p.texto || '',
+      recursos: (p.recursos||[]).map(r => ({ tipo:r.tipo||'otro', titulo:r.titulo||'', url:r.url }))
+    };
+  }
+  renderMain();
+}
+
+function editSyncInicioFromInputs(){
+  EDIT_STATE.nombre_empresa = document.getElementById('e-nombre-empresa').value;
+  EDIT_STATE.intro_titulo = document.getElementById('e-intro-titulo').value;
+  EDIT_STATE.intro_parrafo1 = document.getElementById('e-parrafo1').value;
+  EDIT_STATE.intro_parrafo2 = document.getElementById('e-parrafo2').value;
+  EDIT_STATE.frase_destacada = document.getElementById('e-frase').value;
+  EDIT_STATE.footer_texto = document.getElementById('e-footer').value;
+}
+
+async function guardarInicio(){
+  editSyncInicioFromInputs();
+  try{
+    const r = await fetch('/api/config',{method:'PUT',headers:{'Content-Type':'application/json'}, body:JSON.stringify(EDIT_STATE)});
+    if(!r.ok){ alert('Error al guardar.'); return; }
+    EDITANDO = false; EDIT_STATE = null;
+    await cargarTodo();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function editSyncPaginaFromInputs(){
+  EDIT_STATE.titulo = document.getElementById('e-titulo').value;
+  EDIT_STATE.texto = document.getElementById('e-texto').value;
+  document.querySelectorAll('#e-recursos .edit-row').forEach(function(row,i){
+    EDIT_STATE.recursos[i].tipo = row.querySelector('.rec-tipo').value;
+    EDIT_STATE.recursos[i].titulo = row.querySelector('.rec-titulo').value;
+    EDIT_STATE.recursos[i].url = row.querySelector('.rec-url').value;
+  });
+}
+
+function editAgregarRecurso(){ EDIT_STATE.recursos.push({tipo:'otro',titulo:'',url:''}); renderMain(); }
+function editBorrarRecurso(i){ EDIT_STATE.recursos.splice(i,1); renderMain(); }
+
+async function guardarPagina(){
+  editSyncPaginaFromInputs();
+  const titulo = EDIT_STATE.titulo.trim();
+  if(!titulo){ alert('Ingresá un título.'); return; }
+  try{
+    const r = await fetch('/api/paginas/'+VISTA,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        titulo: titulo,
+        texto: EDIT_STATE.texto.trim()||null,
+        recursos: EDIT_STATE.recursos.filter(function(x){return x.url && x.url.trim();})
+      })});
+    if(!r.ok){ alert('Error al guardar.'); return; }
+    EDITANDO = false; EDIT_STATE = null;
+    await cargarTodo();
+  }catch(e){ alert('Error de conexión.'); }
+}
+
+function renderRecurso(r){
+  return '<div class="recurso-block">'
+    +'<div class="recurso-head">'
+    +'<span class="recurso-label">'+(TIPO_ICONS[r.tipo]||'🔗')+' '+esc(r.titulo || TIPO_LABELS[r.tipo] || 'Recurso')+'</span>'
+    +'<a class="recurso-abrir" href="'+escAttr(r.url)+'" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a>'
     +'</div>'
+    +'<iframe class="recurso-iframe" src="'+escAttr(r.url)+'" loading="lazy"></iframe>'
+    +'</div>';
+}
+
+function renderInicioView(){
+  return '<div class="hero-title">'+esc(CONFIG.intro_titulo||'')+'</div>'
+    +'<div class="hero-underline"></div>'
+    +'<div class="hero-text">'
+    +(CONFIG.intro_parrafo1?'<p>'+esc(CONFIG.intro_parrafo1)+'</p>':'')
+    +(CONFIG.intro_parrafo2?'<p>'+esc(CONFIG.intro_parrafo2)+'</p>':'')
+    +'</div>'
+    +(CONFIG.frase_destacada?'<div class="hero-banner"><div class="hero-banner-text">'+esc(CONFIG.frase_destacada)+'</div></div>':'');
+}
+
+function renderInicioEdit(){
+  const s = EDIT_STATE;
+  return '<div class="edit-card">'
+    +'<div class="edit-title">Editar página de inicio</div>'
+    +'<div class="edit-field"><label>Nombre de la empresa (cabecera)</label><input id="e-nombre-empresa" value="'+escAttr(s.nombre_empresa)+'"></div>'
+    +'<div class="edit-field"><label>Título grande (ej: GENTE)</label><input id="e-intro-titulo" value="'+escAttr(s.intro_titulo)+'"></div>'
+    +'<div class="edit-field"><label>Párrafo 1</label><textarea id="e-parrafo1" rows="4">'+esc(s.intro_parrafo1)+'</textarea></div>'
+    +'<div class="edit-field"><label>Párrafo 2</label><textarea id="e-parrafo2" rows="4">'+esc(s.intro_parrafo2)+'</textarea></div>'
+    +'<div class="edit-field"><label>Frase destacada (banner)</label><textarea id="e-frase" rows="3">'+esc(s.frase_destacada)+'</textarea></div>'
+    +'<div class="edit-field"><label>Texto del pie de página</label><input id="e-footer" value="'+escAttr(s.footer_texto)+'"></div>'
+    +'<div class="edit-footer">'
+    +'<button class="btn-cancel" onclick="toggleEdit()">Cancelar</button>'
+    +'<button class="btn-save" onclick="guardarInicio()">Guardar cambios</button>'
     +'</div></div>';
 }
 
-function renderItem(it){
-  var hoy=new Date().toISOString().slice(0,10);
-  var vencida = it.fecha_limite && String(it.fecha_limite).slice(0,10) < hoy && it.estado!=='hecho';
-  return '<div class="item">'
-    +'<div class="item-top">'
-    +'<div class="item-body">'
-    +'<div class="item-titulo">'+esc(it.titulo)+'</div>'
-    +(it.descripcion?'<div class="item-desc">'+esc(it.descripcion)+'</div>':'')
-    +'<div class="item-meta">Cargado por <span>'+esc(it.cargado_por_nombre||it.cargado_por)+'</span> · '+fmtFechaHora(it.cargado_at)
-    +(it.fecha_limite?' · <span class="fecha-limite'+(vencida?' vencida':'')+'">Vence '+fmtFecha(it.fecha_limite)+(vencida?' (vencida)':'')+'</span>':'')
-    +'</div>'
-    +(it.link_drive?'<a class="item-link" href="'+escAttr(it.link_drive)+'" target="_blank" rel="noopener">🔗 Ver evidencia</a>':'')
-    +'</div>'
-    +'<div class="item-right">'
-    +'<select class="estado-select estado-'+it.estado+'" onchange="cambiarEstado('+it.id+',this.value)">'
-    +['pendiente','en_proceso','hecho'].map(function(e){return '<option value="'+e+'"'+(e===it.estado?' selected':'')+'>'+ESTADO_LABEL[e]+'</option>';}).join('')
-    +'</select>'
-    +'<button class="btn-borrar" onclick="borrar('+it.id+')">Eliminar</button>'
-    +'</div>'
-    +'</div>'
-    +renderNotas(it)
-    +'</div>';
+function renderPaginaView(p){
+  const recursos = p.recursos||[];
+  return '<div class="page-title">'+esc(p.titulo)+'</div>'
+    +'<div class="page-underline"></div>'
+    +(p.texto?'<div class="page-body">'+esc(p.texto)+'</div>':'')
+    +(recursos.length>0?'<div class="recursos">'+recursos.map(renderRecurso).join('')+'</div>':'')
+    +(!p.texto && recursos.length===0?'<div class="page-empty">Todavía no cargaste contenido acá. Usá el botón ✎ para agregar texto o recursos.</div>':'');
 }
 
-function cambiarTab(estado){
-  TAB_ACTIVA = estado;
-  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.estado===estado); });
-  render();
-}
-
-function render(){
-  var filtrados = TAB_ACTIVA==='todos' ? ITEMS : ITEMS.filter(function(i){ return i.estado===TAB_ACTIVA; });
-  var lista=document.getElementById('list-items');
-  lista.innerHTML = filtrados.length===0 ? '<div class="empty">Sin seguimientos.</div>' : filtrados.map(renderItem).join('');
-
-  document.getElementById('count-todos').textContent = ITEMS.length;
-  ['pendiente','en_proceso','hecho'].forEach(function(e){
-    document.getElementById('count-'+e).textContent = ITEMS.filter(function(i){return i.estado===e;}).length;
-  });
-}
-
-async function cargar(){
-  try{
-    var r=await fetch('/api/pilar-gente');
-    ITEMS = await r.json();
-    render();
-  }catch(e){
-    document.getElementById('list-items').innerHTML='<div class="empty" style="color:#C0392B">Error al cargar.</div>';
-  }
-}
-
-function cambiarPanel(panel){
-  document.querySelectorAll('.main-tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.panel===panel); });
-  document.querySelectorAll('.main-panel').forEach(function(p){ p.classList.toggle('active', p.id==='panel-'+panel); });
-}
-
-// ── CONTENIDO ──
-var CATEGORIAS = [];
-var CAT_ACTIVA_ID = null;
-var CAT_EDIT_STATE = null; // {titulo, intro, principios:[], secciones:[]} mientras se edita
-
-function catById(id){ return CATEGORIAS.find(function(c){ return c.id===id; }); }
-
-async function cargarCategorias(){
-  try{
-    var r = await fetch('/api/pilar-gente/categorias');
-    CATEGORIAS = await r.json();
-    if(CAT_ACTIVA_ID===null && CATEGORIAS.length>0) CAT_ACTIVA_ID = CATEGORIAS[0].id;
-    renderSidebar();
-    renderCatMain();
-  }catch(e){
-    document.getElementById('cat-main').innerHTML = '<div class="empty" style="color:#C0392B">Error al cargar.</div>';
-  }
-}
-
-function renderSidebar(){
-  var side = document.getElementById('cat-sidebar');
-  var items = CATEGORIAS.map(function(c){
-    return '<button class="cat-sidebar-item'+(c.id===CAT_ACTIVA_ID?' active':'')+'" onclick="seleccionarCategoria('+c.id+')">'+esc(c.titulo)+'</button>';
-  }).join('');
-  if(!items) items = '<div style="padding:.9rem;font-size:12px;color:#9896A0">Sin categorías todavía.</div>';
-  side.innerHTML = items + '<button class="cat-sidebar-add" onclick="nuevaCategoria()">+ Nueva categoría</button>';
-}
-
-function seleccionarCategoria(id){
-  CAT_ACTIVA_ID = id;
-  CAT_EDIT_STATE = null;
-  renderSidebar();
-  renderCatMain();
-}
-
-async function nuevaCategoria(){
-  var titulo = prompt('Título de la categoría (ej: "2. Seguridad")');
-  if(!titulo || !titulo.trim()) return;
-  try{
-    var r = await fetch('/api/pilar-gente/categorias',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({titulo:titulo.trim(),username:USER.username,nombre:USER.nombre})});
-    var d = await r.json();
-    if(!r.ok){ alert(d.error||'Error al crear.'); return; }
-    await cargarCategorias();
-    CAT_ACTIVA_ID = d.id;
-    entrarEdicion();
-    renderSidebar();
-    renderCatMain();
-  }catch(e){ alert('Error de conexión.'); }
-}
-
-async function borrarCategoria(id){
-  if(!confirm('¿Eliminar esta categoría y todo su contenido?')) return;
-  try{
-    await fetch('/api/pilar-gente/categorias/'+id,{method:'DELETE'});
-    CAT_ACTIVA_ID = null;
-    CAT_EDIT_STATE = null;
-    await cargarCategorias();
-  }catch(e){ alert('Error de conexión.'); }
-}
-
-function entrarEdicion(){
-  var c = catById(CAT_ACTIVA_ID);
-  if(!c) return;
-  CAT_EDIT_STATE = {
-    titulo: c.titulo,
-    intro: c.intro || '',
-    principios: (c.principios||[]).map(function(p){ return { emoji:p.emoji||'', etiqueta:p.etiqueta }; }),
-    secciones: (c.secciones||[]).map(function(s){ return { subtitulo:s.subtitulo, texto:s.texto||'' }; })
-  };
-  renderCatMain();
-}
-
-function salirEdicion(){
-  CAT_EDIT_STATE = null;
-  renderCatMain();
-}
-
-function editAgregarPrincipio(){ CAT_EDIT_STATE.principios.push({emoji:'',etiqueta:''}); renderCatMain(); }
-function editBorrarPrincipio(i){ CAT_EDIT_STATE.principios.splice(i,1); renderCatMain(); }
-function editAgregarSeccion(){ CAT_EDIT_STATE.secciones.push({subtitulo:'',texto:''}); renderCatMain(); }
-function editBorrarSeccion(i){ CAT_EDIT_STATE.secciones.splice(i,1); renderCatMain(); }
-
-function editSyncFromInputs(){
-  CAT_EDIT_STATE.titulo = document.getElementById('edit-titulo').value;
-  CAT_EDIT_STATE.intro = document.getElementById('edit-intro').value;
-  document.querySelectorAll('#edit-principios .edit-row').forEach(function(row,i){
-    CAT_EDIT_STATE.principios[i].emoji = row.querySelector('.emoji-input').value;
-    CAT_EDIT_STATE.principios[i].etiqueta = row.querySelector('.etiqueta-input').value;
-  });
-  document.querySelectorAll('#edit-secciones .edit-row').forEach(function(row,i){
-    CAT_EDIT_STATE.secciones[i].subtitulo = row.querySelector('.subtitulo-input').value;
-    CAT_EDIT_STATE.secciones[i].texto = row.querySelector('.texto-input').value;
-  });
-}
-
-async function guardarCategoria(){
-  editSyncFromInputs();
-  var titulo = CAT_EDIT_STATE.titulo.trim();
-  if(!titulo){ alert('Ingresá un título.'); return; }
-  try{
-    var r = await fetch('/api/pilar-gente/categorias/'+CAT_ACTIVA_ID,{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        titulo: titulo,
-        intro: CAT_EDIT_STATE.intro.trim()||null,
-        principios: CAT_EDIT_STATE.principios.filter(function(p){return p.etiqueta&&p.etiqueta.trim();}),
-        secciones: CAT_EDIT_STATE.secciones.filter(function(s){return s.subtitulo&&s.subtitulo.trim();}),
-        username: USER.username, nombre: USER.nombre
-      })});
-    if(!r.ok){ alert('Error al guardar.'); return; }
-    CAT_EDIT_STATE = null;
-    await cargarCategorias();
-  }catch(e){ alert('Error de conexión.'); }
-}
-
-function renderCatMainEdit(){
-  var s = CAT_EDIT_STATE;
-  var principiosRows = s.principios.map(function(p,i){
+function renderPaginaEdit(){
+  const s = EDIT_STATE;
+  const recursosRows = s.recursos.map(function(r,i){
     return '<div class="edit-row">'
-      +'<input class="emoji-input" value="'+escAttr(p.emoji)+'" placeholder="🤝">'
-      +'<div class="row-fields"><input class="etiqueta-input" value="'+escAttr(p.etiqueta)+'" placeholder="Ej: Compromiso con la calidad"></div>'
-      +'<button class="btn-x" onclick="editSyncFromInputs();editBorrarPrincipio('+i+')" title="Eliminar">✕</button>'
-      +'</div>';
-  }).join('');
-  var seccionesRows = s.secciones.map(function(sec,i){
-    return '<div class="edit-row">'
+      +'<select class="rec-tipo">'
+      +Object.keys(TIPO_LABELS).map(function(t){return '<option value="'+t+'"'+(t===r.tipo?' selected':'')+'>'+TIPO_ICONS[t]+' '+TIPO_LABELS[t]+'</option>';}).join('')
+      +'</select>'
       +'<div class="row-fields">'
-      +'<input class="subtitulo-input" value="'+escAttr(sec.subtitulo)+'" placeholder="Subtítulo, ej: Compromiso con la calidad">'
-      +'<textarea class="texto-input" rows="3" placeholder="Texto de esta sección...">'+esc(sec.texto)+'</textarea>'
+      +'<input class="rec-titulo" value="'+escAttr(r.titulo)+'" placeholder="Nombre del recurso (opcional)">'
+      +'<input class="rec-url" value="'+escAttr(r.url)+'" placeholder="Link para insertar/embed (Publicar en la Web de Google)">'
       +'</div>'
-      +'<button class="btn-x" onclick="editSyncFromInputs();editBorrarSeccion('+i+')" title="Eliminar">✕</button>'
+      +'<button class="btn-x" onclick="editSyncPaginaFromInputs();editBorrarRecurso('+i+')" title="Eliminar">✕</button>'
       +'</div>';
   }).join('');
-  return '<div class="edit-field"><label>Título de la categoría</label><input id="edit-titulo" value="'+escAttr(s.titulo)+'" placeholder="Ej: 1. Cultura"></div>'
-    +'<div class="edit-block-title">Principios (tabla)</div>'
-    +'<div id="edit-principios">'+principiosRows+'</div>'
-    +'<button class="btn-add-row" onclick="editSyncFromInputs();editAgregarPrincipio()">+ Agregar principio</button>'
-    +'<div class="edit-field" style="margin-top:1.25rem"><label>Texto introductorio</label><textarea id="edit-intro" rows="5" placeholder="Párrafo introductorio de la categoría...">'+esc(s.intro)+'</textarea></div>'
-    +'<div class="edit-block-title">Secciones (subtítulo + texto)</div>'
-    +'<div id="edit-secciones">'+seccionesRows+'</div>'
-    +'<button class="btn-add-row" onclick="editSyncFromInputs();editAgregarSeccion()">+ Agregar sección</button>'
+  return '<div class="edit-card">'
+    +'<div class="edit-title">Editar sección</div>'
+    +'<div class="edit-field"><label>Título</label><input id="e-titulo" value="'+escAttr(s.titulo)+'"></div>'
+    +'<div class="edit-field"><label>Texto</label><textarea id="e-texto" rows="6" placeholder="Descripción de esta sección...">'+esc(s.texto)+'</textarea></div>'
+    +'<div class="edit-block-title">Recursos incrustados (Sheets, Docs, Slides, Forms, PDFs, imágenes)</div>'
+    +'<div id="e-recursos">'+recursosRows+'</div>'
+    +'<button class="btn-add-row" onclick="editSyncPaginaFromInputs();editAgregarRecurso()">+ Agregar recurso</button>'
     +'<div class="edit-footer">'
-    +'<button class="btn-borrar" onclick="borrarCategoria('+CAT_ACTIVA_ID+')" style="margin-right:auto">Eliminar categoría</button>'
-    +'<button class="btn-cancel" onclick="salirEdicion()">Cancelar</button>'
-    +'<button class="btn-save" onclick="guardarCategoria()">Guardar cambios</button>'
-    +'</div>';
+    +'<button class="btn-borrar-pagina" onclick="borrarPagina('+VISTA+')">Eliminar sección</button>'
+    +'<button class="btn-cancel" onclick="toggleEdit()">Cancelar</button>'
+    +'<button class="btn-save" onclick="guardarPagina()">Guardar cambios</button>'
+    +'</div></div>';
 }
 
-function renderCatMainView(c){
-  var principiosHtml = '';
-  if((c.principios||[]).length>0){
-    principiosHtml = '<div class="principios-card">'
-      +'<div class="principios-head">PRINCIPIOS<small>Construyendo un futuro exitoso</small></div>'
-      +c.principios.map(function(p,i){
-        return '<div class="principio-row"><span class="principio-num">'+(i+1)+'</span>'
-          +(p.emoji?'<span class="principio-emoji">'+esc(p.emoji)+'</span>':'')
-          +'<span class="principio-etiqueta">'+esc(p.etiqueta)+'</span></div>';
-      }).join('')
-      +'</div>';
-  }
-  var introHtml = '<div>'
-    +(c.intro?'<div class="cat-intro-texto">'+esc(c.intro)+'</div>':'<div class="empty" style="padding:0;text-align:left">Sin descripción todavía.</div>')
-    +'</div>';
-  var seccionesHtml = '';
-  if((c.secciones||[]).length>0){
-    seccionesHtml = '<div class="secciones-grid">'
-      +c.secciones.map(function(s){
-        return '<div><div class="seccion-subtitulo">'+esc(s.subtitulo)+'</div><div class="seccion-texto">'+esc(s.texto)+'</div></div>';
-      }).join('')
-      +'</div>';
-  }
-  return '<div class="cat-header">'
-    +'<div><div class="cat-titulo">'+esc(c.titulo)+'</div><div class="cat-underline"></div></div>'
-    +'<button class="btn-editar" onclick="entrarEdicion()">✎ Editar</button>'
-    +'</div>'
-    +'<div class="cat-grid">'+(principiosHtml||'<div></div>')+introHtml+'</div>'
-    +seccionesHtml;
-}
-
-function renderCatMain(){
-  var main = document.getElementById('cat-main');
-  if(CATEGORIAS.length===0 && CAT_EDIT_STATE===null){
-    main.innerHTML = '<div class="empty">Todavía no cargaste ninguna categoría. Usá "+ Nueva categoría" para empezar (ej: "1. Cultura").</div>';
+function renderMain(){
+  const cont = document.getElementById('main-content');
+  document.getElementById('nav-inicio').classList.toggle('active', VISTA==='inicio');
+  if(VISTA === 'inicio'){
+    cont.innerHTML = EDITANDO ? renderInicioEdit() : renderInicioView();
     return;
   }
-  var c = catById(CAT_ACTIVA_ID);
-  if(!c){ main.innerHTML = '<div class="empty">Elegí una categoría.</div>'; return; }
-  main.innerHTML = CAT_EDIT_STATE ? renderCatMainEdit() : renderCatMainView(c);
+  const p = paginaById(VISTA);
+  if(!p){ cont.innerHTML = '<div class="page-empty">Elegí una sección del menú.</div>'; return; }
+  cont.innerHTML = EDITANDO ? renderPaginaEdit() : renderPaginaView(p);
 }
 
-cargar();
-cargarCategorias();
+cargarTodo();
 </script>
 </body>
 </html>
