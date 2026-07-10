@@ -177,6 +177,34 @@ document.getElementById('sidebar-user').textContent = USER.nombre || USER.userna
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
 
+// Detecta links de Drive/Docs/Sheets/Slides/Forms pegados tal cual (los de "Compartir")
+// y los convierte al formato que realmente se puede incrustar.
+function normalizeDriveUrl(raw, mode){
+  if(!raw) return raw;
+  var url = raw.trim();
+  if(!/(drive|docs)\.google\.com/.test(url)) return url;
+  var m;
+  if((m = url.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/))){
+    return mode==='imagen' ? url : 'https://drive.google.com/embeddedfolderview?id='+m[1]+'#list';
+  }
+  if((m = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/))){
+    return 'https://docs.google.com/document/d/'+m[1]+'/preview';
+  }
+  if((m = url.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/))){
+    return 'https://docs.google.com/spreadsheets/d/'+m[1]+'/preview';
+  }
+  if((m = url.match(/docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/))){
+    return 'https://docs.google.com/presentation/d/'+m[1]+'/preview';
+  }
+  if((m = url.match(/docs\.google\.com\/forms\/d\/([a-zA-Z0-9_-]+)/))){
+    return 'https://docs.google.com/forms/d/'+m[1]+'/viewform';
+  }
+  if((m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)) || (m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/))){
+    return mode==='imagen' ? '/api/img-proxy/'+m[1] : 'https://drive.google.com/file/d/'+m[1]+'/preview';
+  }
+  return url;
+}
+
 var CONFIG = {};
 var PAGINAS = [];
 var EXPANDED = new Set();
@@ -321,10 +349,10 @@ function editSyncPaginaFromInputs(){
     if(b.tipo==='texto'){
       b.data.texto = card.querySelector('.b-texto').value;
     } else if(b.tipo==='imagen'){
-      b.data.url = card.querySelector('.b-img-url').value;
+      b.data.url = normalizeDriveUrl(card.querySelector('.b-img-url').value, 'imagen');
       b.data.caption = card.querySelector('.b-img-caption').value;
     } else if(b.tipo==='embed'){
-      b.data.url = card.querySelector('.b-embed-url').value;
+      b.data.url = normalizeDriveUrl(card.querySelector('.b-embed-url').value, 'embed');
       b.data.titulo = card.querySelector('.b-embed-titulo').value;
     }
   });
@@ -449,11 +477,11 @@ function renderBloqueEdit(b, i){
     body = '<textarea class="b-texto" rows="4" placeholder="Escribí el texto...">'+esc(b.data.texto)+'</textarea>';
   } else if(b.tipo==='imagen'){
     label = '🖼️ Imagen';
-    body = '<input class="b-img-url" value="'+escAttr(b.data.url)+'" placeholder="Link de la imagen (Drive, etc.)">'
+    body = '<input class="b-img-url" value="'+escAttr(b.data.url)+'" placeholder="Pegá el link de Drive tal cual (se formatea solo)" onblur="this.value=normalizeDriveUrl(this.value,\'imagen\')">'
       +'<input class="b-img-caption" value="'+escAttr(b.data.caption)+'" placeholder="Descripción (opcional)">';
   } else {
     label = '🔗 Incorporar (Drive, Sheets, Docs, Slides, Forms, PDF...)';
-    body = '<input class="b-embed-url" value="'+escAttr(b.data.url)+'" placeholder="Link para incorporar">'
+    body = '<input class="b-embed-url" value="'+escAttr(b.data.url)+'" placeholder="Pegá el link de Drive tal cual (se formatea solo)" onblur="this.value=normalizeDriveUrl(this.value,\'embed\')">'
       +'<input class="b-embed-titulo" value="'+escAttr(b.data.titulo)+'" placeholder="Título (opcional)">';
   }
   return '<div class="block-card" '+drag+'>'

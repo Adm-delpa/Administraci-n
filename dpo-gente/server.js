@@ -198,6 +198,22 @@ app.delete('/api/paginas/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
 });
 
+// ── PROXY DE IMÁGENES DE DRIVE ──
+// Google Drive manda Cross-Origin-Resource-Policy: same-site en /uc?export=view,
+// lo que bloquea usarlo como <img src> desde otro dominio. Lo traemos server-side.
+app.get('/api/img-proxy/:id', async (req, res) => {
+  try {
+    const upstream = await fetch('https://drive.google.com/uc?export=view&id=' + encodeURIComponent(req.params.id));
+    if (!upstream.ok) return res.status(502).send('No se pudo obtener la imagen');
+    const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+    if (!contentType.startsWith('image/')) return res.status(415).send('El archivo no es una imagen o no es público');
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(buf);
+  } catch(e) { res.status(502).send('No se pudo obtener la imagen'); }
+});
+
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/pilar-gente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pilar-gente.html')));
 
