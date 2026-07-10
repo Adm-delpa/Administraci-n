@@ -201,7 +201,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
           <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
         </select>
       </div>
-      <div class="months-bar" id="mes-chips" style="margin-bottom:1.25rem"></div>
+      <div class="months-bar" id="mes-chips" style="display:none"></div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
         <div style="font-size:16px;font-weight:700" id="r-titulo"></div>
         <div id="r-status"></div>
@@ -501,8 +501,14 @@ function renderResumen(){
   const selAnio=document.getElementById('filtro-anio');
   const curAnio=selAnio.value;
   selAnio.innerHTML='<option value="">Todos los años</option>'+anios.map(y=>`<option value="${y}" ${y===curAnio?'selected':''}>${y}</option>`).join('');
+  // Preseleccionar último mes si no hay filtro activo
+  if(!mesActivo||!db[mesActivo]){
+    mesActivo=keys[keys.length-1];
+    const[y,m]=mesActivo.split('-');
+    selAnio.value=y;
+    document.getElementById('filtro-mes').value=m;
+  }
   if(!chipsFiltrados.length) chipsFiltrados=[...keys];
-  if(!mesActivo||!db[mesActivo]) mesActivo=keys[keys.length-1];
   renderChips();
   renderDatos();
 }
