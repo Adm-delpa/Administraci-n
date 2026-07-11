@@ -129,12 +129,19 @@ a{color:inherit}
 .btn-borrar-pagina{background:none;border:none;color:#C0392B;font-size:12px;font-weight:600;cursor:pointer;margin-right:auto}
 .btn-borrar-pagina:hover{text-decoration:underline}
 
+/* BLOQUE DOS COLUMNAS */
+.block-columnas-view{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:start}
+.block-columnas-view img{max-width:100%;border-radius:10px;display:block}
+.block-columnas-titulo{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.01em;margin-bottom:.75rem}
+.block-columnas-texto{font-family:'Poppins',sans-serif;font-size:14px;line-height:1.8;color:#3A3935;white-space:pre-wrap}
+
 @media(max-width:860px){
   .app{flex-direction:column}
   .sidebar{width:100%;height:auto;position:relative;border-right:none;border-bottom:1px solid #E7E5E1}
   .main-content{padding:2rem 1.25rem}
   .hero-title{font-size:38px}
   .page-title{font-size:28px}
+  .block-columnas-view{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -354,6 +361,10 @@ function editSyncPaginaFromInputs(){
     } else if(b.tipo==='embed'){
       b.data.url = normalizeDriveUrl(card.querySelector('.b-embed-url').value, 'embed');
       b.data.titulo = card.querySelector('.b-embed-titulo').value;
+    } else if(b.tipo==='columnas'){
+      b.data.imagen_url = normalizeDriveUrl(card.querySelector('.b-col-img').value, 'imagen');
+      b.data.titulo = card.querySelector('.b-col-titulo').value;
+      b.data.texto = card.querySelector('.b-col-texto').value;
     }
   });
 }
@@ -364,7 +375,7 @@ function toggleInsertarMenu(){
 
 function editAgregarBloque(tipo){
   editSyncPaginaFromInputs();
-  const defaults = { texto:{texto:''}, imagen:{url:'',caption:''}, embed:{url:'',titulo:''} };
+  const defaults = { texto:{texto:''}, imagen:{url:'',caption:''}, embed:{url:'',titulo:''}, columnas:{imagen_url:'',titulo:'',texto:''} };
   EDIT_STATE.bloques.push({ tipo, data: defaults[tipo] });
   document.getElementById('insertar-menu').classList.remove('open');
   renderMain();
@@ -408,6 +419,7 @@ async function guardarPagina(){
         titulo: titulo,
         bloques: EDIT_STATE.bloques.filter(function(b){
           if(b.tipo==='texto') return b.data.texto && b.data.texto.trim();
+          if(b.tipo==='columnas') return true;
           return b.data.url && b.data.url.trim();
         })
       })});
@@ -424,6 +436,15 @@ function renderBloqueView(b){
   if(b.tipo==='imagen'){
     return '<div class="block-imagen-view"><img src="'+escAttr(b.data.url)+'" alt="'+escAttr(b.data.caption||'')+'">'
       +(b.data.caption?'<div class="block-imagen-caption">'+esc(b.data.caption)+'</div>':'')
+      +'</div>';
+  }
+  if(b.tipo==='columnas'){
+    return '<div class="block-columnas-view">'
+      +'<div><img src="'+escAttr(b.data.imagen_url||'')+'" alt="'+escAttr(b.data.titulo||'')+'"></div>'
+      +'<div>'
+      +(b.data.titulo?'<div class="block-columnas-titulo">'+esc(b.data.titulo)+'</div>':'')
+      +(b.data.texto?'<div class="block-columnas-texto">'+esc(b.data.texto)+'</div>':'')
+      +'</div>'
       +'</div>';
   }
   // embed
@@ -479,6 +500,11 @@ function renderBloqueEdit(b, i){
     label = '🖼️ Imagen';
     body = '<input class="b-img-url" value="'+escAttr(b.data.url)+'" placeholder="Pegá el link de Drive tal cual (se formatea solo)" onblur="this.value=normalizeDriveUrl(this.value,\'imagen\')">'
       +'<input class="b-img-caption" value="'+escAttr(b.data.caption)+'" placeholder="Descripción (opcional)">';
+  } else if(b.tipo==='columnas'){
+    label = '▦ Dos columnas (imagen + texto)';
+    body = '<input class="b-col-img" value="'+escAttr(b.data.imagen_url||'')+'" placeholder="URL de imagen o link de Drive" onblur="this.value=normalizeDriveUrl(this.value,\'imagen\')">'
+      +'<input class="b-col-titulo" value="'+escAttr(b.data.titulo||'')+'" placeholder="Título (columna derecha)">'
+      +'<textarea class="b-col-texto" rows="5" placeholder="Texto de la columna derecha...">'+esc(b.data.texto||'')+'</textarea>';
   } else {
     label = '🔗 Incorporar (Drive, Sheets, Docs, Slides, Forms, PDF...)';
     body = '<input class="b-embed-url" value="'+escAttr(b.data.url)+'" placeholder="Pegá el link de Drive tal cual (se formatea solo)" onblur="this.value=normalizeDriveUrl(this.value,\'embed\')">'
@@ -507,6 +533,7 @@ function renderPaginaEdit(){
     +'<button class="insertar-opt" onclick="editAgregarBloque(\'texto\')"><span class="opt-icon">📝</span>Cuadro de texto</button>'
     +'<button class="insertar-opt" onclick="editAgregarBloque(\'imagen\')"><span class="opt-icon">🖼️</span>Imagen</button>'
     +'<button class="insertar-opt" onclick="editAgregarBloque(\'embed\')"><span class="opt-icon">🔗</span>Incorporar</button>'
+    +'<button class="insertar-opt" onclick="editAgregarBloque(\'columnas\')"><span class="opt-icon">▦</span>Dos columnas</button>'
     +'</div>'
     +'</div>'
     +'<div class="edit-footer">'

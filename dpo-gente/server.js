@@ -166,7 +166,7 @@ app.post('/api/paginas', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al crear' }); }
 });
 
-const TIPOS_BLOQUE = ['texto', 'imagen', 'embed'];
+const TIPOS_BLOQUE = ['texto', 'imagen', 'embed', 'columnas'];
 
 app.put('/api/paginas/:id', async (req, res) => {
   const { titulo, bloques } = req.body;
