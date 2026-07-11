@@ -271,6 +271,11 @@ function irAInicio(){
 }
 
 function seleccionarPagina(id){
+  const p = paginaById(id);
+  if(p && p.bloques && p.bloques.length===1 && p.bloques[0].tipo==='embed'){
+    const url = (p.bloques[0].data.url||'');
+    if(url.startsWith('/') && url.length > 1){ window.location.href = url; return; }
+  }
   VISTA = id;
   EDITANDO = false; EDIT_STATE = null;
   if(hijosDe(id).length>0) EXPANDED.add(id);

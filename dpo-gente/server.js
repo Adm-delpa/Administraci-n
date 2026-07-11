@@ -220,6 +220,63 @@ app.delete('/api/paginas/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
 });
 
+// ── EXTRACCIÓN HEURÍSTICA DE CV ──
+function heuristicExtract(text) {
+  const campos = { apellido:'', nombre:'', localidad:'', licencia:'', tipo_licencia:'', celular:'', email:'', area:'', formacion:'', observaciones:'' };
+
+  // Email
+  const emailM = text.match(/[\w.+%-]+@[\w.-]+\.[a-z]{2,}/i);
+  if (emailM) campos.email = emailM[0].toLowerCase();
+
+  // Celular - formatos argentinos
+  const celM = text.match(/(?:cel(?:ular)?|tel(?:éfono|efono)?|móvil|movil|whatsapp)[:\s]*([+\d\s().-]{7,20})/i)
+    || text.match(/(?:\+54|0054)?[\s-]?(?:9[\s-]?)?(?:11|2\d{2,3}|3\d{2,3})[\s-]?\d{4}[\s-]?\d{4}/);
+  if (celM) campos.celular = (celM[1] || celM[0]).replace(/\s+/g,' ').trim();
+
+  // Licencia de conducir
+  if (/licencia\s+de\s+conducir|registro\s+de\s+conducir|carnet\s+de\s+manejo/i.test(text)) {
+    campos.licencia = 'Sí';
+    const tipoM = text.match(/(?:licencia|registro|categor[ií]a)[^A-Z\n]{0,20}([ABCDEF](?:\+E)?)/i);
+    if (tipoM) campos.tipo_licencia = tipoM[1].toUpperCase();
+  }
+
+  // Formación académica
+  const formM = text.match(/(?:secundario\s+(?:completo|incompleto)?|bachiller(?:ato)?|t[eé]cnico\s+en\s+\w[\w\s]{0,40}|tecnicatura\s+en\s+\w[\w\s]{0,40}|licenciado\/a?\s+en\s+\w[\w\s]{0,40}|licenciatura\s+en\s+\w[\w\s]{0,40}|ingeniero\/a?\s+en\s+\w[\w\s]{0,40}|ingenier[ií]a\s+en\s+\w[\w\s]{0,40}|contador\/a?|administraci[oó]n\s+de\s+empresas|maestr[ií]a|doctorado|profesorado)/i);
+  if (formM) campos.formacion = formM[0].trim().replace(/\s+/g,' ');
+
+  // Área según experiencia y keywords
+  const areaRules = [
+    ['Ventas',        /\bventa[s]?\b|vendedor|asesor\s+comercial|ejecutivo\s+de\s+cuenta|promotor/i],
+    ['Logística',     /logístic|logistic|depósito|deposito|almacén|almacen|distribuc|repartidor|chofer|camionero|cadete|flete|transporte/i],
+    ['Administración',/administrac|contabilidad|contador|facturac|tesorero|recursos\s+humanos|rrhh|liquidac/i],
+    ['Operaciones',   /operaciones|producción|produccion|calidad|mantenimiento|operario/i],
+  ];
+  for (const [area, re] of areaRules) {
+    if (re.test(text)) { campos.area = area; break; }
+  }
+
+  // Nombre y Apellido — primeras 15 líneas no vacías
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  for (const line of lines.slice(0, 15)) {
+    if (/curriculum|vitae|@|http|linkedin|tel:|cel:|fecha|nac|email:|perfil|objetivo|resumen|\d{4}/i.test(line)) continue;
+    const words = line.split(/\s+/);
+    if (words.length < 2 || words.length > 5) continue;
+    const allCap = words.every(w => /^[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñA-ZÁÉÍÓÚÜÑ'-]+$/.test(w));
+    if (allCap) {
+      campos.nombre = words[0];
+      campos.apellido = words.slice(1).join(' ');
+      break;
+    }
+  }
+
+  // Localidad — busca patrones comunes
+  const locM = text.match(/(?:resido\s+en|vivo\s+en|localidad[:\s]+|ciudad[:\s]+|domicilio[:\s]+|direcci[oó]n[:\s]+)([^\n,]{3,50})/i)
+    || text.match(/(?:Buenos Aires|C[oó]rdoba|Rosario|Mar del Plata|Mar de Aj[oó]|La Plata|Quilmes|Berazategui|Florencio Varela|San Clemente|Pinamar|Villa Gesell|Dolores|Chascom[uú]s|General Lavalle|Castelli|Tordillo)[^,\n]*/i);
+  if (locM) campos.localidad = (locM[1] || locM[0]).trim();
+
+  return campos;
+}
+
 // ── CANDIDATOS ──
 app.get('/api/candidatos', async (req, res) => {
   try {
@@ -330,7 +387,10 @@ Texto del CV:
       campos = JSON.parse(raw);
     } catch(e) {
       console.error('Claude extract error:', e.message);
+      campos = heuristicExtract(texto);
     }
+  } else if (texto.trim().length > 30) {
+    campos = heuristicExtract(texto);
   }
 
   res.json({ texto: texto.slice(0, 500), campos });
