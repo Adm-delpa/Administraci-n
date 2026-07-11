@@ -7,103 +7,116 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#F4F6FB;color:#1E2433;font-size:14px}
+body{font-family:'Inter',system-ui,sans-serif;background:#F7FAFC;color:#1A202C;font-size:14px}
 
-.topbar{background:#fff;border-bottom:1px solid #E3E7F0;padding:.75rem 1.5rem;display:flex;align-items:center;gap:12px}
-.topbar-back{display:flex;align-items:center;gap:6px;background:none;border:none;color:#0D4FA0;font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:7px}
-.topbar-back:hover{background:#EAF1FB}
-.topbar-sep{color:#DDDBD6}
-.topbar-title{font-size:14px;font-weight:600;color:#3A3935}
+/* TOPBAR */
+.topbar{background:#fff;border-bottom:1px solid #E2ECF5;padding:.7rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:6px;background:none;border:none;color:#38A8E0;font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:7px}
+.topbar-back:hover{background:#EBF6FD}
+.topbar-sep{color:#CBD5E0}
+.topbar-title{font-size:13.5px;font-weight:600;color:#4A5568}
 
-.wrap{max-width:1260px;margin:0 auto;padding:22px}
+/* WRAP */
+.wrap{max-width:1300px;margin:0 auto;padding:22px 20px}
 
-.banner{background:linear-gradient(120deg,#0D4FA0 0%,#1565c0 60%,#075C41 100%);border-radius:14px;padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;box-shadow:0 6px 20px rgba(13,79,160,.2)}
-.banner h1{font-size:20px;margin:0}
-.banner p{margin:3px 0 0;font-size:12px;opacity:.85}
-.banner-actions{display:flex;gap:8px}
+/* BANNER */
+.banner{background:linear-gradient(120deg,#38A8E0 0%,#56C2F0 50%,#F97316 100%);border-radius:14px;padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;box-shadow:0 4px 18px rgba(56,168,224,.25)}
+.banner h1{font-size:20px;font-weight:800;margin:0}
+.banner p{margin:3px 0 0;font-size:12px;opacity:.9}
 
-.btn{display:inline-flex;align-items:center;gap:6px;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif}
-.btn-primary{background:#fff;color:#0D4FA0}
-.btn-primary:hover{background:#EAF1FB}
-.btn-secondary{background:#fff;color:#3A3935;border:1px solid #DDDBD6}
-.btn-secondary:hover{background:#F5F4F1}
-.btn-danger{background:#FAE0E0;color:#8A1F1F;border:none}
-.btn-danger:hover{background:#f5c0c0}
-.btn:disabled{opacity:.5;cursor:default}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-orange{background:#F97316;color:#fff}
+.btn-white{background:#fff;color:#1A202C;border:1px solid #CBD5E0}
+.btn-sky{background:#38A8E0;color:#fff}
+.btn-danger{background:#FEE2E2;color:#991B1B;border:none}
 
+/* STATS */
 .stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.stat-card{background:#fff;border:1px solid #E3E7F0;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px}
-.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.stat-icon.blue{background:#EAF1FB;color:#0D4FA0}
-.stat-icon.gray{background:#EDECEA;color:#56555A}
-.stat-icon.green{background:#D8F6E4;color:#0F7A3D}
-.stat-icon.orange{background:#FFF3E0;color:#E65100}
-.stat-num{font-size:22px;font-weight:800;line-height:1}
-.stat-label{font-size:11px;color:#9896A0;margin-top:3px}
+.stat-card{background:#fff;border:1px solid #E2ECF5;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.stat-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.ic-sky{background:#EBF6FD;color:#38A8E0}
+.ic-gray{background:#F1F5F9;color:#64748B}
+.ic-green{background:#D1FAE5;color:#065F46}
+.ic-orange{background:#FFF7ED;color:#F97316}
+.stat-num{font-size:24px;font-weight:800;line-height:1}
+.stat-label{font-size:11px;color:#94A3B8;margin-top:3px}
 
+/* TOOLBAR */
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-.toolbar input[type=text]{flex:1;min-width:200px;padding:9px 11px;border:1px solid #DDDBD6;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1E2433;background:#fff;outline:none}
-.toolbar input[type=text]:focus{border-color:#0D4FA0}
-.toolbar select{padding:9px 11px;border:1px solid #DDDBD6;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;color:#1E2433;background:#fff;outline:none}
+.toolbar input[type=text]{flex:1;min-width:200px;padding:9px 12px;border:1.5px solid #CBD5E0;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none;background:#fff}
+.toolbar input[type=text]:focus{border-color:#38A8E0}
+.toolbar select{padding:9px 11px;border:1.5px solid #CBD5E0;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:#fff;outline:none}
+.toolbar select:focus{border-color:#38A8E0}
 
-.table-wrap{background:#fff;border:1px solid #E3E7F0;border-radius:12px;overflow:hidden;overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:900px}
-thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#9896A0;background:#F8F7F5;padding:10px 12px;border-bottom:1px solid #E3E7F0;white-space:nowrap}
-tbody td{padding:10px 12px;border-bottom:1px solid #F0EEE9;vertical-align:middle}
+/* TABLE */
+.table-wrap{background:#fff;border:1px solid #E2ECF5;border-radius:12px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:980px}
+thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#94A3B8;background:#F8FBFD;padding:10px 12px;border-bottom:1px solid #E2ECF5;white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid #F0F6FB;vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
-tbody tr:hover{background:#FAFAFE}
-.cell-name{font-weight:700;color:#1E2433}
-.cell-sub{font-size:11.5px;color:#9896A0;margin-top:2px}
-.tag{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700}
-.tag-ventas{background:#FFF3E0;color:#E65100}
-.tag-logistica{background:#EAF1FB;color:#0D4FA0}
-.tag-admin{background:#EDE7F6;color:#5E35B1}
-.tag-operaciones{background:#E8F5E9;color:#2E7D32}
-.tag-otro{background:#EDECEA;color:#56555A}
-.estado-sel{padding:5px 10px;border-radius:999px;border:none;font-size:11.5px;font-weight:700;cursor:pointer;appearance:none;-webkit-appearance:none;background-color:#EDECEA;color:#56555A;font-family:'Inter',sans-serif}
-.estado-sel[data-v="Sin entrevista"]{background:#EDECEA;color:#56555A}
-.estado-sel[data-v="Entrevistado OK"]{background:#D8F6E4;color:#0F7A3D}
-.estado-sel[data-v="Entrevistado no OK"]{background:#FAE0E0;color:#8A1F1F}
-.cv-link{color:#0D4FA0;font-weight:700;font-size:12px;text-decoration:none}
+tbody tr:hover{background:#F7FBFE}
+.cell-name{font-weight:700;color:#1A202C}
+.cell-sub{font-size:11.5px;color:#94A3B8;margin-top:2px}
+.tag{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
+.tag-ventas{background:#FFF7ED;color:#C2410C}
+.tag-logistica{background:#EBF6FD;color:#0369A1}
+.tag-admin{background:#F5F3FF;color:#6D28D9}
+.tag-operaciones{background:#ECFDF5;color:#065F46}
+.tag-otro{background:#F1F5F9;color:#475569}
+.estado-sel{padding:5px 10px;border-radius:999px;border:none;font-size:11px;font-weight:700;cursor:pointer;appearance:none;-webkit-appearance:none;font-family:'Inter',sans-serif}
+.estado-sel[data-v="Sin entrevista"]{background:#F1F5F9;color:#475569}
+.estado-sel[data-v="Entrevistado OK"]{background:#D1FAE5;color:#065F46}
+.estado-sel[data-v="Entrevistado no OK"]{background:#FEE2E2;color:#991B1B}
+.cv-link{color:#38A8E0;font-weight:700;font-size:12px;text-decoration:none}
 .cv-link:hover{text-decoration:underline}
-.no-cv{color:#9896A0;font-size:12px}
-.icon-btn{background:#fff;border:1px solid #DDDBD6;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;color:#0D4FA0;font-family:'Inter',sans-serif}
-.icon-btn:hover{background:#EAF1FB}
-.empty-state{text-align:center;padding:48px 20px;color:#9896A0}
+.no-cv{color:#CBD5E0;font-size:12px}
+.icon-btn{background:#fff;border:1.5px solid #E2ECF5;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;color:#38A8E0;font-family:'Inter',sans-serif}
+.icon-btn:hover{background:#EBF6FD;border-color:#38A8E0}
+.empty-state{text-align:center;padding:48px 20px;color:#94A3B8}
 
-/* Modal */
-.overlay{display:none;position:fixed;inset:0;background:rgba(20,20,40,.45);align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;z-index:50}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,25,50,.4);align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;z-index:50}
 .overlay.open{display:flex}
-.modal{background:#fff;border-radius:14px;width:100%;max-width:700px;padding:22px 26px 26px;box-shadow:0 14px 50px rgba(0,0,0,.2);position:relative}
-.modal-title{font-size:18px;font-weight:800;color:#0D4FA0;margin-bottom:4px}
-.modal-sub{font-size:12px;color:#9896A0;margin-bottom:16px}
-.close-x{position:absolute;top:16px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:#9896A0}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:720px;padding:24px 28px 28px;box-shadow:0 20px 60px rgba(0,0,0,.18);position:relative}
+.modal-title{font-size:19px;font-weight:800;color:#38A8E0;margin-bottom:3px}
+.modal-sub{font-size:12px;color:#94A3B8;margin-bottom:16px}
+.close-x{position:absolute;top:16px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:#94A3B8}
+.close-x:hover{color:#1A202C}
 
-.dropzone{border:2px dashed #B8D0F5;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:linear-gradient(120deg,#F7FAFF,#F0F7FF);margin-bottom:14px;transition:border-color .15s,background .15s}
-.dropzone.drag{border-color:#0D4FA0;background:#EAF1FB}
-.dropzone strong{color:#0D4FA0}
-.dropzone .dz-sub{font-size:11.5px;color:#9896A0;margin-top:4px}
+/* DROPZONE */
+.dropzone{border:2px dashed #93D4F2;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:linear-gradient(135deg,#F0FAFF,#FFF7ED);margin-bottom:16px;transition:border-color .15s}
+.dropzone.drag{border-color:#38A8E0;background:#EBF6FD}
+.dropzone strong{color:#38A8E0}
+.dz-sub{font-size:11.5px;color:#94A3B8;margin-top:4px}
 .dz-status{font-size:12px;margin-top:8px;font-weight:700}
-.dz-status.busy{color:#B8860B}
-.dz-status.ok{color:#0F7A3D}
-.dz-status.err{color:#8A1F1F}
+.dz-status.busy{color:#B45309}
+.dz-status.ok{color:#065F46}
+.dz-status.err{color:#991B1B}
 
+/* FORM */
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#38A8E0;margin:14px 0 8px;padding-bottom:6px;border-bottom:2px solid #EBF6FD}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .form-grid .full{grid-column:1/-1}
-.field label{display:block;font-size:11px;font-weight:700;color:#56555A;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
-.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1.5px solid #DDDBD6;border-radius:7px;font-size:13px;font-family:'Inter',sans-serif;color:#1E2433;background:#fff;outline:none}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:#0D4FA0}
+.form-grid .third{grid-column:span 1}
+.field label{display:block;font-size:11px;font-weight:700;color:#4A5568;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1.5px solid #CBD5E0;border-radius:7px;font-size:13px;font-family:'Inter',sans-serif;color:#1A202C;background:#fff;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#38A8E0;box-shadow:0 0 0 3px rgba(56,168,224,.1)}
 .field textarea{resize:vertical;min-height:72px}
 
-.modal-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #F0EEE9}
+/* MODAL FOOTER */
+.modal-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #F0F6FB}
 .modal-footer-right{display:flex;gap:8px}
 
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#18181A;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;z-index:100;display:none;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1A202C;color:#fff;padding:10px 20px;border-radius:9px;font-size:13px;font-weight:600;z-index:100;display:none;box-shadow:0 8px 24px rgba(0,0,0,.2);white-space:nowrap}
 
-@media(max-width:700px){
+@media(max-width:720px){
   .stat-cards{grid-template-columns:1fr 1fr}
   .form-grid{grid-template-columns:1fr}
-  .form-grid .full{grid-column:1}
+  .form-grid .full,.form-grid .third{grid-column:1}
 }
 </style>
 </head>
@@ -118,19 +131,17 @@ tbody tr:hover{background:#FAFAFE}
 <div class="wrap">
   <div class="banner">
     <div>
-      <h1>Base de Candidatos</h1>
+      <h1>👥 Base de Candidatos</h1>
       <p>Reclutamiento y Selección · DPO Gente — Distribuidora del Palacio S.A.</p>
     </div>
-    <div class="banner-actions">
-      <button class="btn btn-primary" id="btn-add">+ Agregar candidato</button>
-    </div>
+    <button class="btn btn-white" id="btn-add">+ Agregar candidato</button>
   </div>
 
   <div class="stat-cards">
-    <div class="stat-card"><div class="stat-icon blue">👥</div><div><div class="stat-num" id="s-total">–</div><div class="stat-label">Candidatos totales</div></div></div>
-    <div class="stat-card"><div class="stat-icon gray">⏳</div><div><div class="stat-num" id="s-sin">–</div><div class="stat-label">Sin entrevista</div></div></div>
-    <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-num" id="s-ok">–</div><div class="stat-label">Entrevistado OK</div></div></div>
-    <div class="stat-card"><div class="stat-icon orange">📄</div><div><div class="stat-num" id="s-cv">–</div><div class="stat-label">Con CV adjunto</div></div></div>
+    <div class="stat-card"><div class="stat-icon ic-sky">👥</div><div><div class="stat-num" id="s-total">–</div><div class="stat-label">Candidatos totales</div></div></div>
+    <div class="stat-card"><div class="stat-icon ic-gray">⏳</div><div><div class="stat-num" id="s-sin">–</div><div class="stat-label">Sin entrevista</div></div></div>
+    <div class="stat-card"><div class="stat-icon ic-green">✅</div><div><div class="stat-num" id="s-ok">–</div><div class="stat-label">Entrevistado OK</div></div></div>
+    <div class="stat-card"><div class="stat-icon ic-orange">📄</div><div><div class="stat-num" id="s-cv">–</div><div class="stat-label">Con CV adjunto</div></div></div>
   </div>
 
   <div class="toolbar">
@@ -153,13 +164,14 @@ tbody tr:hover{background:#FAFAFE}
           <th>Área / Formación</th>
           <th>Contacto</th>
           <th>Licencia</th>
+          <th>Medio</th>
           <th>CV</th>
           <th>Estado</th>
           <th></th>
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr><td colspan="8" style="text-align:center;padding:32px;color:#9896A0">Cargando…</td></tr>
+        <tr><td colspan="9" style="text-align:center;padding:32px;color:#94A3B8">Cargando…</td></tr>
       </tbody>
     </table>
   </div>
@@ -180,39 +192,58 @@ tbody tr:hover{background:#FAFAFE}
     </div>
 
     <form id="cand-form">
+      <div class="section-label">Datos personales</div>
       <div class="form-grid">
         <div class="field"><label>Apellido</label><input id="f-apellido" type="text" placeholder="García"></div>
         <div class="field"><label>Nombre</label><input id="f-nombre" type="text" placeholder="Juan"></div>
-        <div class="field"><label>Lugar de Residencia</label><input id="f-localidad" type="text" placeholder="Mar de Ajó"></div>
+        <div class="field"><label>Sexo</label>
+          <select id="f-sexo"><option value="">—</option><option>Femenino</option><option>Masculino</option><option>Otro</option></select>
+        </div>
+        <div class="field"><label>Lugar de Residencia</label><input id="f-localidad" type="text" placeholder="Mar de Ajó, Buenos Aires"></div>
         <div class="field"><label>Celular</label><input id="f-celular" type="text" placeholder="+54 9 11 1234-5678"></div>
         <div class="field"><label>Email</label><input id="f-email" type="text" placeholder="juan@email.com"></div>
+      </div>
+
+      <div class="section-label">Perfil profesional</div>
+      <div class="form-grid">
         <div class="field"><label>Formación Académica</label><input id="f-formacion" type="text" placeholder="Ej: Secundario completo, Técnico en…"></div>
-        <div class="field"><label>Licencia de conducir</label>
-          <select id="f-licencia"><option value="">—</option><option>Sí</option><option>No</option></select>
-        </div>
-        <div class="field"><label>Tipo de licencia</label>
-          <select id="f-tipo-licencia"><option value="">—</option><option>A</option><option>B</option><option>B+E</option><option>C</option><option>D</option><option>E</option><option>F</option></select>
-        </div>
         <div class="field"><label>Área / Sector</label>
           <select id="f-area-interes">
             <option value="">—</option>
             <option>Administración</option><option>Logística</option><option>Ventas</option><option>Operaciones</option><option>Otro</option>
           </select>
         </div>
-        <div class="field"><label>Estado</label>
-          <select id="f-estado2">
-            <option>Sin entrevista</option>
-            <option>Entrevistado OK</option>
-            <option>Entrevistado no OK</option>
-          </select>
+        <div class="field"><label>Licencia de conducir</label>
+          <select id="f-licencia"><option value="">—</option><option>Sí</option><option>No</option></select>
+        </div>
+        <div class="field"><label>Tipo de licencia</label>
+          <select id="f-tipo-licencia"><option value="">—</option><option>A</option><option>B</option><option>B+E</option><option>C</option><option>D</option><option>E</option><option>F</option></select>
         </div>
         <div class="field full"><label>Observaciones importantes</label><textarea id="f-observaciones" placeholder="Resumen del perfil, experiencia destacada, notas de la entrevista…"></textarea></div>
       </div>
+
+      <div class="section-label">Gestión del proceso</div>
+      <div class="form-grid">
+        <div class="field"><label>Fecha de carga</label><input id="f-fecha" type="date"></div>
+        <div class="field"><label>Medio de reclutamiento</label>
+          <select id="f-medio">
+            <option value="">—</option>
+            <option>LinkedIn</option><option>Facebook</option><option>Instagram</option>
+            <option>Portal de empleo</option><option>Referido</option><option>Feria de empleo</option><option>Email</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="field"><label>Estado</label>
+          <select id="f-estado2">
+            <option>Sin entrevista</option><option>Entrevistado OK</option><option>Entrevistado no OK</option>
+          </select>
+        </div>
+      </div>
+
       <div class="modal-footer">
         <div id="btn-delete-wrap"></div>
         <div class="modal-footer-right">
-          <button type="button" class="btn btn-secondary" id="btn-cancel">Cancelar</button>
-          <button type="submit" class="btn btn-primary" style="background:#0D4FA0;color:#fff" id="btn-save">Guardar candidato</button>
+          <button type="button" class="btn btn-white" id="btn-cancel">Cancelar</button>
+          <button type="submit" class="btn btn-orange" id="btn-save">Guardar candidato</button>
         </div>
       </div>
     </form>
@@ -230,12 +261,14 @@ let EDITING_ID = null;
 let PENDING_CV_FILE = null;
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._h); toast._h=setTimeout(()=>t.style.display='none',3000); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._h); toast._h=setTimeout(()=>t.style.display='none',3200); }
 
 function areaTag(a){
   const m={'Ventas':'tag-ventas','Logística':'tag-logistica','Administración':'tag-admin','Operaciones':'tag-operaciones'};
   return `<span class="tag ${m[a]||'tag-otro'}">${esc(a)||'Sin área'}</span>`;
 }
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
 
 async function cargar(){
   const r = await fetch('/api/candidatos');
@@ -248,13 +281,11 @@ function renderTabla(){
   const areaF = document.getElementById('f-area').value;
   const estadoF = document.getElementById('f-estado').value;
 
-  // Actualizar stats
   document.getElementById('s-total').textContent = CANDIDATOS.length;
   document.getElementById('s-sin').textContent = CANDIDATOS.filter(c=>c.estado==='Sin entrevista').length;
   document.getElementById('s-ok').textContent = CANDIDATOS.filter(c=>c.estado==='Entrevistado OK').length;
   document.getElementById('s-cv').textContent = CANDIDATOS.filter(c=>c.cv_nombre).length;
 
-  // Poblar filtro de áreas
   const areas = [...new Set(CANDIDATOS.map(c=>c.area).filter(Boolean))].sort();
   const areasSel = document.getElementById('f-area');
   const curArea = areasSel.value;
@@ -265,7 +296,7 @@ function renderTabla(){
     if(areaF && c.area !== areaF) return false;
     if(estadoF && c.estado !== estadoF) return false;
     if(search){
-      const blob = [c.apellido,c.nombre,c.localidad,c.email,c.area,c.formacion].join(' ').toLowerCase();
+      const blob = [c.apellido,c.nombre,c.localidad,c.email,c.area,c.formacion,c.medio_reclutamiento].join(' ').toLowerCase();
       if(!blob.includes(search)) return false;
     }
     return true;
@@ -273,19 +304,22 @@ function renderTabla(){
 
   const tbody = document.getElementById('tbody');
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state">No hay candidatos que coincidan.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state">No hay candidatos que coincidan.</div></td></tr>';
     return;
   }
 
   tbody.innerHTML = rows.map(c=>{
     const lic = c.licencia==='Sí' ? 'Sí'+(c.tipo_licencia?' · '+esc(c.tipo_licencia):'') : c.licencia==='No'?'No':'<span class="no-cv">–</span>';
-    const cv = c.cv_nombre ? `<a class="cv-link" href="/api/candidatos/${c.id}/cv" target="_blank">📄 ${esc(c.cv_nombre)}</a>` : '<span class="no-cv">Sin CV</span>';
+    const cv = c.cv_nombre ? `<a class="cv-link" href="/api/candidatos/${c.id}/cv" target="_blank">📄 Ver CV</a>` : '<span class="no-cv">–</span>';
+    const sexoBadge = c.sexo ? `<span style="font-size:11px;color:#94A3B8"> · ${esc(c.sexo)}</span>` : '';
+    const fecha = c.fecha_alta ? `<div class="cell-sub">${esc(String(c.fecha_alta).slice(0,10))}</div>` : '';
     return `<tr>
-      <td><div class="cell-name">${esc(c.apellido)}${c.apellido&&c.nombre?', ':''}${esc(c.nombre)}</div><div class="cell-sub">${esc(c.fecha_alta||'')}</div></td>
+      <td><div class="cell-name">${esc(c.apellido)}${c.apellido&&c.nombre?', ':''}${esc(c.nombre)}${sexoBadge}</div>${fecha}</td>
       <td>${esc(c.localidad)||'<span class="no-cv">–</span>'}</td>
       <td>${areaTag(c.area)}<div class="cell-sub" style="margin-top:4px">${esc(c.formacion)}</div></td>
       <td>${c.celular?`<div>${esc(c.celular)}</div>`:''}${c.email?`<div class="cell-sub">${esc(c.email)}</div>`:''}</td>
       <td>${lic}</td>
+      <td><span class="cell-sub">${esc(c.medio_reclutamiento)||'–'}</span></td>
       <td>${cv}</td>
       <td><select class="estado-sel" data-id="${c.id}" data-v="${esc(c.estado)}">
         ${['Sin entrevista','Entrevistado OK','Entrevistado no OK'].map(o=>`<option${o===c.estado?' selected':''}>${o}</option>`).join('')}
@@ -299,27 +333,24 @@ function renderTabla(){
       const id = e.target.dataset.id;
       const c = CANDIDATOS.find(x=>String(x.id)===String(id));
       if(!c) return;
-      const nuevoEstado = e.target.value;
-      e.target.dataset.v = nuevoEstado;
-      e.target.style.cssText = '';
-      const r = await fetch(`/api/candidatos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({...c, estado:nuevoEstado})});
-      if(r.ok){ c.estado=nuevoEstado; toast('Estado actualizado'); renderTabla(); }
+      c.estado = e.target.value;
+      e.target.dataset.v = e.target.value;
+      await fetch(`/api/candidatos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)});
+      toast('Estado actualizado'); renderTabla();
     });
   });
-
   tbody.querySelectorAll('[data-edit]').forEach(btn=>{
-    btn.addEventListener('click',()=> abrirModal(CANDIDATOS.find(c=>String(c.id)===btn.dataset.edit)));
+    btn.addEventListener('click',()=>abrirModal(CANDIDATOS.find(c=>String(c.id)===btn.dataset.edit)));
   });
 }
 
-// ── Modal ──
 function abrirModal(c){
   EDITING_ID = c ? c.id : null;
   PENDING_CV_FILE = null;
   document.getElementById('modal-title').textContent = c ? 'Editar candidato' : 'Agregar candidato';
   document.getElementById('f-apellido').value = c?.apellido||'';
   document.getElementById('f-nombre').value = c?.nombre||'';
+  document.getElementById('f-sexo').value = c?.sexo||'';
   document.getElementById('f-localidad').value = c?.localidad||'';
   document.getElementById('f-celular').value = c?.celular||'';
   document.getElementById('f-email').value = c?.email||'';
@@ -327,14 +358,16 @@ function abrirModal(c){
   document.getElementById('f-licencia').value = c?.licencia||'';
   document.getElementById('f-tipo-licencia').value = c?.tipo_licencia||'';
   document.getElementById('f-area-interes').value = c?.area||'';
-  document.getElementById('f-estado2').value = c?.estado||'Sin entrevista';
   document.getElementById('f-observaciones').value = c?.observaciones||'';
+  document.getElementById('f-fecha').value = c?.fecha_alta ? String(c.fecha_alta).slice(0,10) : todayISO();
+  document.getElementById('f-medio').value = c?.medio_reclutamiento||'';
+  document.getElementById('f-estado2').value = c?.estado||'Sin entrevista';
   const dzStatus = document.getElementById('dz-status');
   dzStatus.textContent = c?.cv_nombre ? `CV actual: ${c.cv_nombre}` : '';
   dzStatus.className = 'dz-status';
   const delWrap = document.getElementById('btn-delete-wrap');
   delWrap.innerHTML = c ? `<button type="button" class="btn btn-danger" id="btn-delete">Eliminar candidato</button>` : '';
-  if(c) document.getElementById('btn-delete').addEventListener('click', ()=>eliminar(c.id));
+  if(c) document.getElementById('btn-delete').addEventListener('click',()=>eliminar(c.id));
   document.getElementById('overlay').classList.add('open');
 }
 
@@ -348,9 +381,7 @@ function cerrarModal(){
 async function eliminar(id){
   if(!confirm('¿Eliminar este candidato? Esta acción no se puede deshacer.')) return;
   await fetch(`/api/candidatos/${id}`,{method:'DELETE'});
-  cerrarModal();
-  await cargar();
-  toast('Candidato eliminado');
+  cerrarModal(); await cargar(); toast('Candidato eliminado');
 }
 
 document.getElementById('btn-add').addEventListener('click',()=>abrirModal(null));
@@ -361,7 +392,7 @@ document.getElementById('f-search').addEventListener('input',renderTabla);
 document.getElementById('f-area').addEventListener('change',renderTabla);
 document.getElementById('f-estado').addEventListener('change',renderTabla);
 
-// ── CV Upload ──
+// CV Upload
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('file-input');
 dropzone.addEventListener('click',()=>fileInput.click());
@@ -399,18 +430,16 @@ async function procesarCV(file){
   }
 }
 
-// ── Guardar ──
 document.getElementById('cand-form').addEventListener('submit', async e=>{
   e.preventDefault();
   const apellido = document.getElementById('f-apellido').value.trim();
   const nombre = document.getElementById('f-nombre').value.trim();
   if(!apellido && !nombre){ toast('Ingresá al menos apellido o nombre'); return; }
-
   const btn = document.getElementById('btn-save');
   btn.disabled=true; btn.textContent='Guardando…';
-
   const body = {
     apellido, nombre,
+    sexo: document.getElementById('f-sexo').value,
     localidad: document.getElementById('f-localidad').value.trim(),
     celular: document.getElementById('f-celular').value.trim(),
     email: document.getElementById('f-email').value.trim(),
@@ -418,31 +447,27 @@ document.getElementById('cand-form').addEventListener('submit', async e=>{
     licencia: document.getElementById('f-licencia').value,
     tipo_licencia: document.getElementById('f-tipo-licencia').value,
     area: document.getElementById('f-area-interes').value,
-    estado: document.getElementById('f-estado2').value,
-    observaciones: document.getElementById('f-observaciones').value.trim()
+    observaciones: document.getElementById('f-observaciones').value.trim(),
+    fecha_alta: document.getElementById('f-fecha').value || todayISO(),
+    medio_reclutamiento: document.getElementById('f-medio').value,
+    estado: document.getElementById('f-estado2').value
   };
-
   try{
     let id = EDITING_ID;
     if(id){
       await fetch(`/api/candidatos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     } else {
       const r = await fetch('/api/candidatos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      const d = await r.json();
-      id = d.id;
+      const d = await r.json(); id = d.id;
     }
     if(PENDING_CV_FILE && id){
       const fd = new FormData(); fd.append('cv', PENDING_CV_FILE);
       await fetch(`/api/candidatos/${id}/cv`,{method:'POST',body:fd});
     }
     toast(EDITING_ID ? 'Candidato actualizado' : 'Candidato guardado');
-    cerrarModal();
-    await cargar();
-  }catch(err){
-    toast('Error al guardar');
-  }finally{
-    btn.disabled=false; btn.textContent='Guardar candidato';
-  }
+    cerrarModal(); await cargar();
+  }catch(err){ toast('Error al guardar'); }
+  finally{ btn.disabled=false; btn.textContent='Guardar candidato'; }
 });
 
 cargar();

@@ -113,9 +113,13 @@ async function initDB() {
         cv_nombre VARCHAR(300),
         cv_mime VARCHAR(100),
         cv_base64 TEXT,
+        sexo VARCHAR(20) DEFAULT '',
+        medio_reclutamiento VARCHAR(100) DEFAULT '',
         fecha_alta DATE DEFAULT CURRENT_DATE,
         created_at TIMESTAMP DEFAULT NOW()
       );
+      ALTER TABLE dpo_candidatos ADD COLUMN IF NOT EXISTS sexo VARCHAR(20) DEFAULT '';
+      ALTER TABLE dpo_candidatos ADD COLUMN IF NOT EXISTS medio_reclutamiento VARCHAR(100) DEFAULT '';
 
       CREATE TABLE IF NOT EXISTS dpo_bloques (
         id SERIAL PRIMARY KEY,
@@ -280,29 +284,29 @@ function heuristicExtract(text) {
 // ── CANDIDATOS ──
 app.get('/api/candidatos', async (req, res) => {
   try {
-    const r = await pool.query('SELECT id,apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado,cv_nombre,fecha_alta FROM dpo_candidatos ORDER BY apellido,nombre');
+    const r = await pool.query('SELECT id,apellido,nombre,sexo,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado,medio_reclutamiento,cv_nombre,fecha_alta FROM dpo_candidatos ORDER BY apellido,nombre');
     res.json(r.rows);
   } catch(e) { res.status(500).json({ error: 'Error al leer' }); }
 });
 
 app.post('/api/candidatos', async (req, res) => {
-  const { apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado } = req.body;
+  const { apellido,nombre,sexo,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado,medio_reclutamiento,fecha_alta } = req.body;
   try {
     const r = await pool.query(
-      `INSERT INTO dpo_candidatos (apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-      [apellido||'',nombre||'',localidad||'',licencia||'',tipo_licencia||'',celular||'',email||'',area||'',formacion||'',observaciones||'',estado||'Sin entrevista']
+      `INSERT INTO dpo_candidatos (apellido,nombre,sexo,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado,medio_reclutamiento,fecha_alta)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
+      [apellido||'',nombre||'',sexo||'',localidad||'',licencia||'',tipo_licencia||'',celular||'',email||'',area||'',formacion||'',observaciones||'',estado||'Sin entrevista',medio_reclutamiento||'',fecha_alta||null]
     );
     res.json({ ok: true, id: r.rows[0].id });
   } catch(e) { res.status(500).json({ error: 'Error al crear' }); }
 });
 
 app.put('/api/candidatos/:id', async (req, res) => {
-  const { apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado } = req.body;
+  const { apellido,nombre,sexo,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado,medio_reclutamiento,fecha_alta } = req.body;
   try {
     await pool.query(
-      `UPDATE dpo_candidatos SET apellido=$1,nombre=$2,localidad=$3,licencia=$4,tipo_licencia=$5,celular=$6,email=$7,area=$8,formacion=$9,observaciones=$10,estado=$11 WHERE id=$12`,
-      [apellido||'',nombre||'',localidad||'',licencia||'',tipo_licencia||'',celular||'',email||'',area||'',formacion||'',observaciones||'',estado||'Sin entrevista',req.params.id]
+      `UPDATE dpo_candidatos SET apellido=$1,nombre=$2,sexo=$3,localidad=$4,licencia=$5,tipo_licencia=$6,celular=$7,email=$8,area=$9,formacion=$10,observaciones=$11,estado=$12,medio_reclutamiento=$13,fecha_alta=$14 WHERE id=$15`,
+      [apellido||'',nombre||'',sexo||'',localidad||'',licencia||'',tipo_licencia||'',celular||'',email||'',area||'',formacion||'',observaciones||'',estado||'Sin entrevista',medio_reclutamiento||'',fecha_alta||null,req.params.id]
     );
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error al actualizar' }); }
