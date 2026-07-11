@@ -1,6 +1,8 @@
 const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -92,6 +94,26 @@ async function initDB() {
         titulo VARCHAR(300) NOT NULL,
         texto TEXT,
         orden INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_candidatos (
+        id SERIAL PRIMARY KEY,
+        apellido VARCHAR(100) DEFAULT '',
+        nombre VARCHAR(100) DEFAULT '',
+        localidad VARCHAR(200) DEFAULT '',
+        licencia VARCHAR(10) DEFAULT '',
+        tipo_licencia VARCHAR(20) DEFAULT '',
+        celular VARCHAR(50) DEFAULT '',
+        email VARCHAR(200) DEFAULT '',
+        area VARCHAR(100) DEFAULT '',
+        formacion TEXT DEFAULT '',
+        observaciones TEXT DEFAULT '',
+        estado VARCHAR(50) DEFAULT 'Sin entrevista',
+        cv_nombre VARCHAR(300),
+        cv_mime VARCHAR(100),
+        cv_base64 TEXT,
+        fecha_alta DATE DEFAULT CURRENT_DATE,
         created_at TIMESTAMP DEFAULT NOW()
       );
 
@@ -198,6 +220,122 @@ app.delete('/api/paginas/:id', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
 });
 
+// ── CANDIDATOS ──
+app.get('/api/candidatos', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id,apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado,cv_nombre,fecha_alta FROM dpo_candidatos ORDER BY apellido,nombre');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'Error al leer' }); }
+});
+
+app.post('/api/candidatos', async (req, res) => {
+  const { apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado } = req.body;
+  try {
+    const r = await pool.query(
+      `INSERT INTO dpo_candidatos (apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+      [apellido||'',nombre||'',localidad||'',licencia||'',tipo_licencia||'',celular||'',email||'',area||'',formacion||'',observaciones||'',estado||'Sin entrevista']
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: 'Error al crear' }); }
+});
+
+app.put('/api/candidatos/:id', async (req, res) => {
+  const { apellido,nombre,localidad,licencia,tipo_licencia,celular,email,area,formacion,observaciones,estado } = req.body;
+  try {
+    await pool.query(
+      `UPDATE dpo_candidatos SET apellido=$1,nombre=$2,localidad=$3,licencia=$4,tipo_licencia=$5,celular=$6,email=$7,area=$8,formacion=$9,observaciones=$10,estado=$11 WHERE id=$12`,
+      [apellido||'',nombre||'',localidad||'',licencia||'',tipo_licencia||'',celular||'',email||'',area||'',formacion||'',observaciones||'',estado||'Sin entrevista',req.params.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al actualizar' }); }
+});
+
+app.delete('/api/candidatos/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_candidatos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
+});
+
+app.post('/api/candidatos/:id/cv', upload.single('cv'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+  try {
+    const b64 = req.file.buffer.toString('base64');
+    await pool.query(
+      'UPDATE dpo_candidatos SET cv_nombre=$1, cv_mime=$2, cv_base64=$3 WHERE id=$4',
+      [req.file.originalname, req.file.mimetype, b64, req.params.id]
+    );
+    res.json({ ok: true, nombre: req.file.originalname });
+  } catch(e) { res.status(500).json({ error: 'Error al guardar CV' }); }
+});
+
+app.get('/api/candidatos/:id/cv', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT cv_nombre,cv_mime,cv_base64 FROM dpo_candidatos WHERE id=$1', [req.params.id]);
+    if (!r.rows[0] || !r.rows[0].cv_base64) return res.status(404).send('Sin CV');
+    const { cv_nombre, cv_mime, cv_base64 } = r.rows[0];
+    res.set('Content-Type', cv_mime || 'application/octet-stream');
+    res.set('Content-Disposition', `attachment; filename="${cv_nombre || 'cv'}"`);
+    res.send(Buffer.from(cv_base64, 'base64'));
+  } catch(e) { res.status(500).send('Error'); }
+});
+
+app.post('/api/cv-extract', upload.single('cv'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+  let texto = '';
+  try {
+    const mime = req.file.mimetype;
+    const buf = req.file.buffer;
+    if (mime === 'application/pdf' || req.file.originalname.toLowerCase().endsWith('.pdf')) {
+      const pdfParse = require('pdf-parse');
+      const data = await pdfParse(buf);
+      texto = data.text;
+    } else if (mime.includes('word') || req.file.originalname.toLowerCase().match(/\.docx?$/)) {
+      const mammoth = require('mammoth');
+      const result = await mammoth.extractRawText({ buffer: buf });
+      texto = result.value;
+    } else {
+      texto = buf.toString('utf8');
+    }
+  } catch(e) {
+    return res.json({ texto: '', campos: null, error: 'No se pudo leer el archivo: ' + e.message });
+  }
+
+  let campos = null;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (apiKey && texto.trim().length > 30) {
+    try {
+      const Anthropic = require('@anthropic-ai/sdk');
+      const client = new Anthropic({ apiKey });
+      const prompt = `Sos un asistente de RRHH. A partir del texto de un CV, devolvé ÚNICAMENTE un objeto JSON válido sin texto adicional ni markdown con estos campos exactos:
+{"apellido":"","nombre":"","localidad":"","licencia":"","tipo_licencia":"","celular":"","email":"","area":"","formacion":"","observaciones":""}
+Reglas:
+- "licencia": "Sí" o "No" solo si se menciona, si no dejar vacío.
+- "tipo_licencia": categoría A, B, B+E, C, D, E o F si se menciona, si no vacío.
+- "area": elegí la más adecuada entre Administración, Logística, Ventas, Operaciones, Otro.
+- "formacion": título o nivel educativo más relevante.
+- "observaciones": 2-3 líneas resumiendo el perfil y experiencia principal.
+- Si un dato no aparece, dejalo como cadena vacía. No inventes información.
+Texto del CV:
+"""${texto.slice(0, 6000)}"""`;
+      const msg = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      let raw = msg.content[0].text.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+      const s = raw.indexOf('{'); const e = raw.lastIndexOf('}');
+      if (s >= 0 && e > s) raw = raw.slice(s, e+1);
+      campos = JSON.parse(raw);
+    } catch(e) {
+      console.error('Claude extract error:', e.message);
+    }
+  }
+
+  res.json({ texto: texto.slice(0, 500), campos });
+});
+
 // ── PROXY DE IMÁGENES DE DRIVE ──
 // Google Drive manda Cross-Origin-Resource-Policy: same-site en /uc?export=view,
 // lo que bloquea usarlo como <img src> desde otro dominio. Lo traemos server-side.
@@ -216,6 +354,7 @@ app.get('/api/img-proxy/:id', async (req, res) => {
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/pilar-gente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pilar-gente.html')));
+app.get('/base-candidatos', (req, res) => res.sendFile(path.join(__dirname, 'public', 'base-candidatos.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
