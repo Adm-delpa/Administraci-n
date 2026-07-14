@@ -1370,23 +1370,40 @@ async function cargarPendientes(){
 }
 
 /* HELPERS FECHAS HÁBILES */
-function sigFechaHabil(fechaStr, feriadosSet){
+function nDiasHabiles(fechaStr, n, feriadosSet){
+  var fechas=[];
   var d=new Date(fechaStr+'T00:00:00');
-  do {
+  while(fechas.length<n){
     d.setDate(d.getDate()+1);
+    var dow=d.getDay();
     var yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
     var key=yy+'-'+mm+'-'+dd;
-    var dow=d.getDay(); // 0=dom,6=sab
-  } while(dow===0||feriadosSet.has(key));
-  var yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
-  return yy+'-'+mm+'-'+dd;
+    if(dow!==0&&dow!==6&&!feriadosSet.has(key)) fechas.push(key);
+  }
+  return fechas;
 }
 
+function hayFeriadoEntre(f1, f2, feriadosSet){
+  if(!f1||!f2) return false;
+  var d1=new Date(f1+'T00:00:00'), d2=new Date(f2+'T00:00:00');
+  var start=d1<d2?d1:d2, end=d1<d2?d2:d1;
+  var cur=new Date(start); cur.setDate(cur.getDate()+1);
+  while(cur<end){
+    var yy=cur.getFullYear(),mm=String(cur.getMonth()+1).padStart(2,'0'),dd=String(cur.getDate()).padStart(2,'0');
+    if(feriadosSet.has(yy+'-'+mm+'-'+dd)) return true;
+    cur.setDate(cur.getDate()+1);
+  }
+  return false;
+}
+
+function ventana(f1, f2, feriadosSet){
+  // 5 días hábiles si hay feriado entre las dos fechas, 2 si no
+  return hayFeriadoEntre(f1,f2,feriadosSet)?5:2;
+}
+
+// Mantener compatibilidad con llamadas existentes
 function fechasHabilesDesde(fechaStr, feriadosSet){
-  // Devuelve las próximas 2 fechas hábiles desde fechaStr (sin incluirla)
-  var f1=sigFechaHabil(fechaStr,feriadosSet);
-  var f2=sigFechaHabil(f1,feriadosSet);
-  return [f1,f2];
+  return nDiasHabiles(fechaStr,2,feriadosSet);
 }
 
 /* PROCESAR */
@@ -1433,8 +1450,9 @@ async function procesar(){
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
         if(codEq(chess[i].codCli,cli.c)&&Math.abs(chess[i].haber-b.importe)<0.01){
-          var fechasEsp1=fechasHabilesDesde(chess[i].fecha,feriadosSet);
-          var fechasEsp1r=fechasHabilesDesde(b.fecha,feriadosSet);
+          var n1=ventana(chess[i].fecha,b.fecha,feriadosSet);
+          var fechasEsp1=nDiasHabiles(chess[i].fecha,n1,feriadosSet);
+          var fechasEsp1r=nDiasHabiles(b.fecha,n1,feriadosSet);
           if(chess[i].fecha===b.fecha||fechasEsp1.indexOf(b.fecha)>=0||fechasEsp1r.indexOf(chess[i].fecha)>=0){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
         }
       }
@@ -1445,8 +1463,9 @@ async function procesar(){
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
         if(Math.abs(chess[i].haber-b.importe)<0.01){
-          var fechasEsperadas=fechasHabilesDesde(chess[i].fecha,feriadosSet);
-          var fechasEsperadasR=fechasHabilesDesde(b.fecha,feriadosSet);
+          var n2=ventana(chess[i].fecha,b.fecha,feriadosSet);
+          var fechasEsperadas=nDiasHabiles(chess[i].fecha,n2,feriadosSet);
+          var fechasEsperadasR=nDiasHabiles(b.fecha,n2,feriadosSet);
           if(chess[i].fecha===b.fecha||fechasEsperadas.indexOf(b.fecha)>=0||fechasEsperadasR.indexOf(chess[i].fecha)>=0){
             match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=lookupCli(chess[i].codCli);break;
           }
@@ -1466,8 +1485,9 @@ async function procesar(){
           for(var ci=0;ci<chess.length;ci++){
             if(sisUsado[ci]) continue;
             if(codEq(chess[ci].codCli,pend.cod)&&Math.abs(chess[ci].haber-b.importe)<0.01){
-              var fechasEsp=fechasHabilesDesde(chess[ci].fecha,feriadosSet);
-              var fechasEspR=fechasHabilesDesde(b.fecha,feriadosSet);
+              var n3=ventana(chess[ci].fecha,b.fecha,feriadosSet);
+              var fechasEsp=nDiasHabiles(chess[ci].fecha,n3,feriadosSet);
+              var fechasEspR=nDiasHabiles(b.fecha,n3,feriadosSet);
               if(chess[ci].fecha===b.fecha||fechasEsp.indexOf(b.fecha)>=0||fechasEspR.indexOf(chess[ci].fecha)>=0){
                 chessMatch=chess[ci]; sisUsado[ci]=true; break;
               }
