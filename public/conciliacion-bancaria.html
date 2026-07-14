@@ -1584,8 +1584,12 @@ function calcStats(){
     else if(r.nivel==='CONC'){conc++;mConc+=r.importe;}
     else{nc++;mNc+=r.importe;}
   });
+  var chessDelPeriodo=state.chess.filter(function(c){
+    if(state.filtroMes&&c.fecha&&c.fecha.slice(0,7)!==state.filtroMes) return false;
+    return true;
+  });
   document.getElementById('st-tot').textContent=tot||'—';
-  document.getElementById('st-chess').textContent=state.chess.length||'—';
+  document.getElementById('st-chess').textContent=chessDelPeriodo.length||'—';
   document.getElementById('st-conf').textContent=(n1+conc)||'—';
   document.getElementById('st-conf-m').textContent=(n1+conc)?'$'+fmtN(mN1+mConc):'';
   document.getElementById('st-nc').textContent=nc||'—';
