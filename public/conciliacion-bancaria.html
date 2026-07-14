@@ -1451,6 +1451,30 @@ async function procesar(){
   var sisUsado=chess.map(function(){return false;});
   var nuevos=[];
 
+  // Pre-marcar como usados los Chess que ya están conciliados en OTRO período
+  // para que no aparezcan como "Falta transferencia" al procesar el mes actual
+  var mesBanco=null;
+  if(banco.length){
+    var mc={};
+    banco.forEach(function(b){if(b.fecha){var m=b.fecha.slice(0,7);mc[m]=(mc[m]||0)+1;}});
+    mesBanco=Object.keys(mc).sort(function(a,b){return mc[b]-mc[a];})[0]||null;
+  }
+  var conciliadosOtrosPeriodos=[];
+  state.resultados.forEach(function(r){
+    if(!r.fecha) return;
+    if(mesBanco&&r.fecha.slice(0,7)===mesBanco) return; // mismo período, no pre-marcar
+    if(r.nivel!=='N1'&&r.nivel!=='MAN'&&r.nivel!=='CONC') return;
+    conciliadosOtrosPeriodos.push(r);
+  });
+  conciliadosOtrosPeriodos.forEach(function(r){
+    for(var i=0;i<chess.length;i++){
+      if(sisUsado[i]) continue;
+      if(Math.abs(chess[i].haber-r.importe)<0.01&&codEq(chess[i].codCli,r.codCli)&&chess[i].fecha===r.fecha){
+        sisUsado[i]=true; break;
+      }
+    }
+  });
+
   // Traer feriados del año actual y siguiente
   var feriadosSet=new Set();
   try{
