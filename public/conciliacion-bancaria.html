@@ -1371,6 +1371,7 @@ async function cargarPendientes(){
 
 /* HELPERS FECHAS HÁBILES */
 function nDiasHabiles(fechaStr, n, feriadosSet){
+  // Salta domingo (0) y feriados — sábado se considera hábil bancariamente
   var fechas=[];
   var d=new Date(fechaStr+'T00:00:00');
   while(fechas.length<n){
@@ -1378,7 +1379,7 @@ function nDiasHabiles(fechaStr, n, feriadosSet){
     var dow=d.getDay();
     var yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
     var key=yy+'-'+mm+'-'+dd;
-    if(dow!==0&&dow!==6&&!feriadosSet.has(key)) fechas.push(key);
+    if(dow!==0&&!feriadosSet.has(key)) fechas.push(key);
   }
   return fechas;
 }
