@@ -809,16 +809,23 @@ async function loadResultados(){
         if(newPeso>oldPeso) Object.assign(fpMap[fp],r);
       }
     });
-    // Restaurar banco/chess del período más reciente
-    if(data[k].banco&&data[k].banco.length>0&&state.banco.length===0){
-      state.banco=data[k].banco;
-      markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones (guardado)',null);
-      verificarListo();
+    // Acumular banco de todos los períodos guardados
+    if(data[k].banco&&data[k].banco.length>0){
+      var bancoFpMap={};
+      state.banco.forEach(function(b){bancoFpMap[fingerprint(b)]=true;});
+      data[k].banco.forEach(function(b){
+        var fp=fingerprint(b);
+        if(!bancoFpMap[fp]){bancoFpMap[fp]=true;state.banco.push(b);}
+      });
     }
     if(data[k].chess&&data[k].chess.length>0){
       state.chess=mergeChess(state.chess,data[k].chess);
     }
   });
+  if(state.banco.length>0){
+    markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones (guardado)',null);
+    verificarListo();
+  }
   if(state.chess.length>0){
     markFileCard('chess','Reporte Chess',state.chess.length+' COBRs (guardado)',null);
     document.getElementById('sb-chess').textContent='Chess: '+state.chess.length+' COBRs';
