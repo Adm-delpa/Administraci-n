@@ -1627,7 +1627,7 @@ function calcStats(){
     else if(r.nivel==='N2'){n2++;mN2+=r.importe;}
     else if(r.nivel==='PEND'){pend++;mPend+=r.importe;}
     else if(r.nivel==='CONC'){conc++;mConc+=r.importe;}
-    else{nc++;mNc+=r.importe;}
+    else if(r.nivel==='NC'){nc++;mNc+=r.importe;}
   });
   var chessDelPeriodo=state.chess.filter(function(c){
     if(state.filtroMes&&c.fecha&&c.fecha.slice(0,7)!==state.filtroMes) return false;
