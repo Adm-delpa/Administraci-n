@@ -1883,31 +1883,43 @@ function cerrarModalVincular(){
 function filtrarVincular(){
   var sf=_vincularSfIdx!==null?state.filtradas[_vincularSfIdx]:null;
   var q=(document.getElementById('mv-busq').value||'').toLowerCase().trim();
-  // Mostrar movimientos NC del período, ordenados por diferencia de importe
+  var CONC_NIVELES={'N1':true,'MAN':true,'CONC':true};
   var lista=state.resultados.filter(function(r){
-    if(r.nivel!=='NC') return false;
+    if(r.nivel==='SF') return false;
     if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes) return false;
+    // Mostrar NC (sin conciliar) + ya conciliados del mismo cliente (pueden ser el match real)
+    var esNC=r.nivel==='NC';
+    var esConcMismoCliente=CONC_NIVELES[r.nivel]&&sf&&codEq(r.codCli,sf.codCli);
+    if(!esNC&&!esConcMismoCliente) return false;
     if(q){
-      var txt=(r.desc||'').toLowerCase()+' '+String(r.importe)+' '+fmtFechaDisplay(r.fecha);
+      var txt=(r.desc||'').toLowerCase()+' '+String(r.importe)+' '+fmtFechaDisplay(r.fecha)+(r.nomCli||'').toLowerCase();
       if(txt.indexOf(q)<0) return false;
     }
     return true;
   });
   if(sf) lista.sort(function(a,b){ return Math.abs(a.importe-sf.importe)-Math.abs(b.importe-sf.importe); });
-  document.getElementById('mv-count').textContent=lista.length+' movimientos sin conciliar';
+  var ncCount=lista.filter(function(r){return r.nivel==='NC';}).length;
+  var concCount=lista.length-ncCount;
+  document.getElementById('mv-count').textContent=
+    ncCount+' sin conciliar'+(concCount?' + '+concCount+' ya conciliado(s) del mismo cliente':'');
   document.getElementById('mv-list').innerHTML=lista.length?lista.slice(0,80).map(function(r){
     var dif=sf?Math.abs(r.importe-sf.importe):0;
     var difStr=dif<0.01?'<span style="color:#16a34a;font-size:10px">✓ Importe exacto</span>'
       :'<span style="color:#b91c1c;font-size:10px">Dif: $'+fmtN(dif)+'</span>';
+    var esConciliado=CONC_NIVELES[r.nivel];
     var fp=fingerprint(r);
-    return '<div class="cli-item" data-fp="'+esc(fp)+'" onclick="selBanco(this,\''+esc(fp)+'\')">'
+    return '<div class="cli-item" data-fp="'+esc(fp)+'" onclick="selBanco(this,\''+esc(fp)+'\')"'
+      +(esConciliado?' style="border-left:3px solid #22c55e;background:#f0fdf4"':'')+'>'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+      +'<div>'
+      +(esConciliado?'<div style="font-size:10px;font-weight:700;color:#16a34a;margin-bottom:2px">✓ Ya conciliado — '+esc(r.nomCli||r.codCli)+'</div>':'')
       +'<div class="cn" style="font-size:12px">'+esc(trunc(r.desc,55))+'</div>'
+      +'</div>'
       +'<div style="text-align:right;white-space:nowrap"><div style="font-weight:700;font-size:13px">$'+fmtN(r.importe)+'</div>'+difStr+'</div>'
       +'</div>'
       +'<div class="cf">'+fmtFechaDisplay(r.fecha)+'</div>'
       +'</div>';
-  }).join(''):'<div style="padding:20px;text-align:center;color:#bbb;font-size:12px">Sin movimientos sin conciliar en este período</div>';
+  }).join(''):'<div style="padding:20px;text-align:center;color:#bbb;font-size:12px">Sin movimientos disponibles en este período</div>';
 }
 
 function selBanco(el, fp){
