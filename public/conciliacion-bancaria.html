@@ -1594,9 +1594,23 @@ async function procesar(){
   var mesPpal=Object.keys(mesCounts2).sort(function(a,b){return mesCounts2[b]-mesCounts2[a];})[0]||null;
   // Eliminar SF anteriores del mismo período para evitar duplicados al reprocesar
   if(mesPpal) state.resultados=state.resultados.filter(function(r){return !(r.nivel==='SF'&&r.fecha&&r.fecha.slice(0,7)===mesPpal);});
+  // Construir set de códigos de cliente que tienen al menos un movimiento bancario en el período
+  // (aunque sea con importe distinto — esos casos ya los maneja NC+sugerido)
+  var codClientesEnBanco=new Set();
+  banco.forEach(function(b){
+    var cuitB=extraerCUIT(b.desc);
+    if(cuitB&&cuitMap[cuitB]) codClientesEnBanco.add(parseInt(cuitMap[cuitB].c,10));
+  });
+  // También incluir los que ya resultaron con codCli asignado en nuevos
+  nuevos.forEach(function(n){
+    if(n.codCli) codClientesEnBanco.add(parseInt(n.codCli,10));
+  });
   chess.forEach(function(c,i){
     if(sisUsado[i]) return;
     if(mesPpal&&c.fecha&&c.fecha.slice(0,7)!==mesPpal) return;
+    // Si el cliente tiene movimiento bancario en el período (aunque con distinto importe),
+    // no generar SF — ya está cubierto por la lógica de NC+sugerido
+    if(codClientesEnBanco.has(parseInt(c.codCli,10))) return;
     var cliInfo=lookupCli(c.codCli);
     nuevos.push({
       fecha:c.fecha,
