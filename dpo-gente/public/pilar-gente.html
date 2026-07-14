@@ -40,6 +40,10 @@ a{color:inherit}
 .nav-node:hover>.nav-row>.nav-add-child{display:inline-flex}
 .nav-add-child{align-items:center;justify-content:center;width:18px;height:18px;border:none;background:none;color:#9896A0;cursor:pointer;font-size:14px;border-radius:4px;flex-shrink:0}
 .nav-add-child:hover{background:#EAF1FB;color:#0D4FA0}
+.nav-action{display:none;align-items:center;justify-content:center;width:18px;height:18px;border:none;background:none;color:#9896A0;cursor:pointer;font-size:11px;border-radius:4px;flex-shrink:0}
+.nav-node:hover>.nav-row>.nav-action{display:inline-flex}
+.nav-action:hover{background:#FEE2E2;color:#B91C1C}
+.nav-action.nav-move:hover{background:#EAF1FB;color:#0D4FA0}
 
 .sidebar-add-section{margin:.75rem 0;width:100%;text-align:left;padding:7px 8px;background:none;border:1.5px dashed #DDDBD6;border-radius:6px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#0D4FA0;cursor:pointer}
 .sidebar-add-section:hover{background:#EAF1FB;border-color:#0D4FA0}
@@ -251,11 +255,28 @@ function renderNavNode(p, depth){
   return '<div class="nav-node" data-depth="'+depth+'">'
     +'<div class="nav-row">'
     +'<button class="nav-label'+(activo?' active':'')+'" onclick="seleccionarPagina('+p.id+')">'+esc(p.titulo)+'</button>'
+    +'<button class="nav-action nav-move" title="Subir" onclick="event.stopPropagation();moverSeccion('+p.id+',\'arriba\')">↑</button>'
+    +'<button class="nav-action nav-move" title="Bajar" onclick="event.stopPropagation();moverSeccion('+p.id+',\'abajo\')">↓</button>'
+    +'<button class="nav-action" title="Eliminar sección" onclick="event.stopPropagation();eliminarSeccion('+p.id+',\''+esc(p.titulo)+'\')">✕</button>'
     +'<button class="nav-add-child" title="Agregar subsección" onclick="event.stopPropagation();nuevaPagina('+p.id+')">+</button>'
     +(tieneHijos?'<button class="nav-chevron'+(abierto?' open':'')+'" onclick="event.stopPropagation();toggleExpand('+p.id+')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>':'<span style="width:20px"></span>')
     +'</div>'
     +(tieneHijos?'<div class="nav-children'+(abierto?' open':'')+'">'+hijos.map(h=>renderNavNode(h, depth+1)).join('')+'</div>':'')
     +'</div>';
+}
+
+async function eliminarSeccion(id, titulo){
+  if(!confirm('¿Eliminar "'+titulo+'" y todo su contenido?')) return;
+  await fetch('/api/paginas/'+id, {method:'DELETE'});
+  if(VISTA===id){ VISTA=null; EDITANDO=false; EDIT_STATE=null; }
+  await cargarTodo();
+  renderNav(); renderMain();
+}
+
+async function moverSeccion(id, dir){
+  await fetch('/api/paginas/'+id+'/mover', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({direccion:dir})});
+  await cargarTodo();
+  renderNav();
 }
 
 function toggleExpand(id){

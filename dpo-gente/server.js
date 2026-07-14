@@ -121,6 +121,60 @@ async function initDB() {
       ALTER TABLE dpo_candidatos ADD COLUMN IF NOT EXISTS sexo VARCHAR(20) DEFAULT '';
       ALTER TABLE dpo_candidatos ADD COLUMN IF NOT EXISTS medio_reclutamiento VARCHAR(100) DEFAULT '';
 
+      CREATE TABLE IF NOT EXISTS dpo_plan_demanda (
+        id SERIAL PRIMARY KEY,
+        sucursal VARCHAR(20) NOT NULL,
+        grupo VARCHAR(150) NOT NULL,
+        mes INTEGER NOT NULL,
+        anio INTEGER NOT NULL,
+        presupuestado INTEGER DEFAULT 0,
+        real INTEGER DEFAULT 0,
+        UNIQUE(sucursal, grupo, mes, anio)
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_nomina (
+        id SERIAL PRIMARY KEY,
+        sucursal VARCHAR(20) NOT NULL,
+        anio INTEGER NOT NULL,
+        rol VARCHAR(50) NOT NULL,
+        tipo VARCHAR(20) NOT NULL,
+        nombre VARCHAR(200) NOT NULL DEFAULT '',
+        meses JSONB NOT NULL DEFAULT '{}',
+        orden INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_dias_habiles (
+        sucursal VARCHAR(20) NOT NULL,
+        anio INTEGER NOT NULL,
+        mes INTEGER NOT NULL,
+        dias INTEGER DEFAULT 0,
+        PRIMARY KEY(sucursal, anio, mes)
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_plan_comentarios (
+        sucursal VARCHAR(20) NOT NULL,
+        anio INTEGER NOT NULL,
+        grupo VARCHAR(150) NOT NULL,
+        mes INTEGER NOT NULL,
+        comentario TEXT DEFAULT '',
+        estado VARCHAR(30) DEFAULT 'sin_justificar',
+        PRIMARY KEY(sucursal, anio, grupo, mes)
+      );
+      ALTER TABLE dpo_plan_comentarios ADD COLUMN IF NOT EXISTS estado VARCHAR(30) DEFAULT 'sin_justificar';
+
+      CREATE TABLE IF NOT EXISTS dpo_vacaciones (
+        sucursal VARCHAR(20) NOT NULL,
+        anio INTEGER NOT NULL,
+        rol VARCHAR(50) NOT NULL,
+        mes INTEGER NOT NULL,
+        quien_planea TEXT DEFAULT '',
+        dias_planeados INTEGER DEFAULT 0,
+        quien_real TEXT DEFAULT '',
+        dias_real INTEGER DEFAULT 0,
+        PRIMARY KEY(sucursal, anio, rol, mes)
+      );
+
       CREATE TABLE IF NOT EXISTS dpo_bloques (
         id SERIAL PRIMARY KEY,
         pagina_id INTEGER NOT NULL REFERENCES dpo_paginas(id) ON DELETE CASCADE,
@@ -222,6 +276,27 @@ app.delete('/api/paginas/:id', async (req, res) => {
     await pool.query('DELETE FROM dpo_paginas WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error al borrar' }); }
+});
+
+app.post('/api/paginas/:id/mover', async (req, res) => {
+  const { direccion } = req.body;
+  try {
+    const r = await pool.query('SELECT id, parent_id, orden FROM dpo_paginas WHERE id=$1', [req.params.id]);
+    if (!r.rows[0]) return res.status(404).json({ error: 'No encontrado' });
+    const { parent_id, orden } = r.rows[0];
+    const op = direccion === 'arriba' ? '<' : '>';
+    const ord2 = direccion === 'arriba' ? 'DESC' : 'ASC';
+    const q = parent_id == null
+      ? `SELECT id, orden FROM dpo_paginas WHERE parent_id IS NULL AND orden ${op} $1 ORDER BY orden ${ord2} LIMIT 1`
+      : `SELECT id, orden FROM dpo_paginas WHERE parent_id=$2 AND orden ${op} $1 ORDER BY orden ${ord2} LIMIT 1`;
+    const args = parent_id == null ? [orden] : [orden, parent_id];
+    const r2 = await pool.query(q, args);
+    if (!r2.rows[0]) return res.json({ ok: true });
+    const { id: id2, orden: orden2 } = r2.rows[0];
+    await pool.query('UPDATE dpo_paginas SET orden=$1 WHERE id=$2', [orden2, req.params.id]);
+    await pool.query('UPDATE dpo_paginas SET orden=$1 WHERE id=$2', [orden, id2]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al mover' }); }
 });
 
 // ── EXTRACCIÓN HEURÍSTICA DE CV ──
@@ -337,7 +412,7 @@ app.get('/api/candidatos/:id/cv', async (req, res) => {
     if (!r.rows[0] || !r.rows[0].cv_base64) return res.status(404).send('Sin CV');
     const { cv_nombre, cv_mime, cv_base64 } = r.rows[0];
     res.set('Content-Type', cv_mime || 'application/octet-stream');
-    res.set('Content-Disposition', `attachment; filename="${cv_nombre || 'cv'}"`);
+    res.set('Content-Disposition', `inline; filename="${cv_nombre || 'cv'}"`);
     res.send(Buffer.from(cv_base64, 'base64'));
   } catch(e) { res.status(500).send('Error'); }
 });
@@ -419,6 +494,212 @@ app.get('/api/img-proxy/:id', async (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/pilar-gente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pilar-gente.html')));
 app.get('/base-candidatos', (req, res) => res.sendFile(path.join(__dirname, 'public', 'base-candidatos.html')));
+app.get('/plan-demanda', (req, res) => res.sendFile(path.join(__dirname, 'public', 'plan-demanda.html')));
+app.get('/visor-doc', (req, res) => res.sendFile(path.join(__dirname, 'public', 'visor-doc.html')));
+
+// ── COMENTARIOS PLAN DE DEMANDA ──
+app.get('/api/plan-comentarios/:sucursal/:anio', async (req, res) => {
+  try {
+    const r = await pool.query(
+      'SELECT grupo, mes, comentario, estado FROM dpo_plan_comentarios WHERE sucursal=$1 AND anio=$2',
+      [req.params.sucursal, req.params.anio]
+    );
+    const data = {};
+    r.rows.forEach(row => {
+      if(!data[row.grupo]) data[row.grupo]={};
+      data[row.grupo][row.mes] = { comentario: row.comentario, estado: row.estado||'sin_justificar' };
+    });
+    res.json(data);
+  } catch(e) { res.json({}); }
+});
+
+app.put('/api/plan-comentarios/:sucursal/:anio', async (req, res) => {
+  const { sucursal, anio } = req.params;
+  const { comments } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM dpo_plan_comentarios WHERE sucursal=$1 AND anio=$2', [sucursal, anio]);
+    for (const grupo of Object.keys(comments)) {
+      for (const mes of Object.keys(comments[grupo])) {
+        const { comentario, estado } = comments[grupo][mes];
+        if (!comentario && estado === 'sin_justificar') continue;
+        await client.query(
+          'INSERT INTO dpo_plan_comentarios (sucursal,anio,grupo,mes,comentario,estado) VALUES ($1,$2,$3,$4,$5,$6)',
+          [sucursal, parseInt(anio), grupo, parseInt(mes), comentario||'', estado||'sin_justificar']
+        );
+      }
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch(e) { await client.query('ROLLBACK'); res.status(500).json({ error: e.message }); }
+  finally { client.release(); }
+});
+
+// ── NÓMINA MENSUAL ──
+app.get('/api/nomina/:sucursal/:anio', async (req, res) => {
+  const r = await pool.query(
+    'SELECT id,rol,tipo,nombre,meses,orden FROM dpo_nomina WHERE sucursal=$1 AND anio=$2 ORDER BY rol,tipo,orden,id',
+    [req.params.sucursal, req.params.anio]
+  );
+  res.json(r.rows);
+});
+
+app.put('/api/nomina/:sucursal/:anio', async (req, res) => {
+  const { sucursal, anio } = req.params;
+  const { personas } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM dpo_nomina WHERE sucursal=$1 AND anio=$2', [sucursal, anio]);
+    for (let i = 0; i < personas.length; i++) {
+      const { rol, tipo, nombre, meses } = personas[i];
+      await client.query(
+        'INSERT INTO dpo_nomina (sucursal,anio,rol,tipo,nombre,meses,orden) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [sucursal, anio, rol, tipo, nombre||'', JSON.stringify(meses||{}), i]
+      );
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch(e) { await client.query('ROLLBACK'); res.status(500).json({ error: e.message }); }
+  finally { client.release(); }
+});
+
+// ── DÍAS HÁBILES ──
+app.get('/api/dias-habiles/:sucursal/:anio', async (req, res) => {
+  const r = await pool.query(
+    'SELECT mes,dias FROM dpo_dias_habiles WHERE sucursal=$1 AND anio=$2',
+    [req.params.sucursal, req.params.anio]
+  );
+  const data = {};
+  for(let m=1;m<=12;m++) data[m]=0;
+  r.rows.forEach(row => { data[row.mes]=row.dias; });
+  res.json(data);
+});
+
+app.put('/api/dias-habiles/:sucursal/:anio', async (req, res) => {
+  const { sucursal, anio } = req.params;
+  const { dias } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const mes of Object.keys(dias)) {
+      await client.query(
+        `INSERT INTO dpo_dias_habiles (sucursal,anio,mes,dias) VALUES ($1,$2,$3,$4)
+         ON CONFLICT (sucursal,anio,mes) DO UPDATE SET dias=$4`,
+        [sucursal, parseInt(anio), parseInt(mes), parseInt(dias[mes])||0]
+      );
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch(e) { await client.query('ROLLBACK'); res.status(500).json({ error: e.message }); }
+  finally { client.release(); }
+});
+
+// ── VACACIONES ──
+app.get('/api/vacaciones/:sucursal/:anio', async (req, res) => {
+  const r = await pool.query(
+    'SELECT rol,mes,quien_planea,dias_planeados,quien_real,dias_real FROM dpo_vacaciones WHERE sucursal=$1 AND anio=$2',
+    [req.params.sucursal, req.params.anio]
+  );
+  const data = {};
+  r.rows.forEach(row => {
+    if(!data[row.rol]) data[row.rol]={};
+    data[row.rol][row.mes]={ quien_planea:row.quien_planea, dias_planeados:row.dias_planeados, quien_real:row.quien_real, dias_real:row.dias_real };
+  });
+  res.json(data);
+});
+
+app.put('/api/vacaciones/:sucursal/:anio', async (req, res) => {
+  const { sucursal, anio } = req.params;
+  const { data } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const rol of Object.keys(data)) {
+      for (const mes of Object.keys(data[rol])) {
+        const { quien_planea, dias_planeados, quien_real, dias_real } = data[rol][mes];
+        await client.query(
+          `INSERT INTO dpo_vacaciones (sucursal,anio,rol,mes,quien_planea,dias_planeados,quien_real,dias_real)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+           ON CONFLICT (sucursal,anio,rol,mes) DO UPDATE SET quien_planea=$5,dias_planeados=$6,quien_real=$7,dias_real=$8`,
+          [sucursal, parseInt(anio), rol, parseInt(mes), quien_planea||'', parseInt(dias_planeados)||0, quien_real||'', parseInt(dias_real)||0]
+        );
+      }
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch(e) { await client.query('ROLLBACK'); res.status(500).json({ error: e.message }); }
+  finally { client.release(); }
+});
+
+// ── PLAN DE DEMANDA ──
+const GRUPOS_DEMANDA = [
+  'Distribucion - Chofer - Fijo',
+  'Distribucion - Chofer - Temporada',
+  'Distribucion - Ayudante - Fijo',
+  'Distribucion - Ayudante - Temporada',
+  'Deposito - Operario - Fijo',
+  'Deposito - Operario - Temporada',
+  'Administrativos - Administrativo - Fijo'
+];
+
+app.get('/api/plan-demanda/:sucursal/:anio', async (req, res) => {
+  const { sucursal, anio } = req.params;
+  const [rPlan, rNomina] = await Promise.all([
+    pool.query('SELECT grupo,mes,presupuestado FROM dpo_plan_demanda WHERE sucursal=$1 AND anio=$2', [sucursal, anio]),
+    pool.query('SELECT rol,tipo,meses FROM dpo_nomina WHERE sucursal=$1 AND anio=$2', [sucursal, anio])
+  ]);
+  const ROL_MAP = {
+    'Chofer|Fijo':'Distribucion - Chofer - Fijo','Chofer|Temporada':'Distribucion - Chofer - Temporada',
+    'Ayudante|Fijo':'Distribucion - Ayudante - Fijo','Ayudante|Temporada':'Distribucion - Ayudante - Temporada',
+    'Operario|Fijo':'Deposito - Operario - Fijo','Operario|Temporada':'Deposito - Operario - Temporada',
+    'Administrativo|Fijo':'Administrativos - Administrativo - Fijo'
+  };
+  const real = {};
+  GRUPOS_DEMANDA.forEach(g => { real[g]={}; for(let m=1;m<=12;m++) real[g][m]=0; });
+  rNomina.rows.forEach(p => {
+    const grupo = ROL_MAP[`${p.rol}|${p.tipo}`];
+    if(!grupo) return;
+    const meses = p.meses || {};
+    for(let m=1;m<=12;m++) { if((meses[m]||'').toUpperCase()==='X') real[grupo][m]++; }
+  });
+  const data = {};
+  GRUPOS_DEMANDA.forEach(g => { data[g]={}; for(let m=1;m<=12;m++) data[g][m]={presupuestado:0,real:real[g][m]}; });
+  rPlan.rows.forEach(row => { if(data[row.grupo]) data[row.grupo][row.mes].presupuestado=row.presupuestado; });
+  res.json(data);
+});
+
+app.put('/api/plan-demanda/:sucursal/:anio', async (req, res) => {
+  const { sucursal, anio } = req.params;
+  const { data } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (const grupo of Object.keys(data)) {
+      for (const mes of Object.keys(data[grupo])) {
+        const { presupuestado, real } = data[grupo][mes];
+        await client.query(
+          `INSERT INTO dpo_plan_demanda (sucursal,grupo,mes,anio,presupuestado,real) VALUES ($1,$2,$3,$4,$5,$6)
+           ON CONFLICT (sucursal,grupo,mes,anio) DO UPDATE SET presupuestado=$5, real=$6`,
+          [sucursal, grupo, parseInt(mes), parseInt(anio), presupuestado||0, real||0]
+        );
+      }
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch(e) { await client.query('ROLLBACK'); res.status(500).json({ error: e.message }); }
+  finally { client.release(); }
+});
+
+app.get('/api/docs/:file/html', async (req, res) => {
+  try {
+    const mammoth = require('mammoth');
+    const filePath = path.join(__dirname, 'public', 'docs', req.params.file);
+    const result = await mammoth.convertToHtml({ path: filePath });
+    res.json({ html: result.value });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {

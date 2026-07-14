@@ -7,116 +7,128 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#F7FAFC;color:#1A202C;font-size:14px}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;font-size:13.5px}
 
 /* TOPBAR */
-.topbar{background:#fff;border-bottom:1px solid #E2ECF5;padding:.7rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
-.topbar-back{display:flex;align-items:center;gap:6px;background:none;border:none;color:#38A8E0;font-size:13px;font-weight:600;cursor:pointer;padding:6px 10px;border-radius:7px}
-.topbar-back:hover{background:#EBF6FD}
-.topbar-sep{color:#CBD5E0}
-.topbar-title{font-size:13.5px;font-weight:600;color:#4A5568}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.65rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:500;color:#5A6880}
+.topbar-title strong{color:#18243A;font-weight:700}
 
-/* WRAP */
-.wrap{max-width:1300px;margin:0 auto;padding:22px 20px}
+/* PAGE HEADER */
+.page-header{background:#1B3F72;padding:18px 24px}
+.page-header h1{font-size:19px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.page-header p{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:3px}
 
-/* BANNER */
-.banner{background:linear-gradient(120deg,#38A8E0 0%,#56C2F0 50%,#F97316 100%);border-radius:14px;padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;box-shadow:0 4px 18px rgba(56,168,224,.25)}
-.banner h1{font-size:20px;font-weight:800;margin:0}
-.banner p{margin:3px 0 0;font-size:12px;opacity:.9}
-
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:6px;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s}
-.btn:hover{opacity:.88}
-.btn:disabled{opacity:.45;cursor:default}
-.btn-orange{background:#F97316;color:#fff}
-.btn-white{background:#fff;color:#1A202C;border:1px solid #CBD5E0}
-.btn-sky{background:#38A8E0;color:#fff}
-.btn-danger{background:#FEE2E2;color:#991B1B;border:none}
+.wrap{max-width:1260px;margin:0 auto;padding:20px}
 
 /* STATS */
 .stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.stat-card{background:#fff;border:1px solid #E2ECF5;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px}
-.stat-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
-.ic-sky{background:#EBF6FD;color:#38A8E0}
-.ic-gray{background:#F1F5F9;color:#64748B}
-.ic-green{background:#D1FAE5;color:#065F46}
-.ic-orange{background:#FFF7ED;color:#F97316}
-.stat-num{font-size:24px;font-weight:800;line-height:1}
-.stat-label{font-size:11px;color:#94A3B8;margin-top:3px}
+.stat-card{background:#fff;border:1px solid #D8DEE8;border-radius:8px;padding:16px 18px}
+.stat-num{font-size:28px;font-weight:800;color:#1B3F72;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.stat-label{font-size:10.5px;color:#5A6880;margin-top:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.stat-bar{height:3px;border-radius:2px;margin-top:12px;background:#EEF0F4}
+.stat-bar-fill{height:100%;border-radius:2px}
+.bar-blue{background:#2563A8}
+.bar-gray{background:#8A97AA}
+.bar-green{background:#1A6B47}
+.bar-orange{background:#B8721A}
 
 /* TOOLBAR */
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-.toolbar input[type=text]{flex:1;min-width:200px;padding:9px 12px;border:1.5px solid #CBD5E0;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none;background:#fff}
-.toolbar input[type=text]:focus{border-color:#38A8E0}
-.toolbar select{padding:9px 11px;border:1.5px solid #CBD5E0;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;background:#fff;outline:none}
-.toolbar select:focus{border-color:#38A8E0}
+.toolbar{display:flex;gap:10px;margin-bottom:12px;align-items:center}
+.search-input{flex:1;padding:8px 12px;border:1px solid #D8DEE8;border-radius:6px;font-size:13px;background:#fff;color:#18243A;outline:none;font-family:inherit;min-width:0}
+.search-input:focus{border-color:#2563A8;box-shadow:0 0 0 3px rgba(37,99,168,.1)}
+.filter-sel{padding:8px 11px;border:1px solid #D8DEE8;border-radius:6px;font-size:13px;background:#fff;color:#18243A;font-family:inherit;outline:none}
+.filter-sel:focus{border-color:#2563A8}
+.btn-add{background:#2563A8;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.btn-add:hover{background:#1B3F72}
 
 /* TABLE */
-.table-wrap{background:#fff;border:1px solid #E2ECF5;border-radius:12px;overflow:hidden;overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:980px}
-thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#94A3B8;background:#F8FBFD;padding:10px 12px;border-bottom:1px solid #E2ECF5;white-space:nowrap}
-tbody td{padding:10px 12px;border-bottom:1px solid #F0F6FB;vertical-align:middle}
-tbody tr:last-child td{border-bottom:none}
-tbody tr:hover{background:#F7FBFE}
-.cell-name{font-weight:700;color:#1A202C}
-.cell-sub{font-size:11.5px;color:#94A3B8;margin-top:2px}
-.tag{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
-.tag-ventas{background:#FFF7ED;color:#C2410C}
-.tag-logistica{background:#EBF6FD;color:#0369A1}
-.tag-admin{background:#F5F3FF;color:#6D28D9}
-.tag-operaciones{background:#ECFDF5;color:#065F46}
-.tag-otro{background:#F1F5F9;color:#475569}
-.estado-sel{padding:5px 10px;border-radius:999px;border:none;font-size:11px;font-weight:700;cursor:pointer;appearance:none;-webkit-appearance:none;font-family:'Inter',sans-serif}
-.estado-sel[data-v="Sin entrevista"]{background:#F1F5F9;color:#475569}
-.estado-sel[data-v="Entrevistado OK"]{background:#D1FAE5;color:#065F46}
-.estado-sel[data-v="Entrevistado no OK"]{background:#FEE2E2;color:#991B1B}
-.cv-link{color:#38A8E0;font-weight:700;font-size:12px;text-decoration:none}
+.table-wrap{background:#fff;border:1px solid #D8DEE8;border-radius:8px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead tr{border-bottom:2px solid #D8DEE8}
+thead th{text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5A6880;background:#F7F8FB;padding:10px 14px;white-space:nowrap}
+tbody tr{border-bottom:1px solid #EEF0F6}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#FAFBFD}
+tbody td{padding:11px 14px;vertical-align:middle}
+
+.cell-name{font-weight:700;color:#18243A;font-size:13.5px}
+.cell-meta{font-size:11px;color:#8A97AA;margin-top:2px;display:flex;align-items:center;gap:6px}
+.sex-badge{font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:#EBF2FA;color:#2563A8;letter-spacing:.02em}
+.cell-muted{color:#5A6880;font-size:12.5px}
+.cell-sm{font-size:11.5px;color:#8A97AA;margin-top:2px}
+.no-val{color:#BEC6D4;font-size:12px}
+
+.area-chip{display:inline-block;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700}
+.chip-log{background:#EBF2FA;color:#1A4E8A}
+.chip-ven{background:#FEF3EB;color:#8A4210}
+.chip-adm{background:#EDE8F7;color:#5B2FA0}
+.chip-op{background:#E4F3EC;color:#1A6B47}
+.chip-otro{background:#EEF0F4;color:#4A5568}
+
+.estado-pill{display:inline-block;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:700}
+.e-sin{background:#EEF0F4;color:#4A5568}
+.e-ok{background:#E4F3EC;color:#1A6B47}
+.e-nok{background:#F7E8E8;color:#8A1F1F}
+.estado-sel{padding:4px 10px;border-radius:4px;border:none;font-size:11px;font-weight:700;cursor:pointer;appearance:none;-webkit-appearance:none;font-family:inherit}
+.estado-sel[data-v="Sin entrevista"]{background:#EEF0F4;color:#4A5568}
+.estado-sel[data-v="Entrevistado OK"]{background:#E4F3EC;color:#1A6B47}
+.estado-sel[data-v="Entrevistado no OK"]{background:#F7E8E8;color:#8A1F1F}
+
+.cv-link{color:#2563A8;font-weight:600;font-size:12px;text-decoration:none}
 .cv-link:hover{text-decoration:underline}
-.no-cv{color:#CBD5E0;font-size:12px}
-.icon-btn{background:#fff;border:1.5px solid #E2ECF5;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;color:#38A8E0;font-family:'Inter',sans-serif}
-.icon-btn:hover{background:#EBF6FD;border-color:#38A8E0}
-.empty-state{text-align:center;padding:48px 20px;color:#94A3B8}
+.medio-tag{font-size:11.5px;color:#5A6880}
+.edit-btn{background:none;border:1px solid #D8DEE8;border-radius:5px;padding:4px 10px;font-size:11.5px;font-weight:600;color:#5A6880;cursor:pointer;font-family:inherit}
+.edit-btn:hover{border-color:#2563A8;color:#2563A8;background:#EBF2FA}
+.empty-state{text-align:center;padding:48px 20px;color:#8A97AA}
 
 /* MODAL */
 .overlay{display:none;position:fixed;inset:0;background:rgba(15,25,50,.4);align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;z-index:50}
 .overlay.open{display:flex}
-.modal{background:#fff;border-radius:16px;width:100%;max-width:720px;padding:24px 28px 28px;box-shadow:0 20px 60px rgba(0,0,0,.18);position:relative}
-.modal-title{font-size:19px;font-weight:800;color:#38A8E0;margin-bottom:3px}
-.modal-sub{font-size:12px;color:#94A3B8;margin-bottom:16px}
-.close-x{position:absolute;top:16px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:#94A3B8}
-.close-x:hover{color:#1A202C}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:700px;padding:22px 26px 26px;box-shadow:0 16px 50px rgba(0,0,0,.18);position:relative}
+.modal-title{font-size:17px;font-weight:800;color:#1B3F72;margin-bottom:2px}
+.modal-sub{font-size:12px;color:#8A97AA;margin-bottom:16px}
+.close-x{position:absolute;top:16px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:#8A97AA}
+.close-x:hover{color:#18243A}
 
 /* DROPZONE */
-.dropzone{border:2px dashed #93D4F2;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:linear-gradient(135deg,#F0FAFF,#FFF7ED);margin-bottom:16px;transition:border-color .15s}
-.dropzone.drag{border-color:#38A8E0;background:#EBF6FD}
-.dropzone strong{color:#38A8E0}
-.dz-sub{font-size:11.5px;color:#94A3B8;margin-top:4px}
-.dz-status{font-size:12px;margin-top:8px;font-weight:700}
-.dz-status.busy{color:#B45309}
-.dz-status.ok{color:#065F46}
-.dz-status.err{color:#991B1B}
+.dropzone{border:1.5px dashed #B8C8D8;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#F7FAFC;margin-bottom:4px;transition:border-color .15s}
+.dropzone:hover,.dropzone.drag{border-color:#2563A8;background:#EBF2FA}
+.dropzone strong{color:#2563A8}
+.dz-sub{font-size:11.5px;color:#8A97AA;margin-top:4px}
+.dz-status{font-size:12px;margin-top:8px;font-weight:600}
+.dz-status.busy{color:#8A6010}
+.dz-status.ok{color:#1A6B47}
+.dz-status.err{color:#8A1F1F}
+.btn-extract{display:none;margin:8px auto 0;padding:6px 14px;background:#EBF2FA;color:#2563A8;border:1px solid #B8D0E8;border-radius:6px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.btn-extract:hover{background:#D6E8F5}
+.btn-extract.visible{display:inline-block}
 
 /* FORM */
-.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#38A8E0;margin:14px 0 8px;padding-bottom:6px;border-bottom:2px solid #EBF6FD}
+.section-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#2563A8;margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid #EEF0F6}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .form-grid .full{grid-column:1/-1}
-.form-grid .third{grid-column:span 1}
-.field label{display:block;font-size:11px;font-weight:700;color:#4A5568;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
-.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1.5px solid #CBD5E0;border-radius:7px;font-size:13px;font-family:'Inter',sans-serif;color:#1A202C;background:#fff;outline:none}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:#38A8E0;box-shadow:0 0 0 3px rgba(56,168,224,.1)}
-.field textarea{resize:vertical;min-height:72px}
+.field label{display:block;font-size:10.5px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:13px;font-family:inherit;color:#18243A;background:#fff;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#2563A8;box-shadow:0 0 0 3px rgba(37,99,168,.1)}
+.field textarea{resize:vertical;min-height:70px}
 
-/* MODAL FOOTER */
-.modal-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #F0F6FB}
+.modal-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #EEF0F6}
 .modal-footer-right{display:flex;gap:8px}
+.btn-cancel{padding:8px 14px;background:#F2F4F8;color:#5A6880;border:1px solid #D8DEE8;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-save{padding:8px 16px;background:#2563A8;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.btn-save:hover{background:#1B3F72}
+.btn-danger{background:#F7E8E8;color:#8A1F1F;border:none;border-radius:6px;padding:8px 14px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
 
-/* TOAST */
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1A202C;color:#fff;padding:10px 20px;border-radius:9px;font-size:13px;font-weight:600;z-index:100;display:none;box-shadow:0 8px 24px rgba(0,0,0,.2);white-space:nowrap}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#18243A;color:#fff;padding:10px 20px;border-radius:7px;font-size:13px;font-weight:600;z-index:100;display:none;box-shadow:0 6px 20px rgba(0,0,0,.2)}
 
-@media(max-width:720px){
+@media(max-width:700px){
   .stat-cards{grid-template-columns:1fr 1fr}
   .form-grid{grid-template-columns:1fr}
-  .form-grid .full,.form-grid .third{grid-column:1}
+  .form-grid .full{grid-column:1}
 }
 </style>
 </head>
@@ -125,53 +137,47 @@ tbody tr:hover{background:#F7FBFE}
 <div class="topbar">
   <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
   <span class="topbar-sep">|</span>
-  <span class="topbar-title">Reclutamiento y Selección · Base de Candidatos</span>
+  <span class="topbar-title">Reclutamiento y Selección · <strong>Base de Candidatos</strong></span>
+</div>
+
+<div class="page-header">
+  <h1>Base de Candidatos</h1>
+  <p>Distribuidora del Palacio S.A. · DPO Gente 2026</p>
 </div>
 
 <div class="wrap">
-  <div class="banner">
-    <div>
-      <h1>👥 Base de Candidatos</h1>
-      <p>Reclutamiento y Selección · DPO Gente — Distribuidora del Palacio S.A.</p>
-    </div>
-    <button class="btn btn-white" id="btn-add">+ Agregar candidato</button>
-  </div>
 
   <div class="stat-cards">
-    <div class="stat-card"><div class="stat-icon ic-sky">👥</div><div><div class="stat-num" id="s-total">–</div><div class="stat-label">Candidatos totales</div></div></div>
-    <div class="stat-card"><div class="stat-icon ic-gray">⏳</div><div><div class="stat-num" id="s-sin">–</div><div class="stat-label">Sin entrevista</div></div></div>
-    <div class="stat-card"><div class="stat-icon ic-green">✅</div><div><div class="stat-num" id="s-ok">–</div><div class="stat-label">Entrevistado OK</div></div></div>
-    <div class="stat-card"><div class="stat-icon ic-orange">📄</div><div><div class="stat-num" id="s-cv">–</div><div class="stat-label">Con CV adjunto</div></div></div>
+    <div class="stat-card"><div class="stat-num" id="s-total">–</div><div class="stat-label">Total candidatos</div><div class="stat-bar"><div class="stat-bar-fill bar-blue" id="bar-total"></div></div></div>
+    <div class="stat-card"><div class="stat-num" id="s-sin">–</div><div class="stat-label">Sin entrevista</div><div class="stat-bar"><div class="stat-bar-fill bar-gray" id="bar-sin"></div></div></div>
+    <div class="stat-card"><div class="stat-num" id="s-ok">–</div><div class="stat-label">Entrevistado OK</div><div class="stat-bar"><div class="stat-bar-fill bar-green" id="bar-ok"></div></div></div>
+    <div class="stat-card"><div class="stat-num" id="s-cv">–</div><div class="stat-label">Con CV adjunto</div><div class="stat-bar"><div class="stat-bar-fill bar-orange" id="bar-cv"></div></div></div>
   </div>
 
   <div class="toolbar">
-    <input type="text" id="f-search" placeholder="Buscar por nombre, apellido, localidad, email…">
-    <select id="f-area"><option value="">Todas las áreas</option></select>
-    <select id="f-estado">
-      <option value="">Todos los estados</option>
-      <option>Sin entrevista</option>
-      <option>Entrevistado OK</option>
-      <option>Entrevistado no OK</option>
+    <input class="search-input" type="text" id="f-search" placeholder="Buscar por nombre, apellido, localidad, email…">
+    <select class="filter-sel" id="f-area"><option value="">Todas las áreas</option></select>
+    <select class="filter-sel" id="f-licencia-fil">
+      <option value="">Todas las licencias</option>
+      <option value="Sí">Con licencia</option><option value="No">Sin licencia</option>
     </select>
+    <select class="filter-sel" id="f-estado">
+      <option value="">Todos los estados</option>
+      <option>Sin entrevista</option><option>Entrevistado OK</option><option>Entrevistado no OK</option>
+    </select>
+    <button class="btn-add" id="btn-add">+ Agregar candidato</button>
   </div>
 
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>Candidato</th>
-          <th>Localidad</th>
-          <th>Área / Formación</th>
-          <th>Contacto</th>
-          <th>Licencia</th>
-          <th>Medio</th>
-          <th>CV</th>
-          <th>Estado</th>
-          <th></th>
+          <th>Candidato</th><th>Localidad</th><th>Área / Formación</th>
+          <th>Contacto</th><th>Licencia</th><th>Medio</th><th>CV</th><th>Estado</th><th></th>
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr><td colspan="9" style="text-align:center;padding:32px;color:#94A3B8">Cargando…</td></tr>
+        <tr><td colspan="9" style="text-align:center;padding:32px;color:#8A97AA">Cargando…</td></tr>
       </tbody>
     </table>
   </div>
@@ -182,35 +188,36 @@ tbody tr:hover{background:#F7FBFE}
   <div class="modal">
     <button class="close-x" id="btn-close">✕</button>
     <div class="modal-title" id="modal-title">Agregar candidato</div>
-    <div class="modal-sub">Subí el CV y los datos se completan automáticamente. Revisá antes de guardar.</div>
+    <div class="modal-sub">Completá los datos del candidato. Podés adjuntar el CV y extraer los datos si querés.</div>
 
     <div class="dropzone" id="dropzone">
       <input type="file" id="file-input" accept=".pdf,.doc,.docx" style="display:none">
       <strong>Hacé clic o arrastrá el CV acá</strong>
       <div class="dz-sub">PDF o Word · máx 10 MB</div>
       <div class="dz-status" id="dz-status"></div>
+      <button type="button" class="btn-extract" id="btn-extract" onclick="extraerDatos()">Extraer datos del CV</button>
     </div>
 
     <form id="cand-form">
       <div class="section-label">Datos personales</div>
       <div class="form-grid">
-        <div class="field"><label>Apellido</label><input id="f-apellido" type="text" placeholder="García"></div>
-        <div class="field"><label>Nombre</label><input id="f-nombre" type="text" placeholder="Juan"></div>
+        <div class="field"><label>Apellido</label><input id="f-apellido" type="text"></div>
+        <div class="field"><label>Nombre</label><input id="f-nombre" type="text"></div>
         <div class="field"><label>Sexo</label>
           <select id="f-sexo"><option value="">—</option><option>Femenino</option><option>Masculino</option><option>Otro</option></select>
         </div>
-        <div class="field"><label>Lugar de Residencia</label><input id="f-localidad" type="text" placeholder="Mar de Ajó, Buenos Aires"></div>
-        <div class="field"><label>Celular</label><input id="f-celular" type="text" placeholder="+54 9 11 1234-5678"></div>
-        <div class="field"><label>Email</label><input id="f-email" type="text" placeholder="juan@email.com"></div>
+        <div class="field"><label>Lugar de Residencia</label><input id="f-localidad" type="text"></div>
+        <div class="field"><label>Celular</label><input id="f-celular" type="text"></div>
+        <div class="field"><label>Email</label><input id="f-email" type="text"></div>
       </div>
 
       <div class="section-label">Perfil profesional</div>
       <div class="form-grid">
-        <div class="field"><label>Formación Académica</label><input id="f-formacion" type="text" placeholder="Ej: Secundario completo, Técnico en…"></div>
+        <div class="field"><label>Formación Académica</label><input id="f-formacion" type="text"></div>
         <div class="field"><label>Área / Sector</label>
           <select id="f-area-interes">
             <option value="">—</option>
-            <option>Administración</option><option>Logística</option><option>Ventas</option><option>Operaciones</option><option>Otro</option>
+            <option>Administración</option><option>Logística</option><option>Ventas</option>
           </select>
         </div>
         <div class="field"><label>Licencia de conducir</label>
@@ -219,7 +226,7 @@ tbody tr:hover{background:#F7FBFE}
         <div class="field"><label>Tipo de licencia</label>
           <select id="f-tipo-licencia"><option value="">—</option><option>A</option><option>B</option><option>B+E</option><option>C</option><option>D</option><option>E</option><option>F</option></select>
         </div>
-        <div class="field full"><label>Observaciones importantes</label><textarea id="f-observaciones" placeholder="Resumen del perfil, experiencia destacada, notas de la entrevista…"></textarea></div>
+        <div class="field full"><label>Observaciones importantes</label><textarea id="f-observaciones"></textarea></div>
       </div>
 
       <div class="section-label">Gestión del proceso</div>
@@ -242,8 +249,8 @@ tbody tr:hover{background:#F7FBFE}
       <div class="modal-footer">
         <div id="btn-delete-wrap"></div>
         <div class="modal-footer-right">
-          <button type="button" class="btn btn-white" id="btn-cancel">Cancelar</button>
-          <button type="submit" class="btn btn-orange" id="btn-save">Guardar candidato</button>
+          <button type="button" class="btn-cancel" id="btn-cancel">Cancelar</button>
+          <button type="submit" class="btn-save" id="btn-save">Guardar candidato</button>
         </div>
       </div>
     </form>
@@ -262,13 +269,12 @@ let PENDING_CV_FILE = null;
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toast._h); toast._h=setTimeout(()=>t.style.display='none',3200); }
-
-function areaTag(a){
-  const m={'Ventas':'tag-ventas','Logística':'tag-logistica','Administración':'tag-admin','Operaciones':'tag-operaciones'};
-  return `<span class="tag ${m[a]||'tag-otro'}">${esc(a)||'Sin área'}</span>`;
-}
-
 function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+function areaChip(a){
+  const m={'Logística':'chip-log','Ventas':'chip-ven','Administración':'chip-adm','Operaciones':'chip-op'};
+  return `<span class="area-chip ${m[a]||'chip-otro'}">${esc(a)||'Sin área'}</span>`;
+}
 
 async function cargar(){
   const r = await fetch('/api/candidatos');
@@ -279,12 +285,20 @@ async function cargar(){
 function renderTabla(){
   const search = document.getElementById('f-search').value.trim().toLowerCase();
   const areaF = document.getElementById('f-area').value;
+  const licenciaF = document.getElementById('f-licencia-fil').value;
   const estadoF = document.getElementById('f-estado').value;
+  const total = CANDIDATOS.length;
 
-  document.getElementById('s-total').textContent = CANDIDATOS.length;
+  document.getElementById('s-total').textContent = total;
   document.getElementById('s-sin').textContent = CANDIDATOS.filter(c=>c.estado==='Sin entrevista').length;
   document.getElementById('s-ok').textContent = CANDIDATOS.filter(c=>c.estado==='Entrevistado OK').length;
   document.getElementById('s-cv').textContent = CANDIDATOS.filter(c=>c.cv_nombre).length;
+
+  if(total > 0){
+    document.getElementById('bar-sin').style.width = (CANDIDATOS.filter(c=>c.estado==='Sin entrevista').length/total*100)+'%';
+    document.getElementById('bar-ok').style.width = (CANDIDATOS.filter(c=>c.estado==='Entrevistado OK').length/total*100)+'%';
+    document.getElementById('bar-cv').style.width = (CANDIDATOS.filter(c=>c.cv_nombre).length/total*100)+'%';
+  }
 
   const areas = [...new Set(CANDIDATOS.map(c=>c.area).filter(Boolean))].sort();
   const areasSel = document.getElementById('f-area');
@@ -294,6 +308,7 @@ function renderTabla(){
 
   let rows = CANDIDATOS.filter(c=>{
     if(areaF && c.area !== areaF) return false;
+    if(licenciaF && c.licencia !== licenciaF) return false;
     if(estadoF && c.estado !== estadoF) return false;
     if(search){
       const blob = [c.apellido,c.nombre,c.localidad,c.email,c.area,c.formacion,c.medio_reclutamiento].join(' ').toLowerCase();
@@ -309,22 +324,24 @@ function renderTabla(){
   }
 
   tbody.innerHTML = rows.map(c=>{
-    const lic = c.licencia==='Sí' ? 'Sí'+(c.tipo_licencia?' · '+esc(c.tipo_licencia):'') : c.licencia==='No'?'No':'<span class="no-cv">–</span>';
-    const cv = c.cv_nombre ? `<a class="cv-link" href="/api/candidatos/${c.id}/cv" target="_blank">📄 Ver CV</a>` : '<span class="no-cv">–</span>';
-    const sexoBadge = c.sexo ? `<span style="font-size:11px;color:#94A3B8"> · ${esc(c.sexo)}</span>` : '';
-    const fecha = c.fecha_alta ? `<div class="cell-sub">${esc(String(c.fecha_alta).slice(0,10))}</div>` : '';
+    const lic = c.licencia==='Sí'?'Sí'+(c.tipo_licencia?' · '+esc(c.tipo_licencia):''):c.licencia==='No'?'No':'<span class="no-val">–</span>';
+    const cv = c.cv_nombre?`<a class="cv-link" href="/api/candidatos/${c.id}/cv" target="_blank">📄 Ver CV</a>`:'<span class="no-val">–</span>';
+    const sexBadge = c.sexo?`<span class="sex-badge">${c.sexo==='Femenino'?'F':c.sexo==='Masculino'?'M':'?'}</span>`:'';
+    const fecha = c.fecha_alta?`<span>${String(c.fecha_alta).slice(0,10)}</span>`:'';
+    const eClass = {'Sin entrevista':'e-sin','Entrevistado OK':'e-ok','Entrevistado no OK':'e-nok'}[c.estado]||'e-sin';
     return `<tr>
-      <td><div class="cell-name">${esc(c.apellido)}${c.apellido&&c.nombre?', ':''}${esc(c.nombre)}${sexoBadge}</div>${fecha}</td>
-      <td>${esc(c.localidad)||'<span class="no-cv">–</span>'}</td>
-      <td>${areaTag(c.area)}<div class="cell-sub" style="margin-top:4px">${esc(c.formacion)}</div></td>
-      <td>${c.celular?`<div>${esc(c.celular)}</div>`:''}${c.email?`<div class="cell-sub">${esc(c.email)}</div>`:''}</td>
-      <td>${lic}</td>
-      <td><span class="cell-sub">${esc(c.medio_reclutamiento)||'–'}</span></td>
+      <td><div class="cell-name">${esc(c.apellido)}${c.apellido&&c.nombre?', ':''}${esc(c.nombre)}</div>
+          <div class="cell-meta">${sexBadge}${fecha}</div></td>
+      <td><span class="cell-muted">${esc(c.localidad)||'<span class="no-val">–</span>'}</span></td>
+      <td>${areaChip(c.area)}<div class="cell-sm">${esc(c.formacion)}</div></td>
+      <td>${c.celular?`<div class="cell-muted">${esc(c.celular)}</div>`:''}${c.email?`<div class="cell-sm">${esc(c.email)}</div>`:''}</td>
+      <td><span class="cell-muted">${lic}</span></td>
+      <td><span class="medio-tag">${esc(c.medio_reclutamiento)||'<span class="no-val">–</span>'}</span></td>
       <td>${cv}</td>
       <td><select class="estado-sel" data-id="${c.id}" data-v="${esc(c.estado)}">
         ${['Sin entrevista','Entrevistado OK','Entrevistado no OK'].map(o=>`<option${o===c.estado?' selected':''}>${o}</option>`).join('')}
       </select></td>
-      <td><button class="icon-btn" data-edit="${c.id}">Editar</button></td>
+      <td><button class="edit-btn" data-edit="${c.id}">Editar</button></td>
     </tr>`;
   }).join('');
 
@@ -345,9 +362,9 @@ function renderTabla(){
 }
 
 function abrirModal(c){
-  EDITING_ID = c ? c.id : null;
+  EDITING_ID = c?c.id:null;
   PENDING_CV_FILE = null;
-  document.getElementById('modal-title').textContent = c ? 'Editar candidato' : 'Agregar candidato';
+  document.getElementById('modal-title').textContent = c?'Editar candidato':'Agregar candidato';
   document.getElementById('f-apellido').value = c?.apellido||'';
   document.getElementById('f-nombre').value = c?.nombre||'';
   document.getElementById('f-sexo').value = c?.sexo||'';
@@ -359,14 +376,15 @@ function abrirModal(c){
   document.getElementById('f-tipo-licencia').value = c?.tipo_licencia||'';
   document.getElementById('f-area-interes').value = c?.area||'';
   document.getElementById('f-observaciones').value = c?.observaciones||'';
-  document.getElementById('f-fecha').value = c?.fecha_alta ? String(c.fecha_alta).slice(0,10) : todayISO();
+  document.getElementById('f-fecha').value = c?.fecha_alta?String(c.fecha_alta).slice(0,10):todayISO();
   document.getElementById('f-medio').value = c?.medio_reclutamiento||'';
   document.getElementById('f-estado2').value = c?.estado||'Sin entrevista';
-  const dzStatus = document.getElementById('dz-status');
-  dzStatus.textContent = c?.cv_nombre ? `CV actual: ${c.cv_nombre}` : '';
-  dzStatus.className = 'dz-status';
+  const st = document.getElementById('dz-status');
+  st.textContent = c?.cv_nombre?`CV actual: ${c.cv_nombre}`:'';
+  st.className = 'dz-status';
+  document.getElementById('btn-extract').classList.remove('visible');
   const delWrap = document.getElementById('btn-delete-wrap');
-  delWrap.innerHTML = c ? `<button type="button" class="btn btn-danger" id="btn-delete">Eliminar candidato</button>` : '';
+  delWrap.innerHTML = c?`<button type="button" class="btn-danger" id="btn-delete">Eliminar candidato</button>`:'';
   if(c) document.getElementById('btn-delete').addEventListener('click',()=>eliminar(c.id));
   document.getElementById('overlay').classList.add('open');
 }
@@ -375,11 +393,12 @@ function cerrarModal(){
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('cand-form').reset();
   document.getElementById('file-input').value='';
-  PENDING_CV_FILE = null;
+  document.getElementById('btn-extract').classList.remove('visible');
+  PENDING_CV_FILE=null;
 }
 
 async function eliminar(id){
-  if(!confirm('¿Eliminar este candidato? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Eliminar este candidato?')) return;
   await fetch(`/api/candidatos/${id}`,{method:'DELETE'});
   cerrarModal(); await cargar(); toast('Candidato eliminado');
 }
@@ -390,23 +409,34 @@ document.getElementById('btn-cancel').addEventListener('click',cerrarModal);
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')cerrarModal();});
 document.getElementById('f-search').addEventListener('input',renderTabla);
 document.getElementById('f-area').addEventListener('change',renderTabla);
+document.getElementById('f-licencia-fil').addEventListener('change',renderTabla);
 document.getElementById('f-estado').addEventListener('change',renderTabla);
 
-// CV Upload
+// ── CV Upload — solo guarda el archivo, NO extrae datos ──
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('file-input');
 dropzone.addEventListener('click',()=>fileInput.click());
 dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('drag');});
 dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('drag'));
-dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('drag');if(e.dataTransfer.files[0])procesarCV(e.dataTransfer.files[0]);});
-fileInput.addEventListener('change',e=>{if(e.target.files[0])procesarCV(e.target.files[0]);});
+dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('drag');if(e.dataTransfer.files[0])seleccionarArchivo(e.dataTransfer.files[0]);});
+fileInput.addEventListener('change',e=>{if(e.target.files[0])seleccionarArchivo(e.target.files[0]);});
 
-async function procesarCV(file){
+function seleccionarArchivo(file){
   PENDING_CV_FILE = file;
   const st = document.getElementById('dz-status');
-  st.className='dz-status busy'; st.textContent='Analizando "'+file.name+'"…';
+  st.className='dz-status ok';
+  st.textContent='✓ '+file.name+' listo para adjuntar.';
+  document.getElementById('btn-extract').classList.add('visible');
+}
+
+async function extraerDatos(){
+  if(!PENDING_CV_FILE) return;
+  const st = document.getElementById('dz-status');
+  const btn = document.getElementById('btn-extract');
+  st.className='dz-status busy'; st.textContent='Extrayendo datos del CV…';
+  btn.disabled=true; btn.textContent='Extrayendo…';
   try{
-    const fd = new FormData(); fd.append('cv', file);
+    const fd = new FormData(); fd.append('cv', PENDING_CV_FILE);
     const r = await fetch('/api/cv-extract',{method:'POST',body:fd});
     const d = await r.json();
     if(d.campos){
@@ -421,15 +451,18 @@ async function procesarCV(file){
       if(f.tipo_licencia) document.getElementById('f-tipo-licencia').value=f.tipo_licencia;
       if(f.area) document.getElementById('f-area-interes').value=f.area;
       if(f.observaciones) document.getElementById('f-observaciones').value=f.observaciones;
-      st.className='dz-status ok'; st.textContent='✓ Datos completados automáticamente. Revisá antes de guardar.';
+      st.className='dz-status ok'; st.textContent='✓ Datos completados. Revisá antes de guardar.';
     } else {
-      st.className='dz-status ok'; st.textContent='✓ CV cargado. Completá los datos a mano.';
+      st.className='dz-status ok'; st.textContent='✓ CV listo. No se pudieron extraer datos — completá a mano.';
     }
   }catch(e){
-    st.className='dz-status err'; st.textContent='Error al leer el CV. Completá los datos a mano.';
+    st.className='dz-status err'; st.textContent='No se pudo leer el archivo.';
+  }finally{
+    btn.disabled=false; btn.textContent='Extraer datos del CV'; btn.classList.remove('visible');
   }
 }
 
+// ── Guardar ──
 document.getElementById('cand-form').addEventListener('submit', async e=>{
   e.preventDefault();
   const apellido = document.getElementById('f-apellido').value.trim();
@@ -437,34 +470,34 @@ document.getElementById('cand-form').addEventListener('submit', async e=>{
   if(!apellido && !nombre){ toast('Ingresá al menos apellido o nombre'); return; }
   const btn = document.getElementById('btn-save');
   btn.disabled=true; btn.textContent='Guardando…';
-  const body = {
-    apellido, nombre,
-    sexo: document.getElementById('f-sexo').value,
-    localidad: document.getElementById('f-localidad').value.trim(),
-    celular: document.getElementById('f-celular').value.trim(),
-    email: document.getElementById('f-email').value.trim(),
-    formacion: document.getElementById('f-formacion').value.trim(),
-    licencia: document.getElementById('f-licencia').value,
-    tipo_licencia: document.getElementById('f-tipo-licencia').value,
-    area: document.getElementById('f-area-interes').value,
-    observaciones: document.getElementById('f-observaciones').value.trim(),
-    fecha_alta: document.getElementById('f-fecha').value || todayISO(),
-    medio_reclutamiento: document.getElementById('f-medio').value,
-    estado: document.getElementById('f-estado2').value
+  const body={
+    apellido,nombre,
+    sexo:document.getElementById('f-sexo').value,
+    localidad:document.getElementById('f-localidad').value.trim(),
+    celular:document.getElementById('f-celular').value.trim(),
+    email:document.getElementById('f-email').value.trim(),
+    formacion:document.getElementById('f-formacion').value.trim(),
+    licencia:document.getElementById('f-licencia').value,
+    tipo_licencia:document.getElementById('f-tipo-licencia').value,
+    area:document.getElementById('f-area-interes').value,
+    observaciones:document.getElementById('f-observaciones').value.trim(),
+    fecha_alta:document.getElementById('f-fecha').value||todayISO(),
+    medio_reclutamiento:document.getElementById('f-medio').value,
+    estado:document.getElementById('f-estado2').value
   };
   try{
-    let id = EDITING_ID;
+    let id=EDITING_ID;
     if(id){
       await fetch(`/api/candidatos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     } else {
-      const r = await fetch('/api/candidatos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      const d = await r.json(); id = d.id;
+      const r=await fetch('/api/candidatos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const d=await r.json(); id=d.id;
     }
     if(PENDING_CV_FILE && id){
-      const fd = new FormData(); fd.append('cv', PENDING_CV_FILE);
+      const fd=new FormData(); fd.append('cv',PENDING_CV_FILE);
       await fetch(`/api/candidatos/${id}/cv`,{method:'POST',body:fd});
     }
-    toast(EDITING_ID ? 'Candidato actualizado' : 'Candidato guardado');
+    toast(EDITING_ID?'Candidato actualizado':'Candidato guardado');
     cerrarModal(); await cargar();
   }catch(err){ toast('Error al guardar'); }
   finally{ btn.disabled=false; btn.textContent='Guardar candidato'; }
