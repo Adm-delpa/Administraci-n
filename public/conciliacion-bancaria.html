@@ -88,7 +88,7 @@ input[type=file]{display:none}
 .periodo-label{display:inline-flex;align-items:center;gap:6px;background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;border:1px solid #bfdbfe}
 
 /* STATS */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .stat{background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #e8ecf2;position:relative;overflow:hidden}
 .stat::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:#e8ecf2}
 .stat.g::before{background:#22c55e}
