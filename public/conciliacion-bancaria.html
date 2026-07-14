@@ -442,6 +442,12 @@ tr:hover td{background:#f9fbff}
       <div class="val" id="st-pend">—</div>
       <div class="monto" id="st-pend-m"></div>
     </div>
+    <div class="stat y" id="stat-pt-card" style="display:none">
+      <div class="lbl">Pend. transferencia</div>
+      <div class="val" id="st-pt">—</div>
+      <div class="monto" id="st-pt-m"></div>
+      <div class="sub2">en Chess sin acreditación bancaria</div>
+    </div>
   </div>
 
   <!-- TABS DE PREVIEW -->
@@ -506,6 +512,7 @@ tr:hover td{background:#f9fbff}
           <option value="CONC_ALL">Conciliado</option>
           <option value="NC">No conciliado</option>
           <option value="PEND">Pendiente de liquidación</option>
+          <option value="PT">Pendiente de transferencia</option>
         </select>
         <input type="text" id="fil-q" placeholder="Cliente, importe, descripción..." style="width:220px" oninput="filtrar()">
         <span id="fil-count" style="font-size:11px;color:#aaa"></span>
@@ -1559,9 +1566,70 @@ async function procesar(){
   // Eliminar pendientes que ya pasaron a N1 (encontraron match en Chess y banco)
   state.pendientes=state.pendientes.filter(function(p){return !p._toDelete&&!p.confirmado;});
 
+  // PT: Chess sin match bancario, solo para clientes donde Chess total > banco total en el período
+  // Determinar el mes principal del extracto
+  var mesBancoMap={};
+  banco.forEach(function(b){if(b.fecha){var m=b.fecha.slice(0,7);mesBancoMap[m]=(mesBancoMap[m]||0)+1;}});
+  var mesPT=Object.keys(mesBancoMap).sort(function(a,b){return mesBancoMap[b]-mesBancoMap[a];})[0]||null;
+
+  if(mesPT){
+    // Eliminar PT anteriores del mismo período para evitar duplicados al reprocesar
+    state.resultados=state.resultados.filter(function(r){return !(r.nivel==='PT'&&r.fecha&&r.fecha.slice(0,7)===mesPT);});
+
+    // Sumar banco por codCli (via CUIT) para el período
+    var bancoSumCli={};
+    banco.forEach(function(b){
+      if(!b.fecha||b.fecha.slice(0,7)!==mesPT) return;
+      var cuitB=extraerCUIT(b.desc);
+      if(!cuitB||!cuitMap[cuitB]) return;
+      var cod=parseInt(cuitMap[cuitB].c,10);
+      bancoSumCli[cod]=(bancoSumCli[cod]||0)+b.importe;
+    });
+    // También sumar lo que quedó en nuevos como N1/MAN/CONC (ya matcheados)
+    nuevos.forEach(function(n){
+      if(n.nivel==='N1'||n.nivel==='MAN'||n.nivel==='CONC'){
+        var cod=parseInt(n.codCli,10);
+        if(cod) bancoSumCli[cod]=(bancoSumCli[cod]||0)+n.importe;
+      }
+    });
+
+    // Sumar Chess por codCli para el período
+    var chessSumCli={};
+    chess.forEach(function(c){
+      if(!c.fecha||c.fecha.slice(0,7)!==mesPT) return;
+      var cod=parseInt(c.codCli,10);
+      if(!cod) return;
+      chessSumCli[cod]=(chessSumCli[cod]||0)+c.haber;
+    });
+
+    // Generar PT para Chess sin usar cuyo cliente tiene Chess > banco
+    chess.forEach(function(c,i){
+      if(sisUsado[i]) return;
+      if(!c.fecha||c.fecha.slice(0,7)!==mesPT) return;
+      var cod=parseInt(c.codCli,10);
+      if(!cod) return;
+      var totalChess=chessSumCli[cod]||0;
+      var totalBanco=bancoSumCli[cod]||0;
+      if(totalChess<=totalBanco+0.01) return; // banco cubre todo, no es PT
+      var cliInfo=lookupCli(c.codCli);
+      nuevos.push({
+        fecha:c.fecha,
+        desc:'CHESS: '+(c.ref||c.nomCli||c.codCli||'').slice(0,60),
+        importe:c.haber,
+        nivel:'PT',
+        motivo:'Chess: $'+fmtN(totalChess)+' / Banco: $'+fmtN(totalBanco)+' (dif: $'+fmtN(totalChess-totalBanco)+')',
+        codCli:c.codCli,
+        nomCli:c.nomCli||(cliInfo?cliInfo.n:''),
+        cuit:cliInfo?cliInfo.cuit:'',
+        ref:c.ref,
+        sugerido:null
+      });
+    });
+  }
+
   loading(true);
   // Merge nuevos en la lista plana global usando fingerprint
-  var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PEND':2,'NC':1};
+  var nivelPeso={'N1':5,'CONC':5,'MAN':4,'N2':3,'PT':2,'PEND':2,'NC':1};
   var fpMap={};
   state.resultados.forEach(function(r){ fpMap[fingerprint(r)]=r; });
   var movAdded=0,movDups=0;
@@ -1621,11 +1689,12 @@ function calcStats(){
     if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes) return false;
     return true;
   });
-  var n1=0,n2=0,nc=0,pend=0,conc=0,mN1=0,mN2=0,mNc=0,mPend=0,mConc=0,tot=resultados.length;
+  var n1=0,n2=0,nc=0,pend=0,pt=0,conc=0,mN1=0,mN2=0,mNc=0,mPend=0,mPt=0,mConc=0,tot=resultados.length;
   resultados.forEach(function(r){
     if(r.nivel==='N1'||r.nivel==='MAN'){n1++;mN1+=r.importe;}
     else if(r.nivel==='N2'){n2++;mN2+=r.importe;}
     else if(r.nivel==='PEND'){pend++;mPend+=r.importe;}
+    else if(r.nivel==='PT'){pt++;mPt+=r.importe;}
     else if(r.nivel==='CONC'){conc++;mConc+=r.importe;}
     else if(r.nivel==='NC'){nc++;mNc+=r.importe;}
   });
@@ -1643,8 +1712,11 @@ function calcStats(){
   document.getElementById('st-n2-m').textContent=n2?'$'+fmtN(mN2):'';
   document.getElementById('st-pend').textContent=pend||'—';
   document.getElementById('st-pend-m').textContent=pend?'$'+fmtN(mPend):'';
+  document.getElementById('st-pt').textContent=pt||'—';
+  document.getElementById('st-pt-m').textContent=pt?'$'+fmtN(mPt):'';
   document.getElementById('stat-n2-card').style.display=n2?'':'none';
   document.getElementById('stat-pend-card').style.display=pend?'':'none';
+  document.getElementById('stat-pt-card').style.display=pt?'':'none';
 }
 
 /* TABLA */
@@ -1702,6 +1774,7 @@ function renderTabla(){
                 r.nivel==='MAN'?'<span class="badge b-n1">✓ Conciliado</span>':
                 r.nivel==='PEND'?'<span class="badge b-nc" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5">⏳ Pendiente de liquidación</span>':
                 r.nivel==='N2'?'<span class="badge b-n2">~ N2 probable</span>'+motivoTxt:
+                r.nivel==='PT'?'<span class="badge b-n2">⏳ Pend. transferencia</span>'+(r.motivo?'<div style="font-size:10px;color:#92400e;margin-top:3px;max-width:220px;white-space:normal;line-height:1.3">'+esc(r.motivo)+'</div>':''):
                 '<span class="badge b-nc">✕ Sin conciliar</span>'+motivoTxt;
       var accion=r.nivel==='PEND'?'<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch"><button class="btn-asi" style="background:#7c3aed;color:#fff;border-color:#6d28d9" onclick="confirmarPend('+gi+')">✓ Confirmar</button><button class="btn-asi" onclick="abrirModal('+gi+')">Cambiar cliente</button></div>'
         :r.nivel==='N2'
