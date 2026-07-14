@@ -1889,7 +1889,7 @@ function filtrarVincular(){
     if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes) return false;
     // Mostrar NC (sin conciliar) + ya conciliados del mismo cliente (pueden ser el match real)
     var esNC=r.nivel==='NC';
-    var esConcMismoCliente=CONC_NIVELES[r.nivel]&&sf&&codEq(r.codCli,sf.codCli);
+    var esConcMismoCliente=CONC_NIVELES[r.nivel]&&sf&&parseInt(r.codCli,10)===parseInt(sf.codCli,10);
     if(!esNC&&!esConcMismoCliente) return false;
     if(q){
       var txt=(r.desc||'').toLowerCase()+' '+String(r.importe)+' '+fmtFechaDisplay(r.fecha)+(r.nomCli||'').toLowerCase();
