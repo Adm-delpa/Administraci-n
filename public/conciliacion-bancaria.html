@@ -1784,6 +1784,8 @@ function renderTabla(){
                 r.nivel==='PT'?'<span class="badge b-n2">⏳ Pend. transferencia</span>'+(r.motivo?'<div style="font-size:10px;color:#92400e;margin-top:3px;max-width:220px;white-space:normal;line-height:1.3">'+esc(r.motivo)+'</div>':''):
                 '<span class="badge b-nc">✕ Sin conciliar</span>'+motivoTxt;
       var accion=r.nivel==='PEND'?'<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch"><button class="btn-asi" style="background:#7c3aed;color:#fff;border-color:#6d28d9" onclick="confirmarPend('+gi+')">✓ Confirmar</button><button class="btn-asi" onclick="abrirModal('+gi+')">Cambiar cliente</button></div>'
+        :r.nivel==='PT'
+        ?'<button class="btn-asi" style="background:#d97706;color:#fff;border-color:#b45309" onclick="confirmarPT('+gi+')">✓ Confirmar</button>'
         :r.nivel==='N2'
         ?'<button class="btn-asi" style="background:#d97706" onclick="confirmarN2('+gi+')">✓ Confirmar</button> <button class="btn-asi" onclick="abrirModal('+gi+')">Cambiar</button>'
         :r.nivel==='NC'?
@@ -1876,6 +1878,20 @@ async function confirmarSugerido(gi){
   }catch(e){toast('Error al guardar','err-t');}
   loading(false);
   calcStats(); filtrar();
+}
+
+async function confirmarPT(gi){
+  var r=state.filtradas[gi];
+  if(!r||r.nivel!=='PT') return;
+  r.nivel='MAN';
+  loading(true);
+  try{
+    await guardarResultados();
+    registrarAccion('confirmar_pt','Confirmó pend. transferencia: '+(r.nomCli||r.codCli)+' $'+fmtN(r.importe)+' '+r.fecha);
+    toast('Confirmado: '+(r.nomCli||r.codCli),'ok-t');
+  }catch(e){toast('Error al guardar','err-t');}
+  loading(false);
+  calcStats(); renderTabla();
 }
 
 async function confirmarN2(gi){
