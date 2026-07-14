@@ -306,12 +306,23 @@ document.getElementById('welcome-date').textContent = now.toLocaleDateString('es
 document.getElementById('stat-hora').textContent = now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 document.getElementById('stat-acceso').textContent = now.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
 
+// ── FUENTE ÚNICA DE MÓDULOS ──
+// Para agregar un módulo nuevo: solo agregar una línea acá.
+const ALL_MODULOS=[
+  {id:'facturacion',          label:'Facturación',       href:'/facturacion'},
+  {id:'cuentas-corrientes',   label:'Cta. Cte.',         href:'/cuentas-corrientes'},
+  {id:'conciliacion-bancaria',label:'Conciliación',      href:'/conciliacion-bancaria'},
+  {id:'tickets',              label:'Tickets',           href:'/tickets'},
+  {id:'pendientes-acreditacion',label:'Pendientes',      href:'/pendientes-acreditacion'},
+  {id:'cuentas-pagar',        label:'Ctas. por Pagar',   href:'/cuentas-pagar'},
+  {id:'administracion',       label:'Administración',    href:'/administracion'},
+];
+
 // Ocultar módulos sin acceso: admin sin modulos configurados = todo, vista sin modulos = nada
-const modMap={'facturacion':'a[href="/facturacion"]','cuentas-corrientes':'a[href="/cuentas-corrientes"]','conciliacion-bancaria':'a[href="/conciliacion-bancaria"]','tickets':'a[href="/tickets"]','pendientes-acreditacion':'a[href="/pendientes-acreditacion"]','administracion':'a[href="/administracion"]'};
 if(userData.rol!=='admin'){
-  Object.entries(modMap).forEach(([id,sel])=>{
+  ALL_MODULOS.forEach(({id,href})=>{
     const tieneAcceso=userData.modulos&&userData.modulos[id];
-    if(!tieneAcceso){const el=document.querySelector(sel);if(el)el.style.display='none';}
+    if(!tieneAcceso){const el=document.querySelector('a[href="'+href+'"]');if(el)el.style.display='none';}
   });
 }
 
@@ -399,7 +410,7 @@ async function cargarUsuarios(){
     const r=await fetch('/api/usuarios',{headers:{'x-admin':userData.username}});
     const users=await r.json();
     if(!users.length){ list.innerHTML='<div style="padding:.75rem 1rem;font-size:12px;color:#9896A0">Sin usuarios.</div>'; return; }
-    const MODULOS=[{id:'facturacion',label:'Facturación'},{id:'cuentas-corrientes',label:'Cta. Cte.'},{id:'conciliacion-bancaria',label:'Conciliación'},{id:'tickets',label:'Tickets'},{id:'pendientes-acreditacion',label:'Pendientes'},{id:'administracion',label:'Administración'}];
+    const MODULOS=ALL_MODULOS;
     list.innerHTML=users.map(u=>{
       const mods=u.modulos||null;
       const isGlobalAdmin=u.rol==='admin';
