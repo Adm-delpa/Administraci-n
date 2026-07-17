@@ -1884,12 +1884,19 @@ async function eliminarRegistro(gi){
   var r=state.filtradas[gi];
   if(!r) return;
   if(!confirm('¿Eliminar este registro permanentemente?\n'+fmtFechaDisplay(r.fecha)+' — '+(r.desc||'').slice(0,60)+' — $'+fmtN(r.importe))) return;
-  state.resultados=state.resultados.filter(function(x){return x!==r;});
+  var fp=(r.fecha||'')+'|'+r.importe+'|'+(r.desc||'').slice(0,60);
   loading(true);
   try{
-    await guardarResultados();
-    toast('Registro eliminado','ok-t');
-  }catch(e){toast('Error al guardar','err-t');}
+    var res=await fetch('/api/datos/conciliacion/eliminar-registros',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fingerprints:[fp]})
+    });
+    var data=await res.json();
+    if(data.ok){
+      state.resultados=state.resultados.filter(function(x){return x!==r;});
+      toast('Registro eliminado','ok-t');
+    } else { toast('Error al eliminar','err-t'); }
+  }catch(e){toast('Error al eliminar','err-t');}
   loading(false);
   calcStats(); filtrar();
 }
