@@ -1802,7 +1802,7 @@ function renderTabla(){
         '<td><span class="cod">'+esc(r.codCli)+'</span></td>'+
         '<td><span class="cuit-f">'+esc(fmtCUIT(r.cuit))+'</span></td>'+
         '<td>'+badge+'</td>'+
-        '<td>'+accion+'</td>'+
+        '<td>'+accion+'<button class="btn-asi" style="background:none;color:#94a3b8;border-color:#3a3f5c;font-size:11px;margin-top:4px" onclick="eliminarRegistro('+gi+')" title="Eliminar registro">✕ Eliminar</button></td>'+
       '</tr>';
     });
   }
@@ -1875,6 +1875,20 @@ async function confirmarSugerido(gi){
     await guardarResultados();
     registrarAccion('confirmar_sugerido','Confirmó cliente sugerido '+r.nomCli+' ('+r.codCli+') en movimiento $'+fmtNum(r.importe)+' del '+r.fecha);
     toast('Confirmado: '+r.nomCli,'ok-t');
+  }catch(e){toast('Error al guardar','err-t');}
+  loading(false);
+  calcStats(); filtrar();
+}
+
+async function eliminarRegistro(gi){
+  var r=state.filtradas[gi];
+  if(!r) return;
+  if(!confirm('¿Eliminar este registro permanentemente?\n'+fmtFechaDisplay(r.fecha)+' — '+(r.desc||'').slice(0,60)+' — $'+fmtN(r.importe))) return;
+  state.resultados=state.resultados.filter(function(x){return x!==r;});
+  loading(true);
+  try{
+    await guardarResultados();
+    toast('Registro eliminado','ok-t');
   }catch(e){toast('Error al guardar','err-t');}
   loading(false);
   calcStats(); filtrar();

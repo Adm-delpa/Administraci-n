@@ -358,6 +358,34 @@ app.delete('/api/datos/:modulo/:periodo', async (req, res) => {
   }
 });
 
+// Eliminar resultados específicos por fingerprint de todos los períodos
+app.post('/api/datos/:modulo/eliminar-registros', async (req, res) => {
+  const { modulo } = req.params;
+  const { fingerprints } = req.body; // array de strings "fecha|importe|desc60"
+  if (!fingerprints || !fingerprints.length) return res.status(400).json({ error: 'Faltan fingerprints' });
+  try {
+    const result = await pool.query('SELECT periodo, datos FROM datos_modulos WHERE modulo=$1', [modulo]);
+    let totalEliminados = 0;
+    for (const row of result.rows) {
+      const datos = row.datos;
+      if (!datos.resultados) continue;
+      const antes = datos.resultados.length;
+      datos.resultados = datos.resultados.filter(r => {
+        const fp = (r.fecha||'')+'|'+r.importe+'|'+(r.desc||'').slice(0,60);
+        return !fingerprints.includes(fp);
+      });
+      if (datos.resultados.length < antes) {
+        totalEliminados += antes - datos.resultados.length;
+        await pool.query('UPDATE datos_modulos SET datos=$1, updated_at=NOW() WHERE modulo=$2 AND periodo=$3',
+          [JSON.stringify(datos), modulo, row.periodo]);
+      }
+    }
+    res.json({ ok: true, eliminados: totalEliminados });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Cambiar contraseña
 app.post('/api/cambiar-password', async (req, res) => {
   const { username, password_actual, password_nueva } = req.body;
