@@ -388,7 +388,7 @@ function renderTabCustom(t) {
 function calcCustom(id) {
   const t = tiposCustom.find(x => x.id === id);
   if (!t) return;
-  const sumas = {neto:0, iva:0, perc_iva:0, imp_int:0, iibb:0};
+  const sumas = {}; MAPEOS.forEach(m => sumas[m.val]=0);
   document.querySelectorAll(`.concepto-input-c[data-tid="${id}"]`).forEach(inp => {
     const m = inp.dataset.mapeo;
     if (sumas[m] !== undefined) sumas[m] += parseMonto(inp.value);
