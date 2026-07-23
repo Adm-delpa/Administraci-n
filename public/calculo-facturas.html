@@ -29,10 +29,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem}
 .page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
 .page-sub{font-size:13px;color:#9896A0;font-weight:500;margin-top:.2rem}
-.prov-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
-.prov-tab{padding:.5rem 1.2rem;border-radius:8px;border:1.5px solid #DDDBD6;background:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#56555A;cursor:pointer;transition:all .15s}
+.prov-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+.prov-tab{padding:.5rem 1.2rem;border-radius:8px;border:1.5px solid #DDDBD6;background:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#56555A;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
 .prov-tab.active{background:#0D4FA0;color:#fff;border-color:#0D4FA0}
-.prov-tab.pronto{opacity:.45;cursor:default}
+.prov-tab .tab-del{font-size:11px;opacity:.6;margin-left:2px;line-height:1;background:none;border:none;cursor:pointer;color:inherit;padding:0}
+.prov-tab .tab-del:hover{opacity:1}
+.btn-add-tab{padding:.5rem .9rem;border-radius:8px;border:1.5px dashed #BFDBFE;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#1E6FD9;cursor:pointer;transition:all .15s}
+.btn-add-tab:hover{background:#EFF6FF;border-color:#93C5FD}
 .calc-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start}
 @media(max-width:700px){.calc-layout{grid-template-columns:1fr}}
 .card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1.4rem}
@@ -62,6 +65,32 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .comprobacion-diff{font-size:12px;font-weight:500;margin-top:3px;opacity:.85}
 .btn-limpiar{background:#fff;border:1.5px solid #DDDBD6;color:#56555A;padding:6px 16px;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn-limpiar:hover{background:#F2F1EE}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:1.25rem 1.5rem .75rem;border-bottom:1px solid #F0EEEB;display:flex;justify-content:space-between;align-items:center}
+.modal-head h3{font-size:16px;font-weight:700;color:#18181A}
+.modal-close{background:none;border:none;font-size:18px;color:#9896A0;cursor:pointer;line-height:1;padding:2px 6px;border-radius:4px}
+.modal-close:hover{background:#F2F1EE;color:#18181A}
+.modal-body{padding:1.25rem 1.5rem}
+.modal-foot{padding:.75rem 1.5rem 1.25rem;border-top:1px solid #F0EEEB;display:flex;gap:8px;justify-content:flex-end}
+.field-label{font-size:12px;font-weight:600;color:#56555A;margin-bottom:.35rem;display:block}
+.field-input{width:100%;padding:.55rem .75rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;color:#18181A;outline:none;transition:border-color .15s}
+.field-input:focus{border-color:#1E6FD9;box-shadow:0 0 0 3px rgba(30,111,217,.08)}
+.concepto-def-row{display:grid;grid-template-columns:1fr 160px 28px;gap:6px;margin-bottom:6px;align-items:center}
+.concepto-def-row input,.concepto-def-row select{padding:.45rem .6rem;border:1.5px solid #DDDBD6;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;color:#18181A;outline:none;width:100%}
+.concepto-def-row input:focus,.concepto-def-row select:focus{border-color:#1E6FD9}
+.btn-del-concepto{background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
+.btn-del-concepto:hover{color:#B91C1C}
+.btn-add-concepto{background:none;border:1.5px dashed #BFDBFE;color:#1E6FD9;font-size:12px;font-weight:600;padding:.4rem .8rem;border-radius:6px;cursor:pointer;margin-top:4px;font-family:'Inter',sans-serif}
+.btn-add-concepto:hover{background:#EFF6FF}
+.btn-pri{background:#0D4FA0;color:#fff;border:none;padding:.55rem 1.2rem;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-pri:hover{background:#0B4090}
+.btn-sec{background:#fff;border:1.5px solid #DDDBD6;color:#56555A;padding:.55rem 1.2rem;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
+.btn-sec:hover{background:#F2F1EE}
+.mapeo-legend{font-size:11px;color:#9896A0;margin-top:.5rem;line-height:1.6}
 @media(max-width:600px){.topbar{padding:.75rem 1rem}}
 </style>
 </head>
@@ -104,9 +133,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
     <button class="btn-limpiar" onclick="limpiar()">Limpiar campos</button>
   </div>
 
-  <div class="prov-tabs">
+  <div class="prov-tabs" id="prov-tabs">
     <button class="prov-tab active" onclick="setTab('edea',this)">EDEA</button>
     <button class="prov-tab" onclick="setTab('cesop',this)">CESOP Gas</button>
+    <button class="btn-add-tab" onclick="abrirModalNuevo()">+ Nuevo tipo</button>
   </div>
 
   <!-- ===== EDEA ===== -->
@@ -184,6 +214,43 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       </div>
     </div>
   </div>
+
+  <!-- Contenedor dinámico para tipos custom -->
+  <div id="tabs-custom"></div>
+</div>
+
+<!-- Modal nuevo tipo -->
+<div class="modal-bg" id="modal-nuevo" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-titulo">Nuevo tipo de factura</h3>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:1rem">
+        <label class="field-label">Nombre del proveedor / tipo</label>
+        <input class="field-input" id="nuevo-nombre" type="text" placeholder="Ej: Camuzzi Gas, AySA...">
+      </div>
+      <div style="margin-bottom:.5rem">
+        <label class="field-label">Conceptos de la factura</label>
+        <div style="display:grid;grid-template-columns:1fr 160px 28px;gap:6px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:600;color:#9896A0">ETIQUETA</span>
+          <span style="font-size:11px;font-weight:600;color:#9896A0">CAMPO CHESS</span>
+          <span></span>
+        </div>
+        <div id="conceptos-list"></div>
+        <button class="btn-add-concepto" onclick="agregarConcepto()">+ Agregar concepto</button>
+      </div>
+      <div class="mapeo-legend">
+        <strong>Campos Chess:</strong> NETO · IVA · PERC. IVA · IMPUESTOS INTERNOS · PERC. IIBB<br>
+        Varios conceptos pueden sumar al mismo campo (ej: varias leyes → Impuestos Internos).
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-sec" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-pri" onclick="guardarTipo()">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -196,160 +263,319 @@ document.getElementById('user-avatar').textContent = (userData.nombre || userDat
 document.getElementById('rol-badge').textContent = userData.rol === 'admin' ? 'Admin' : 'Vista';
 document.getElementById('rol-badge').className = 'rol-badge ' + (userData.rol === 'admin' ? 'rol-admin' : 'rol-vista');
 
-let tabActivo = 'edea';
+const MAPEOS = [
+  {val:'neto',     label:'NETO'},
+  {val:'iva',      label:'IVA'},
+  {val:'perc_iva', label:'PERC. IVA'},
+  {val:'imp_int',  label:'IMP. INTERNOS'},
+  {val:'iibb',     label:'PERC. IIBB'},
+];
 
+let tabActivo = 'edea';
+let tiposCustom = [];
+let editandoId = null;
+
+/* ── TABS ── */
 function setTab(tab, btn) {
   tabActivo = tab;
   document.querySelectorAll('.prov-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('tab-edea').style.display = tab === 'edea' ? '' : 'none';
+  document.getElementById('tab-edea').style.display  = tab === 'edea'  ? '' : 'none';
   document.getElementById('tab-cesop').style.display = tab === 'cesop' ? '' : 'none';
+  document.querySelectorAll('.tab-custom').forEach(el => {
+    el.style.display = el.dataset.id === tab ? '' : 'none';
+  });
 }
 
+/* ── TIPOS CUSTOM: CARGAR / GUARDAR ── */
+async function cargarTipos() {
+  try {
+    const res = await fetch('/api/datos/calculo-facturas');
+    const data = await res.json();
+    const config = data['config'];
+    tiposCustom = (config && config.tipos) ? config.tipos : [];
+  } catch(e) { tiposCustom = []; }
+  renderTiposCustom();
+}
+
+async function persistirTipos() {
+  await fetch('/api/datos/calculo-facturas', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({periodo:'config', datos:{tipos:tiposCustom}})
+  });
+}
+
+function renderTiposCustom() {
+  // Tabs
+  const tabs = document.getElementById('prov-tabs');
+  tabs.querySelectorAll('.tab-custom-btn').forEach(el => el.remove());
+  const btnAdd = tabs.querySelector('.btn-add-tab');
+  tiposCustom.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'prov-tab tab-custom-btn';
+    btn.dataset.id = t.id;
+    btn.innerHTML = t.nombre + '<button class="tab-del" onclick="event.stopPropagation();eliminarTipo(\''+t.id+'\')" title="Eliminar">✕</button>';
+    btn.onclick = function(){ setTab(t.id, btn); };
+    tabs.insertBefore(btn, btnAdd);
+  });
+
+  // Contenido
+  const cont = document.getElementById('tabs-custom');
+  cont.innerHTML = '';
+  tiposCustom.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'tab-custom';
+    div.dataset.id = t.id;
+    div.style.display = 'none';
+    div.innerHTML = renderTabCustom(t);
+    cont.appendChild(div);
+    // Bind inputs
+    div.querySelectorAll('.concepto-input-c').forEach(inp => {
+      inp.addEventListener('blur', () => { const n=parseMonto(inp.value); inp.value=n>0?fmtInput(n):''; calcCustom(t.id); });
+      inp.addEventListener('focus', () => { const n=parseMonto(inp.value); inp.value=n>0?String(n).replace('.',','):''; setTimeout(()=>inp.select(),0); });
+      inp.addEventListener('input', () => calcCustom(t.id));
+    });
+    const tot = div.querySelector('.importe-total-input');
+    if (tot) {
+      tot.addEventListener('blur', () => { const n=parseMonto(tot.value); tot.value=n>0?fmtInput(n):''; calcCustom(t.id); });
+      tot.addEventListener('focus', () => { const n=parseMonto(tot.value); tot.value=n>0?String(n).replace('.',','):''; setTimeout(()=>tot.select(),0); });
+    }
+  });
+}
+
+function renderTabCustom(t) {
+  const conceptosHTML = t.conceptos.map((c,i) =>
+    `<div class="concepto-row"><span class="concepto-label">${esc(c.label)}</span><input class="concepto-input concepto-input-c" data-mapeo="${c.mapeo}" data-tid="${t.id}" type="text" inputmode="decimal" placeholder="0,00"></div>`
+  ).join('');
+
+  const resultRows = MAPEOS.map(m =>
+    `<div class="resultado-row"><span class="resultado-label">${m.label}</span><span class="resultado-valor" id="res-${t.id}-${m.val}">—</span></div>`
+  ).join('');
+
+  return `
+    <div class="importe-total-wrap">
+      <div class="importe-total-label">Importe total<br>de factura</div>
+      <span style="font-size:22px;font-weight:700;color:#93C5FD;margin-right:2px">$</span>
+      <input class="importe-total-input" id="total-${t.id}" type="text" inputmode="decimal" placeholder="0,00">
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.5rem">
+      <button class="btn-limpiar" onclick="limpiarCustom('${t.id}')">Limpiar campos</button>
+      <button class="btn-limpiar" style="margin-left:6px" onclick="editarTipo('${t.id}')">✎ Editar tipo</button>
+    </div>
+    <div class="calc-layout">
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Conceptos de la factura ${esc(t.nombre)}
+        </div>
+        ${conceptosHTML}
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Resultado para cargar en Chess
+        </div>
+        ${resultRows}
+        <hr class="resultado-divider">
+        <div class="resultado-total-row"><span class="resultado-total-label">TOTAL CALCULADO</span><span class="resultado-total-valor" id="res-${t.id}-total">—</span></div>
+        <div class="comprobacion neutral" id="comp-${t.id}"><span class="comprobacion-icon">📋</span><div>Ingresá el importe total y los conceptos para verificar</div></div>
+      </div>
+    </div>`;
+}
+
+function calcCustom(id) {
+  const t = tiposCustom.find(x => x.id === id);
+  if (!t) return;
+  const sumas = {neto:0, iva:0, perc_iva:0, imp_int:0, iibb:0};
+  document.querySelectorAll(`.concepto-input-c[data-tid="${id}"]`).forEach(inp => {
+    const m = inp.dataset.mapeo;
+    if (sumas[m] !== undefined) sumas[m] += parseMonto(inp.value);
+  });
+  const calculado = Object.values(sumas).reduce((a,b)=>a+b,0);
+  const total = parseMonto((document.getElementById('total-'+id)||{}).value||'');
+
+  MAPEOS.forEach(m => {
+    const el = document.getElementById('res-'+id+'-'+m.val);
+    if (el) el.textContent = fmt(sumas[m.val]);
+  });
+  const tot = document.getElementById('res-'+id+'-total');
+  if (tot) tot.textContent = calculado > 0 ? '$ '+calculado.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+
+  const comp = document.getElementById('comp-'+id);
+  if (!comp) return;
+  if (calculado === 0) { comp.className='comprobacion neutral'; comp.innerHTML=`<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`; return; }
+  if (total === 0) { comp.className='comprobacion neutral'; comp.innerHTML=`<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`; return; }
+  const diff = Math.round((total-calculado)*100)/100;
+  if (diff===0) { comp.className='comprobacion ok'; comp.innerHTML=`<span class="comprobacion-icon">✅</span><div>Los importes coinciden — listo para cargar en Chess</div>`; }
+  else {
+    const df = Math.abs(diff).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const tipo = diff>0?`faltan $ ${df} en los conceptos`:`hay $ ${df} de más en los conceptos`;
+    comp.className='comprobacion error';
+    comp.innerHTML=`<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden</div><div class="comprobacion-diff">Diferencia: $ ${df} (${tipo})</div></div>`;
+  }
+}
+
+function limpiarCustom(id) {
+  document.querySelectorAll(`.concepto-input-c[data-tid="${id}"]`).forEach(inp => inp.value='');
+  const tot = document.getElementById('total-'+id);
+  if (tot) tot.value='';
+  calcCustom(id);
+}
+
+/* ── MODAL ── */
+function abrirModalNuevo() {
+  editandoId = null;
+  document.getElementById('modal-titulo').textContent = 'Nuevo tipo de factura';
+  document.getElementById('nuevo-nombre').value = '';
+  document.getElementById('conceptos-list').innerHTML = '';
+  agregarConcepto();
+  agregarConcepto();
+  document.getElementById('modal-nuevo').classList.add('open');
+}
+
+function editarTipo(id) {
+  const t = tiposCustom.find(x => x.id === id);
+  if (!t) return;
+  editandoId = id;
+  document.getElementById('modal-titulo').textContent = 'Editar tipo de factura';
+  document.getElementById('nuevo-nombre').value = t.nombre;
+  document.getElementById('conceptos-list').innerHTML = '';
+  t.conceptos.forEach(c => agregarConcepto(c.label, c.mapeo));
+  document.getElementById('modal-nuevo').classList.add('open');
+}
+
+function cerrarModal() {
+  document.getElementById('modal-nuevo').classList.remove('open');
+}
+
+function agregarConcepto(label='', mapeo='neto') {
+  const list = document.getElementById('conceptos-list');
+  const row = document.createElement('div');
+  row.className = 'concepto-def-row';
+  const opts = MAPEOS.map(m => `<option value="${m.val}" ${m.val===mapeo?'selected':''}>${m.label}</option>`).join('');
+  row.innerHTML = `
+    <input type="text" placeholder="Nombre del concepto" value="${esc(label)}">
+    <select>${opts}</select>
+    <button class="btn-del-concepto" onclick="this.closest('.concepto-def-row').remove()">✕</button>`;
+  list.appendChild(row);
+}
+
+async function guardarTipo() {
+  const nombre = document.getElementById('nuevo-nombre').value.trim();
+  if (!nombre) { alert('Ingresá un nombre'); return; }
+  const rows = document.querySelectorAll('#conceptos-list .concepto-def-row');
+  const conceptos = [];
+  rows.forEach(row => {
+    const lbl = row.querySelector('input').value.trim();
+    const mapeo = row.querySelector('select').value;
+    if (lbl) conceptos.push({label:lbl, mapeo});
+  });
+  if (!conceptos.length) { alert('Agregá al menos un concepto'); return; }
+
+  if (editandoId) {
+    const idx = tiposCustom.findIndex(x => x.id === editandoId);
+    if (idx>=0) { tiposCustom[idx].nombre=nombre; tiposCustom[idx].conceptos=conceptos; }
+  } else {
+    tiposCustom.push({id:'custom-'+Date.now(), nombre, conceptos});
+  }
+  await persistirTipos();
+  cerrarModal();
+  renderTiposCustom();
+}
+
+async function eliminarTipo(id) {
+  const t = tiposCustom.find(x => x.id === id);
+  if (!confirm('¿Eliminar el tipo "' + (t?t.nombre:id) + '"?')) return;
+  tiposCustom = tiposCustom.filter(x => x.id !== id);
+  await persistirTipos();
+  if (tabActivo === id) setTab('edea', document.querySelector('.prov-tab'));
+  renderTiposCustom();
+}
+
+/* ── EDEA / CESOP (igual que antes) ── */
 const ORDER_EDEA = ['edea-total','e-neto','e-iibb','e-iva','e-perc-iva','e-ley1','e-ley2','e-ley3','e-ley4','e-ley5','e-ley6'];
 const ORDER_CESOP = ['cesop-total','c-neto','c-iva','c-imp-int','c-iibb'];
-const ORDER = [...ORDER_EDEA, ...ORDER_CESOP];
 
 function parseMonto(val) {
   if (!val || !val.trim()) return 0;
-  // quitar $ y espacios
-  let v = val.trim().replace(/\$/g, '').replace(/\s/g, '');
-  // formato argentino: punto = miles, coma = decimal
-  if (v.includes('.') && v.includes(',')) {
-    v = v.replace(/\./g, '').replace(',', '.');
-  } else if (v.includes(',')) {
-    v = v.replace(',', '.');
-  }
-  const n = parseFloat(v);
-  return isNaN(n) ? 0 : n;
+  let v = val.trim().replace(/\$/g,'').replace(/\s/g,'');
+  if (v.includes('.') && v.includes(',')) { v=v.replace(/\./g,'').replace(',','.'); }
+  else if (v.includes(',')) { v=v.replace(',','.'); }
+  const n=parseFloat(v); return isNaN(n)?0:n;
 }
+function fmtInput(n) { return n===0?'':'$ '+n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmt(n) { return n===0?'—':'$ '+n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-function fmtInput(n) {
-  if (n === 0) return '';
-  return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function fmt(n) {
-  if (n === 0) return '—';
-  return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// Al salir de un campo: formatea el valor y pasa al siguiente con Enter
 document.addEventListener('DOMContentLoaded', () => {
-  ORDER_EDEA.forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('blur', () => { const n = parseMonto(el.value); el.value = n > 0 ? fmtInput(n) : ''; calcEdea(); });
-    el.addEventListener('focus', () => { const n = parseMonto(el.value); el.value = n > 0 ? String(n).replace('.', ',') : ''; setTimeout(() => el.select(), 0); });
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const next = document.getElementById(ORDER_EDEA[i + 1]); if (next) next.focus(); } });
+  ORDER_EDEA.forEach((id,i) => {
+    const el=document.getElementById(id); if(!el) return;
+    el.addEventListener('blur',()=>{const n=parseMonto(el.value);el.value=n>0?fmtInput(n):'';calcEdea();});
+    el.addEventListener('focus',()=>{const n=parseMonto(el.value);el.value=n>0?String(n).replace('.',','):'';setTimeout(()=>el.select(),0);});
+    el.addEventListener('keydown',(e)=>{if(e.key==='Enter'){e.preventDefault();const nx=document.getElementById(ORDER_EDEA[i+1]);if(nx)nx.focus();}});
   });
-  ORDER_CESOP.forEach((id, i) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('blur', () => { const n = parseMonto(el.value); el.value = n > 0 ? fmtInput(n) : ''; calcCesop(); });
-    el.addEventListener('focus', () => { const n = parseMonto(el.value); el.value = n > 0 ? String(n).replace('.', ',') : ''; setTimeout(() => el.select(), 0); });
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const next = document.getElementById(ORDER_CESOP[i + 1]); if (next) next.focus(); } });
+  ORDER_CESOP.forEach((id,i) => {
+    const el=document.getElementById(id); if(!el) return;
+    el.addEventListener('blur',()=>{const n=parseMonto(el.value);el.value=n>0?fmtInput(n):'';calcCesop();});
+    el.addEventListener('focus',()=>{const n=parseMonto(el.value);el.value=n>0?String(n).replace('.',','):'';setTimeout(()=>el.select(),0);});
+    el.addEventListener('keydown',(e)=>{if(e.key==='Enter'){e.preventDefault();const nx=document.getElementById(ORDER_CESOP[i+1]);if(nx)nx.focus();}});
   });
+  cargarTipos();
 });
 
 function calcEdea() {
-  const neto    = parseMonto(document.getElementById('e-neto').value);
-  const iva     = parseMonto(document.getElementById('e-iva').value);
-  const percIva = parseMonto(document.getElementById('e-perc-iva').value);
-  const iibb    = parseMonto(document.getElementById('e-iibb').value);
-  const ley1    = parseMonto(document.getElementById('e-ley1').value);
-  const ley2    = parseMonto(document.getElementById('e-ley2').value);
-  const ley3    = parseMonto(document.getElementById('e-ley3').value);
-  const ley4    = parseMonto(document.getElementById('e-ley4').value);
-  const ley5    = parseMonto(document.getElementById('e-ley5').value);
-  const ley6    = parseMonto(document.getElementById('e-ley6').value);
-  const total   = parseMonto(document.getElementById('edea-total').value);
-
-  const impInt   = ley1 + ley2 + ley3 + ley4 + ley5 + ley6;
-  const calculado = neto + iva + percIva + iibb + impInt;
-
-  document.getElementById('r-neto').textContent     = fmt(neto);
-  document.getElementById('r-iva').textContent      = fmt(iva);
-  document.getElementById('r-perc-iva').textContent = fmt(percIva);
-  document.getElementById('r-imp-int').textContent  = fmt(impInt);
-  document.getElementById('r-iibb').textContent     = fmt(iibb);
-  document.getElementById('r-total').textContent    = calculado > 0
-    ? '$ ' + calculado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : '—';
-
-  const comp = document.getElementById('comprobacion');
-
-  if (calculado === 0) {
-    comp.className = 'comprobacion neutral';
-    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`;
-    return;
-  }
-  if (total === 0) {
-    comp.className = 'comprobacion neutral';
-    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`;
-    return;
-  }
-
-  const diff = Math.round((total - calculado) * 100) / 100;
-  if (diff === 0) {
-    comp.className = 'comprobacion ok';
-    comp.innerHTML = `<span class="comprobacion-icon">✅</span><div><div>Los importes coinciden — listo para cargar en Chess</div></div>`;
-  } else {
-    const diffFmt = Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const tipo = diff > 0 ? `faltan $ ${diffFmt} en los conceptos` : `hay $ ${diffFmt} de más en los conceptos`;
-    comp.className = 'comprobacion error';
-    comp.innerHTML = `<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden — revisá los conceptos ingresados</div><div class="comprobacion-diff">Diferencia: $ ${diffFmt} (${tipo})</div></div>`;
-  }
+  const neto=parseMonto(document.getElementById('e-neto').value);
+  const iva=parseMonto(document.getElementById('e-iva').value);
+  const percIva=parseMonto(document.getElementById('e-perc-iva').value);
+  const iibb=parseMonto(document.getElementById('e-iibb').value);
+  const ley1=parseMonto(document.getElementById('e-ley1').value);
+  const ley2=parseMonto(document.getElementById('e-ley2').value);
+  const ley3=parseMonto(document.getElementById('e-ley3').value);
+  const ley4=parseMonto(document.getElementById('e-ley4').value);
+  const ley5=parseMonto(document.getElementById('e-ley5').value);
+  const ley6=parseMonto(document.getElementById('e-ley6').value);
+  const total=parseMonto(document.getElementById('edea-total').value);
+  const impInt=ley1+ley2+ley3+ley4+ley5+ley6;
+  const calculado=neto+iva+percIva+iibb+impInt;
+  document.getElementById('r-neto').textContent=fmt(neto);
+  document.getElementById('r-iva').textContent=fmt(iva);
+  document.getElementById('r-perc-iva').textContent=fmt(percIva);
+  document.getElementById('r-imp-int').textContent=fmt(impInt);
+  document.getElementById('r-iibb').textContent=fmt(iibb);
+  document.getElementById('r-total').textContent=calculado>0?'$ '+calculado.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  const comp=document.getElementById('comprobacion');
+  if(calculado===0){comp.className='comprobacion neutral';comp.innerHTML=`<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`;return;}
+  if(total===0){comp.className='comprobacion neutral';comp.innerHTML=`<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`;return;}
+  const diff=Math.round((total-calculado)*100)/100;
+  if(diff===0){comp.className='comprobacion ok';comp.innerHTML=`<span class="comprobacion-icon">✅</span><div>Los importes coinciden — listo para cargar en Chess</div>`;}
+  else{const df=Math.abs(diff).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});const tipo=diff>0?`faltan $ ${df} en los conceptos`:`hay $ ${df} de más en los conceptos`;comp.className='comprobacion error';comp.innerHTML=`<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden — revisá los conceptos ingresados</div><div class="comprobacion-diff">Diferencia: $ ${df} (${tipo})</div></div>`;}
 }
 
 function calcCesop() {
-  const neto   = parseMonto(document.getElementById('c-neto').value);
-  const iva    = parseMonto(document.getElementById('c-iva').value);
-  const impInt = parseMonto(document.getElementById('c-imp-int').value);
-  const iibb   = parseMonto(document.getElementById('c-iibb').value);
-  const total  = parseMonto(document.getElementById('cesop-total').value);
-
-  const calculado = neto + iva + impInt + iibb;
-
-  document.getElementById('cr-neto').textContent    = fmt(neto);
-  document.getElementById('cr-iva').textContent     = fmt(iva);
-  document.getElementById('cr-imp-int').textContent = fmt(impInt);
-  document.getElementById('cr-iibb').textContent    = fmt(iibb);
-  document.getElementById('cr-total').textContent   = calculado > 0
-    ? '$ ' + calculado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : '—';
-
-  const comp = document.getElementById('cesop-comprobacion');
-  if (calculado === 0) {
-    comp.className = 'comprobacion neutral';
-    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`;
-    return;
-  }
-  if (total === 0) {
-    comp.className = 'comprobacion neutral';
-    comp.innerHTML = `<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`;
-    return;
-  }
-  const diff = Math.round((total - calculado) * 100) / 100;
-  if (diff === 0) {
-    comp.className = 'comprobacion ok';
-    comp.innerHTML = `<span class="comprobacion-icon">✅</span><div>Los importes coinciden — listo para cargar en Chess</div>`;
-  } else {
-    const diffFmt = Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const tipo = diff > 0 ? `faltan $ ${diffFmt} en los conceptos` : `hay $ ${diffFmt} de más en los conceptos`;
-    comp.className = 'comprobacion error';
-    comp.innerHTML = `<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden — revisá los conceptos ingresados</div><div class="comprobacion-diff">Diferencia: $ ${diffFmt} (${tipo})</div></div>`;
-  }
+  const neto=parseMonto(document.getElementById('c-neto').value);
+  const iva=parseMonto(document.getElementById('c-iva').value);
+  const impInt=parseMonto(document.getElementById('c-imp-int').value);
+  const iibb=parseMonto(document.getElementById('c-iibb').value);
+  const total=parseMonto(document.getElementById('cesop-total').value);
+  const calculado=neto+iva+impInt+iibb;
+  document.getElementById('cr-neto').textContent=fmt(neto);
+  document.getElementById('cr-iva').textContent=fmt(iva);
+  document.getElementById('cr-imp-int').textContent=fmt(impInt);
+  document.getElementById('cr-iibb').textContent=fmt(iibb);
+  document.getElementById('cr-total').textContent=calculado>0?'$ '+calculado.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  const comp=document.getElementById('cesop-comprobacion');
+  if(calculado===0){comp.className='comprobacion neutral';comp.innerHTML=`<span class="comprobacion-icon">📋</span><div>Ingresá los conceptos para calcular</div>`;return;}
+  if(total===0){comp.className='comprobacion neutral';comp.innerHTML=`<span class="comprobacion-icon">📋</span><div>Ingresá el importe total de la factura para verificar</div>`;return;}
+  const diff=Math.round((total-calculado)*100)/100;
+  if(diff===0){comp.className='comprobacion ok';comp.innerHTML=`<span class="comprobacion-icon">✅</span><div>Los importes coinciden — listo para cargar en Chess</div>`;}
+  else{const df=Math.abs(diff).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});const tipo=diff>0?`faltan $ ${df} en los conceptos`:`hay $ ${df} de más en los conceptos`;comp.className='comprobacion error';comp.innerHTML=`<span class="comprobacion-icon">⚠️</span><div><div>Los importes no coinciden — revisá los conceptos ingresados</div><div class="comprobacion-diff">Diferencia: $ ${df} (${tipo})</div></div>`;}
 }
 
 function limpiar() {
-  if (tabActivo === 'edea') {
-    ORDER_EDEA.forEach(id => document.getElementById(id).value = '');
-    calcEdea();
-  } else {
-    ORDER_CESOP.forEach(id => document.getElementById(id).value = '');
-    calcCesop();
-  }
+  if(tabActivo==='edea'){ORDER_EDEA.forEach(id=>document.getElementById(id).value='');calcEdea();}
+  else if(tabActivo==='cesop'){ORDER_CESOP.forEach(id=>document.getElementById(id).value='');calcCesop();}
+  else limpiarCustom(tabActivo);
 }
 </script>
 </body>
