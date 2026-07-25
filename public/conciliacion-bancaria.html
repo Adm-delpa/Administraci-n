@@ -1963,6 +1963,7 @@ function cerrarModalVincular(){
 }
 function filtrarModalVincular(){
   var q=(document.getElementById('mv-busq').value||'').toLowerCase();
+  var r=state.filtradas[mvIdx];
   var nc=state.banco.filter(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
     var usada=state.resultados.some(function(res){
@@ -1972,10 +1973,10 @@ function filtrarModalVincular(){
     if(!q) return true;
     return (b.desc||'').toLowerCase().includes(q)||String(b.importe).includes(q)||(b.fecha||'').includes(q);
   });
+  if(r) nc.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
   var html='';
   if(!nc.length){html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">No hay movimientos no conciliados</div>';}
   nc.forEach(function(b,i){
-    var r=state.filtradas[mvIdx];
     var diff=r?Math.abs(b.importe-r.importe):null;
     var diffLabel=diff===0?'<span style="font-size:11px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px">Exacto</span>'
       :'<span style="font-size:11px;background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:4px">Dif: $'+fmtN(diff)+'</span>';
