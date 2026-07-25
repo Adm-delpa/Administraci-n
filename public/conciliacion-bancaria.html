@@ -628,7 +628,8 @@ var state = {
   filtradas: [], pagina: 0, POR_PAG: 100,
   modalIdx: null, clienteSel: null,
   pendientes: [],
-  chessHuerfanos: []
+  chessHuerfanos: [],
+  blacklist: new Set()
 };
 
 /* UTILS */
@@ -761,7 +762,7 @@ async function init(){
   document.getElementById('chess-desde').value=yy+'-'+mm+'-01';
   document.getElementById('chess-hasta').value=yy+'-'+mm+'-'+dd;
   try{
-    await Promise.all([loadClientes(),loadResultados(),cargarPendientes()]);
+    await Promise.all([loadClientes(),loadResultados(),cargarPendientes(),loadBlacklist()]);
   }catch(e){
     showAlert('alert-dup','Error al conectar con el servidor: '+e.message);
   }
@@ -784,6 +785,22 @@ async function loadClientes(){
       markFileCard('dolores','Clientes Dolores',total+' clientes Dolores',d._savedAtDolores);
     }
   }
+}
+
+async function loadBlacklist(){
+  try{
+    var res=await fetch('/api/datos/conciliacion');
+    var data=await res.json();
+    var bl=(data['_blacklist']&&data['_blacklist'].fps)||[];
+    state.blacklist=new Set(bl);
+  }catch(e){ state.blacklist=new Set(); }
+}
+
+async function saveBlacklist(){
+  await fetch('/api/datos/conciliacion',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({periodo:'_blacklist',datos:{fps:Array.from(state.blacklist)}})
+  });
 }
 
 async function loadResultados(){
@@ -1473,6 +1490,8 @@ async function procesar(){
   state.pendientes.forEach(function(p){ p.confirmado=false; delete p._toDelete; });
 
   banco.forEach(function(b){
+    var bfp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
+    if(state.blacklist.has(bfp)) return;
     var cuitBco=extraerCUIT(b.desc);
     var match=null,nivel='NC',cliInfo=null,sugerido=null;
 
@@ -1894,6 +1913,8 @@ async function eliminarRegistro(gi){
     var data=await res.json();
     if(data.ok){
       state.resultados=state.resultados.filter(function(x){return x!==r;});
+      state.blacklist.add(fp);
+      await saveBlacklist();
       toast('Registro eliminado','ok-t');
     } else { toast('Error al eliminar','err-t'); }
   }catch(e){toast('Error al eliminar','err-t');}
