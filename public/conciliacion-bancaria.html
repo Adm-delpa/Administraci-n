@@ -617,9 +617,9 @@ tr:hover td{background:#f9fbff}
       <button class="modal-close" onclick="cerrarModalVincular()">✕</button>
     </div>
     <div class="modal-body" style="gap:10px">
-      <div style="font-size:12px;background:#3b2a00;border:1px solid #92400e;color:#fbbf24;padding:8px 12px;border-radius:7px" id="mv-aviso"></div>
-      <input type="text" id="mv-busq" placeholder="Buscar por importe, descripción o fecha..." style="width:100%;box-sizing:border-box;padding:7px 10px;border:1.5px solid #3a3f5c;border-radius:7px;background:#1e2235;color:#e2e8f0;font-size:13px;outline:none" oninput="filtrarModalVincular()">
-      <div id="mv-list" style="flex:1;overflow-y:auto;max-height:320px;border:1px solid #2a3050;border-radius:8px;padding:4px 0"></div>
+      <div style="font-size:12px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:8px 12px;border-radius:7px" id="mv-aviso"></div>
+      <input type="text" id="mv-busq" placeholder="Buscar por importe, descripción o fecha..." style="width:100%;box-sizing:border-box;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:7px;background:#fff;color:#1a1a1a;font-size:13px;outline:none" oninput="filtrarModalVincular()">
+      <div id="mv-list" style="flex:1;overflow-y:auto;max-height:320px;border:1px solid #e0e4ea;border-radius:8px;padding:4px 0"></div>
       <div style="font-size:11px;color:#64748b">Mostrando movimientos no conciliados de todos los períodos cargados</div>
     </div>
     <div class="modal-foot">
@@ -1977,15 +1977,15 @@ function filtrarModalVincular(){
   nc.forEach(function(b,i){
     var r=state.filtradas[mvIdx];
     var diff=r?Math.abs(b.importe-r.importe):null;
-    var diffLabel=diff===0?'<span style="font-size:11px;background:#14532d;color:#86efac;padding:2px 8px;border-radius:4px">Exacto</span>'
-      :'<span style="font-size:11px;background:#3b2200;color:#fb923c;padding:2px 8px;border-radius:4px">Dif: $'+fmtN(diff)+'</span>';
+    var diffLabel=diff===0?'<span style="font-size:11px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px">Exacto</span>'
+      :'<span style="font-size:11px;background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:4px">Dif: $'+fmtN(diff)+'</span>';
     var sel=mvSelBanco&&mvSelBanco._mvI===i;
-    html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'rgba(217,119,6,.08)':'transparent')+'" onclick="selBancoMV('+i+')" data-mvi="'+i+'">'
+    html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'#fef9ee':'transparent')+'" onclick="selBancoMV('+i+')" data-mvi="'+i+'">'
       +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
-      +'<span style="font-size:14px;font-weight:600;color:#e2e8f0">$'+fmtN(b.importe)+'</span>'
+      +'<span style="font-size:14px;font-weight:600;color:#1a1a1a">$'+fmtN(b.importe)+'</span>'
       +'<span style="font-size:12px;color:#64748b">'+fmtFechaDisplay(b.fecha)+'</span>'
       +'</div>'
-      +'<div style="font-size:12px;color:#94a3b8;margin-top:2px">'+esc(b.desc||'')+'</div>'
+      +'<div style="font-size:12px;color:#475569;margin-top:2px">'+esc(b.desc||'')+'</div>'
       +'<div style="margin-top:4px">'+diffLabel+'</div>'
       +'</div>';
   });
