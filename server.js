@@ -1163,6 +1163,7 @@ app.get('/tickets', (req, res) => res.sendFile(path.join(__dirname, 'public', 't
 app.get('/administracion', (req, res) => res.sendFile(path.join(__dirname, 'public', 'administracion.html')));
 app.get('/tareas', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tareas.html')));
 app.get('/cuentas-pagar', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cuentas-pagar.html')));
+app.get('/transporte', (req, res) => res.sendFile(path.join(__dirname, 'public', 'transporte.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
