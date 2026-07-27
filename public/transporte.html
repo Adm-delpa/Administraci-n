@@ -333,14 +333,18 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       <!-- Formulario agregar/editar -->
       <div style="display:flex;flex-direction:column;gap:12px;background:#f8f9fc;border:1px solid #DDDBD6;border-radius:10px;padding:14px" id="rdf-form">
         <div style="font-size:12px;font-weight:700;color:#6B6876;text-transform:uppercase;letter-spacing:.05em" id="rdf-form-titulo">Nuevo valor RDF</div>
+        <div class="form-group">
+          <label>Mes</label>
+          <input type="month" id="rdf-mes">
+        </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Mes</label>
-            <input type="month" id="rdf-mes">
+            <label>Mercado Central — valor por pallet ($)</label>
+            <input type="number" id="rdf-valor-mc" placeholder="0" min="0" step="0.01">
           </div>
           <div class="form-group">
-            <label>Valor por pallet ($)</label>
-            <input type="number" id="rdf-valor" placeholder="0" min="0" step="0.01">
+            <label>Quilmes — valor por pallet ($)</label>
+            <input type="number" id="rdf-valor-q" placeholder="0" min="0" step="0.01">
           </div>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -641,10 +645,11 @@ function renderTabla() {
       var pallets=EMPRESA_PALLETS[empresa]||26;
       var mes=(r.fecha||'').slice(0,7);
       var rdfMes=getRdfMes(mes);
-      var rdfEsperado=rdfMes?(rdfMes.valor*pallets):null;
+      var valorPallet=rdfMes?getValorRdfOrigen(rdfMes, r.origen):null;
+      var rdfEsperado=(rdfMes&&valorPallet)?(valorPallet*pallets):null;
       var descuento=parseFloat(r.descuento)||0;
       var rdfCelda,estadoCelda;
-      if(!rdfMes){
+      if(!rdfMes||!rdfEsperado){
         rdfCelda='<span style="color:#9896A0">Sin RDF</span>';
         estadoCelda='<span class="badge-no" style="font-size:11px">Sin RDF</span>';
       } else if(!descuento){
@@ -769,7 +774,8 @@ function cerrarModalRdf(){ document.getElementById('modal-rdf').classList.remove
 function limpiarFormRdf(){
   var hoy=new Date();
   document.getElementById('rdf-mes').value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
-  document.getElementById('rdf-valor').value='';
+  document.getElementById('rdf-valor-mc').value='';
+  document.getElementById('rdf-valor-q').value='';
   document.getElementById('rdf-form-titulo').textContent='Nuevo valor RDF';
   document.getElementById('rdf-btn-guardar').textContent='Agregar';
   document.getElementById('rdf-btn-cancel').style.display='none';
@@ -779,7 +785,8 @@ function limpiarFormRdf(){
 function editarRdf(idx){
   var r=rdfValues[idx]; editRdfIdx=idx;
   document.getElementById('rdf-mes').value=r.mes;
-  document.getElementById('rdf-valor').value=r.valor;
+  document.getElementById('rdf-valor-mc').value=r.valorMC||'';
+  document.getElementById('rdf-valor-q').value=r.valorQ||'';
   document.getElementById('rdf-form-titulo').textContent='Editar valor RDF';
   document.getElementById('rdf-btn-guardar').textContent='Guardar cambios';
   document.getElementById('rdf-btn-cancel').style.display='inline-block';
@@ -789,14 +796,16 @@ function cancelarEditarRdf(){ limpiarFormRdf(); renderRdf(); }
 
 async function guardarRdf(){
   var mes=document.getElementById('rdf-mes').value;
-  var valor=parseFloat(document.getElementById('rdf-valor').value)||0;
-  if(!mes||!valor){ toast('Completá mes y valor.','err-t'); return; }
+  var valorMC=parseFloat(document.getElementById('rdf-valor-mc').value)||0;
+  var valorQ=parseFloat(document.getElementById('rdf-valor-q').value)||0;
+  if(!mes||(!valorMC&&!valorQ)){ toast('Completá el mes y al menos un valor.','err-t'); return; }
+  var entry={mes,valorMC,valorQ};
   if(editRdfIdx!==null){
-    rdfValues[editRdfIdx]={mes,valor};
+    rdfValues[editRdfIdx]=entry;
   } else {
     var existente=rdfValues.findIndex(function(r){ return r.mes===mes; });
-    if(existente>=0){ rdfValues[existente]={mes,valor}; }
-    else { rdfValues.push({mes,valor}); }
+    if(existente>=0){ rdfValues[existente]=entry; }
+    else { rdfValues.push(entry); }
   }
   rdfValues.sort(function(a,b){ return a.mes<b.mes?1:-1; });
   try{
@@ -813,19 +822,31 @@ async function eliminarRdf(idx){
   catch(e){ toast('Error.','err-t'); }
 }
 
+function getValorRdfOrigen(rdfMes, origen){
+  if(!rdfMes) return null;
+  var esQuilmes=(origen||'').toUpperCase().includes('QUILMES');
+  var val=esQuilmes?(rdfMes.valorQ||0):(rdfMes.valorMC||0);
+  return val||null;
+}
+
 function renderRdf(){
   var c=document.getElementById('rdf-list');
   if(!rdfValues.length){ c.innerHTML='<div style="padding:14px;text-align:center;color:#9896A0;font-size:13px">No hay valores cargados.</div>'; return; }
-  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   c.innerHTML=rdfValues.map(function(r,i){
     var p=r.mes.split('-');
-    var label=meses[parseInt(p[1])-1]+' '+p[0];
+    var label=MESES[parseInt(p[1])-1]+' '+p[0];
+    var mc=r.valorMC||0; var q=r.valorQ||0;
     return '<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:10px 14px">'
       +'<div style="flex:1">'
         +'<div style="font-size:13px;font-weight:600;color:#18181A">'+label+'</div>'
-        +'<div style="font-size:11px;color:#9896A0;margin-top:2px">26 pallets: $'+fmtN(r.valor*26)+' · 28 pallets: $'+fmtN(r.valor*28)+'</div>'
+        +'<div style="font-size:11px;color:#6B6876;margin-top:4px;display:flex;gap:12px">'
+          +'<span><strong>Mercado Central:</strong> $'+fmtN(mc)+'/pallet · ×26=$'+fmtN(mc*26)+' · ×28=$'+fmtN(mc*28)+'</span>'
+        +'</div>'
+        +'<div style="font-size:11px;color:#6B6876;margin-top:2px">'
+          +'<span><strong>Quilmes:</strong> $'+fmtN(q)+'/pallet · ×26=$'+fmtN(q*26)+' · ×28=$'+fmtN(q*28)+'</span>'
+        +'</div>'
       +'</div>'
-      +'<div style="font-size:14px;font-weight:700;color:#0D4FA0;white-space:nowrap">$'+fmtN(r.valor)+'/pallet</div>'
       +'<button class="btn-edit" onclick="editarRdf('+i+')">Editar</button>'
       +'<button class="btn-del" onclick="eliminarRdf('+i+')">✕</button>'
     +'</div>';
