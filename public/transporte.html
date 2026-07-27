@@ -745,10 +745,19 @@ async function guardarTarifa(){
   var t={empresa,origen,destino,valor};
   if(editTarifaIdx!==null){ tarifas[editTarifaIdx]=t; }
   else { tarifas.push(t); }
+  // Actualizar viajes existentes que coincidan con esta tarifa
+  var actualizados=0;
+  registros.forEach(function(r){
+    var emp=CHOFER_EMPRESA[r.chofer]||'';
+    if(emp===empresa && r.origen===origen && r.destino===destino){
+      r.valor=valor; actualizados++;
+    }
+  });
   try{
     await guardarTarifasDB();
-    toast('Tarifa guardada.','ok-t');
-    limpiarFormTarifa(); renderTarifas();
+    if(actualizados) await guardarRegistrosDB();
+    toast('Tarifa guardada'+(actualizados?' — '+actualizados+' viaje'+(actualizados>1?'s':'')+ ' actualizado'+(actualizados>1?'s':''):'')+'.',  'ok-t');
+    limpiarFormTarifa(); renderTarifas(); calcStats(); renderTabla();
   } catch(e){ toast('Error al guardar tarifa.','err-t'); }
 }
 
