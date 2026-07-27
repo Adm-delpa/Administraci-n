@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transporte — Del Palacio S.A.</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh;font-size:14px}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:1200px;margin:0 auto;padding:2rem 1rem}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1.5rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb-sep{color:#DDDBD6}
+
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+.page-sub{font-size:13px;color:#9896A0;font-weight:500;margin-top:.2rem}
+.btn-nuevo{background:#0D4FA0;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-nuevo:hover{background:#0B3F80}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:1rem;text-align:center}
+.stat-val{font-size:22px;font-weight:700;color:#18181A;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:11px;color:#9896A0;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+
+/* FILTROS */
+.filtros{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.filtros input,.filtros select{padding:7px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;background:#fff;color:#18181A;outline:none}
+.filtros input:focus,.filtros select:focus{border-color:#0D4FA0}
+
+/* TABLA */
+.tabla-wrap{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9896A0;padding:10px 12px;border-bottom:1px solid #DDDBD6;text-align:left;white-space:nowrap;background:#fafaf9}
+td{padding:10px 12px;border-bottom:1px solid #F0EEEb;font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8f9fc}
+.badge-si{background:#D4F2E8;color:#075C41;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge-no{background:#F2F1EE;color:#6B6876;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.btn-edit{background:none;border:1px solid #DDDBD6;color:#6B6876;border-radius:6px;padding:4px 10px;font-family:inherit;font-size:12px;cursor:pointer}
+.btn-edit:hover{border-color:#0D4FA0;color:#0D4FA0}
+.btn-del{background:none;border:1px solid #DDDBD6;color:#6B6876;border-radius:6px;padding:4px 10px;font-family:inherit;font-size:12px;cursor:pointer;margin-left:4px}
+.btn-del:hover{border-color:#dc2626;color:#dc2626}
+.empty{text-align:center;padding:3rem;color:#9896A0;font-size:13px}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:1.25rem 1.5rem;border-bottom:1px solid #DDDBD6;display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:16px;font-weight:700;color:#18181A}
+.modal-close{background:none;border:none;font-size:20px;color:#9896A0;cursor:pointer;line-height:1;padding:0 4px}
+.modal-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:14px}
+.modal-foot{padding:1rem 1.5rem;border-top:1px solid #DDDBD6;display:flex;justify-content:flex-end;gap:8px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label{font-size:12px;font-weight:600;color:#6B6876}
+.form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;color:#18181A;outline:none;background:#fff}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#0D4FA0;box-shadow:0 0 0 3px rgba(13,79,160,.08)}
+.btn-cancel{background:none;border:1.5px solid #DDDBD6;color:#6B6876;border-radius:8px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-cancel:hover{border-color:#9896A0}
+.btn-guardar{background:#0D4FA0;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-guardar:hover{background:#0B3F80}
+
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;color:#fff;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999}
+.toast.ok-t{background:#16a34a}
+.toast.err-t{background:#dc2626}
+.toast.show{opacity:1}
+
+@media(max-width:700px){.form-row{grid-template-columns:1fr}.topbar{padding:.75rem 1rem}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Transporte</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="/administracion">Administración</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Transporte</span>
+  </div>
+
+  <div class="page-head">
+    <div>
+      <div class="page-title">Transporte de larga distancia</div>
+      <div class="page-sub">Control de viajes, facturas y descuentos.</div>
+    </div>
+    <button class="btn-nuevo" onclick="abrirModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo viaje
+    </button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="st-total">0</div><div class="stat-lbl">Viajes</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-envase">0</div><div class="stat-lbl">Con envase litro</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-desc">$0</div><div class="stat-lbl">Total descuentos</div></div>
+  </div>
+
+  <div class="filtros">
+    <input type="text" id="f-busq" placeholder="Buscar chofer, origen, destino..." oninput="renderTabla()" style="flex:1;min-width:200px">
+    <select id="f-chofer" onchange="renderTabla()"><option value="">Todos los choferes</option></select>
+    <select id="f-envase" onchange="renderTabla()"><option value="">Con/sin envase</option><option value="si">Con envase litro</option><option value="no">Sin envase litro</option></select>
+  </div>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>N° Factura</th>
+          <th>N° Remito</th>
+          <th>Origen</th>
+          <th>Destino</th>
+          <th>Chofer</th>
+          <th>Env. litro</th>
+          <th>Descuento</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"><tr><td colspan="9" class="empty">Cargando...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-titulo">Nuevo viaje</h3>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="f-fecha">
+        </div>
+        <div class="form-group">
+          <label>N° de factura</label>
+          <input type="text" id="f-nfactura" placeholder="ej. 0001-00012345">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>N° de remito</label>
+          <input type="text" id="f-nremito" placeholder="ej. 0001-00056789">
+        </div>
+        <div class="form-group">
+          <label>Chofer</label>
+          <input type="text" id="f-chofer-inp" placeholder="Nombre y apellido" list="choferes-list">
+          <datalist id="choferes-list"></datalist>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Origen del viaje</label>
+          <input type="text" id="f-origen" placeholder="Ciudad o localidad">
+        </div>
+        <div class="form-group">
+          <label>Destino del viaje</label>
+          <input type="text" id="f-destino" placeholder="Ciudad o localidad">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Envase de litro</label>
+          <select id="f-envase-inp">
+            <option value="no">No</option>
+            <option value="si">Sí</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Descuento en factura ($)</label>
+          <input type="number" id="f-descuento" placeholder="0" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-group full">
+        <label>Observaciones (opcional)</label>
+        <textarea id="f-obs" rows="2" placeholder="Notas adicionales..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-guardar" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) { window.location.href = '/'; }
+if (userData.rol !== 'admin' && !(userData.modulos && userData.modulos['transporte'])) { window.location.href = '/panel'; }
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
+
+var registros = [];
+var editIdx = null;
+
+function toast(msg, cls) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + cls + ' show';
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+
+function fmtN(n) {
+  if (!n && n !== 0) return '—';
+  return Number(n).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function cargar() {
+  try {
+    var res = await fetch('/api/datos/transporte');
+    var data = await res.json();
+    registros = (data && data.registros && Array.isArray(data.registros.registros)) ? data.registros.registros : [];
+  } catch(e) { registros = []; }
+  calcStats();
+  renderFiltroChoferes();
+  renderTabla();
+}
+
+async function guardarDB() {
+  await fetch('/api/datos/transporte', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({periodo:'registros', datos:{registros: registros}})
+  });
+}
+
+function calcStats() {
+  var total = registros.length;
+  var envase = registros.filter(function(r){ return r.envase === 'si'; }).length;
+  var desc = registros.reduce(function(s,r){ return s + (parseFloat(r.descuento)||0); }, 0);
+  document.getElementById('st-total').textContent = total;
+  document.getElementById('st-envase').textContent = envase;
+  document.getElementById('st-desc').textContent = '$' + fmtN(desc);
+}
+
+function renderFiltroChoferes() {
+  var choferes = [...new Set(registros.map(function(r){ return r.chofer; }).filter(Boolean))].sort();
+  var sel = document.getElementById('f-chofer');
+  var val = sel.value;
+  sel.innerHTML = '<option value="">Todos los choferes</option>';
+  choferes.forEach(function(c){ sel.innerHTML += '<option value="'+esc(c)+'">'+esc(c)+'</option>'; });
+  sel.value = val;
+  var dl = document.getElementById('choferes-list');
+  dl.innerHTML = choferes.map(function(c){ return '<option value="'+esc(c)+'">'; }).join('');
+}
+
+function renderTabla() {
+  var q = (document.getElementById('f-busq').value||'').toLowerCase();
+  var fc = document.getElementById('f-chofer').value;
+  var fe = document.getElementById('f-envase').value;
+  var fil = registros.filter(function(r){
+    if(q && !((r.chofer||'').toLowerCase().includes(q)||(r.origen||'').toLowerCase().includes(q)||(r.destino||'').toLowerCase().includes(q)||(r.nfactura||'').toLowerCase().includes(q)||(r.nremito||'').toLowerCase().includes(q))) return false;
+    if(fc && r.chofer !== fc) return false;
+    if(fe && r.envase !== fe) return false;
+    return true;
+  });
+  var html = '';
+  if (!fil.length) {
+    html = '<tr><td colspan="9" class="empty">' + (registros.length ? 'Sin resultados para los filtros aplicados.' : 'No hay viajes cargados aún. Hacé clic en "Nuevo viaje" para empezar.') + '</td></tr>';
+  } else {
+    fil.forEach(function(r, i){
+      var gi = registros.indexOf(r);
+      html += '<tr>'
+        + '<td>' + esc(r.fecha||'—') + '</td>'
+        + '<td>' + esc(r.nfactura||'—') + '</td>'
+        + '<td>' + esc(r.nremito||'—') + '</td>'
+        + '<td>' + esc(r.origen||'—') + '</td>'
+        + '<td>' + esc(r.destino||'—') + '</td>'
+        + '<td>' + esc(r.chofer||'—') + '</td>'
+        + '<td>' + (r.envase==='si'?'<span class="badge-si">Sí</span>':'<span class="badge-no">No</span>') + '</td>'
+        + '<td>' + (r.descuento?'$'+fmtN(r.descuento):'—') + '</td>'
+        + '<td style="white-space:nowrap">'
+          + '<button class="btn-edit" onclick="editar('+gi+')">Editar</button>'
+          + '<button class="btn-del" onclick="eliminar('+gi+')">✕</button>'
+        + '</td>'
+      + '</tr>';
+    });
+  }
+  document.getElementById('tbl-body').innerHTML = html;
+}
+
+function abrirModal(idx) {
+  editIdx = (idx !== undefined) ? idx : null;
+  document.getElementById('modal-titulo').textContent = editIdx !== null ? 'Editar viaje' : 'Nuevo viaje';
+  var r = editIdx !== null ? registros[editIdx] : {};
+  document.getElementById('f-fecha').value = r.fecha || '';
+  document.getElementById('f-nfactura').value = r.nfactura || '';
+  document.getElementById('f-nremito').value = r.nremito || '';
+  document.getElementById('f-chofer-inp').value = r.chofer || '';
+  document.getElementById('f-origen').value = r.origen || '';
+  document.getElementById('f-destino').value = r.destino || '';
+  document.getElementById('f-envase-inp').value = r.envase || 'no';
+  document.getElementById('f-descuento').value = r.descuento || '';
+  document.getElementById('f-obs').value = r.obs || '';
+  document.getElementById('modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('f-fecha').focus(); }, 50);
+}
+
+function cerrarModal() { document.getElementById('modal').classList.remove('open'); editIdx = null; }
+
+async function guardar() {
+  var fecha = document.getElementById('f-fecha').value;
+  var nfactura = document.getElementById('f-nfactura').value.trim();
+  var nremito = document.getElementById('f-nremito').value.trim();
+  var chofer = document.getElementById('f-chofer-inp').value.trim();
+  var origen = document.getElementById('f-origen').value.trim();
+  var destino = document.getElementById('f-destino').value.trim();
+  var envase = document.getElementById('f-envase-inp').value;
+  var descuento = parseFloat(document.getElementById('f-descuento').value) || 0;
+  var obs = document.getElementById('f-obs').value.trim();
+
+  if (!fecha || !nfactura || !chofer || !origen || !destino) {
+    toast('Completá fecha, factura, chofer, origen y destino.', 'err-t'); return;
+  }
+
+  var reg = {fecha, nfactura, nremito, chofer, origen, destino, envase, descuento, obs, cargadoPor: userData.nombre || userData.username, cargadoEn: new Date().toISOString()};
+
+  if (editIdx !== null) {
+    reg.cargadoPor = registros[editIdx].cargadoPor || reg.cargadoPor;
+    reg.cargadoEn = registros[editIdx].cargadoEn || reg.cargadoEn;
+    reg.modificadoPor = userData.nombre || userData.username;
+    reg.modificadoEn = new Date().toISOString();
+    registros[editIdx] = reg;
+  } else {
+    registros.push(reg);
+  }
+
+  try {
+    await guardarDB();
+    toast(editIdx !== null ? 'Viaje actualizado.' : 'Viaje guardado.', 'ok-t');
+    cerrarModal(); calcStats(); renderFiltroChoferes(); renderTabla();
+  } catch(e) { toast('Error al guardar.', 'err-t'); }
+}
+
+async function editar(idx) { abrirModal(idx); }
+
+async function eliminar(idx) {
+  if (!confirm('¿Eliminar este viaje?')) return;
+  registros.splice(idx, 1);
+  try {
+    await guardarDB();
+    toast('Viaje eliminado.', 'ok-t');
+    calcStats(); renderFiltroChoferes(); renderTabla();
+  } catch(e) { toast('Error al eliminar.', 'err-t'); }
+}
+
+cargar();
+</script>
+</body>
+</html>
