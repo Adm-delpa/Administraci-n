@@ -129,6 +129,10 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       <div class="page-sub">Control de viajes, facturas y descuentos.</div>
     </div>
     <div style="display:flex;gap:8px">
+      <button class="btn-nuevo" style="background:#fff;color:#0D4FA0;border:1.5px solid #0D4FA0" onclick="abrirModalRdf()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        RDF Quilmes
+      </button>
       <button class="btn-nuevo" style="background:#fff;color:#0D4FA0;border:1.5px solid #0D4FA0" onclick="abrirModalTarifas()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         Tarifas
@@ -170,10 +174,12 @@ label{font-size:12px;font-weight:600;color:#6B6876}
           <th>Remito(s)</th>
           <th>Origen</th>
           <th>Destino</th>
-          <th>Chofer</th>
+          <th>Transportista</th>
           <th>Env. litro</th>
           <th>Valor viaje</th>
-          <th>Descuento</th>
+          <th>Descuento factura</th>
+          <th>RDF esperado</th>
+          <th>Estado RDF</th>
           <th></th>
         </tr>
       </thead>
@@ -313,6 +319,43 @@ label{font-size:12px;font-weight:600;color:#6B6876}
   </div>
 </div>
 
+<!-- MODAL RDF QUILMES -->
+<div class="modal-bg" id="modal-rdf" onclick="if(event.target===this)cerrarModalRdf()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h3>RDF Quilmes por mes</h3>
+      <button class="modal-close" onclick="cerrarModalRdf()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#6B6876;background:#f8f9fc;border:1px solid #DDDBD6;border-radius:8px;padding:10px 12px">
+        El valor RDF por pallet se multiplica por <strong>28 pallets</strong> para Río de las Vueltas y <strong>26 pallets</strong> para el resto, y se compara contra el descuento en factura de cada viaje.
+      </div>
+      <!-- Formulario agregar/editar -->
+      <div style="display:flex;flex-direction:column;gap:12px;background:#f8f9fc;border:1px solid #DDDBD6;border-radius:10px;padding:14px" id="rdf-form">
+        <div style="font-size:12px;font-weight:700;color:#6B6876;text-transform:uppercase;letter-spacing:.05em" id="rdf-form-titulo">Nuevo valor RDF</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Mes</label>
+            <input type="month" id="rdf-mes">
+          </div>
+          <div class="form-group">
+            <label>Valor por pallet ($)</label>
+            <input type="number" id="rdf-valor" placeholder="0" min="0" step="0.01">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="cancelarEditarRdf()" id="rdf-btn-cancel" style="display:none;padding:7px 14px;border:1.5px solid #DDDBD6;background:none;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;color:#6B6876">Cancelar</button>
+          <button onclick="guardarRdf()" style="padding:7px 16px;background:#0D4FA0;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" id="rdf-btn-guardar">Agregar</button>
+        </div>
+      </div>
+      <div id="rdf-list" style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-guardar" onclick="cerrarModalRdf()">Listo</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL TARIFAS -->
 <div class="modal-bg" id="modal-tarifas" onclick="if(event.target===this)cerrarModalTarifas()">
   <div class="modal" style="max-width:700px">
@@ -392,8 +435,28 @@ document.getElementById('user-avatar').textContent = (userData.nombre || userDat
 
 var registros = [];
 var tarifas = [];
+var rdfValues = [];
 var editIdx = null;
 var editTarifaIdx = null;
+var editRdfIdx = null;
+
+var EMPRESA_CORTA = {
+  'Transporte Laurenzano': 'Laurenzano',
+  'Transporte Roman': 'Roman',
+  'Transporte Guardia': 'Guardia',
+  'Transporte Gasparri': 'Gasparri',
+  'Transporte Gaucho': 'Gaucho',
+  'Transporte Rio de las Vueltas': 'Rio de las Vueltas'
+};
+
+var EMPRESA_PALLETS = {
+  'Transporte Laurenzano': 26,
+  'Transporte Roman': 26,
+  'Transporte Guardia': 26,
+  'Transporte Gasparri': 26,
+  'Transporte Gaucho': 26,
+  'Transporte Rio de las Vueltas': 28
+};
 
 // Mapa chofer → empresa
 var CHOFER_EMPRESA = {
@@ -493,8 +556,9 @@ async function cargar() {
   try {
     var res = await fetch('/api/datos/transporte');
     var data = await res.json();
-    registros = (data && data.registros && Array.isArray(data.registros.registros)) ? data.registros.registros : [];
-    tarifas   = (data && data.tarifas   && Array.isArray(data.tarifas.tarifas))     ? data.tarifas.tarifas   : [];
+    registros  = (data && data.registros && Array.isArray(data.registros.registros)) ? data.registros.registros : [];
+    tarifas    = (data && data.tarifas   && Array.isArray(data.tarifas.tarifas))     ? data.tarifas.tarifas   : [];
+    rdfValues  = (data && data.rdf       && Array.isArray(data.rdf.valores))         ? data.rdf.valores       : [];
   } catch(e) { registros = []; tarifas = []; }
   calcStats(); renderFiltroMes(true); renderTabla();
 }
@@ -511,6 +575,17 @@ async function guardarTarifasDB() {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({periodo:'tarifas', datos:{tarifas}})
   });
+}
+
+async function guardarRdfDB() {
+  await fetch('/api/datos/transporte', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({periodo:'rdf', datos:{valores: rdfValues}})
+  });
+}
+
+function getRdfMes(mes) {
+  return rdfValues.find(function(r){ return r.mes === mes; }) || null;
 }
 
 // ── STATS / TABLA ─────────────────────────────────────────────────────────────
@@ -555,22 +630,48 @@ function renderTabla() {
   fil.sort(function(a,b){ return (a.fecha||'') < (b.fecha||'') ? -1 : 1; });
   var html='';
   if(!fil.length){
-    html='<tr><td colspan="10" class="empty">'+(registros.length?'Sin resultados.':'No hay viajes cargados. Hacé clic en "Nuevo viaje" para empezar.')+'</td></tr>';
+    html='<tr><td colspan="12" class="empty">'+(registros.length?'Sin resultados.':'No hay viajes cargados. Hacé clic en "Nuevo viaje" para empezar.')+'</td></tr>';
   } else {
     fil.forEach(function(r){
       var gi=registros.indexOf(r);
       var facts=esc(r.factura1||'—')+(r.factura2?'<br><span style="color:#9896A0">'+esc(r.factura2)+'</span>':'');
       var rems=esc(r.remito1||'—')+(r.remito2?'<br><span style="color:#9896A0">'+esc(r.remito2)+'</span>':'');
+      var empresa=CHOFER_EMPRESA[r.chofer]||'';
+      var empresaCorta=EMPRESA_CORTA[empresa]||empresa||'—';
+      var pallets=EMPRESA_PALLETS[empresa]||26;
+      var mes=(r.fecha||'').slice(0,7);
+      var rdfMes=getRdfMes(mes);
+      var rdfEsperado=rdfMes?(rdfMes.valor*pallets):null;
+      var descuento=parseFloat(r.descuento)||0;
+      var rdfCelda,estadoCelda;
+      if(!rdfMes){
+        rdfCelda='<span style="color:#9896A0">Sin RDF</span>';
+        estadoCelda='<span class="badge-no" style="font-size:11px">Sin RDF</span>';
+      } else if(!descuento){
+        rdfCelda='$'+fmtN(rdfEsperado);
+        estadoCelda='<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#F2F1EE;color:#6B6876">Pendiente</span>';
+      } else {
+        var dif=descuento-rdfEsperado;
+        rdfCelda='$'+fmtN(rdfEsperado);
+        if(Math.abs(dif)<1){
+          estadoCelda='<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#D4F2E8;color:#075C41">✓ Coincide</span>';
+        } else {
+          var difStr=(dif>0?'+':'')+fmtN(dif);
+          estadoCelda='<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#FEF3C7;color:#92400E" title="Dif: $'+difStr+'">⚠ $'+difStr+'</span>';
+        }
+      }
       html+='<tr>'
         +'<td style="white-space:nowrap">'+esc(r.fecha||'—')+'</td>'
         +'<td style="font-family:monospace;font-size:12px">'+facts+'</td>'
         +'<td style="font-family:monospace;font-size:12px">'+rems+'</td>'
         +'<td style="font-size:12px">'+esc(r.origen||'—')+'</td>'
         +'<td>'+esc(r.destino||'—')+'</td>'
-        +'<td>'+esc(CHOFER_EMPRESA[r.chofer]||r.chofer||'—')+'</td>'
+        +'<td>'+esc(empresaCorta)+'</td>'
         +'<td>'+(r.envase==='si'?'<span class="badge-si">Sí</span>':'<span class="badge-no">No</span>')+'</td>'
         +'<td style="font-weight:600">'+(r.valor?'$'+fmtN(r.valor):'—')+'</td>'
-        +'<td>'+(r.descuento?'$'+fmtN(r.descuento):'—')+'</td>'
+        +'<td>'+(descuento?'$'+fmtN(descuento):'—')+'</td>'
+        +'<td>'+rdfCelda+'</td>'
+        +'<td>'+estadoCelda+'</td>'
         +'<td style="white-space:nowrap">'
           +'<button class="btn-edit" onclick="editar('+gi+')">Editar</button>'
           +'<button class="btn-del" onclick="eliminar('+gi+')">✕</button>'
@@ -655,6 +756,80 @@ async function eliminar(idx){
   registros.splice(idx,1);
   try{ await guardarRegistrosDB(); toast('Viaje eliminado.','ok-t'); calcStats(); renderFiltroMes(); renderTabla(); }
   catch(e){ toast('Error al eliminar.','err-t'); }
+}
+
+// ── MODAL RDF ─────────────────────────────────────────────────────────────────
+
+function abrirModalRdf(){
+  editRdfIdx=null; limpiarFormRdf(); renderRdf();
+  document.getElementById('modal-rdf').classList.add('open');
+}
+function cerrarModalRdf(){ document.getElementById('modal-rdf').classList.remove('open'); editRdfIdx=null; }
+
+function limpiarFormRdf(){
+  var hoy=new Date();
+  document.getElementById('rdf-mes').value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
+  document.getElementById('rdf-valor').value='';
+  document.getElementById('rdf-form-titulo').textContent='Nuevo valor RDF';
+  document.getElementById('rdf-btn-guardar').textContent='Agregar';
+  document.getElementById('rdf-btn-cancel').style.display='none';
+  editRdfIdx=null;
+}
+
+function editarRdf(idx){
+  var r=rdfValues[idx]; editRdfIdx=idx;
+  document.getElementById('rdf-mes').value=r.mes;
+  document.getElementById('rdf-valor').value=r.valor;
+  document.getElementById('rdf-form-titulo').textContent='Editar valor RDF';
+  document.getElementById('rdf-btn-guardar').textContent='Guardar cambios';
+  document.getElementById('rdf-btn-cancel').style.display='inline-block';
+}
+
+function cancelarEditarRdf(){ limpiarFormRdf(); renderRdf(); }
+
+async function guardarRdf(){
+  var mes=document.getElementById('rdf-mes').value;
+  var valor=parseFloat(document.getElementById('rdf-valor').value)||0;
+  if(!mes||!valor){ toast('Completá mes y valor.','err-t'); return; }
+  if(editRdfIdx!==null){
+    rdfValues[editRdfIdx]={mes,valor};
+  } else {
+    var existente=rdfValues.findIndex(function(r){ return r.mes===mes; });
+    if(existente>=0){ rdfValues[existente]={mes,valor}; }
+    else { rdfValues.push({mes,valor}); }
+  }
+  rdfValues.sort(function(a,b){ return a.mes<b.mes?1:-1; });
+  try{
+    await guardarRdfDB();
+    toast('RDF guardado.','ok-t');
+    limpiarFormRdf(); renderRdf(); renderTabla();
+  } catch(e){ toast('Error al guardar.','err-t'); }
+}
+
+async function eliminarRdf(idx){
+  if(!confirm('¿Eliminar este valor RDF?')) return;
+  rdfValues.splice(idx,1);
+  try{ await guardarRdfDB(); toast('Eliminado.','ok-t'); renderRdf(); renderTabla(); }
+  catch(e){ toast('Error.','err-t'); }
+}
+
+function renderRdf(){
+  var c=document.getElementById('rdf-list');
+  if(!rdfValues.length){ c.innerHTML='<div style="padding:14px;text-align:center;color:#9896A0;font-size:13px">No hay valores cargados.</div>'; return; }
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  c.innerHTML=rdfValues.map(function(r,i){
+    var p=r.mes.split('-');
+    var label=meses[parseInt(p[1])-1]+' '+p[0];
+    return '<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:10px 14px">'
+      +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:600;color:#18181A">'+label+'</div>'
+        +'<div style="font-size:11px;color:#9896A0;margin-top:2px">26 pallets: $'+fmtN(r.valor*26)+' · 28 pallets: $'+fmtN(r.valor*28)+'</div>'
+      +'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:#0D4FA0;white-space:nowrap">$'+fmtN(r.valor)+'/pallet</div>'
+      +'<button class="btn-edit" onclick="editarRdf('+i+')">Editar</button>'
+      +'<button class="btn-del" onclick="eliminarRdf('+i+')">✕</button>'
+    +'</div>';
+  }).join('');
 }
 
 // ── MODAL TARIFAS ─────────────────────────────────────────────────────────────
