@@ -128,10 +128,16 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       <div class="page-title">Transporte de larga distancia</div>
       <div class="page-sub">Control de viajes, facturas y descuentos.</div>
     </div>
-    <button class="btn-nuevo" onclick="abrirModal()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Nuevo viaje
-    </button>
+    <div style="display:flex;gap:8px">
+      <button class="btn-nuevo" style="background:#fff;color:#0D4FA0;border:1.5px solid #0D4FA0" onclick="abrirModalTarifas()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Tarifas
+      </button>
+      <button class="btn-nuevo" onclick="abrirModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo viaje
+      </button>
+    </div>
   </div>
 
   <div class="stats-row">
@@ -165,6 +171,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
           <th>Destino</th>
           <th>Chofer</th>
           <th>Env. litro</th>
+          <th>Valor viaje</th>
           <th>Descuento</th>
           <th></th>
         </tr>
@@ -344,22 +351,96 @@ label{font-size:12px;font-weight:600;color:#6B6876}
         </div>
       </div>
 
-      <!-- Descuento + Observaciones -->
+      <!-- Valor + Descuento -->
       <div class="form-row">
+        <div class="form-group">
+          <label>Valor del viaje ($) <span id="f-valor-hint" style="font-weight:400;color:#1E6FD9;font-size:11px"></span></label>
+          <input type="number" id="f-valor" placeholder="0" min="0" step="0.01">
+        </div>
         <div class="form-group">
           <label>Descuento en factura ($)</label>
           <input type="number" id="f-descuento" placeholder="0" min="0" step="0.01">
         </div>
-        <div class="form-group">
-          <label>Observaciones (opcional)</label>
-          <input type="text" id="f-obs" placeholder="Notas adicionales...">
-        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="form-group">
+        <label>Observaciones (opcional)</label>
+        <input type="text" id="f-obs" placeholder="Notas adicionales...">
       </div>
 
     </div>
     <div class="modal-foot">
       <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
       <button class="btn-guardar" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TARIFAS -->
+<div class="modal-bg" id="modal-tarifas" onclick="if(event.target===this)cerrarModalTarifas()">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head">
+      <h3>Tarifas por transportista</h3>
+      <button class="modal-close" onclick="cerrarModalTarifas()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Formulario agregar/editar tarifa -->
+      <div style="background:#f8f9fc;border:1px solid #DDDBD6;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px" id="tarifa-form">
+        <div style="font-size:12px;font-weight:700;color:#6B6876;text-transform:uppercase;letter-spacing:.05em" id="tarifa-form-titulo">Nueva tarifa</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Empresa de transporte</label>
+            <select id="tf-empresa">
+              <option value="">— Seleccioná —</option>
+              <option>Transporte Laurenzano</option>
+              <option>Transporte Roman</option>
+              <option>Transporte Guardia</option>
+              <option>Transporte Gasparri</option>
+              <option>Transporte Gaucho</option>
+              <option>Transporte Rio de las Vueltas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Valor ($)</label>
+            <input type="number" id="tf-valor" placeholder="0" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Origen</label>
+          <select id="tf-origen">
+            <option value="">— Seleccioná —</option>
+            <option>MERCADO CENTRAL - (La Matanza, Dr. Ramon Carrillo y Gral. Paz 1533)</option>
+            <option>MERCADO CENTRAL - (Tapiales, R. Carillo Int. Boulo Sur Mer)</option>
+            <option>MERCADO CENTRAL - (Capital Federal, Osvaldo Cruz 4004)</option>
+            <option>QUILMES - (Av. Vicente Lopez 2300)</option>
+            <option>QUILMES - (Quilmes, 12 de Octubre y Gran Canaria)</option>
+            <option>QUILMES - (Buenos Aires, Calle 1236 y Rotonda Gutierrez)</option>
+            <option>QUILMES MAXIDIESEL - (Buenos Aires, Ruta 36 Km 37,5)</option>
+            <option>MORENO - (Moreno, Prof. Conradi C/Avda. E. Ayala)</option>
+            <option>Acceso Oeste KM 41.7, MORENO</option>
+            <option>ZARATE - RUTA 9 KM 94,5</option>
+            <option>ZARATE RUTA 9 (PARQUE INDUSTRIAL) KM 70</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Destino</label>
+          <select id="tf-destino">
+            <option value="">— Seleccioná —</option>
+            <option>Dolores</option>
+            <option>Mar de Ajó</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="cancelarEditarTarifa()" id="tf-btn-cancel" style="display:none;padding:7px 14px;border:1.5px solid #DDDBD6;background:none;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;color:#6B6876">Cancelar</button>
+          <button onclick="guardarTarifa()" style="padding:7px 16px;background:#0D4FA0;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" id="tf-btn-guardar">Agregar tarifa</button>
+        </div>
+      </div>
+      <!-- Lista de tarifas -->
+      <div id="tarifas-list" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-guardar" onclick="cerrarModalTarifas()">Listo</button>
     </div>
   </div>
 </div>
@@ -374,7 +455,38 @@ document.getElementById('user-nombre').textContent = userData.nombre || userData
 document.getElementById('user-avatar').textContent = (userData.nombre || userData.username).charAt(0).toUpperCase();
 
 var registros = [];
+var tarifas = [];
 var editIdx = null;
+var editTarifaIdx = null;
+
+// Mapa chofer → empresa
+var CHOFER_EMPRESA = {
+  'Adrian Auteri':'Transporte Laurenzano','Adrian Batista':'Transporte Laurenzano',
+  'Alexander Yakubchik':'Transporte Laurenzano','Algarañaz':'Transporte Laurenzano',
+  'Alonagaray Carlos':'Transporte Laurenzano','Carlos Moyano':'Transporte Laurenzano',
+  'Cesar Coronel':'Transporte Laurenzano','Claudia San Nicola':'Transporte Laurenzano',
+  'Cristian Escobar':'Transporte Laurenzano','Damian Jordan':'Transporte Laurenzano',
+  'Dario Flores':'Transporte Laurenzano','Fernando Gaston Martinez':'Transporte Laurenzano',
+  'Guillermo Soria':'Transporte Laurenzano','Gustavo Perez':'Transporte Laurenzano',
+  'Jorge Leon':'Transporte Laurenzano','Jose Gaetan':'Transporte Laurenzano',
+  'Jose Gramajo':'Transporte Laurenzano','Jose Vallejos':'Transporte Laurenzano',
+  'Luis Garcia':'Transporte Laurenzano','Luis Martinez':'Transporte Laurenzano',
+  'Matias Perez':'Transporte Laurenzano','Ricardo Humberto Zerda':'Transporte Laurenzano',
+  'Roberto Gabriel Kopach':'Transporte Laurenzano','Roberto Lopez':'Transporte Laurenzano',
+  'Ruso Cristian':'Transporte Laurenzano','Santiago Carabajal':'Transporte Laurenzano',
+  'Walter Lemacha':'Transporte Laurenzano',
+  'Hernan Eseverri':'Transporte Roman','Leandro Kozlovski':'Transporte Roman','Ramiro Ramirez':'Transporte Roman',
+  'Ludueña Claudio':'Transporte Guardia',
+  'Dario Gonzalez':'Transporte Gasparri','Esperon Carlos Alberto':'Transporte Gasparri','Gasparri Mariano':'Transporte Gasparri',
+  'Gastos Olivan':'Transporte Gaucho',
+  'Acosta Staurino':'Transporte Rio de las Vueltas','Agustin Sosa':'Transporte Rio de las Vueltas',
+  'Cabrera Lucas':'Transporte Rio de las Vueltas','Cerini Rubenn':'Transporte Rio de las Vueltas',
+  'Cristian David Caceres':'Transporte Rio de las Vueltas','Dario Cordoba':'Transporte Rio de las Vueltas',
+  'Leguizamon Jorge':'Transporte Rio de las Vueltas','Leonardo Ciro':'Transporte Rio de las Vueltas',
+  'Lizarraga Julio':'Transporte Rio de las Vueltas','Misael Aspres':'Transporte Rio de las Vueltas',
+  'Villareal Marcelo':'Transporte Rio de las Vueltas','Zaremba Mario':'Transporte Rio de las Vueltas',
+  'Zorrilla':'Transporte Rio de las Vueltas'
+};
 
 function toast(msg, cls) {
   var t = document.getElementById('toast');
@@ -388,7 +500,6 @@ function fmtN(n) {
 }
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
 function soloNum(el) { el.value = el.value.replace(/\D/g,''); }
 function padear(el, len) { if(el.value) el.value = el.value.padStart(len,'0'); }
 
@@ -411,7 +522,6 @@ function toggleSegunda() {
   var visible = sec.classList.contains('visible');
   sec.classList.toggle('visible');
   document.getElementById('btn-segunda-icon').textContent = visible ? '＋' : '－';
-  document.getElementById('btn-segunda').querySelector('span + *') || null;
   var btn = document.getElementById('btn-segunda');
   btn.childNodes[1].textContent = visible ? ' Agregar segunda factura' : ' Quitar segunda factura';
   if (visible) {
@@ -419,154 +529,261 @@ function toggleSegunda() {
   }
 }
 
+// Busca tarifa para empresa+origen+destino
+function buscarTarifa(empresa, origen, destino) {
+  if (!empresa || !origen || !destino) return null;
+  return tarifas.find(function(t){ return t.empresa===empresa && t.origen===origen && t.destino===destino; }) || null;
+}
+
+// Autocompletar valor cuando cambian chofer/origen/destino
+function autocompletarValor() {
+  var chofer = document.getElementById('f-chofer-inp').value;
+  var origen = document.getElementById('f-origen').value;
+  var destino = document.getElementById('f-destino').value;
+  var empresa = CHOFER_EMPRESA[chofer] || '';
+  var t = buscarTarifa(empresa, origen, destino);
+  var hint = document.getElementById('f-valor-hint');
+  if (t) {
+    document.getElementById('f-valor').value = t.valor;
+    hint.textContent = '✓ Tarifa ' + empresa;
+  } else {
+    hint.textContent = empresa ? '(sin tarifa para ' + empresa + ')' : '';
+  }
+}
+
+// ── CARGA / GUARDADO ──────────────────────────────────────────────────────────
+
 async function cargar() {
   try {
     var res = await fetch('/api/datos/transporte');
     var data = await res.json();
     registros = (data && data.registros && Array.isArray(data.registros.registros)) ? data.registros.registros : [];
-  } catch(e) { registros = []; }
+    tarifas   = (data && data.tarifas   && Array.isArray(data.tarifas.tarifas))     ? data.tarifas.tarifas   : [];
+  } catch(e) { registros = []; tarifas = []; }
   calcStats(); renderTabla();
 }
 
-async function guardarDB() {
+async function guardarRegistrosDB() {
   await fetch('/api/datos/transporte', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({periodo:'registros', datos:{registros: registros}})
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({periodo:'registros', datos:{registros}})
   });
 }
+
+async function guardarTarifasDB() {
+  await fetch('/api/datos/transporte', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({periodo:'tarifas', datos:{tarifas}})
+  });
+}
+
+// ── STATS / TABLA ─────────────────────────────────────────────────────────────
 
 function calcStats() {
   document.getElementById('st-total').textContent = registros.length;
-  document.getElementById('st-envase').textContent = registros.filter(function(r){ return r.envase === 'si'; }).length;
-  var desc = registros.reduce(function(s,r){ return s + (parseFloat(r.descuento)||0); }, 0);
-  document.getElementById('st-desc').textContent = '$' + fmtN(desc);
+  document.getElementById('st-envase').textContent = registros.filter(function(r){ return r.envase==='si'; }).length;
+  var desc = registros.reduce(function(s,r){ return s+(parseFloat(r.descuento)||0); }, 0);
+  document.getElementById('st-desc').textContent = '$'+fmtN(desc);
 }
 
 function renderTabla() {
-  var q = (document.getElementById('f-busq').value||'').toLowerCase();
+  var q  = (document.getElementById('f-busq').value||'').toLowerCase();
   var fd = document.getElementById('f-destino-fil').value;
   var fe = document.getElementById('f-envase-fil').value;
   var fil = registros.filter(function(r){
-    if(q){
-      var hay=(r.chofer||'').toLowerCase().includes(q)||(r.origen||'').toLowerCase().includes(q)||(r.destino||'').toLowerCase().includes(q)||(r.factura1||'').includes(q)||(r.factura2||'').includes(q)||(r.remito1||'').includes(q)||(r.remito2||'').includes(q);
-      if(!hay) return false;
-    }
-    if(fd && r.destino !== fd) return false;
-    if(fe && r.envase !== fe) return false;
+    if(q){ var hay=(r.chofer||'').toLowerCase().includes(q)||(r.origen||'').toLowerCase().includes(q)||(r.destino||'').toLowerCase().includes(q)||(r.factura1||'').includes(q)||(r.factura2||'').includes(q); if(!hay) return false; }
+    if(fd && r.destino!==fd) return false;
+    if(fe && r.envase!==fe)  return false;
     return true;
   });
-  var html = '';
-  if (!fil.length) {
-    html = '<tr><td colspan="9" class="empty">' + (registros.length ? 'Sin resultados.' : 'No hay viajes cargados. Hacé clic en "Nuevo viaje" para empezar.') + '</td></tr>';
+  var html='';
+  if(!fil.length){
+    html='<tr><td colspan="10" class="empty">'+(registros.length?'Sin resultados.':'No hay viajes cargados. Hacé clic en "Nuevo viaje" para empezar.')+'</td></tr>';
   } else {
     fil.forEach(function(r){
-      var gi = registros.indexOf(r);
-      var facts = r.factura1 + (r.factura2 ? '<br><span style="color:#9896A0">'+esc(r.factura2)+'</span>' : '');
-      var rems = (r.remito1||'—') + (r.remito2 ? '<br><span style="color:#9896A0">'+esc(r.remito2)+'</span>' : '');
-      html += '<tr>'
-        + '<td style="white-space:nowrap">' + esc(r.fecha||'—') + '</td>'
-        + '<td style="font-family:monospace;font-size:12px">' + (r.factura1?esc(facts):'—') + '</td>'
-        + '<td style="font-family:monospace;font-size:12px">' + (r.remito1?rems:'—') + '</td>'
-        + '<td style="font-size:12px;max-width:200px">' + esc(r.origen||'—') + '</td>'
-        + '<td>' + esc(r.destino||'—') + '</td>'
-        + '<td>' + esc(r.chofer||'—') + '</td>'
-        + '<td>' + (r.envase==='si'?'<span class="badge-si">Sí</span>':'<span class="badge-no">No</span>') + '</td>'
-        + '<td>' + (r.descuento?'$'+fmtN(r.descuento):'—') + '</td>'
-        + '<td style="white-space:nowrap">'
-          + '<button class="btn-edit" onclick="editar('+gi+')">Editar</button>'
-          + '<button class="btn-del" onclick="eliminar('+gi+')">✕</button>'
-        + '</td>'
-      + '</tr>';
+      var gi=registros.indexOf(r);
+      var facts=esc(r.factura1||'—')+(r.factura2?'<br><span style="color:#9896A0">'+esc(r.factura2)+'</span>':'');
+      var rems=esc(r.remito1||'—')+(r.remito2?'<br><span style="color:#9896A0">'+esc(r.remito2)+'</span>':'');
+      html+='<tr>'
+        +'<td style="white-space:nowrap">'+esc(r.fecha||'—')+'</td>'
+        +'<td style="font-family:monospace;font-size:12px">'+facts+'</td>'
+        +'<td style="font-family:monospace;font-size:12px">'+rems+'</td>'
+        +'<td style="font-size:12px">'+esc(r.origen||'—')+'</td>'
+        +'<td>'+esc(r.destino||'—')+'</td>'
+        +'<td>'+esc(r.chofer||'—')+'</td>'
+        +'<td>'+(r.envase==='si'?'<span class="badge-si">Sí</span>':'<span class="badge-no">No</span>')+'</td>'
+        +'<td style="font-weight:600">'+(r.valor?'$'+fmtN(r.valor):'—')+'</td>'
+        +'<td>'+(r.descuento?'$'+fmtN(r.descuento):'—')+'</td>'
+        +'<td style="white-space:nowrap">'
+          +'<button class="btn-edit" onclick="editar('+gi+')">Editar</button>'
+          +'<button class="btn-del" onclick="eliminar('+gi+')">✕</button>'
+        +'</td>'
+      +'</tr>';
     });
   }
-  document.getElementById('tbl-body').innerHTML = html;
+  document.getElementById('tbl-body').innerHTML=html;
 }
+
+// ── MODAL VIAJE ───────────────────────────────────────────────────────────────
 
 function abrirModal(idx) {
-  editIdx = (idx !== undefined) ? idx : null;
-  document.getElementById('modal-titulo').textContent = editIdx !== null ? 'Editar viaje' : 'Nuevo viaje';
-  var r = editIdx !== null ? registros[editIdx] : {};
+  editIdx=(idx!==undefined)?idx:null;
+  document.getElementById('modal-titulo').textContent=editIdx!==null?'Editar viaje':'Nuevo viaje';
+  var r=editIdx!==null?registros[editIdx]:{};
 
-  document.getElementById('f-fecha').value = r.fecha || '';
-  document.getElementById('f-envase-inp').value = r.envase || 'no';
-  document.getElementById('f-origen').value = r.origen || '';
-  document.getElementById('f-destino').value = r.destino || '';
-  document.getElementById('f-chofer-inp').value = r.chofer || '';
-  document.getElementById('f-descuento').value = r.descuento || '';
-  document.getElementById('f-obs').value = r.obs || '';
+  document.getElementById('f-fecha').value=r.fecha||'';
+  document.getElementById('f-envase-inp').value=r.envase||'no';
+  document.getElementById('f-origen').value=r.origen||'';
+  document.getElementById('f-destino').value=r.destino||'';
+  document.getElementById('f-chofer-inp').value=r.chofer||'';
+  document.getElementById('f-valor').value=r.valor||'';
+  document.getElementById('f-descuento').value=r.descuento||'';
+  document.getElementById('f-obs').value=r.obs||'';
+  document.getElementById('f-valor-hint').textContent='';
 
-  setFactura('f-fact1-punto','f-fact1-nro', r.factura1||'');
-  setFactura('f-rem1-punto','f-rem1-nro', r.remito1||'');
-  setFactura('f-fact2-punto','f-fact2-nro', r.factura2||'');
-  setFactura('f-rem2-punto','f-rem2-nro', r.remito2||'');
+  setFactura('f-fact1-punto','f-fact1-nro',r.factura1||'');
+  setFactura('f-rem1-punto','f-rem1-nro',r.remito1||'');
+  setFactura('f-fact2-punto','f-fact2-nro',r.factura2||'');
+  setFactura('f-rem2-punto','f-rem2-nro',r.remito2||'');
 
-  var sec = document.getElementById('segunda-section');
-  var tieneSegunda = !!(r.factura2 || r.remito2);
-  if (tieneSegunda) {
-    sec.classList.add('visible');
-    document.getElementById('btn-segunda-icon').textContent = '－';
-    document.getElementById('btn-segunda').childNodes[1].textContent = ' Quitar segunda factura';
-  } else {
-    sec.classList.remove('visible');
-    document.getElementById('btn-segunda-icon').textContent = '＋';
-    document.getElementById('btn-segunda').childNodes[1].textContent = ' Agregar segunda factura';
-  }
+  var sec=document.getElementById('segunda-section');
+  var tieneSegunda=!!(r.factura2||r.remito2);
+  if(tieneSegunda){ sec.classList.add('visible'); document.getElementById('btn-segunda-icon').textContent='－'; document.getElementById('btn-segunda').childNodes[1].textContent=' Quitar segunda factura'; }
+  else { sec.classList.remove('visible'); document.getElementById('btn-segunda-icon').textContent='＋'; document.getElementById('btn-segunda').childNodes[1].textContent=' Agregar segunda factura'; }
 
   document.getElementById('modal').classList.add('open');
-  setTimeout(function(){ document.getElementById('f-fecha').focus(); }, 50);
+  setTimeout(function(){ document.getElementById('f-fecha').focus(); },50);
 }
 
-function cerrarModal() { document.getElementById('modal').classList.remove('open'); editIdx = null; }
+function cerrarModal(){ document.getElementById('modal').classList.remove('open'); editIdx=null; }
 
 async function guardar() {
-  var fecha = document.getElementById('f-fecha').value;
-  var chofer = document.getElementById('f-chofer-inp').value;
-  var origen = document.getElementById('f-origen').value;
-  var destino = document.getElementById('f-destino').value;
-  var envase = document.getElementById('f-envase-inp').value;
-  var descuento = parseFloat(document.getElementById('f-descuento').value) || 0;
-  var obs = document.getElementById('f-obs').value.trim();
-  var factura1 = getFactura('f-fact1-punto','f-fact1-nro');
-  var remito1 = getFactura('f-rem1-punto','f-rem1-nro');
-  var factura2 = getFactura('f-fact2-punto','f-fact2-nro');
-  var remito2 = getFactura('f-rem2-punto','f-rem2-nro');
+  var fecha=document.getElementById('f-fecha').value;
+  var chofer=document.getElementById('f-chofer-inp').value;
+  var origen=document.getElementById('f-origen').value;
+  var destino=document.getElementById('f-destino').value;
+  var envase=document.getElementById('f-envase-inp').value;
+  var valor=parseFloat(document.getElementById('f-valor').value)||0;
+  var descuento=parseFloat(document.getElementById('f-descuento').value)||0;
+  var obs=document.getElementById('f-obs').value.trim();
+  var factura1=getFactura('f-fact1-punto','f-fact1-nro');
+  var remito1=getFactura('f-rem1-punto','f-rem1-nro');
+  var factura2=getFactura('f-fact2-punto','f-fact2-nro');
+  var remito2=getFactura('f-rem2-punto','f-rem2-nro');
 
-  if (!fecha || !chofer || !origen || !destino) {
-    toast('Completá fecha, chofer, origen y destino.', 'err-t'); return;
-  }
+  if(!fecha||!chofer||!origen||!destino){ toast('Completá fecha, chofer, origen y destino.','err-t'); return; }
 
-  var reg = {fecha, factura1, remito1, factura2, remito2, origen, destino, chofer, envase, descuento, obs,
-    cargadoPor: userData.nombre || userData.username, cargadoEn: new Date().toISOString()};
+  var reg={fecha,factura1,remito1,factura2,remito2,origen,destino,chofer,valor,envase,descuento,obs,
+    cargadoPor:userData.nombre||userData.username, cargadoEn:new Date().toISOString()};
 
-  if (editIdx !== null) {
-    reg.cargadoPor = registros[editIdx].cargadoPor || reg.cargadoPor;
-    reg.cargadoEn = registros[editIdx].cargadoEn || reg.cargadoEn;
-    reg.modificadoPor = userData.nombre || userData.username;
-    reg.modificadoEn = new Date().toISOString();
-    registros[editIdx] = reg;
-  } else {
-    registros.push(reg);
-  }
+  if(editIdx!==null){
+    reg.cargadoPor=registros[editIdx].cargadoPor||reg.cargadoPor;
+    reg.cargadoEn=registros[editIdx].cargadoEn||reg.cargadoEn;
+    reg.modificadoPor=userData.nombre||userData.username;
+    reg.modificadoEn=new Date().toISOString();
+    registros[editIdx]=reg;
+  } else { registros.push(reg); }
 
   try {
-    await guardarDB();
-    toast(editIdx !== null ? 'Viaje actualizado.' : 'Viaje guardado.', 'ok-t');
+    await guardarRegistrosDB();
+    toast(editIdx!==null?'Viaje actualizado.':'Viaje guardado.','ok-t');
     cerrarModal(); calcStats(); renderTabla();
-  } catch(e) { toast('Error al guardar.', 'err-t'); }
+  } catch(e){ toast('Error al guardar.','err-t'); }
 }
 
-function editar(idx) { abrirModal(idx); }
+function editar(idx){ abrirModal(idx); }
 
-async function eliminar(idx) {
-  if (!confirm('¿Eliminar este viaje?')) return;
-  registros.splice(idx, 1);
-  try {
-    await guardarDB();
-    toast('Viaje eliminado.', 'ok-t');
-    calcStats(); renderTabla();
-  } catch(e) { toast('Error al eliminar.', 'err-t'); }
+async function eliminar(idx){
+  if(!confirm('¿Eliminar este viaje?')) return;
+  registros.splice(idx,1);
+  try{ await guardarRegistrosDB(); toast('Viaje eliminado.','ok-t'); calcStats(); renderTabla(); }
+  catch(e){ toast('Error al eliminar.','err-t'); }
 }
+
+// ── MODAL TARIFAS ─────────────────────────────────────────────────────────────
+
+function abrirModalTarifas(){
+  editTarifaIdx=null;
+  limpiarFormTarifa();
+  renderTarifas();
+  document.getElementById('modal-tarifas').classList.add('open');
+}
+
+function cerrarModalTarifas(){ document.getElementById('modal-tarifas').classList.remove('open'); editTarifaIdx=null; }
+
+function limpiarFormTarifa(){
+  document.getElementById('tf-empresa').value='';
+  document.getElementById('tf-origen').value='';
+  document.getElementById('tf-destino').value='';
+  document.getElementById('tf-valor').value='';
+  document.getElementById('tarifa-form-titulo').textContent='Nueva tarifa';
+  document.getElementById('tf-btn-guardar').textContent='Agregar tarifa';
+  document.getElementById('tf-btn-cancel').style.display='none';
+  editTarifaIdx=null;
+}
+
+function editarTarifa(idx){
+  var t=tarifas[idx]; editTarifaIdx=idx;
+  document.getElementById('tf-empresa').value=t.empresa||'';
+  document.getElementById('tf-origen').value=t.origen||'';
+  document.getElementById('tf-destino').value=t.destino||'';
+  document.getElementById('tf-valor').value=t.valor||'';
+  document.getElementById('tarifa-form-titulo').textContent='Editar tarifa';
+  document.getElementById('tf-btn-guardar').textContent='Guardar cambios';
+  document.getElementById('tf-btn-cancel').style.display='inline-block';
+  document.getElementById('tf-empresa').focus();
+}
+
+function cancelarEditarTarifa(){ limpiarFormTarifa(); renderTarifas(); }
+
+async function guardarTarifa(){
+  var empresa=document.getElementById('tf-empresa').value;
+  var origen=document.getElementById('tf-origen').value;
+  var destino=document.getElementById('tf-destino').value;
+  var valor=parseFloat(document.getElementById('tf-valor').value)||0;
+  if(!empresa||!origen||!destino||!valor){ toast('Completá todos los campos de la tarifa.','err-t'); return; }
+  var t={empresa,origen,destino,valor};
+  if(editTarifaIdx!==null){ tarifas[editTarifaIdx]=t; }
+  else { tarifas.push(t); }
+  try{
+    await guardarTarifasDB();
+    toast('Tarifa guardada.','ok-t');
+    limpiarFormTarifa(); renderTarifas();
+  } catch(e){ toast('Error al guardar tarifa.','err-t'); }
+}
+
+async function eliminarTarifa(idx){
+  if(!confirm('¿Eliminar esta tarifa?')) return;
+  tarifas.splice(idx,1);
+  try{ await guardarTarifasDB(); toast('Tarifa eliminada.','ok-t'); renderTarifas(); }
+  catch(e){ toast('Error al eliminar.','err-t'); }
+}
+
+function renderTarifas(){
+  var container=document.getElementById('tarifas-list');
+  if(!tarifas.length){
+    container.innerHTML='<div style="padding:16px;text-align:center;color:#9896A0;font-size:13px">No hay tarifas cargadas todavía.</div>';
+    return;
+  }
+  var html='';
+  tarifas.forEach(function(t,i){
+    html+='<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:10px 14px">'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:600;color:#18181A">'+esc(t.empresa)+'</div>'
+        +'<div style="font-size:12px;color:#6B6876;margin-top:2px">'+esc(t.origen)+' → '+esc(t.destino)+'</div>'
+      +'</div>'
+      +'<div style="font-size:15px;font-weight:700;color:#0D4FA0;white-space:nowrap">$'+fmtN(t.valor)+'</div>'
+      +'<button class="btn-edit" onclick="editarTarifa('+i+')">Editar</button>'
+      +'<button class="btn-del" onclick="eliminarTarifa('+i+')">✕</button>'
+    +'</div>';
+  });
+  container.innerHTML=html;
+}
+
+// Listeners para autocompletado
+['f-chofer-inp','f-origen','f-destino'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', autocompletarValor);
+});
 
 cargar();
 </script>
