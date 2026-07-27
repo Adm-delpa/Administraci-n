@@ -236,71 +236,10 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       </div>
 
       <!-- Chofer -->
-      <div class="form-group">
+      <div class="form-group" style="position:relative">
         <label>Chofer</label>
-        <select id="f-chofer-inp">
-          <option value="">— Seleccioná —</option>
-          <optgroup label="Transporte Laurenzano">
-            <option>Adrian Auteri</option>
-            <option>Adrian Batista</option>
-            <option>Alexander Yakubchik</option>
-            <option>Algarañaz</option>
-            <option>Alonagaray Carlos</option>
-            <option>Carlos Moyano</option>
-            <option>Cesar Coronel</option>
-            <option>Claudia San Nicola</option>
-            <option>Cristian Escobar</option>
-            <option>Damian Jordan</option>
-            <option>Dario Flores</option>
-            <option>Fernando Gaston Martinez</option>
-            <option>Guillermo Soria</option>
-            <option>Gustavo Perez</option>
-            <option>Jorge Leon</option>
-            <option>Jose Gaetan</option>
-            <option>Jose Gramajo</option>
-            <option>Jose Vallejos</option>
-            <option>Luis Garcia</option>
-            <option>Luis Martinez</option>
-            <option>Matias Perez</option>
-            <option>Ricardo Humberto Zerda</option>
-            <option>Roberto Gabriel Kopach</option>
-            <option>Roberto Lopez</option>
-            <option>Ruso Cristian</option>
-            <option>Santiago Carabajal</option>
-            <option>Walter Lemacha</option>
-          </optgroup>
-          <optgroup label="Transporte Roman">
-            <option>Hernan Eseverri</option>
-            <option>Leandro Kozlovski</option>
-            <option>Ramiro Ramirez</option>
-          </optgroup>
-          <optgroup label="Transporte Guardia">
-            <option>Ludueña Claudio</option>
-          </optgroup>
-          <optgroup label="Transporte Gasparri">
-            <option>Dario Gonzalez</option>
-            <option>Esperon Carlos Alberto</option>
-            <option>Gasparri Mariano</option>
-          </optgroup>
-          <optgroup label="Transporte Gaucho">
-            <option>Gastos Olivan</option>
-          </optgroup>
-          <optgroup label="Transporte Rio de las Vueltas">
-            <option>Acosta Staurino</option>
-            <option>Agustin Sosa</option>
-            <option>Cabrera Lucas</option>
-            <option>Cerini Rubenn</option>
-            <option>Cristian David Caceres</option>
-            <option>Dario Cordoba</option>
-            <option>Leguizamon Jorge</option>
-            <option>Leonardo Ciro</option>
-            <option>Lizarraga Julio</option>
-            <option>Misael Aspres</option>
-            <option>Villareal Marcelo</option>
-            <option>Zaremba Mario</option>
-            <option>Zorrilla</option>
-          </optgroup>
-        </select>
+        <input type="text" id="f-chofer-inp" placeholder="Escribí para buscar..." autocomplete="off" oninput="filtrarChofer(this.value)" onblur="cerrarDropChofer()" onfocus="filtrarChofer(this.value)">
+        <div id="chofer-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #DDDBD6;border-radius:7px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:220px;overflow-y:auto;z-index:2000"></div>
       </div>
 
       <!-- Factura 1 + Remito 1 -->
@@ -557,7 +496,7 @@ async function cargar() {
     registros = (data && data.registros && Array.isArray(data.registros.registros)) ? data.registros.registros : [];
     tarifas   = (data && data.tarifas   && Array.isArray(data.tarifas.tarifas))     ? data.tarifas.tarifas   : [];
   } catch(e) { registros = []; tarifas = []; }
-  calcStats(); renderFiltroMes(); renderTabla();
+  calcStats(); renderFiltroMes(true); renderTabla();
 }
 
 async function guardarRegistrosDB() {
@@ -583,17 +522,22 @@ function calcStats() {
   document.getElementById('st-desc').textContent = '$'+fmtN(desc);
 }
 
-function renderFiltroMes() {
+function mesActual() {
+  var hoy = new Date();
+  return hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
+}
+
+function renderFiltroMes(primeraCarga) {
   var meses = [...new Set(registros.map(function(r){ return (r.fecha||'').slice(0,7); }).filter(Boolean))].sort().reverse();
   var sel = document.getElementById('f-mes-fil');
-  var val = sel.value;
+  var val = primeraCarga ? mesActual() : sel.value;
   sel.innerHTML = '<option value="">Todos los meses</option>';
   meses.forEach(function(m){
     var parts = m.split('-');
     var label = parts[1]+'/'+parts[0];
     sel.innerHTML += '<option value="'+m+'">'+label+'</option>';
   });
-  if(val) sel.value = val;
+  sel.value = val;
 }
 
 function renderTabla() {
@@ -802,8 +746,35 @@ function renderTarifas(){
   container.innerHTML=html;
 }
 
+var TODOS_CHOFERES = Object.keys(CHOFER_EMPRESA).sort();
+var dropChoferTimeout = null;
+
+function filtrarChofer(q) {
+  var drop = document.getElementById('chofer-drop');
+  var lista = q ? TODOS_CHOFERES.filter(function(c){ return c.toLowerCase().includes(q.toLowerCase()); }) : TODOS_CHOFERES;
+  if (!lista.length) { drop.style.display='none'; return; }
+  drop.innerHTML = lista.map(function(c){
+    var emp = CHOFER_EMPRESA[c];
+    return '<div style="padding:8px 12px;cursor:pointer;font-size:13px" onmousedown="seleccionarChofer(\''+c.replace(/'/g,"\\'")+'\')">'
+      +'<div style="font-weight:500;color:#18181A">'+esc(c)+'</div>'
+      +'<div style="font-size:11px;color:#9896A0">'+esc(emp)+'</div>'
+    +'</div>';
+  }).join('');
+  drop.style.display='block';
+}
+
+function seleccionarChofer(nombre) {
+  document.getElementById('f-chofer-inp').value = nombre;
+  document.getElementById('chofer-drop').style.display = 'none';
+  autocompletarValor();
+}
+
+function cerrarDropChofer() {
+  setTimeout(function(){ document.getElementById('chofer-drop').style.display='none'; }, 150);
+}
+
 // Listeners para autocompletado
-['f-chofer-inp','f-origen','f-destino'].forEach(function(id){
+['f-origen','f-destino'].forEach(function(id){
   document.getElementById(id).addEventListener('change', autocompletarValor);
 });
 
