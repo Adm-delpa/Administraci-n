@@ -606,7 +606,7 @@ function renderTabla() {
         +'<td style="font-family:monospace;font-size:12px">'+rems+'</td>'
         +'<td style="font-size:12px">'+esc(r.origen||'—')+'</td>'
         +'<td>'+esc(r.destino||'—')+'</td>'
-        +'<td>'+esc(r.chofer||'—')+'</td>'
+        +'<td>'+esc(CHOFER_EMPRESA[r.chofer]||r.chofer||'—')+'</td>'
         +'<td>'+(r.envase==='si'?'<span class="badge-si">Sí</span>':'<span class="badge-no">No</span>')+'</td>'
         +'<td style="font-weight:600">'+(r.valor?'$'+fmtN(r.valor):'—')+'</td>'
         +'<td>'+(r.descuento?'$'+fmtN(r.descuento):'—')+'</td>'
