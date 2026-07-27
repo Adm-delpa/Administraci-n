@@ -148,6 +148,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
 
   <div class="filtros">
     <input type="text" id="f-busq" placeholder="Buscar chofer, origen, destino, factura..." oninput="renderTabla()" style="flex:1;min-width:200px">
+    <select id="f-mes-fil" onchange="renderTabla()"><option value="">Todos los meses</option></select>
     <select id="f-destino-fil" onchange="renderTabla()">
       <option value="">Todos los destinos</option>
       <option>Dolores</option>
@@ -556,7 +557,7 @@ async function cargar() {
     registros = (data && data.registros && Array.isArray(data.registros.registros)) ? data.registros.registros : [];
     tarifas   = (data && data.tarifas   && Array.isArray(data.tarifas.tarifas))     ? data.tarifas.tarifas   : [];
   } catch(e) { registros = []; tarifas = []; }
-  calcStats(); renderTabla();
+  calcStats(); renderFiltroMes(); renderTabla();
 }
 
 async function guardarRegistrosDB() {
@@ -582,16 +583,32 @@ function calcStats() {
   document.getElementById('st-desc').textContent = '$'+fmtN(desc);
 }
 
+function renderFiltroMes() {
+  var meses = [...new Set(registros.map(function(r){ return (r.fecha||'').slice(0,7); }).filter(Boolean))].sort().reverse();
+  var sel = document.getElementById('f-mes-fil');
+  var val = sel.value;
+  sel.innerHTML = '<option value="">Todos los meses</option>';
+  meses.forEach(function(m){
+    var parts = m.split('-');
+    var label = parts[1]+'/'+parts[0];
+    sel.innerHTML += '<option value="'+m+'">'+label+'</option>';
+  });
+  if(val) sel.value = val;
+}
+
 function renderTabla() {
   var q  = (document.getElementById('f-busq').value||'').toLowerCase();
+  var fm = document.getElementById('f-mes-fil').value;
   var fd = document.getElementById('f-destino-fil').value;
   var fe = document.getElementById('f-envase-fil').value;
   var fil = registros.filter(function(r){
     if(q){ var hay=(r.chofer||'').toLowerCase().includes(q)||(r.origen||'').toLowerCase().includes(q)||(r.destino||'').toLowerCase().includes(q)||(r.factura1||'').includes(q)||(r.factura2||'').includes(q); if(!hay) return false; }
+    if(fm && (r.fecha||'').slice(0,7)!==fm) return false;
     if(fd && r.destino!==fd) return false;
     if(fe && r.envase!==fe)  return false;
     return true;
   });
+  fil.sort(function(a,b){ return (a.fecha||'') < (b.fecha||'') ? -1 : 1; });
   var html='';
   if(!fil.length){
     html='<tr><td colspan="10" class="empty">'+(registros.length?'Sin resultados.':'No hay viajes cargados. Hacé clic en "Nuevo viaje" para empezar.')+'</td></tr>';
@@ -683,7 +700,7 @@ async function guardar() {
   try {
     await guardarRegistrosDB();
     toast(editIdx!==null?'Viaje actualizado.':'Viaje guardado.','ok-t');
-    cerrarModal(); calcStats(); renderTabla();
+    cerrarModal(); calcStats(); renderFiltroMes(); renderTabla();
   } catch(e){ toast('Error al guardar.','err-t'); }
 }
 
@@ -692,7 +709,7 @@ function editar(idx){ abrirModal(idx); }
 async function eliminar(idx){
   if(!confirm('¿Eliminar este viaje?')) return;
   registros.splice(idx,1);
-  try{ await guardarRegistrosDB(); toast('Viaje eliminado.','ok-t'); calcStats(); renderTabla(); }
+  try{ await guardarRegistrosDB(); toast('Viaje eliminado.','ok-t'); calcStats(); renderFiltroMes(); renderTabla(); }
   catch(e){ toast('Error al eliminar.','err-t'); }
 }
 
