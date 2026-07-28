@@ -40,27 +40,31 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .btn-save:hover{background:#0D4FA0}
 
 .section{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:hidden;margin-bottom:1rem}
-.section-header{padding:.65rem 1.1rem;border-bottom:1px solid #F5F5F7;display:flex;align-items:center;gap:6px}
+.section-header{padding:.75rem 1.1rem;border-bottom:1px solid #F5F5F7}
+.section-header-top{display:flex;align-items:center;gap:6px;margin-bottom:2px}
 .section-title{font-size:12px;font-weight:700;color:#18181A}
 .section-count{font-size:11px;color:#9896A0;background:#F2F1EE;padding:1px 8px;border-radius:20px;margin-left:2px}
+.section-sub{font-size:11px;color:#9896A0;font-weight:500}
 
-.item{padding:.9rem 1.1rem;border-bottom:1px solid #F5F5F7}
+.item{padding:.85rem 1.1rem .85rem 1.35rem;border-bottom:1px solid #F5F5F7;border-left:3px solid #FDE68A;position:relative}
 .item:last-child{border-bottom:none}
+.item.confirmado{border-left-color:#A7E3CC}
 .item-top{display:flex;align-items:flex-start;gap:14px}
 .item-body{flex:1;min-width:0}
-.item-concepto{font-size:13px;font-weight:600;color:#18181A;margin-bottom:3px}
-.item-detalle{font-size:12px;color:#56555A;margin-bottom:4px;line-height:1.45}
-.item-meta{font-size:11px;color:#9896A0}
-.item-meta span{color:#56555A}
-.item-right{flex-shrink:0;text-align:right}
-.item-importe{font-size:14px;font-weight:700;color:#18181A;margin-bottom:2px;white-space:nowrap}
-.item-importe-real{font-size:11px;color:#065F46;font-weight:600;margin-bottom:6px}
-.btn-confirmar{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:5px 12px;background:#D4F2E8;color:#075C41;border:1px solid #A7E3CC;border-radius:6px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
-.btn-confirmar:hover{background:#A7E3CC}
-.btn-borrar{background:none;border:none;color:#C0392B;font-size:11px;cursor:pointer;padding:4px 6px;margin-top:3px;display:block;margin-left:auto;font-family:'Inter',sans-serif}
-.btn-borrar:hover{text-decoration:underline}
-.badge-confirmado{font-size:11px;padding:4px 10px;background:#D4F2E8;color:#075C41;border-radius:6px;white-space:nowrap}
-.item.confirmado .item-concepto{color:#56555A}
+.item-concepto{font-size:14px;font-weight:700;color:#18181A;margin-bottom:5px;line-height:1.3}
+.item-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#F2F1EE;color:#56555A}
+.chip-pend{background:#FEF3C7;color:#92400E}
+.item-meta{font-size:10px;color:#BDBBC6;margin-top:2px}
+.item-right{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.item-importe{font-size:18px;font-weight:700;color:#18181A;white-space:nowrap;letter-spacing:-.02em}
+.item-importe-real{font-size:11px;color:#065F46;font-weight:600}
+.item-actions{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.btn-confirmar{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:6px 14px;background:#18181A;color:#fff;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-confirmar:hover{background:#333}
+.btn-borrar{background:none;border:none;color:#BDBBC6;font-size:11px;cursor:pointer;padding:2px 4px;font-family:'Inter',sans-serif}
+.btn-borrar:hover{color:#C0392B;text-decoration:underline}
+.badge-confirmado{font-size:11px;padding:4px 10px;background:#D4F2E8;color:#075C41;border-radius:6px;white-space:nowrap;font-weight:600}
 .empty{padding:2rem;text-align:center;color:#9896A0;font-size:13px}
 .msg-err{background:#FAE0E0;color:#8A1F1F;padding:.5rem .85rem;border-radius:6px;font-size:12px;font-weight:500;margin-top:.5rem;display:none}
 
@@ -114,16 +118,20 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 <!-- Modal confirmar -->
 <div class="modal-overlay" id="modal-confirmar">
   <div class="modal-box">
-    <div class="modal-title">Confirmar acreditación</div>
-    <div class="modal-sub" id="modal-confirmar-sub">Ingresá el importe real que se acreditó.</div>
-    <div class="field">
+    <div class="modal-title">Marcar como cobrado</div>
+    <div class="modal-sub" id="modal-confirmar-sub"></div>
+    <div class="field" style="margin-bottom:10px">
       <label>Importe real acreditado</label>
       <input type="text" id="modal-importe-real" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label>Comprobante <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(opcional — imagen o PDF)</span></label>
+      <input type="file" id="modal-comprobante" accept="image/*,.pdf" style="width:100%;padding:.45rem .7rem;border:1.5px solid #DDDBD6;border-radius:7px;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer">
     </div>
     <div class="msg-err-modal" id="modal-err"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="cerrarModalConfirmar()">Cancelar</button>
-      <button class="btn-save" onclick="confirmarConImporte()">Confirmar</button>
+      <button class="btn-save" onclick="confirmarConImporte()">Confirmar cobro</button>
     </div>
   </div>
 </div>
@@ -155,18 +163,24 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 
   <div class="section" id="sec-pendientes">
     <div class="section-header">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span class="section-title">Pendientes</span>
-      <span class="section-count" id="count-pend">0</span>
+      <div class="section-header-top">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="section-title">Esperando acreditación</span>
+        <span class="section-count" id="count-pend">0</span>
+      </div>
+      <div class="section-sub">Importes que deberían ingresar a la cuenta bancaria</div>
     </div>
     <div id="list-pendientes"><div class="empty">Cargando...</div></div>
   </div>
 
   <div class="section" id="sec-confirmados">
     <div class="section-header">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#075C41" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      <span class="section-title">Confirmados</span>
-      <span class="section-count" id="count-conf">0</span>
+      <div class="section-header-top">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#075C41" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span class="section-title">Acreditados</span>
+        <span class="section-count" id="count-conf">0</span>
+      </div>
+      <div class="section-sub">Importes ya confirmados como recibidos</div>
     </div>
     <div id="list-confirmados"><div class="empty">Sin confirmados aún.</div></div>
   </div>
@@ -214,8 +228,9 @@ async function guardar(){
 var pendienteAConfirmar = null;
 function abrirModalConfirmar(id, concepto, importe){
   pendienteAConfirmar = id;
-  document.getElementById('modal-confirmar-sub').textContent = '"'+concepto+'" — aprox. '+fmtImporte(importe);
+  document.getElementById('modal-confirmar-sub').textContent = '"'+concepto+'" — importe estimado: '+fmtImporte(importe);
   document.getElementById('modal-importe-real').value = '';
+  document.getElementById('modal-comprobante').value = '';
   document.getElementById('modal-err').style.display = 'none';
   document.getElementById('modal-confirmar').classList.add('open');
   setTimeout(function(){ document.getElementById('modal-importe-real').focus(); }, 100);
@@ -224,14 +239,30 @@ function cerrarModalConfirmar(){
   document.getElementById('modal-confirmar').classList.remove('open');
   pendienteAConfirmar = null;
 }
+function leerArchivoBase64(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(e){ resolve(e.target.result); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 async function confirmarConImporte(){
   var importeStr = document.getElementById('modal-importe-real').value.trim().replace(/\./g,'').replace(',','.');
   var importe_real = parseFloat(importeStr);
   var errEl = document.getElementById('modal-err');
   if(isNaN(importe_real)||importe_real<=0){ errEl.textContent='Ingresá el importe real acreditado.'; errEl.style.display='block'; return; }
+  var fileInput = document.getElementById('modal-comprobante');
+  var comprobante_nombre = null, comprobante_data = null;
+  if(fileInput.files && fileInput.files[0]){
+    var file = fileInput.files[0];
+    if(file.size > 5*1024*1024){ errEl.textContent='El archivo no puede superar 5 MB.'; errEl.style.display='block'; return; }
+    try{ comprobante_data = await leerArchivoBase64(file); comprobante_nombre = file.name; }
+    catch(e){ errEl.textContent='Error al leer el archivo.'; errEl.style.display='block'; return; }
+  }
   try{
     var r=await fetch('/api/pendientes-acreditacion/'+pendienteAConfirmar+'/confirmar',{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({username:USER.username,nombre:USER.nombre,importe_real})});
+      body:JSON.stringify({username:USER.username,nombre:USER.nombre,importe_real,comprobante_nombre,comprobante_data})});
     if(r.ok){ cerrarModalConfirmar(); await cargar(); }
     else { errEl.textContent='Error al confirmar.'; errEl.style.display='block'; }
   }catch(e){ errEl.textContent='Error de conexión.'; errEl.style.display='block'; }
@@ -330,13 +361,19 @@ async function cargar(){
         +'<div class="item-top">'
         +'<div class="item-body">'
         +'<div class="item-concepto">'+esc(it.concepto)+'</div>'
-        +(it.detalle?'<div class="item-detalle">'+esc(it.detalle)+'</div>':'')
-        +'<div class="item-meta">Cargado por <span>'+esc(it.cargado_por_nombre||it.cargado_por)+'</span> · '+fmtFechaHora(it.cargado_at)+'</div>'
+        +'<div class="item-chips">'
+        +(it.detalle?'<span class="chip chip-pend">'+esc(it.detalle)+'</span>':'')
+        +'</div>'
+        +'<div class="item-meta">Cargado el '+fmtFechaHora(it.cargado_at)+'</div>'
         +'</div>'
         +'<div class="item-right">'
-        +'<div class="item-importe">~'+fmtImporte(it.importe)+'</div>'
-        +'<button class="btn-confirmar" onclick="abrirModalConfirmar('+it.id+',\''+esc(it.concepto)+'\','+it.importe+')">✓ Confirmar</button>'
+        +'<div class="item-importe">'+fmtImporte(it.importe)+'</div>'
+        +'<div class="item-actions">'
+        +'<button class="btn-confirmar" onclick="abrirModalConfirmar('+it.id+',\''+esc(it.concepto)+'\','+it.importe+')">'
+        +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        +'Marcar como cobrado</button>'
         +'<button class="btn-borrar" onclick="borrar('+it.id+')">Eliminar</button>'
+        +'</div>'
         +'</div>'
         +'</div>'
         +renderNotas(it, false)
@@ -349,12 +386,16 @@ async function cargar(){
         +'<div class="item-top">'
         +'<div class="item-body">'
         +'<div class="item-concepto">'+esc(it.concepto)+'</div>'
-        +(it.detalle?'<div class="item-detalle">'+esc(it.detalle)+'</div>':'')
-        +'<div class="item-meta">Cargado por <span>'+esc(it.cargado_por_nombre||it.cargado_por)+'</span> · '+fmtFechaHora(it.cargado_at)
-        +' · Confirmado por <span>'+esc(it.confirmado_por_nombre||it.confirmado_por)+'</span> · '+fmtFecha(it.confirmado_at)+'</div>'
+        +'<div class="item-chips">'
+        +(it.detalle?'<span class="chip">'+esc(it.detalle)+'</span>':'')
+        +'</div>'
+        +'<div class="item-meta">Cobrado el '+fmtFecha(it.confirmado_at)+' por '+esc(it.confirmado_por_nombre||it.confirmado_por)+'</div>'
         +'</div>'
         +'<div class="item-right">'
-        +'<span class="badge-confirmado">Acreditado</span>'
+        +'<span class="badge-confirmado">✓ Acreditado</span>'
+        +(it.comprobante_nombre?'<a href="/api/pendientes-acreditacion/'+it.id+'/comprobante" target="_blank" style="font-size:11px;color:#1E6FD9;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:3px;margin-top:4px">'
+          +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+          +'Comprobante</a>':'')
         +'</div>'
         +'</div>'
         +(it.importe_real?renderVariacion(it.importe, it.importe_real):'')

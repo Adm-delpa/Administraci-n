@@ -127,6 +127,8 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT NOW()
       );
       ALTER TABLE pendientes_acreditacion ADD COLUMN IF NOT EXISTS importe_real NUMERIC(14,2);
+      ALTER TABLE pendientes_acreditacion ADD COLUMN IF NOT EXISTS comprobante_nombre VARCHAR(200);
+      ALTER TABLE pendientes_acreditacion ADD COLUMN IF NOT EXISTS comprobante_data TEXT;
 
       CREATE TABLE IF NOT EXISTS activity_log (
         id SERIAL PRIMARY KEY,
@@ -503,17 +505,32 @@ app.post('/api/pendientes-acreditacion', async (req, res) => {
 });
 
 app.put('/api/pendientes-acreditacion/:id/confirmar', async (req, res) => {
-  const { username, nombre, importe_real } = req.body;
+  const { username, nombre, importe_real, comprobante_nombre, comprobante_data } = req.body;
   const { id } = req.params;
   if (!username) return res.status(400).json({ error: 'Faltan datos' });
   try {
     const r = await pool.query(
-      'UPDATE pendientes_acreditacion SET estado=$1, confirmado_por=$2, confirmado_por_nombre=$3, confirmado_at=CURRENT_DATE, importe_real=$5 WHERE id=$4 RETURNING *',
-      ['confirmado', username, nombre||username, id, importe_real||null]
+      'UPDATE pendientes_acreditacion SET estado=$1, confirmado_por=$2, confirmado_por_nombre=$3, confirmado_at=CURRENT_DATE, importe_real=$5, comprobante_nombre=$6, comprobante_data=$7 WHERE id=$4 RETURNING id,concepto,importe,detalle,estado,cargado_por,cargado_por_nombre,cargado_at,confirmado_por,confirmado_por_nombre,confirmado_at,importe_real,comprobante_nombre',
+      ['confirmado', username, nombre||username, id, importe_real||null, comprobante_nombre||null, comprobante_data||null]
     );
     if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
     res.json(r.rows[0]);
   } catch(e) { res.status(500).json({ error: 'Error al confirmar' }); }
+});
+
+app.get('/api/pendientes-acreditacion/:id/comprobante', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT comprobante_nombre, comprobante_data FROM pendientes_acreditacion WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].comprobante_data) return res.status(404).json({ error: 'Sin comprobante' });
+    const { comprobante_nombre, comprobante_data } = r.rows[0];
+    const matches = comprobante_data.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) return res.status(400).json({ error: 'Formato inválido' });
+    const mimeType = matches[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${comprobante_nombre || 'comprobante'}"`);
+    res.send(buffer);
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
 });
 
 app.post('/api/pendientes-acreditacion/:id/notas', async (req, res) => {
