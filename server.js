@@ -533,6 +533,13 @@ app.get('/api/pendientes-acreditacion/:id/comprobante', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error' }); }
 });
 
+app.delete('/api/pendientes-acreditacion/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM pendientes_acreditacion WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al eliminar' }); }
+});
+
 app.post('/api/pendientes-acreditacion/:id/notas', async (req, res) => {
   const { texto, username, nombre } = req.body;
   const { id } = req.params;
