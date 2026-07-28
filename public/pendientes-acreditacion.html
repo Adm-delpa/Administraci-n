@@ -50,7 +50,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .item:last-child{border-bottom:none}
 .item.confirmado{border-left-color:#A7E3CC}
 .item-top{display:flex;align-items:flex-start;gap:14px}
-.item-body{flex:1;min-width:0}
+.item-body{flex:1;min-width:0;cursor:pointer;user-select:none}
 .item-concepto{font-size:14px;font-weight:700;color:#18181A;margin-bottom:5px;line-height:1.3}
 .item-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
 .chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#F2F1EE;color:#56555A}
@@ -348,8 +348,6 @@ function toggleNotas(id){
   var b=document.getElementById('notas-body-'+id);
   if(!b) return;
   b.classList.toggle('open');
-  var btn=document.getElementById('notas-toggle-'+id);
-  if(btn) btn.textContent = b.classList.contains('open') ? '▲ Ocultar notas' : '▼ Ver notas';
 }
 
 async function agregarNota(id){
@@ -373,19 +371,16 @@ function renderNotas(it, confirmado){
       +'<div class="nota-texto">'+esc(n.texto)+'</div>'
       +'</div></div>';
   }).join('');
-  var label=notas.length>0?'▼ Ver notas ('+notas.length+')':'▼ Agregar nota';
   var addNota=confirmado?''
     :'<div class="add-nota">'
     +'<textarea class="nota-input" id="nota-input-'+it.id+'" rows="2" placeholder="Escribir nota..."></textarea>'
     +'<button class="btn-add-nota" onclick="agregarNota('+it.id+')">Agregar</button>'
     +'</div>';
   if(confirmado && notas.length===0) return '';
-  return '<div class="notas-section">'
-    +'<button class="notas-toggle" id="notas-toggle-'+it.id+'" onclick="toggleNotas('+it.id+')">'+label+'</button>'
-    +'<div class="notas-body" id="notas-body-'+it.id+'">'
+  return '<div class="notas-section" id="notas-body-'+it.id+'">'
     +notasHtml
     +addNota
-    +'</div></div>';
+    +'</div>';
 }
 
 function renderVariacion(aprox, real){
@@ -427,7 +422,7 @@ async function cargar(){
     lp.innerHTML=pendientes.length===0?'<div class="empty">Sin pendientes.</div>':pendientes.map(function(it){
       return '<div class="item">'
         +'<div class="item-top">'
-        +'<div class="item-body">'
+        +'<div class="item-body" onclick="toggleNotas('+it.id+')">'
         +'<div class="item-concepto">'+esc(it.concepto)+'</div>'
         +'<div class="item-chips">'
         +(it.detalle?'<span class="chip chip-pend">'+esc(it.detalle)+'</span>':'')
