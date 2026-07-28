@@ -21,8 +21,12 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 .logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 
 .page{max-width:860px;margin:0 auto;padding:2rem 1rem}
-.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px}
 .page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+.resumen-card{background:#fff;border:1px solid #DDDBD6;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.resumen-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0}
+.resumen-importe{font-size:26px;font-weight:700;color:#18181A;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.resumen-sub{font-size:11px;color:#9896A0;margin-top:2px}
 
 .btn-nuevo{display:flex;align-items:center;gap:6px;padding:8px 16px;background:#1E6FD9;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer}
 .btn-nuevo:hover{background:#0D4FA0}
@@ -232,6 +236,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Nuevo pendiente
     </button>
+  </div>
+
+  <div class="resumen-card" id="resumen-card" style="display:none">
+    <div>
+      <div class="resumen-label">Total pendiente de acreditación</div>
+      <div class="resumen-importe" id="resumen-importe">$0</div>
+      <div class="resumen-sub" id="resumen-sub"></div>
+    </div>
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#DDDBD6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
   </div>
 
   <div class="form-card" id="form-card">
@@ -457,6 +470,14 @@ async function cargar(){
     document.getElementById('count-pend').textContent=pendientes.length;
     document.getElementById('count-conf').textContent=confirmados.length;
 
+    var totalPend=pendientes.reduce(function(s,i){return s+parseFloat(i.importe||0);},0);
+    var rc=document.getElementById('resumen-card');
+    if(pendientes.length>0){
+      document.getElementById('resumen-importe').textContent=fmtImporte(totalPend);
+      document.getElementById('resumen-sub').textContent=pendientes.length+' importe'+(pendientes.length>1?'s pendientes':' pendiente');
+      rc.style.display='flex';
+    } else { rc.style.display='none'; }
+
     var lp=document.getElementById('list-pendientes');
     lp.innerHTML=pendientes.length===0?'<div class="empty">Sin pendientes.</div>':pendientes.map(function(it){
       return '<div class="item">'
@@ -497,6 +518,7 @@ async function cargar(){
         +(it.comprobante_nombre?'<a href="/api/pendientes-acreditacion/'+it.id+'/comprobante" target="_blank" style="font-size:11px;color:#1E6FD9;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:3px;margin-top:4px">'
           +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
           +'Comprobante</a>':'')
+        +'<button class="btn-borrar" onclick="event.stopPropagation();borrar('+it.id+')" style="margin-top:4px">Eliminar</button>'
         +'</div>'
         +'</div>'
         +(it.importe_real?renderVariacion(it.importe, it.importe_real):'')
