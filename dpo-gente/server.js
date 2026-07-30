@@ -1,9 +1,23 @@
+console.log('SERVER.JS LOADING - v' + Date.now());
 const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const xlsx = require('xlsx');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+
+// Almacenamiento en disco para archivos adjuntos (no satura Postgres)
+const UPLOADS_DIR = process.env.UPLOADS_DIR || '/tmp/uploads';
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, Date.now() + '-' + Math.random().toString(36).substr(2,9) + ext);
+  }
+});
+const uploadDisk = multer({ storage: diskStorage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -365,6 +379,134 @@ async function initDB() {
         END IF;
       END $$;
 
+      CREATE TABLE IF NOT EXISTS dpo_cl_conflictos (
+        id SERIAL PRIMARY KEY,
+        fecha DATE,
+        nombre VARCHAR(200),
+        contacto VARCHAR(200),
+        problema TEXT,
+        estado VARCHAR(50) DEFAULT 'Pendiente',
+        responsable VARCHAR(200),
+        fecha_cierre DATE,
+        notas_cierre TEXT,
+        origen VARCHAR(20) DEFAULT 'manual',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_el_evidencias (
+        id SERIAL PRIMARY KEY,
+        fecha DATE,
+        descripcion VARCHAR(300),
+        archivo_nombre VARCHAR(300),
+        archivo_tipo VARCHAR(100),
+        archivo_data TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_ns_reuniones (
+        id SERIAL PRIMARY KEY,
+        anio INTEGER NOT NULL,
+        fecha DATE,
+        tema VARCHAR(300),
+        representantes TEXT,
+        tipo VARCHAR(50) DEFAULT 'ordinaria',
+        estado VARCHAR(30) DEFAULT 'pendiente_minuta',
+        resumen TEXT,
+        archivo_nombre VARCHAR(300),
+        archivo_tipo VARCHAR(100),
+        archivo_data TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_ns_negociaciones (
+        id SERIAL PRIMARY KEY,
+        anio INTEGER NOT NULL,
+        fecha DATE,
+        tipo VARCHAR(100),
+        sindicato VARCHAR(50) DEFAULT 'Camioneros',
+        descripcion TEXT,
+        estado VARCHAR(30) DEFAULT 'en_curso',
+        resultado TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      ALTER TABLE dpo_ns_negociaciones ADD COLUMN IF NOT EXISTS sindicato VARCHAR(50) DEFAULT 'Camioneros';
+
+      CREATE TABLE IF NOT EXISTS dpo_ns_pdas (
+        id SERIAL PRIMARY KEY,
+        negociacion_id INTEGER REFERENCES dpo_ns_negociaciones(id) ON DELETE CASCADE,
+        accion TEXT,
+        responsable VARCHAR(200),
+        fecha_limite DATE,
+        estado VARCHAR(30) DEFAULT 'pendiente',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_pc_comunicaciones (
+        id SERIAL PRIMARY KEY,
+        anio INTEGER NOT NULL,
+        tipo VARCHAR(100),
+        contenido VARCHAR(300),
+        emisor VARCHAR(200),
+        frecuencia VARCHAR(50),
+        medio VARCHAR(200),
+        destinatarios VARCHAR(200),
+        por_que TEXT,
+        meses JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_ciclogente_pdf (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        nombre VARCHAR(300),
+        tipo VARCHAR(100),
+        contenido TEXT,
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_pc_evidencias (
+        id SERIAL PRIMARY KEY,
+        comunicacion_id INTEGER NOT NULL REFERENCES dpo_pc_comunicaciones(id) ON DELETE CASCADE,
+        mes INTEGER,
+        nombre VARCHAR(300),
+        tipo VARCHAR(100),
+        imagen TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_pc_feedback (
+        id SERIAL PRIMARY KEY,
+        anio INTEGER NOT NULL,
+        fecha DATE,
+        aporte TEXT,
+        autor VARCHAR(200),
+        genero_ajuste BOOLEAN DEFAULT FALSE,
+        ajuste_descripcion TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_ns_calendario (
+        id SERIAL PRIMARY KEY,
+        anio INTEGER NOT NULL,
+        accion VARCHAR(300),
+        responsable VARCHAR(200),
+        fecha_inicio DATE,
+        fecha_fin DATE,
+        estado VARCHAR(30) DEFAULT 'pendiente',
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS dpo_ns_documentos (
+        id SERIAL PRIMARY KEY,
+        anio INTEGER NOT NULL,
+        fecha DATE,
+        categoria VARCHAR(100),
+        descripcion VARCHAR(300),
+        archivo_nombre VARCHAR(300),
+        archivo_tipo VARCHAR(100),
+        archivo_data TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
       CREATE TABLE IF NOT EXISTS dpo_opr_periodos (
         id SERIAL PRIMARY KEY,
         periodo VARCHAR(100) NOT NULL,
@@ -464,6 +606,9 @@ async function initDB() {
       );
     `);
     await seedDefaults(client);
+    // Migraciones: columna ruta para tablas que tenían base64
+    await client.query(`ALTER TABLE dpo_pc_evidencias ADD COLUMN IF NOT EXISTS ruta VARCHAR(500)`).catch(()=>{});
+    await client.query(`ALTER TABLE dpo_distrib_archivos ADD COLUMN IF NOT EXISTS ruta VARCHAR(500)`).catch(()=>{});
     console.log('Base de datos inicializada (DPO Gente).');
   } finally {
     client.release();
@@ -471,7 +616,7 @@ async function initDB() {
 }
 
 // ── AUTH (contraseña única, sin usuarios individuales) ──
-const MODULOS_DISPONIBLES = ['ausentismo','pac','reclutamiento','aprendizaje','engagement','opr'];
+const MODULOS_DISPONIBLES = ['ausentismo','pac','reclutamiento','aprendizaje','engagement','talento'];
 
 app.post('/api/login', async (req, res) => {
   const { password, nombre } = req.body || {};
@@ -974,6 +1119,88 @@ app.get('/opr', (req, res) => res.sendFile(path.join(__dirname, 'public', 'opr.h
 app.get('/entorno-laboral', (req, res) => res.sendFile(path.join(__dirname, 'public', 'entorno-laboral.html')));
 app.get('/negociacion-sindical', (req, res) => res.sendFile(path.join(__dirname, 'public', 'negociacion-sindical.html')));
 app.get('/plan-comunicaciones', (req, res) => res.sendFile(path.join(__dirname, 'public', 'plan-comunicaciones.html')));
+app.get('/talento-hub', (req, res) => res.sendFile(path.join(__dirname, 'public', 'talento-hub.html')));
+app.get('/ciclo-gente-hub', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ciclo-gente-hub.html')));
+
+// ── CICLO DE GENTE - ARCHIVOS (multi, disco) ──
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_ciclogente_archivos (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(300),
+  tipo VARCHAR(100),
+  ruta VARCHAR(500),
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_ciclogente_archivos ADD COLUMN IF NOT EXISTS ruta VARCHAR(500)`).catch(()=>{});
+
+app.get('/api/ciclogente/archivos', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, nombre, tipo, created_at FROM dpo_ciclogente_archivos ORDER BY created_at DESC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/ciclogente/archivos/:id/file', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_ciclogente_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).end();
+    const { nombre, tipo, ruta } = r.rows[0];
+    res.setHeader('Content-Type', tipo || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
+    res.sendFile(ruta);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/ciclogente/archivos', uploadDisk.single('archivo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    const r = await pool.query(
+      'INSERT INTO dpo_ciclogente_archivos (nombre, tipo, ruta) VALUES ($1,$2,$3) RETURNING id',
+      [req.file.originalname, req.file.mimetype, req.file.path]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/ciclogente/archivos/:id', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ruta FROM dpo_ciclogente_archivos WHERE id=$1', [req.params.id]);
+    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
+    await pool.query('DELETE FROM dpo_ciclogente_archivos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── CICLO DE GENTE - PDF (legacy) ──
+app.post('/api/ciclogente/pdf', upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    const b64 = req.file.buffer.toString('base64');
+    await pool.query(
+      `INSERT INTO dpo_ciclogente_pdf (id, nombre, tipo, contenido, updated_at) VALUES (1,$1,$2,$3,NOW())
+       ON CONFLICT (id) DO UPDATE SET nombre=$1, tipo=$2, contenido=$3, updated_at=NOW()`,
+      [req.file.originalname, req.file.mimetype, b64]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/ciclogente/pdf', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT nombre, tipo, contenido FROM dpo_ciclogente_pdf WHERE id=1');
+    if (!r.rows.length) return res.status(404).end();
+    const { nombre, tipo, contenido } = r.rows[0];
+    res.setHeader('Content-Type', tipo || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
+    res.send(Buffer.from(contenido, 'base64'));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.head('/api/ciclogente/pdf', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id FROM dpo_ciclogente_pdf WHERE id=1');
+    res.status(r.rows.length ? 200 : 404).end();
+  } catch(e) { res.status(500).end(); }
+});
 
 // ── TENDENCIAS DE LA FUERZA LABORAL ──
 app.post('/api/tendencias/upload', upload.single('file'), async (req, res) => {
@@ -2655,7 +2882,616 @@ app.post('/api/el/webhook', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ===================== CONFLICTOS LABORALES =====================
+app.get('/api/cl/conflictos', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM dpo_cl_conflictos ORDER BY fecha DESC, created_at DESC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/cl/conflictos', async (req, res) => {
+  try {
+    const { fecha, nombre, contacto, problema, estado, responsable, fecha_cierre, notas_cierre, origen } = req.body;
+    const r = await pool.query(
+      `INSERT INTO dpo_cl_conflictos (fecha,nombre,contacto,problema,estado,responsable,fecha_cierre,notas_cierre,origen)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [fecha||null, nombre||null, contacto||null, problema||null,
+       estado||'Pendiente', responsable||null, fecha_cierre||null, notas_cierre||null, origen||'manual']
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/cl/conflictos/:id', async (req, res) => {
+  try {
+    const { fecha, nombre, contacto, problema, estado, responsable, fecha_cierre, notas_cierre } = req.body;
+    const r = await pool.query(
+      `UPDATE dpo_cl_conflictos SET fecha=$1,nombre=$2,contacto=$3,problema=$4,
+       estado=$5,responsable=$6,fecha_cierre=$7,notas_cierre=$8 WHERE id=$9 RETURNING *`,
+      [fecha||null, nombre||null, contacto||null, problema||null,
+       estado||'Pendiente', responsable||null, fecha_cierre||null, notas_cierre||null, req.params.id]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/cl/conflictos/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_cl_conflictos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/cl/webhook', async (req, res) => {
+  try {
+    const { fecha, nombre, contacto, problema } = req.body;
+    await pool.query(
+      `INSERT INTO dpo_cl_conflictos (fecha,nombre,contacto,problema,estado,origen)
+       VALUES ($1,$2,$3,$4,'Pendiente','forms')`,
+      [fecha || new Date().toISOString().split('T')[0], nombre||null, contacto||null, problema||null]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===================== EVIDENCIAS INCLUSIVIDAD =====================
+const uploadMem = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+app.get('/api/el/evidencias', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, fecha, descripcion, archivo_nombre, archivo_tipo, created_at FROM dpo_el_evidencias ORDER BY fecha DESC, created_at DESC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/el/evidencias', uploadMem.single('archivo'), async (req, res) => {
+  try {
+    const { fecha, descripcion } = req.body;
+    const archivo_nombre = req.file.originalname;
+    const archivo_tipo = req.file.mimetype;
+    const archivo_data = req.file.buffer.toString('base64');
+    await pool.query(
+      `INSERT INTO dpo_el_evidencias (fecha, descripcion, archivo_nombre, archivo_tipo, archivo_data) VALUES ($1,$2,$3,$4,$5)`,
+      [fecha || new Date().toISOString().split('T')[0], descripcion || null, archivo_nombre, archivo_tipo, archivo_data]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/el/evidencias/:id/archivo', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT archivo_nombre, archivo_tipo, archivo_data FROM dpo_el_evidencias WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    const { archivo_nombre, archivo_tipo, archivo_data } = r.rows[0];
+    const buffer = Buffer.from(archivo_data, 'base64');
+    res.setHeader('Content-Type', archivo_tipo);
+    res.setHeader('Content-Disposition', `inline; filename="${archivo_nombre}"`);
+    res.send(buffer);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/el/evidencias/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_el_evidencias WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===================== PLAN DE COMUNICACIONES =====================
+
+app.get('/api/pc/comunicaciones', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query('SELECT * FROM dpo_pc_comunicaciones WHERE ($1::int IS NULL OR anio=$1) ORDER BY tipo, id', [anio || null]);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/pc/comunicaciones', async (req, res) => {
+  try {
+    const { anio, tipo, contenido, emisor, frecuencia, medio, destinatarios, por_que, meses } = req.body;
+    const r = await pool.query(
+      `INSERT INTO dpo_pc_comunicaciones (anio, tipo, contenido, emisor, frecuencia, medio, destinatarios, por_que, meses) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+      [anio, tipo||null, contenido, emisor||null, frecuencia||null, medio||null, destinatarios||null, por_que||null, JSON.stringify(meses||{})]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/pc/comunicaciones/:id', async (req, res) => {
+  try {
+    const { anio, tipo, contenido, emisor, frecuencia, medio, destinatarios, por_que, meses } = req.body;
+    await pool.query(
+      `UPDATE dpo_pc_comunicaciones SET anio=$1, tipo=$2, contenido=$3, emisor=$4, frecuencia=$5, medio=$6, destinatarios=$7, por_que=$8, meses=$9 WHERE id=$10`,
+      [anio, tipo||null, contenido, emisor||null, frecuencia||null, medio||null, destinatarios||null, por_que||null, JSON.stringify(meses||{}), req.params.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/pc/comunicaciones/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_pc_comunicaciones WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/pc/feedback', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query('SELECT * FROM dpo_pc_feedback WHERE ($1::int IS NULL OR anio=$1) ORDER BY fecha DESC NULLS LAST', [anio || null]);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/pc/feedback', async (req, res) => {
+  try {
+    const { anio, fecha, aporte, autor, genero_ajuste, ajuste_descripcion } = req.body;
+    const r = await pool.query(
+      `INSERT INTO dpo_pc_feedback (anio, fecha, aporte, autor, genero_ajuste, ajuste_descripcion) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [anio, fecha||null, aporte, autor||null, genero_ajuste||false, ajuste_descripcion||null]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/pc/feedback/:id', async (req, res) => {
+  try {
+    const { anio, fecha, aporte, autor, genero_ajuste, ajuste_descripcion } = req.body;
+    await pool.query(
+      `UPDATE dpo_pc_feedback SET anio=$1, fecha=$2, aporte=$3, autor=$4, genero_ajuste=$5, ajuste_descripcion=$6 WHERE id=$7`,
+      [anio, fecha||null, aporte, autor||null, genero_ajuste||false, ajuste_descripcion||null, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/pc/feedback/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_pc_feedback WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/pc/evidencias', async (req, res) => {
+  try {
+    const { comunicacion_id } = req.query;
+    const r = await pool.query(
+      'SELECT id, comunicacion_id, mes, nombre, tipo, created_at FROM dpo_pc_evidencias WHERE comunicacion_id=$1 ORDER BY mes, created_at',
+      [comunicacion_id]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/pc/evidencias/:id/imagen', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ruta, tipo, nombre FROM dpo_pc_evidencias WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).end();
+    const { ruta, tipo, nombre } = r.rows[0];
+    res.setHeader('Content-Type', tipo || 'image/jpeg');
+    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
+    res.sendFile(ruta);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/pc/evidencias', uploadDisk.single('imagen'), async (req, res) => {
+  try {
+    const { comunicacion_id, mes } = req.body;
+    if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' });
+    const r = await pool.query(
+      'INSERT INTO dpo_pc_evidencias (comunicacion_id, mes, nombre, tipo, ruta) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+      [comunicacion_id, mes || null, req.file.originalname, req.file.mimetype, req.file.path]
+    );
+    // Marcar el mes como realizado en la comunicación
+    if (mes) {
+      const c = await pool.query('SELECT meses FROM dpo_pc_comunicaciones WHERE id=$1', [comunicacion_id]);
+      if (c.rows.length) {
+        const meses = c.rows[0].meses || {};
+        meses[String(mes)] = 'realizado';
+        await pool.query('UPDATE dpo_pc_comunicaciones SET meses=$1 WHERE id=$2', [JSON.stringify(meses), comunicacion_id]);
+      }
+    }
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/pc/evidencias/:id', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ruta FROM dpo_pc_evidencias WHERE id=$1', [req.params.id]);
+    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
+    await pool.query('DELETE FROM dpo_pc_evidencias WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===================== NEGOCIACIÓN SINDICAL =====================
+
+// Reuniones
+app.get('/api/ns/reuniones', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query(
+      'SELECT id, anio, fecha, tema, representantes, tipo, estado, resumen, archivo_nombre, archivo_tipo, created_at FROM dpo_ns_reuniones WHERE ($1::int IS NULL OR anio=$1) ORDER BY fecha DESC',
+      [anio || null]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/ns/reuniones', upload.single('archivo'), async (req, res) => {
+  try {
+    const { anio, fecha, tema, representantes, tipo, estado, resumen } = req.body;
+    const archivo_nombre = req.file?.originalname || null;
+    const archivo_tipo = req.file?.mimetype || null;
+    const archivo_data = req.file ? req.file.buffer.toString('base64') : null;
+    const r = await pool.query(
+      `INSERT INTO dpo_ns_reuniones (anio, fecha, tema, representantes, tipo, estado, resumen, archivo_nombre, archivo_tipo, archivo_data)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+      [anio, fecha || null, tema, representantes || null, tipo || 'ordinaria', estado || 'pendiente_minuta', resumen || null, archivo_nombre, archivo_tipo, archivo_data]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/ns/reuniones/:id', upload.single('archivo'), async (req, res) => {
+  try {
+    const { anio, fecha, tema, representantes, tipo, estado, resumen } = req.body;
+    const archivo_nombre = req.file?.originalname || req.body.archivo_nombre || null;
+    const archivo_tipo = req.file?.mimetype || req.body.archivo_tipo || null;
+    const archivo_data = req.file ? req.file.buffer.toString('base64') : undefined;
+    if (archivo_data !== undefined) {
+      await pool.query(
+        `UPDATE dpo_ns_reuniones SET anio=$1, fecha=$2, tema=$3, representantes=$4, tipo=$5, estado=$6, resumen=$7, archivo_nombre=$8, archivo_tipo=$9, archivo_data=$10 WHERE id=$11`,
+        [anio, fecha || null, tema, representantes || null, tipo, estado, resumen || null, archivo_nombre, archivo_tipo, archivo_data, req.params.id]
+      );
+    } else {
+      await pool.query(
+        `UPDATE dpo_ns_reuniones SET anio=$1, fecha=$2, tema=$3, representantes=$4, tipo=$5, estado=$6, resumen=$7 WHERE id=$8`,
+        [anio, fecha || null, tema, representantes || null, tipo, estado, resumen || null, req.params.id]
+      );
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/ns/reuniones/:id/archivo', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT archivo_nombre, archivo_tipo, archivo_data FROM dpo_ns_reuniones WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].archivo_data) return res.status(404).json({ error: 'No encontrado' });
+    const { archivo_nombre, archivo_tipo, archivo_data } = r.rows[0];
+    res.setHeader('Content-Type', archivo_tipo);
+    res.setHeader('Content-Disposition', `inline; filename="${archivo_nombre}"`);
+    res.send(Buffer.from(archivo_data, 'base64'));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/ns/reuniones/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_ns_reuniones WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Negociaciones
+app.get('/api/ns/negociaciones', async (req, res) => {
+  try {
+    const { anio, sindicato } = req.query;
+    const r = await pool.query(
+      'SELECT * FROM dpo_ns_negociaciones WHERE ($1::int IS NULL OR anio=$1) AND ($2::text IS NULL OR sindicato=$2) ORDER BY fecha DESC NULLS LAST',
+      [anio || null, sindicato || null]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/ns/negociaciones', async (req, res) => {
+  try {
+    const { anio, fecha, tipo, sindicato, descripcion, estado, resultado } = req.body;
+    const r = await pool.query(
+      `INSERT INTO dpo_ns_negociaciones (anio, fecha, tipo, sindicato, descripcion, estado, resultado) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [anio, fecha || null, tipo, sindicato || 'Camioneros', descripcion || null, estado || 'en_curso', resultado || null]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/ns/negociaciones/:id', async (req, res) => {
+  try {
+    const { anio, fecha, tipo, sindicato, descripcion, estado, resultado } = req.body;
+    await pool.query(
+      `UPDATE dpo_ns_negociaciones SET anio=$1, fecha=$2, tipo=$3, sindicato=$4, descripcion=$5, estado=$6, resultado=$7 WHERE id=$8`,
+      [anio, fecha || null, tipo, sindicato || 'Camioneros', descripcion || null, estado, resultado || null, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/ns/negociaciones/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_ns_negociaciones WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// PDAs de negociaciones
+app.get('/api/ns/pdas/:negociacionId', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM dpo_ns_pdas WHERE negociacion_id=$1 ORDER BY fecha_limite', [req.params.negociacionId]);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/ns/pdas', async (req, res) => {
+  try {
+    const { negociacion_id, accion, responsable, fecha_limite, estado } = req.body;
+    const r = await pool.query(
+      `INSERT INTO dpo_ns_pdas (negociacion_id, accion, responsable, fecha_limite, estado) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [negociacion_id, accion, responsable || null, fecha_limite || null, estado || 'pendiente']
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/ns/pdas/:id', async (req, res) => {
+  try {
+    const { accion, responsable, fecha_limite, estado } = req.body;
+    await pool.query(
+      `UPDATE dpo_ns_pdas SET accion=$1, responsable=$2, fecha_limite=$3, estado=$4 WHERE id=$5`,
+      [accion, responsable || null, fecha_limite || null, estado, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/ns/pdas/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_ns_pdas WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Calendario Gremial
+app.get('/api/ns/calendario', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query('SELECT * FROM dpo_ns_calendario WHERE ($1::int IS NULL OR anio=$1) ORDER BY fecha_inicio NULLS LAST', [anio || null]);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/ns/calendario', async (req, res) => {
+  try {
+    const { anio, accion, responsable, fecha_inicio, fecha_fin, estado } = req.body;
+    const r = await pool.query(
+      `INSERT INTO dpo_ns_calendario (anio, accion, responsable, fecha_inicio, fecha_fin, estado) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [anio, accion, responsable || null, fecha_inicio || null, fecha_fin || null, estado || 'pendiente']
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/ns/calendario/:id', async (req, res) => {
+  try {
+    const { anio, accion, responsable, fecha_inicio, fecha_fin, estado } = req.body;
+    await pool.query(
+      `UPDATE dpo_ns_calendario SET anio=$1, accion=$2, responsable=$3, fecha_inicio=$4, fecha_fin=$5, estado=$6 WHERE id=$7`,
+      [anio, accion, responsable || null, fecha_inicio || null, fecha_fin || null, estado, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/ns/calendario/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_ns_calendario WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Documentos
+app.get('/api/ns/documentos', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query(
+      'SELECT id, anio, fecha, categoria, descripcion, archivo_nombre, archivo_tipo, created_at FROM dpo_ns_documentos WHERE ($1::int IS NULL OR anio=$1) ORDER BY fecha DESC',
+      [anio || null]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/ns/documentos', upload.single('archivo'), async (req, res) => {
+  try {
+    const { anio, fecha, categoria, descripcion } = req.body;
+    if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
+    const archivo_nombre = req.file.originalname;
+    const archivo_tipo = req.file.mimetype;
+    const archivo_data = req.file.buffer.toString('base64');
+    await pool.query(
+      `INSERT INTO dpo_ns_documentos (anio, fecha, categoria, descripcion, archivo_nombre, archivo_tipo, archivo_data) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [anio, fecha || null, categoria || null, descripcion || null, archivo_nombre, archivo_tipo, archivo_data]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/ns/documentos/:id/archivo', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT archivo_nombre, archivo_tipo, archivo_data FROM dpo_ns_documentos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].archivo_data) return res.status(404).json({ error: 'No encontrado' });
+    const { archivo_nombre, archivo_tipo, archivo_data } = r.rows[0];
+    res.setHeader('Content-Type', archivo_tipo);
+    res.setHeader('Content-Disposition', `inline; filename="${archivo_nombre}"`);
+    res.send(Buffer.from(archivo_data, 'base64'));
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/ns/documentos/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_ns_documentos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===================== EVALUACIÓN DE DESEMPEÑO =====================
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_desempeno_archivos (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(300),
+  tipo VARCHAR(100),
+  ruta VARCHAR(500),
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+
+app.get('/api/desempeno/archivos', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, nombre, tipo, created_at FROM dpo_desempeno_archivos ORDER BY created_at DESC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/desempeno/archivos/:id/file', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_desempeno_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).end();
+    const { nombre, tipo, ruta } = r.rows[0];
+    res.setHeader('Content-Type', tipo || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
+    res.sendFile(ruta);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/desempeno/archivos', uploadDisk.single('archivo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    const r = await pool.query(
+      'INSERT INTO dpo_desempeno_archivos (nombre, tipo, ruta) VALUES ($1,$2,$3) RETURNING id',
+      [req.file.originalname, req.file.mimetype, req.file.path]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/desempeno/archivos/:id', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ruta FROM dpo_desempeno_archivos WHERE id=$1', [req.params.id]);
+    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
+    await pool.query('DELETE FROM dpo_desempeno_archivos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/evaluacion-desempeno', (req, res) => res.sendFile(path.join(__dirname, 'public', 'evaluacion-desempeno.html')));
+
+// ===================== EVALUACIÓN DEL DISTRIBUIDOR =====================
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_distrib_archivos (
+  id SERIAL PRIMARY KEY,
+  anio INTEGER NOT NULL,
+  nombre VARCHAR(300),
+  tipo VARCHAR(100),
+  contenido TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+
+app.get('/api/distrib/archivos', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query(
+      'SELECT id, anio, nombre, tipo, created_at FROM dpo_distrib_archivos WHERE anio=$1 ORDER BY created_at DESC',
+      [anio]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/distrib/archivos/:id/file', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_distrib_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).end();
+    const { nombre, tipo, ruta } = r.rows[0];
+    res.setHeader('Content-Type', tipo || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
+    res.sendFile(ruta);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/distrib/archivos', uploadDisk.single('archivo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    const { anio } = req.body;
+    const r = await pool.query(
+      'INSERT INTO dpo_distrib_archivos (anio, nombre, tipo, ruta) VALUES ($1,$2,$3,$4) RETURNING id',
+      [anio, req.file.originalname, req.file.mimetype, req.file.path]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/distrib/archivos/:id', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ruta FROM dpo_distrib_archivos WHERE id=$1', [req.params.id]);
+    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
+    await pool.query('DELETE FROM dpo_distrib_archivos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/evaluacion-distribuidor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'evaluacion-distribuidor.html')));
+
 // ===================== OPR =====================
+
+// Tabla archivos OPR — usa disco, no base64 en DB
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_opr_archivos (
+  id SERIAL PRIMARY KEY,
+  periodo_id INTEGER REFERENCES dpo_opr_periodos(id) ON DELETE CASCADE,
+  nombre VARCHAR(300),
+  tipo VARCHAR(100),
+  ruta VARCHAR(500),
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_opr_archivos ADD COLUMN IF NOT EXISTS ruta VARCHAR(500)`).catch(()=>{});
+
+app.get('/api/opr/archivos', async (req, res) => {
+  try {
+    const { periodo_id } = req.query;
+    const r = await pool.query('SELECT id, periodo_id, nombre, tipo, created_at FROM dpo_opr_archivos WHERE periodo_id=$1 ORDER BY created_at DESC', [periodo_id]);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/opr/archivos/:id/file', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_opr_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).end();
+    const { nombre, tipo, ruta } = r.rows[0];
+    res.setHeader('Content-Type', tipo || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
+    res.sendFile(ruta);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/opr/archivos', uploadDisk.single('archivo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    const { periodo_id } = req.body;
+    const r = await pool.query(
+      'INSERT INTO dpo_opr_archivos (periodo_id, nombre, tipo, ruta) VALUES ($1,$2,$3,$4) RETURNING id',
+      [periodo_id, req.file.originalname, req.file.mimetype, req.file.path]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/opr/archivos/:id', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ruta FROM dpo_opr_archivos WHERE id=$1', [req.params.id]);
+    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
+    await pool.query('DELETE FROM dpo_opr_archivos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/opr/periodos', async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM dpo_opr_periodos ORDER BY id DESC');
@@ -2791,6 +3627,320 @@ app.post('/api/opr/upload', upload.single('file'), async (req, res) => {
       count++;
     }
     res.json({ ok: true, periodo_id: periodoId, personas: count });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===================== KPI TURNOVER =====================
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_turnover_archivos (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(300),
+  tipo VARCHAR(200),
+  ruta VARCHAR(500),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+)`).catch(()=>{});
+
+app.get('/api/turnover/archivos', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, nombre, tipo, created_at FROM dpo_turnover_archivos ORDER BY created_at DESC');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/turnover/archivos/:id/file', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_turnover_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).end();
+    const { nombre, tipo, ruta } = r.rows[0];
+    if (!ruta || !fs.existsSync(ruta)) return res.status(404).json({ error: 'Archivo no encontrado en disco' });
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(nombre)}"`);
+    if (tipo) res.setHeader('Content-Type', tipo);
+    res.sendFile(ruta);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/turnover/archivos', uploadDisk.single('archivo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    const r = await pool.query(
+      'INSERT INTO dpo_turnover_archivos (nombre, tipo, ruta) VALUES ($1,$2,$3) RETURNING id',
+      [req.file.originalname, req.file.mimetype, req.file.path]
+    );
+    res.json({ ok: true, id: r.rows[0].id });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/turnover/archivos/:id', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT ruta FROM dpo_turnover_archivos WHERE id=$1', [req.params.id]);
+    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
+    await pool.query('DELETE FROM dpo_turnover_archivos WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/kpi-turnover', (req, res) => res.sendFile(path.join(__dirname, 'public', 'kpi-turnover.html')));
+
+// ===================== KPI TURNOVER — DASHBOARD =====================
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_turnover_dotacion (
+  id SERIAL PRIMARY KEY,
+  anio INTEGER NOT NULL,
+  mes INTEGER NOT NULL,
+  dni BIGINT,
+  nombre VARCHAR(200),
+  apellido VARCHAR(200),
+  genero VARCHAR(50),
+  sector VARCHAR(100),
+  posicion VARCHAR(200),
+  tipo_contrato VARCHAR(50),
+  fecha_nacimiento DATE,
+  fecha_ingreso DATE,
+  ftes VARCHAR(10),
+  tipo_salida VARCHAR(200),
+  requiere_reemplazo BOOLEAN DEFAULT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+)`).catch(()=>{});
+
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_turnover_config (
+  anio INTEGER PRIMARY KEY,
+  obj_tto_indeterminados DECIMAL(6,4) DEFAULT 0.0220
+)`).catch(()=>{});
+
+const MESES_SHEET = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function parseDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return isNaN(val) ? null : val.toISOString().split('T')[0];
+  const d = new Date(val);
+  return isNaN(d) ? null : d.toISOString().split('T')[0];
+}
+
+function classifySector(sector) {
+  const s = (sector || '').toUpperCase();
+  if (s.includes('VENT')) return 'ventas';
+  if (s.includes('LOG') || s.includes('DEP')) return 'logistica';
+  if (s.includes('ADM')) return 'admin';
+  return 'otros';
+}
+
+function generacion(fechaNac) {
+  if (!fechaNac) return null;
+  const anio = new Date(fechaNac).getFullYear();
+  if (anio >= 1945 && anio <= 1964) return 'boomer';
+  if (anio >= 1965 && anio <= 1981) return 'x';
+  if (anio >= 1982 && anio <= 1994) return 'y';
+  if (anio >= 1995 && anio <= 2009) return 'z';
+  return 'otro';
+}
+
+app.post('/api/turnover/importar', uploadDisk.single('archivo'), async (req, res) => {
+  try {
+    const anio = parseInt(req.body.anio);
+    const mes  = parseInt(req.body.mes);
+    if (!anio || !mes) return res.status(400).json({ error: 'Falta anio o mes' });
+
+    const wb = xlsx.readFile(req.file.path, { cellDates: true, raw: false });
+    fs.unlink(req.file.path, ()=>{});
+
+    // Detectar formato: legajos mensual (hoja DOTACIÓN) o dashboard (hoja 📅 MesNombre)
+    const sheetDot = wb.SheetNames.find(n => n.toUpperCase().includes('DOTACI'));
+    const sheetDash = `📅 ${MESES_SHEET[mes-1]}`;
+    const useLegajos = !!sheetDot;
+    const ws = useLegajos ? wb.Sheets[sheetDot] : wb.Sheets[sheetDash];
+    if (!ws) return res.status(400).json({ error: `No se encontró una hoja de dotación en el archivo. Se esperaba "${sheetDash}" o "DOTACIÓN".` });
+
+    // Headers en fila 1 (legajos) o fila 2 (dashboard), datos desde siguiente fila
+    const rows = xlsx.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+    const dataStart = useLegajos ? 2 : 2; // ambos tienen headers en fila 2 (índice 1), datos desde índice 2
+
+    // Mapeo de columnas según formato (0-based)
+    // Legajos: DNI=7, NOMBRE=8, APELLIDO=9, GÉNERO=11, F_NAC=12, SECTOR=13, POSICIÓN=14, TIPO_CONTRATO=17, F_INGRESO=18, F_SALIDA=25, TIPO_SALIDA=26
+    // Dashboard: DNI=6, NOMBRE=3, APELLIDO=4, GÉNERO=7, F_NAC=8, SECTOR=9, POSICIÓN=10, TIPO_CONTRATO=12, F_INGRESO=13, FTES=28, TIPO_SALIDA=17
+    const col = useLegajos
+      ? { dni:7, nom:8, ape:9, gen:11, fnac:12, sec:13, pos:14, cont:17, fing:18, fsal:25, tsal:26, ftes:-1 }
+      : { dni:6, nom:3, ape:4, gen:7, fnac:8, sec:9, pos:10, cont:12, fing:13, fsal:-1, tsal:17, ftes:28 };
+
+    await pool.query('DELETE FROM dpo_turnover_dotacion WHERE anio=$1 AND mes=$2', [anio, mes]);
+
+    const bajas = [];
+    for (let i = dataStart; i < rows.length; i++) {
+      const r = rows[i];
+      const nombre = (r[col.nom] || '').trim();
+      if (!nombre) continue;
+
+      const tipo_contrato = (r[col.cont] || '').toString().trim().toUpperCase();
+      const tipo_salida   = (r[col.tsal] || '').toString().trim() || null;
+
+      let ftes;
+      if (col.ftes >= 0) {
+        ftes = (r[col.ftes] || '').toString().toLowerCase().trim();
+      } else {
+        // Formato legajos: baja si tiene fecha de salida
+        ftes = (r[col.fsal] || '').toString().trim() ? 'no' : 'si';
+      }
+
+      const ins = await pool.query(
+        `INSERT INTO dpo_turnover_dotacion
+           (anio,mes,dni,nombre,apellido,genero,sector,posicion,tipo_contrato,fecha_nacimiento,fecha_ingreso,ftes,tipo_salida)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+        [
+          anio, mes,
+          r[col.dni] ? parseInt(r[col.dni]) : null,
+          nombre, (r[col.ape]||'').trim(),
+          (r[col.gen]||'').trim().toUpperCase(),
+          (r[col.sec]||'').trim().toUpperCase(),
+          (r[col.pos]||'').trim().toUpperCase(),
+          tipo_contrato,
+          parseDate(r[col.fnac]),
+          parseDate(r[col.fing]),
+          ftes,
+          tipo_salida
+        ]
+      );
+
+      if (ftes === 'no' && tipo_contrato === 'INDETERMINADO') {
+        bajas.push({ id: ins.rows[0].id, nombre: `${nombre} ${(r[col.ape]||'').trim()}`, tipo_salida: tipo_salida||'—', sector: r[col.sec]||'', posicion: r[col.pos]||'' });
+      }
+    }
+
+    res.json({ ok: true, mes, bajas_indeterminadas: bajas });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/turnover/confirmar-reemplazos', async (req, res) => {
+  try {
+    const { confirmaciones } = req.body; // [{ id, requiere_reemplazo: true/false }]
+    for (const c of confirmaciones) {
+      await pool.query('UPDATE dpo_turnover_dotacion SET requiere_reemplazo=$1 WHERE id=$2', [c.requiere_reemplazo, c.id]);
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/turnover/pendientes', async (req, res) => {
+  try {
+    const anio = parseInt(req.query.anio) || new Date().getFullYear();
+    const r = await pool.query(
+      `SELECT id, mes, nombre, apellido, tipo_salida, sector, posicion
+       FROM dpo_turnover_dotacion
+       WHERE anio=$1 AND ftes='no' AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo IS NULL
+       ORDER BY mes, apellido`, [anio]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/turnover/dashboard', async (req, res) => {
+  try {
+    const anio = parseInt(req.query.anio) || new Date().getFullYear();
+
+    const LID = `(posicion ILIKE '%DIRECTOR%' OR posicion ILIKE '%GERENTE%' OR posicion ILIKE '%JEFE%' OR posicion ILIKE '%DUEÑO%' OR posicion ILIKE '%DUENO%' OR posicion ILIKE '%ENCARGADO%' OR posicion ILIKE '%RESPONSABLE%')`;
+
+    const q = (a) => pool.query(`
+      SELECT
+        mes,
+        COUNT(*) FILTER (WHERE ftes='si') AS dot_total,
+        COUNT(*) FILTER (WHERE ftes='si' AND tipo_contrato='INDETERMINADO') AS dot_indet,
+        COUNT(*) FILTER (WHERE ftes='si' AND tipo_contrato='TEMPORADA') AS dot_temp,
+        COUNT(*) FILTER (WHERE ftes='si' AND genero='FEMENINO') AS dot_muj,
+        COUNT(*) FILTER (WHERE ftes='si' AND genero='MASCULINO') AS dot_hom,
+        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%VENT%') AS sec_ventas,
+        COUNT(*) FILTER (WHERE ftes='si' AND (sector ILIKE '%LOG%' OR sector ILIKE '%DEP%')) AS sec_log,
+        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%ADM%') AS sec_adm,
+        COUNT(*) FILTER (WHERE ftes='si' AND NOT (sector ILIKE '%VENT%' OR sector ILIKE '%LOG%' OR sector ILIKE '%DEP%' OR sector ILIKE '%ADM%')) AS sec_otros,
+        COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio) AS ing_total,
+        COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND tipo_contrato='INDETERMINADO') AS ing_indet,
+        COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND tipo_contrato='TEMPORADA') AS ing_temp,
+        COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND genero='FEMENINO') AS ing_muj,
+        COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND genero='MASCULINO') AS ing_hom,
+        COUNT(*) FILTER (WHERE ftes='no') AS tto_total,
+        COUNT(*) FILTER (WHERE ftes='no' AND tipo_contrato='TEMPORADA') AS tto_temp,
+        COUNT(*) FILTER (WHERE ftes='no' AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo=true) AS tto_indet,
+        COUNT(*) FILTER (WHERE ftes='no' AND (tipo_salida ILIKE '%RENUNCIA%')) AS tto_vol,
+        COUNT(*) FILTER (WHERE ftes='no' AND (tipo_salida ILIKE '%DESPIDO%' OR tipo_salida ILIKE '%CAUSA%')) AS tto_invol,
+        COUNT(*) FILTER (WHERE ftes='no' AND genero='FEMENINO') AS tto_muj,
+        COUNT(*) FILTER (WHERE ftes='no' AND genero='MASCULINO') AS tto_hom,
+        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%VENT%' AND genero='FEMENINO') AS ven_muj,
+        COUNT(*) FILTER (WHERE ftes='si' AND (sector ILIKE '%LOG%' OR sector ILIKE '%DEP%') AND genero='FEMENINO') AS log_muj,
+        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%ADM%' AND genero='FEMENINO') AS adm_muj,
+        COUNT(*) FILTER (WHERE ftes='si' AND ${LID}) AS lid_total,
+        COUNT(*) FILTER (WHERE ftes='si' AND genero='FEMENINO' AND ${LID}) AS lid_muj,
+        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1945 AND 1964) AS gen_boomer,
+        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1965 AND 1981) AS gen_x,
+        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1982 AND 1994) AS gen_y,
+        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1995 AND 2009) AS gen_z
+      FROM dpo_turnover_dotacion
+      WHERE anio=$1
+      GROUP BY mes ORDER BY mes
+    `, [a]);
+
+    const [cur, prev, cfg, pend] = await Promise.all([
+      q(anio),
+      q(anio - 1),
+      pool.query('SELECT * FROM dpo_turnover_config WHERE anio=$1', [anio]),
+      pool.query(`SELECT COUNT(*)::int AS c FROM dpo_turnover_dotacion WHERE anio=$1 AND ftes='no' AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo IS NULL`, [anio])
+    ]);
+
+    const toN = v => parseInt(v) || 0;
+    const pct = (a,b) => b > 0 ? a/b : null;
+
+    function buildMonth(row) {
+      const d = toN(row.dot_total);
+      return {
+        dot_total: d, dot_indet: toN(row.dot_indet), dot_temp: toN(row.dot_temp),
+        dot_muj: toN(row.dot_muj), dot_hom: toN(row.dot_hom),
+        pct_muj: pct(toN(row.dot_muj), d), pct_hom: pct(toN(row.dot_hom), d),
+        sec_ventas: toN(row.sec_ventas), sec_log: toN(row.sec_log),
+        sec_adm: toN(row.sec_adm), sec_otros: toN(row.sec_otros),
+        ing_total: toN(row.ing_total), ing_indet: toN(row.ing_indet),
+        ing_temp: toN(row.ing_temp), ing_muj: toN(row.ing_muj), ing_hom: toN(row.ing_hom),
+        tto_total: toN(row.tto_total), tto_temp: toN(row.tto_temp),
+        tto_indet: toN(row.tto_indet), tto_vol: toN(row.tto_vol),
+        tto_invol: toN(row.tto_invol), tto_muj: toN(row.tto_muj), tto_hom: toN(row.tto_hom),
+        pct_tto_indet: pct(toN(row.tto_indet), d),
+        ven_muj: toN(row.ven_muj), log_muj: toN(row.log_muj), adm_muj: toN(row.adm_muj),
+        lid_total: toN(row.lid_total), lid_muj: toN(row.lid_muj),
+        pct_ven_muj: pct(toN(row.ven_muj), toN(row.sec_ventas)),
+        pct_log_muj: pct(toN(row.log_muj), toN(row.sec_log)),
+        pct_adm_muj: pct(toN(row.adm_muj), toN(row.sec_adm)),
+        pct_lid_muj: pct(toN(row.lid_muj), toN(row.lid_total)),
+        gen_boomer: toN(row.gen_boomer), gen_x: toN(row.gen_x),
+        gen_y: toN(row.gen_y), gen_z: toN(row.gen_z),
+        pct_gen_boomer: pct(toN(row.gen_boomer), d), pct_gen_x: pct(toN(row.gen_x), d),
+        pct_gen_y: pct(toN(row.gen_y), d), pct_gen_z: pct(toN(row.gen_z), d)
+      };
+    }
+
+    const months = {}, prevMonths = {};
+    for (let m = 1; m <= 12; m++) { months[m] = null; prevMonths[m] = null; }
+    for (const row of cur.rows) months[row.mes] = buildMonth(row);
+    for (const row of prev.rows) prevMonths[row.mes] = buildMonth(row);
+
+    res.json({
+      months,
+      prevMonths,
+      config: cfg.rows[0] || { anio, obj_tto_indeterminados: 0.0220 },
+      pendientes: pend.rows[0].c
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/turnover/config', async (req, res) => {
+  try {
+    const anio = parseInt(req.query.anio) || new Date().getFullYear();
+    const r = await pool.query('SELECT * FROM dpo_turnover_config WHERE anio=$1', [anio]);
+    res.json(r.rows[0] || { anio, obj_tto_indeterminados: 0.0220 });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/turnover/config', async (req, res) => {
+  try {
+    const { anio, obj_tto_indeterminados } = req.body;
+    await pool.query(
+      `INSERT INTO dpo_turnover_config (anio, obj_tto_indeterminados) VALUES ($1,$2)
+       ON CONFLICT (anio) DO UPDATE SET obj_tto_indeterminados=$2`,
+      [anio, obj_tto_indeterminados]
+    );
+    res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
