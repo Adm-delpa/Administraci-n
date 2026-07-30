@@ -182,6 +182,8 @@ async function initDB() {
 
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS alta_fantasia VARCHAR(200);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_motivo VARCHAR(100);
+      ALTER TABLE tickets ALTER COLUMN num_cliente TYPE VARCHAR(300);
+      ALTER TABLE tickets ALTER COLUMN nombre_cliente TYPE VARCHAR(300);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_banco VARCHAR(100);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_suc VARCHAR(50);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_numero VARCHAR(100);
