@@ -180,8 +180,14 @@ async function initDB() {
         cerrado_at TIMESTAMP
       );
 
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS alta_fantasia VARCHAR(200);
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_motivo VARCHAR(100);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS alta_fantasia VARCHAR(500);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_motivo VARCHAR(500);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_banco VARCHAR(500);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_suc VARCHAR(500);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_numero VARCHAR(500);
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_conf DATE;
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_cobro DATE;
+      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_importe NUMERIC(14,2);
       ALTER TABLE tickets ALTER COLUMN tipo TYPE VARCHAR(500);
       ALTER TABLE tickets ALTER COLUMN titulo TYPE VARCHAR(500);
       ALTER TABLE tickets ALTER COLUMN num_cliente TYPE VARCHAR(500);
@@ -199,12 +205,6 @@ async function initDB() {
       ALTER TABLE tickets ALTER COLUMN asignado_a_nombre TYPE VARCHAR(500);
       ALTER TABLE tickets ALTER COLUMN cargado_por_nombre TYPE VARCHAR(500);
       ALTER TABLE tickets ALTER COLUMN cerrado_por_nombre TYPE VARCHAR(500);
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_banco VARCHAR(100);
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_suc VARCHAR(50);
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_numero VARCHAR(100);
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_conf DATE;
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_cobro DATE;
-      ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_importe NUMERIC(14,2);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS cierre_imagen TEXT;
 
       CREATE TABLE IF NOT EXISTS ticket_notas (
