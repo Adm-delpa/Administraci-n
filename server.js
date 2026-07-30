@@ -182,8 +182,23 @@ async function initDB() {
 
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS alta_fantasia VARCHAR(200);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_motivo VARCHAR(100);
-      ALTER TABLE tickets ALTER COLUMN num_cliente TYPE VARCHAR(300);
-      ALTER TABLE tickets ALTER COLUMN nombre_cliente TYPE VARCHAR(300);
+      ALTER TABLE tickets ALTER COLUMN tipo TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN titulo TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN num_cliente TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN nombre_cliente TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN alta_nombre TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN alta_telefono TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN alta_fantasia TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN alta_direccion TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN alta_localidad TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN alta_rubro TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN chq_motivo TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN chq_banco TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN chq_suc TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN chq_numero TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN asignado_a_nombre TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN cargado_por_nombre TYPE VARCHAR(500);
+      ALTER TABLE tickets ALTER COLUMN cerrado_por_nombre TYPE VARCHAR(500);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_banco VARCHAR(100);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_suc VARCHAR(50);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_numero VARCHAR(100);
