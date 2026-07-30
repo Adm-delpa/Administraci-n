@@ -188,23 +188,6 @@ async function initDB() {
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_conf DATE;
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_fecha_cobro DATE;
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS chq_importe NUMERIC(14,2);
-      ALTER TABLE tickets ALTER COLUMN tipo TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN titulo TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN num_cliente TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN nombre_cliente TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN alta_nombre TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN alta_telefono TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN alta_fantasia TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN alta_direccion TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN alta_localidad TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN alta_rubro TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN chq_motivo TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN chq_banco TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN chq_suc TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN chq_numero TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN asignado_a_nombre TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN cargado_por_nombre TYPE VARCHAR(500);
-      ALTER TABLE tickets ALTER COLUMN cerrado_por_nombre TYPE VARCHAR(500);
       ALTER TABLE tickets ADD COLUMN IF NOT EXISTS cierre_imagen TEXT;
 
       CREATE TABLE IF NOT EXISTS ticket_notas (
@@ -293,6 +276,15 @@ async function initDB() {
       );
 
     `);
+
+    // Ampliar campos de texto de tickets a VARCHAR(500)
+    const ticketCols = ['tipo','titulo','num_cliente','nombre_cliente','alta_nombre','alta_telefono',
+      'alta_fantasia','alta_direccion','alta_localidad','alta_rubro','chq_motivo','chq_banco',
+      'chq_suc','chq_numero','asignado_a_nombre','cargado_por_nombre','cerrado_por_nombre'];
+    for (const col of ticketCols) {
+      try { await client.query(`ALTER TABLE tickets ALTER COLUMN ${col} TYPE VARCHAR(500)`); }
+      catch(e) { /* columna ya es suficientemente grande o no existe aún */ }
+    }
 
     // Crear usuarios por defecto si no existen
     const adminExists = await client.query("SELECT id FROM usuarios WHERE username='admin'");
