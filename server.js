@@ -577,7 +577,8 @@ app.get('/api/tickets', async (req, res) => {
   try {
     let where = [];
     let params = [];
-    if (estado) { params.push(estado); where.push(`t.estado=$${params.length}`); }
+    if (estado === 'activos') { where.push(`t.estado != 'finalizado'`); }
+    else if (estado) { params.push(estado); where.push(`t.estado=$${params.length}`); }
     if (tipo) { params.push(tipo); where.push(`t.tipo=$${params.length}`); }
     if (asignado) { params.push(asignado); where.push(`t.asignado_a=$${params.length}`); }
     const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';

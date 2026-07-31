@@ -369,10 +369,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
 
   <!-- FILTROS -->
   <div class="filters">
-    <button class="fil-btn active" onclick="setFiltro(this,'')">Todos</button>
+    <button class="fil-btn active" onclick="setFiltro(this,'activos')">Activos</button>
     <button class="fil-btn" onclick="setFiltro(this,'abierto')">Abiertos</button>
     <button class="fil-btn" onclick="setFiltro(this,'en_proceso')">En proceso</button>
     <button class="fil-btn" onclick="setFiltro(this,'finalizado')">Finalizados</button>
+    <button class="fil-btn" onclick="setFiltro(this,'')">Todos</button>
     <select class="fil-sel" id="fil-tipo" onchange="cargar()">
       <option value="">Todos los tipos</option>
       <option value="reclamo">Reclamo</option>
@@ -414,7 +415,7 @@ if (!USER) { window.location.href = '/'; }
 document.getElementById('user-nombre').textContent = USER.nombre || USER.username;
 document.getElementById('user-avatar').textContent = (USER.nombre||USER.username).charAt(0).toUpperCase();
 
-var filtroEstado = '';
+var filtroEstado = 'activos';
 var filtroTardanza = '';
 var openTicketId = null;
 var usuarios = [];
