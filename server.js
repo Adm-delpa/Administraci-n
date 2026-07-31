@@ -660,6 +660,25 @@ app.put('/api/tickets/:id/finalizar', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'Error al finalizar' }); }
 });
 
+app.patch('/api/tickets/:id/reasignar', async (req, res) => {
+  const { asignado_a, asignado_a_nombre, reasignado_por_nombre } = req.body;
+  if (!asignado_a) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const t = await pool.query(
+      'UPDATE tickets SET asignado_a=$1, asignado_a_nombre=$2 WHERE id=$3 RETURNING *',
+      [asignado_a, asignado_a_nombre, req.params.id]
+    );
+    if (!t.rows.length) return res.status(404).json({ error: 'No encontrado' });
+    const anterior = t.rows[0].asignado_a_nombre || 'Sin asignar';
+    await pool.query(
+      'INSERT INTO ticket_notas (ticket_id, autor, autor_nombre, texto) VALUES ($1,$2,$3,$4)',
+      [req.params.id, 'sistema', 'Sistema',
+       `Reasignado a ${asignado_a_nombre} (antes: ${anterior}) por ${reasignado_por_nombre}`]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al reasignar' }); }
+});
+
 app.delete('/api/tickets/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM tickets WHERE id=$1', [req.params.id]);

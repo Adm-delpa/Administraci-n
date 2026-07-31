@@ -583,7 +583,18 @@ function renderDetail(t, el){
   html += '<div class="d-row"><span class="d-lbl">Estado</span><span class="badge '+badgeCls+'" style="margin-left:0">'+badgeTxt+'</span></div>';
   if(t.num_cliente) html += '<div class="d-row"><span class="d-lbl">N° cliente</span><span class="d-val">'+esc(t.num_cliente)+'</span></div>';
   if(t.nombre_cliente) html += '<div class="d-row"><span class="d-lbl">Cliente</span><span class="d-val">'+esc(t.nombre_cliente)+'</span></div>';
-  html += '<div class="d-row"><span class="d-lbl">Asignado a</span><span class="d-val">'+(t.asignado_a_nombre?esc(t.asignado_a_nombre):'<span style="color:#9896A0;font-weight:400">Sin asignar</span>')+'</span></div>';
+  var asignadoVal = t.asignado_a_nombre ? esc(t.asignado_a_nombre) : '<span style="color:#9896A0;font-weight:400">Sin asignar</span>';
+  var btnReasignar = t.estado !== 'finalizado'
+    ? '<button onclick="abrirReasignar('+t.id+',event)" style="margin-left:8px;font-size:10px;padding:2px 8px;border:1px solid #DDDBD6;border-radius:5px;background:white;color:#56555A;cursor:pointer;font-weight:600">Reasignar</button>'
+    : '';
+  html += '<div class="d-row"><span class="d-lbl">Asignado a</span><span class="d-val" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">'+asignadoVal+btnReasignar+'</span></div>';
+  html += '<div id="reasignar-form-'+t.id+'" style="display:none;margin:4px 0 8px 0;padding:10px 12px;background:#F4F4F6;border-radius:8px;border:1px solid #E0DFD9">'
+    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:6px">Reasignar a</div>'
+    +'<select id="reasignar-sel-'+t.id+'" style="width:100%;padding:6px 8px;border:1px solid #DDDBD6;border-radius:6px;font-size:13px;margin-bottom:8px"></select>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="cerrarReasignar('+t.id+')" style="flex:1;padding:6px;border:1px solid #DDDBD6;border-radius:6px;background:white;color:#56555A;font-size:12px;cursor:pointer">Cancelar</button>'
+    +'<button onclick="confirmarReasignar('+t.id+')" style="flex:1;padding:6px;border:none;border-radius:6px;background:#2563EB;color:white;font-size:12px;font-weight:600;cursor:pointer">Confirmar</button>'
+    +'</div></div>';
   html += '<div class="d-row"><span class="d-lbl">Cargado por</span><span class="d-val">'+esc(t.cargado_por_nombre||t.cargado_por)+' · '+fmtFechaHora(t.cargado_at)+'</span></div>';
 
   if(t.tipo==='alta_cliente' && (t.alta_nombre||t.alta_telefono||t.alta_direccion)){
@@ -983,6 +994,47 @@ async function borrarTicket(id){
     if(r.ok){ await cargar(); await cargarResumen(); }
     else alert('Error al eliminar.');
   }catch(e){ alert('Error de conexión.'); }
+}
+
+function abrirReasignar(id, e){
+  e.stopPropagation();
+  var form = document.getElementById('reasignar-form-'+id);
+  if(!form) return;
+  var sel = document.getElementById('reasignar-sel-'+id);
+  sel.innerHTML = '<option value="">— Seleccioná un responsable —</option>';
+  usuarios.forEach(function(u){
+    sel.innerHTML += '<option value="'+esc(u.username)+'">'+esc(u.nombre||u.username)+'</option>';
+  });
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function cerrarReasignar(id){
+  var form = document.getElementById('reasignar-form-'+id);
+  if(form) form.style.display = 'none';
+}
+
+async function confirmarReasignar(id){
+  var sel = document.getElementById('reasignar-sel-'+id);
+  var nuevoId = sel.value;
+  var nuevoNombre = sel.options[sel.selectedIndex].text;
+  if(!nuevoId){ alert('Seleccioná un responsable.'); return; }
+  try{
+    var r = await fetch('/api/tickets/'+id+'/reasignar', {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        asignado_a: nuevoId,
+        asignado_a_nombre: nuevoNombre,
+        reasignado_por_nombre: USER.nombre || USER.username
+      })
+    });
+    if(!r.ok){ alert('Error al reasignar.'); return; }
+    cerrarReasignar(id);
+    await cargar();
+    await cargarResumen();
+    // Reabrir el ticket
+    setTimeout(function(){ var el=document.getElementById('ticket-'+id); if(el) el.click(); }, 100);
+  } catch(e){ alert('Error de conexión.'); }
 }
 
 cargarUsuarios();
