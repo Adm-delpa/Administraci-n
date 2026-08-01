@@ -1981,7 +1981,9 @@ function abrirModalVincularChess(gi){
   if(!r||(r.nivel!=='NC'&&r.nivel!=='PEND')) return;
   mvcIdx=gi; mvcSelChess=null;
   mvcCuitDetectado=extraerCUIT(r.desc||'');
-  var cliDetectado=mvcCuitDetectado&&state.clientes?Object.values(state.clientes).find(function(c){return c.cuit===mvcCuitDetectado;}):null;
+  var cuitMapLocal={};
+  Object.values(state.clientes||{}).forEach(function(c){if(c.cuit) cuitMapLocal[normCUIT(c.cuit)]=c;});
+  var cliDetectado=mvcCuitDetectado?cuitMapLocal[mvcCuitDetectado]:null;
   document.getElementById('mvc-titulo').textContent=fmtFechaDisplay(r.fecha)+' — $'+fmtN(r.importe)+(r.desc?' — '+r.desc.slice(0,40):'');
   if(cliDetectado){
     document.getElementById('mvc-aviso').textContent='CUIT detectado: '+fmtCUIT(mvcCuitDetectado)+' — '+cliDetectado.n+'. Mostrando sus cobros en Chess ordenados por cercanía de importe.';
@@ -2015,7 +2017,10 @@ function filtrarModalVincularChess(){
     // Si detectamos CUIT, filtrar por ese cliente (salvo que el usuario escriba algo)
     if(mvcCuitDetectado&&!q){
       var cliCuit=Object.values(state.clientes||{}).find(function(cl){return cl.cuit===mvcCuitDetectado;});
-      if(cliCuit&&!codEq(c.codCli,cliCuit.c)) return false;
+      var cuitMapLocal2={};
+    Object.values(state.clientes||{}).forEach(function(cl){if(cl.cuit) cuitMapLocal2[normCUIT(cl.cuit)]=cl;});
+    var cliCuit=cuitMapLocal2[mvcCuitDetectado];
+    if(cliCuit&&!codEq(c.codCli,cliCuit.c)) return false;
     }
     if(!q) return true;
     return (c.nomCli||'').toLowerCase().includes(q)||
