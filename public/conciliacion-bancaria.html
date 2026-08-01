@@ -2104,12 +2104,13 @@ function cerrarModalVincular(){
 function filtrarModalVincular(){
   var q=(document.getElementById('mv-busq').value||'').toLowerCase();
   var r=state.filtradas[mvIdx];
+  var usadasFpSet=new Set();
+  state.resultados.forEach(function(res){
+    if((res.nivel==='N1'||res.nivel==='CONC'||res.nivel==='MAN'||res.nivel==='N2')&&res.bancoFp) usadasFpSet.add(res.bancoFp);
+  });
   var nc=state.banco.filter(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
-    var usada=state.resultados.some(function(res){
-      return (res.nivel==='N1'||res.nivel==='CONC'||res.nivel==='MAN'||res.nivel==='N2')&&res.bancoFp===fp;
-    });
-    if(usada) return false;
+    if(usadasFpSet.has(fp)) return false;
     if(!q) return true;
     return (b.desc||'').toLowerCase().includes(q)||String(b.importe).includes(q)||(b.fecha||'').includes(q);
   });
