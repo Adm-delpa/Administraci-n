@@ -1978,7 +1978,7 @@ var mvcCuitDetectado=null;
 
 function abrirModalVincularChess(gi){
   var r=state.filtradas[gi];
-  if(!r||(r.nivel!=='NC'&&r.nivel!=='PEND')) return;
+  if(!r) return;
   mvcIdx=gi; mvcSelChess=null;
   mvcCuitDetectado=extraerCUIT(r.desc||'');
   var cuitMapLocal={};
@@ -1987,13 +1987,12 @@ function abrirModalVincularChess(gi){
   document.getElementById('mvc-titulo').textContent=fmtFechaDisplay(r.fecha)+' — $'+fmtN(r.importe)+(r.desc?' — '+r.desc.slice(0,40):'');
   if(cliDetectado){
     document.getElementById('mvc-aviso').textContent='CUIT detectado: '+fmtCUIT(mvcCuitDetectado)+' — '+cliDetectado.n+'. Mostrando sus cobros en Chess ordenados por cercanía de importe.';
-    document.getElementById('mvc-busq').value='';
     document.getElementById('mvc-busq').placeholder='Buscar dentro de los cobros de '+cliDetectado.n+'...';
   } else {
     document.getElementById('mvc-aviso').textContent='Sin CUIT identificado. Buscá manualmente el cobro Chess que corresponde.';
-    document.getElementById('mvc-busq').value='';
     document.getElementById('mvc-busq').placeholder='Buscar por cliente, importe o fecha...';
   }
+  document.getElementById('mvc-busq').value='';
   document.getElementById('mvc-btn-ok').disabled=true;
   filtrarModalVincularChess();
   document.getElementById('modal-vincular-chess').classList.add('open');
