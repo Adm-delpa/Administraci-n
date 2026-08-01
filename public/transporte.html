@@ -735,6 +735,10 @@ async function guardar() {
   var remito2=getFactura('f-rem2-punto','f-rem2-nro');
 
   if(!fecha||!chofer||!origen||!destino){ toast('Completá fecha, chofer, origen y destino.','err-t'); return; }
+  var fact1nro = (document.getElementById('f-fact1-nro').value||'').trim();
+  var rem1nro  = (document.getElementById('f-rem1-nro').value||'').trim();
+  if(!fact1nro){ toast('Ingresá el número de factura.','err-t'); return; }
+  if(!rem1nro){  toast('Ingresá el número de remito.','err-t');  return; }
 
   var reg={fecha,factura1,remito1,factura2,remito2,origen,destino,chofer,valor,envase,descuento,obs,
     cargadoPor:userData.nombre||userData.username, cargadoEn:new Date().toISOString()};
