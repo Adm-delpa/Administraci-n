@@ -1974,13 +1974,24 @@ var mvIdx=null, mvSelBanco=null;
 // ── VINCULAR NC/PEND → CHESS ────────────────────────────────────────────────
 var mvcIdx=null, mvcSelChess=null;
 
+var mvcCuitDetectado=null;
+
 function abrirModalVincularChess(gi){
   var r=state.filtradas[gi];
   if(!r||(r.nivel!=='NC'&&r.nivel!=='PEND')) return;
   mvcIdx=gi; mvcSelChess=null;
+  mvcCuitDetectado=extraerCUIT(r.desc||'');
+  var cliDetectado=mvcCuitDetectado&&state.clientes?Object.values(state.clientes).find(function(c){return c.cuit===mvcCuitDetectado;}):null;
   document.getElementById('mvc-titulo').textContent=fmtFechaDisplay(r.fecha)+' — $'+fmtN(r.importe)+(r.desc?' — '+r.desc.slice(0,40):'');
-  document.getElementById('mvc-aviso').textContent='Movimiento bancario sin cobro Chess asociado. Seleccioná el cobro Chess que corresponde.';
-  document.getElementById('mvc-busq').value='';
+  if(cliDetectado){
+    document.getElementById('mvc-aviso').textContent='CUIT detectado: '+fmtCUIT(mvcCuitDetectado)+' — '+cliDetectado.n+'. Mostrando sus cobros en Chess ordenados por cercanía de importe.';
+    document.getElementById('mvc-busq').value='';
+    document.getElementById('mvc-busq').placeholder='Buscar dentro de los cobros de '+cliDetectado.n+'...';
+  } else {
+    document.getElementById('mvc-aviso').textContent='Sin CUIT identificado. Buscá manualmente el cobro Chess que corresponde.';
+    document.getElementById('mvc-busq').value='';
+    document.getElementById('mvc-busq').placeholder='Buscar por cliente, importe o fecha...';
+  }
   document.getElementById('mvc-btn-ok').disabled=true;
   filtrarModalVincularChess();
   document.getElementById('modal-vincular-chess').classList.add('open');
@@ -1988,13 +1999,12 @@ function abrirModalVincularChess(gi){
 
 function cerrarModalVincularChess(){
   document.getElementById('modal-vincular-chess').classList.remove('open');
-  mvcIdx=null; mvcSelChess=null;
+  mvcIdx=null; mvcSelChess=null; mvcCuitDetectado=null;
 }
 
 function filtrarModalVincularChess(){
   var q=(document.getElementById('mvc-busq').value||'').toLowerCase();
   var r=state.filtradas[mvcIdx];
-  // Chess usados: los que ya tienen bancoFp asignado en resultados MAN
   var usadosFp=new Set();
   state.resultados.forEach(function(res){
     if((res.nivel==='MAN'||res.nivel==='N1'||res.nivel==='CONC')&&res.chessFp) usadosFp.add(res.chessFp);
@@ -2002,6 +2012,11 @@ function filtrarModalVincularChess(){
   var lista=state.chess.filter(function(c){
     var fp=c.fecha+'|'+c.haber+'|'+c.codCli;
     if(usadosFp.has(fp)) return false;
+    // Si detectamos CUIT, filtrar por ese cliente (salvo que el usuario escriba algo)
+    if(mvcCuitDetectado&&!q){
+      var cliCuit=Object.values(state.clientes||{}).find(function(cl){return cl.cuit===mvcCuitDetectado;});
+      if(cliCuit&&!codEq(c.codCli,cliCuit.c)) return false;
+    }
     if(!q) return true;
     return (c.nomCli||'').toLowerCase().includes(q)||
            (c.codCli||'').toLowerCase().includes(q)||
