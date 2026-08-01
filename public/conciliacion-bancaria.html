@@ -629,6 +629,29 @@ tr:hover td{background:#f9fbff}
   </div>
 </div>
 
+<!-- Modal vincular NC/PEND con cobro Chess -->
+<div class="modal-bg" id="modal-vincular-chess" onclick="if(event.target===this)cerrarModalVincularChess()">
+  <div class="modal" style="width:560px">
+    <div class="modal-head">
+      <div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:2px">Vincular movimiento bancario a cobro Chess</div>
+        <h3 id="mvc-titulo">—</h3>
+      </div>
+      <button class="modal-close" onclick="cerrarModalVincularChess()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <div style="font-size:12px;background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:8px 12px;border-radius:7px" id="mvc-aviso"></div>
+      <input type="text" id="mvc-busq" placeholder="Buscar por cliente, importe o fecha..." style="width:100%;box-sizing:border-box;padding:7px 10px;border:1.5px solid #cbd5e1;border-radius:7px;background:#fff;color:#1a1a1a;font-size:13px;outline:none" oninput="filtrarModalVincularChess()">
+      <div id="mvc-list" style="flex:1;overflow-y:auto;max-height:320px;border:1px solid #e0e4ea;border-radius:8px;padding:4px 0"></div>
+      <div style="font-size:11px;color:#64748b">Mostrando cobros Chess sin movimiento bancario asignado</div>
+    </div>
+    <div class="modal-foot">
+      <button onclick="cerrarModalVincularChess()" style="padding:8px 18px;background:none;border:1.5px solid #3a3f5c;color:#94a3b8;border-radius:7px;font-size:13px;cursor:pointer">Cancelar</button>
+      <button id="mvc-btn-ok" onclick="vincularChess()" style="padding:8px 18px;background:#d97706;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer" disabled>Vincular y conciliar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal selección de hoja Excel -->
 <div id="modal-sheet" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center">
   <div style="background:#1e2235;border-radius:12px;padding:24px;min-width:320px;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
@@ -1820,12 +1843,12 @@ function renderTabla(){
       }
       var badge=r.nivel==='N1'?'<span class="badge b-n1">✓ Conciliado</span>':
                 r.nivel==='CONC'?'<span class="badge b-n1">✓ Conciliado</span>':
-                r.nivel==='MAN'?'<span class="badge b-n1">✓ Conciliado</span>':
+                r.nivel==='MAN'?'<span class="badge b-n1">✓ Conciliado</span>'+(r.chessDesc!==undefined?'<div style="font-size:10px;margin-top:4px;max-width:220px;white-space:normal;line-height:1.4"><span style="color:#0369a1">Chess: $'+fmtN(r.chessImporte)+' — '+esc((r.chessDesc||'').slice(0,50))+'</span><br><span style="color:#475569">Banco: $'+fmtN(r.importe)+' — '+esc((r.desc||'').slice(0,50))+'</span></div>':''):
                 r.nivel==='PEND'?'<span class="badge b-nc" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5">⏳ Pendiente de liquidación</span>':
                 r.nivel==='N2'?'<span class="badge b-n2">~ N2 probable</span>'+motivoTxt:
-                r.nivel==='PT'?'<span class="badge b-n2">⏳ Pend. transferencia</span>'+(r.motivo?'<div style="font-size:10px;color:#92400e;margin-top:3px;max-width:220px;white-space:normal;line-height:1.3">'+esc(r.motivo)+'</div>':''):
+                r.nivel==='PT'?'<span class="badge b-n2">⏳ Pend. transferencia</span>'+(r.bancDesc!==undefined?'<div style="font-size:10px;margin-top:4px;max-width:220px;white-space:normal;line-height:1.4"><span style="color:#0369a1">Chess: '+esc(r.desc||'')+(r.importe?' $'+fmtN(r.importe):'')+'</span><br><span style="color:#7c3aed">Banco: '+esc((r.bancDesc||'').slice(0,50))+(r.bancImporte?' $'+fmtN(r.bancImporte):'')+'</span></div>':r.motivo?'<div style="font-size:10px;color:#92400e;margin-top:3px;max-width:220px;white-space:normal;line-height:1.3">'+esc(r.motivo)+'</div>':''):
                 '<span class="badge b-nc">✕ Sin conciliar</span>'+motivoTxt;
-      var accion=r.nivel==='PEND'?'<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch"><button class="btn-asi" style="background:#7c3aed;color:#fff;border-color:#6d28d9" onclick="confirmarPend('+gi+')">✓ Confirmar</button><button class="btn-asi" onclick="abrirModal('+gi+')">Cambiar cliente</button></div>'
+      var accion=r.nivel==='PEND'?'<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch"><button class="btn-asi" style="background:#7c3aed;color:#fff;border-color:#6d28d9" onclick="confirmarPend('+gi+')">✓ Confirmar</button><button class="btn-asi" onclick="abrirModalVincularChess('+gi+')">⇄ Vincular a Chess</button><button class="btn-asi" onclick="abrirModal('+gi+')">Cambiar cliente</button></div>'
         :r.nivel==='PT'
         ?'<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch"><button class="btn-asi" style="background:#d97706;color:#fff;border-color:#b45309" onclick="abrirModalVincular('+gi+')">⇄ Vincular</button><button class="btn-asi" style="background:#d97706;color:#fff;border-color:#b45309" onclick="confirmarPT('+gi+')">✓ Confirmar</button></div>'
         :r.nivel==='N2'
@@ -1833,6 +1856,7 @@ function renderTabla(){
         :r.nivel==='NC'?
           '<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch">'
           +(r.sugerido?'<button class="btn-asi" style="background:#16a34a;color:#fff;border-color:#16a34a" onclick="confirmarSugerido('+gi+')" title="Confirmar: '+esc(r.sugerido.nom)+'">✓ Confirmar</button>':'')
+          +'<button class="btn-asi" onclick="abrirModalVincularChess('+gi+')">⇄ Vincular a Chess</button>'
           +'<button class="btn-asi" onclick="abrirModal('+gi+')">Asignar</button>'
           +'</div>'
         :'';
@@ -1946,6 +1970,105 @@ async function eliminarRegistro(gi){
 }
 
 var mvIdx=null, mvSelBanco=null;
+
+// ── VINCULAR NC/PEND → CHESS ────────────────────────────────────────────────
+var mvcIdx=null, mvcSelChess=null;
+
+function abrirModalVincularChess(gi){
+  var r=state.filtradas[gi];
+  if(!r||(r.nivel!=='NC'&&r.nivel!=='PEND')) return;
+  mvcIdx=gi; mvcSelChess=null;
+  document.getElementById('mvc-titulo').textContent=fmtFechaDisplay(r.fecha)+' — $'+fmtN(r.importe)+(r.desc?' — '+r.desc.slice(0,40):'');
+  document.getElementById('mvc-aviso').textContent='Movimiento bancario sin cobro Chess asociado. Seleccioná el cobro Chess que corresponde.';
+  document.getElementById('mvc-busq').value='';
+  document.getElementById('mvc-btn-ok').disabled=true;
+  filtrarModalVincularChess();
+  document.getElementById('modal-vincular-chess').classList.add('open');
+}
+
+function cerrarModalVincularChess(){
+  document.getElementById('modal-vincular-chess').classList.remove('open');
+  mvcIdx=null; mvcSelChess=null;
+}
+
+function filtrarModalVincularChess(){
+  var q=(document.getElementById('mvc-busq').value||'').toLowerCase();
+  var r=state.filtradas[mvcIdx];
+  // Chess usados: los que ya tienen bancoFp asignado en resultados MAN
+  var usadosFp=new Set();
+  state.resultados.forEach(function(res){
+    if((res.nivel==='MAN'||res.nivel==='N1'||res.nivel==='CONC')&&res.chessFp) usadosFp.add(res.chessFp);
+  });
+  var lista=state.chess.filter(function(c){
+    var fp=c.fecha+'|'+c.haber+'|'+c.codCli;
+    if(usadosFp.has(fp)) return false;
+    if(!q) return true;
+    return (c.nomCli||'').toLowerCase().includes(q)||
+           (c.codCli||'').toLowerCase().includes(q)||
+           String(c.haber).includes(q)||
+           (c.fecha||'').includes(q)||
+           (c.ref||'').toLowerCase().includes(q);
+  });
+  if(r) lista.sort(function(a,b){ return Math.abs(a.haber-r.importe)-Math.abs(b.haber-r.importe); });
+  var html='';
+  if(!lista.length){ html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">Sin cobros Chess disponibles</div>'; }
+  lista.forEach(function(c,i){
+    var diff=r?Math.abs(c.haber-r.importe):null;
+    var diffLabel=diff!==null?(diff<0.01
+      ?'<span style="font-size:11px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px">Exacto</span>'
+      :'<span style="font-size:11px;background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:4px">Dif: $'+fmtN(diff)+'</span>'):'';
+    var sel=mvcSelChess&&mvcSelChess._mvcI===i;
+    html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'#fef9ee':'transparent')+'" onclick="selChessMVC('+i+')" data-mvci="'+i+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
+      +'<span style="font-size:14px;font-weight:600;color:#1a1a1a">$'+fmtN(c.haber)+'</span>'
+      +'<span style="font-size:12px;color:#64748b">'+fmtFechaDisplay(c.fecha)+'</span>'
+      +'</div>'
+      +'<div style="font-size:12px;color:#475569;margin-top:2px">'+esc(c.nomCli||c.codCli||'')+(c.codCli?' <span style="color:#94a3b8">('+esc(c.codCli)+')</span>':'')+'</div>'
+      +(c.ref?'<div style="font-size:11px;color:#94a3b8;margin-top:1px">'+esc(c.ref.slice(0,60))+'</div>':'')
+      +'<div style="margin-top:4px">'+diffLabel+'</div>'
+      +'</div>';
+  });
+  document.getElementById('mvc-list').innerHTML=html;
+  document.getElementById('mvc-list')._chessData=lista;
+}
+
+function selChessMVC(i){
+  var lista=document.getElementById('mvc-list')._chessData||[];
+  mvcSelChess=lista[i]; if(mvcSelChess) mvcSelChess._mvcI=i;
+  document.getElementById('mvc-btn-ok').disabled=!mvcSelChess;
+  filtrarModalVincularChess();
+}
+
+async function vincularChess(){
+  if(!mvcSelChess||mvcIdx===null) return;
+  var r=state.filtradas[mvcIdx];
+  if(!r) return;
+  var chessFp=mvcSelChess.fecha+'|'+mvcSelChess.haber+'|'+mvcSelChess.codCli;
+  var bancoFp=(r.fecha||'')+'|'+r.importe+'|'+(r.desc||'').slice(0,60);
+  // Actualizar la fila bancaria
+  r.nivel='MAN';
+  r.codCli=mvcSelChess.codCli||r.codCli;
+  r.nomCli=mvcSelChess.nomCli||r.nomCli;
+  r.bancoFp=bancoFp;
+  r.chessFp=chessFp;
+  r.chessDesc=mvcSelChess.ref||'';
+  r.chessImporte=mvcSelChess.haber;
+  r.motivo='Chess: '+fmtFechaDisplay(mvcSelChess.fecha)+' $'+fmtN(mvcSelChess.haber)+(mvcSelChess.ref?' — '+mvcSelChess.ref.slice(0,50):'');
+  // Si había un PT del mismo cobro Chess, también marcarlo como consumido
+  state.resultados.forEach(function(res){
+    if(res.nivel==='PT'&&res.chessFp===chessFp){
+      res.nivel='MAN'; res.bancoFp=bancoFp; res.bancDesc=r.desc||''; res.bancImporte=r.importe;
+    }
+  });
+  loading(true);
+  try{
+    await guardarResultados();
+    registrarAccion('vincular_chess','Vinculó banco $'+fmtN(r.importe)+' '+r.fecha+' con Chess '+(mvcSelChess.nomCli||mvcSelChess.codCli)+' $'+fmtN(mvcSelChess.haber));
+    toast('Vinculado: '+(mvcSelChess.nomCli||mvcSelChess.codCli),'ok-t');
+  }catch(e){toast('Error al guardar','err-t');}
+  loading(false);
+  calcStats(); renderTabla(); cerrarModalVincularChess();
+}
 function abrirModalVincular(gi){
   var r=state.filtradas[gi];
   if(!r||r.nivel!=='PT') return;
@@ -1967,7 +2090,7 @@ function filtrarModalVincular(){
   var nc=state.banco.filter(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
     var usada=state.resultados.some(function(res){
-      return (res.nivel==='N1'||res.nivel==='CONC'||res.nivel==='MAN')&&res.bancoFp===fp;
+      return (res.nivel==='N1'||res.nivel==='CONC'||res.nivel==='MAN'||res.nivel==='N2')&&res.bancoFp===fp;
     });
     if(usada) return false;
     if(!q) return true;
@@ -2006,7 +2129,15 @@ async function vincularPT(){
   var bancoFp=(mvSelBanco.fecha||'')+'|'+mvSelBanco.importe+'|'+(mvSelBanco.desc||'').slice(0,60);
   pt.nivel='MAN';
   pt.bancoFp=bancoFp;
-  pt.motivo='Vinculado: $'+fmtN(mvSelBanco.importe)+' '+fmtFechaDisplay(mvSelBanco.fecha);
+  pt.bancDesc=mvSelBanco.desc||'';
+  pt.bancImporte=mvSelBanco.importe;
+  pt.motivo='Banco: '+fmtFechaDisplay(mvSelBanco.fecha)+' $'+fmtN(mvSelBanco.importe)+(mvSelBanco.desc?' — '+mvSelBanco.desc.slice(0,60):'');
+  // Marcar el movimiento bancario NC/PEND como consumido
+  state.resultados.forEach(function(res){
+    if((res.nivel==='NC'||res.nivel==='PEND')&&(res.fecha+'|'+res.importe+'|'+(res.desc||'').slice(0,60))===bancoFp){
+      res.nivel='MAN'; res.bancoFp=bancoFp;
+    }
+  });
   loading(true);
   try{
     await guardarResultados();
