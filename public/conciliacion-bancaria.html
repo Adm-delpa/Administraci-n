@@ -1708,11 +1708,14 @@ async function procesar(){
       if(!cod) return;
       var totalChess=chessSumCli[cod]||0;
       var totalBanco=bancoSumCli[cod]||0;
-      if(totalChess<=totalBanco+0.01) return; // banco cubre todo, no es PT
+      if(totalChess<=totalBanco+0.01) return;
+      var ptDesc='CHESS: '+(c.ref||c.nomCli||c.codCli||'').slice(0,60);
+      var ptFp=c.fecha+'|'+c.haber+'|'+ptDesc.slice(0,60);
+      if(state.blacklist.has(ptFp)) return;
       var cliInfo=lookupCli(c.codCli);
       nuevos.push({
         fecha:c.fecha,
-        desc:'CHESS: '+(c.ref||c.nomCli||c.codCli||'').slice(0,60),
+        desc:ptDesc,
         importe:c.haber,
         nivel:'PT',
         motivo:'Chess: $'+fmtN(totalChess)+' / Banco: $'+fmtN(totalBanco)+' (dif: $'+fmtN(totalChess-totalBanco)+')',
