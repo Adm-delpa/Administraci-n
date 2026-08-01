@@ -2018,7 +2018,7 @@ function filtrarModalVincularChess(){
       var cuitMapLocal2={};
       Object.values(state.clientes||{}).forEach(function(cl){if(cl.cuit) cuitMapLocal2[normCUIT(cl.cuit)]=cl;});
       var cliCuit=cuitMapLocal2[mvcCuitDetectado];
-      if(cliCuit&&!codEq(c.codCli,cliCuit.c)) return false;
+      if(cliCuit&&parseInt(c.codCli,10)!==parseInt(cliCuit.c,10)) return false;
     }
     if(!q) return true;
     return (c.nomCli||'').toLowerCase().includes(q)||
