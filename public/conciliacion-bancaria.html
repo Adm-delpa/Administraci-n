@@ -2016,11 +2016,10 @@ function filtrarModalVincularChess(){
     if(usadosFp.has(fp)) return false;
     // Si detectamos CUIT, filtrar por ese cliente (salvo que el usuario escriba algo)
     if(mvcCuitDetectado&&!q){
-      var cliCuit=Object.values(state.clientes||{}).find(function(cl){return cl.cuit===mvcCuitDetectado;});
       var cuitMapLocal2={};
-    Object.values(state.clientes||{}).forEach(function(cl){if(cl.cuit) cuitMapLocal2[normCUIT(cl.cuit)]=cl;});
-    var cliCuit=cuitMapLocal2[mvcCuitDetectado];
-    if(cliCuit&&!codEq(c.codCli,cliCuit.c)) return false;
+      Object.values(state.clientes||{}).forEach(function(cl){if(cl.cuit) cuitMapLocal2[normCUIT(cl.cuit)]=cl;});
+      var cliCuit=cuitMapLocal2[mvcCuitDetectado];
+      if(cliCuit&&!codEq(c.codCli,cliCuit.c)) return false;
     }
     if(!q) return true;
     return (c.nomCli||'').toLowerCase().includes(q)||
