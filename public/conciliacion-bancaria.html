@@ -1839,14 +1839,20 @@ function calcStats(){
     if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes) return false;
     return true;
   });
-  var n1=0,n2=0,nc=0,pend=0,pt=0,conc=0,mN1=0,mN2=0,mNc=0,mPend=0,mPt=0,mConc=0,tot=resultados.length;
+  var n1=0,n2=0,conc=0,mN1=0,mN2=0,mConc=0,tot=resultados.length;
   resultados.forEach(function(r){
     if(r.nivel==='N1'||r.nivel==='MAN'){n1++;mN1+=r.importe;}
     else if(r.nivel==='N2'){n2++;mN2+=r.importe;}
+    else if(r.nivel==='CONC'){conc++;mConc+=r.importe;}
+  });
+  // NC, PEND, PT: acumulado de todos los períodos (no filtrado por mes)
+  var nc=0,pend=0,pt=0,mNc=0,mPend=0,mPt=0;
+  state.resultados.forEach(function(r){
+    if(estaExcluida(r.desc)) return;
+    if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)>state.filtroMes) return; // excluir meses futuros al seleccionado
+    if(r.nivel==='NC'){nc++;mNc+=r.importe;}
     else if(r.nivel==='PEND'){pend++;mPend+=r.importe;}
     else if(r.nivel==='PT'){pt++;mPt+=r.importe;}
-    else if(r.nivel==='CONC'){conc++;mConc+=r.importe;}
-    else if(r.nivel==='NC'){nc++;mNc+=r.importe;}
   });
   var chessDelPeriodo=state.chess.filter(function(c){
     if(state.filtroMes&&c.fecha&&c.fecha.slice(0,7)!==state.filtroMes) return false;
