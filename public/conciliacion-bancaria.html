@@ -1664,6 +1664,53 @@ async function procesar(){
   // Eliminar pendientes que ya pasaron a N1 (encontraron match en Chess y banco)
   state.pendientes=state.pendientes.filter(function(p){return !p._toDelete&&!p.confirmado;});
 
+  // Cross-período: Chess sin match del mes actual vs NC/PEND bancarios de otros meses guardados
+  // Busca en state.resultados entradas NC o PEND de meses distintos al actual y trata de cruzarlas con Chess no usados
+  var mesBancoActual=null;
+  if(banco.length){var mc2={};banco.forEach(function(b){if(b.fecha){var m=b.fecha.slice(0,7);mc2[m]=(mc2[m]||0)+1;}});mesBancoActual=Object.keys(mc2).sort(function(a,b){return mc2[b]-mc2[a];})[0]||null;}
+  if(mesBancoActual){
+    // Recolectar NC/PEND de otros meses que aún no tienen match
+    var usadosFpCross=new Set();
+    nuevos.forEach(function(n){if(n.bancoFp) usadosFpCross.add(n.bancoFp);});
+    state.resultados.forEach(function(r){if((r.nivel==='N1'||r.nivel==='MAN'||r.nivel==='CONC')&&r.bancoFp) usadosFpCross.add(r.bancoFp);});
+    var bancoCross=state.resultados.filter(function(r){
+      if(r.fecha&&r.fecha.slice(0,7)===mesBancoActual) return false; // mismo mes, ya procesado
+      if(r.nivel!=='NC'&&r.nivel!=='PEND') return false;
+      var bfp=(r.fecha||'')+'|'+r.importe+'|'+(r.desc||'').slice(0,60);
+      return !usadosFpCross.has(bfp);
+    });
+    chess.forEach(function(c,i){
+      if(sisUsado[i]) return;
+      if(!c.fecha||c.fecha.slice(0,7)!==mesBancoActual) return; // solo chess del mes actual
+      for(var bi=0;bi<bancoCross.length;bi++){
+        var br=bancoCross[bi];
+        if(Math.abs(c.haber-br.importe)>0.01) continue;
+        // Verificar CUIT si hay info disponible
+        var cuitBr=extraerCUIT(br.desc||'');
+        var cliCr=cuitBr?cuitMap[cuitBr]:null;
+        if(cliCr&&!codEq(cliCr.c,c.codCli)) continue; // CUIT no coincide con cliente Chess
+        // Match cross-período: actualizar el resultado bancario existente a MAN
+        var bfpCross=(br.fecha||'')+'|'+br.importe+'|'+(br.desc||'').slice(0,60);
+        usadosFpCross.add(bfpCross);
+        sisUsado[i]=true;
+        var cliInfo2=lookupCli(c.codCli);
+        // Actualizar el resultado existente en state.resultados
+        Object.assign(br,{
+          nivel:'MAN',
+          motivo:'Cross-período: banco '+br.fecha+' ↔ Chess '+c.fecha,
+          codCli:c.codCli,
+          nomCli:c.nomCli||(cliInfo2?cliInfo2.n:''),
+          cuit:cliInfo2?cliInfo2.cuit:'',
+          ref:c.ref,
+          chessDesc:'CHESS: '+(c.ref||c.nomCli||c.codCli||''),
+          chessFp:c.fecha+'|'+c.haber+'|'+c.codCli,
+          bancoFp:bfpCross
+        });
+        break;
+      }
+    });
+  }
+
   // PT: Chess sin match bancario, solo para clientes donde Chess total > banco total en el período
   // Determinar el mes principal del extracto
   var mesBancoMap={};
