@@ -1193,8 +1193,7 @@ async function procesarRawBanco(raw,file,now){
     hkeys.forEach(function(k){obj[String(raw[headerIdx][k]||k).trim()]=r2[k];});
     return obj;
   });
-  // Parsear nuevo extracto en array temporal
-  var nuevoBanco=[];
+  state.banco=[];
   var todasLasSeqs=[];
   dataRows.forEach(function(r2){
     var seq=String(r2['Número Secuencia']||r2['Numero Secuencia']||'').trim();
@@ -1216,19 +1215,8 @@ async function procesarRawBanco(raw,file,now){
     if(descUp.indexOf('11730349')>=0) return;
     if(descUp.indexOf('TRASP/ACREDITACION PRESTAMO')>=0) return;
     if(extraerCUIT(desc)==='30566130633') return;
-    nuevoBanco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
+    state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
   });
-  // Detectar el mes principal del extracto nuevo
-  var mesNuevoMap={};
-  nuevoBanco.forEach(function(b){if(b.fecha){var m=b.fecha.slice(0,7);mesNuevoMap[m]=(mesNuevoMap[m]||0)+1;}});
-  var mesNuevo=Object.keys(mesNuevoMap).sort(function(a,b){return mesNuevoMap[b]-mesNuevoMap[a];})[0]||null;
-  // Conservar banco de otros meses, reemplazar solo el mes del nuevo extracto
-  if(mesNuevo) state.banco=state.banco.filter(function(b){return !b.fecha||b.fecha.slice(0,7)!==mesNuevo;});
-  else state.banco=[];
-  // Agregar nuevos movimientos (sin duplicados)
-  var bancoFpExist={};
-  state.banco.forEach(function(b){bancoFpExist[fingerprint(b)]=true;});
-  nuevoBanco.forEach(function(b){var fp=fingerprint(b);if(!bancoFpExist[fp]){bancoFpExist[fp]=true;state.banco.push(b);}});
   markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
   document.getElementById('fname-banco').textContent=file.name;
   document.getElementById('ftime-banco').textContent=fmtTs(now);
