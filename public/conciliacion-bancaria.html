@@ -1881,7 +1881,11 @@ function filtrar(){
   var q=(document.getElementById('fil-q').value||'').toLowerCase();
   state.filtradas=state.resultados.filter(function(r){
     if(estaExcluida(r.desc)) return false;
-    if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes) return false;
+    if(state.filtroMes&&r.fecha&&r.fecha.slice(0,7)!==state.filtroMes){
+      // Incluir NC/PEND/PT de meses anteriores (pendientes acumulados)
+      var esPendienteHistorico=(r.nivel==='NC'||r.nivel==='PEND'||r.nivel==='PT')&&r.fecha.slice(0,7)<state.filtroMes;
+      if(!esPendienteHistorico) return false;
+    }
     if(est==='CONC_ALL'){if(r.nivel!=='N1'&&r.nivel!=='MAN'&&r.nivel!=='CONC') return false;}
     else if(est&&r.nivel!==est) return false;
     if(q){
