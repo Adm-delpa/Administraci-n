@@ -1540,8 +1540,10 @@ async function procesar(){
   conciliadosOtrosPeriodos.forEach(function(r){
     for(var i=0;i<chess.length;i++){
       if(sisUsado[i]) continue;
-      if(Math.abs(chess[i].haber-r.importe)<0.01&&codEq(chess[i].codCli,r.codCli)&&chess[i].fecha===r.fecha){
-        sisUsado[i]=true; break;
+      if(Math.abs(chess[i].haber-r.importe)<0.01&&codEq(chess[i].codCli,r.codCli)){
+        // Fecha exacta o dentro de 7 días (para matches cross-período ya guardados)
+        var diffDias=Math.abs((new Date(chess[i].fecha+'T00:00:00')-new Date(r.fecha+'T00:00:00'))/(864e5));
+        if(chess[i].fecha===r.fecha||diffDias<=7){sisUsado[i]=true;break;}
       }
     }
   });
