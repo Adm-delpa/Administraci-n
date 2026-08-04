@@ -1720,8 +1720,19 @@ async function procesar(){
   var mesPT=Object.keys(mesBancoMap).sort(function(a,b){return mesBancoMap[b]-mesBancoMap[a];})[0]||null;
 
   if(mesPT){
-    // Eliminar PT anteriores del mismo período para evitar duplicados al reprocesar
-    state.resultados=state.resultados.filter(function(r){return !(r.nivel==='PT'&&r.fecha&&r.fecha.slice(0,7)===mesPT);});
+    // Construir set de fingerprints de Chess ya matcheados (para limpiar PT de cualquier período)
+    var chessMatchadoFps=new Set();
+    chess.forEach(function(c,i){
+      if(!sisUsado[i]) return;
+      var ptDesc='CHESS: '+(c.ref||c.nomCli||c.codCli||'').slice(0,60);
+      chessMatchadoFps.add(c.fecha+'|'+c.haber+'|'+ptDesc.slice(0,60));
+    });
+    // Eliminar PT del mes actual (se regeneran) y PT de otros meses cuyo Chess ya tiene match
+    state.resultados=state.resultados.filter(function(r){
+      if(r.nivel!=='PT') return true;
+      if(r.fecha&&r.fecha.slice(0,7)===mesPT) return false;
+      return !chessMatchadoFps.has(fingerprint(r));
+    });
 
     // Sumar banco por codCli (via CUIT) para el período
     var bancoSumCli={};
