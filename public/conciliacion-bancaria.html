@@ -2210,7 +2210,19 @@ function filtrarModalVincular(){
   state.resultados.forEach(function(res){
     if((res.nivel==='N1'||res.nivel==='CONC'||res.nivel==='MAN'||res.nivel==='N2')&&res.bancoFp) usadasFpSet.add(res.bancoFp);
   });
-  var nc=state.banco.filter(function(b){
+  // Banco actual + NC/PEND de períodos guardados (para vincular cross-período)
+  var candidatosFp=new Set();
+  var candidatos=[];
+  state.banco.forEach(function(b){
+    var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
+    if(!candidatosFp.has(fp)){candidatosFp.add(fp);candidatos.push(b);}
+  });
+  state.resultados.forEach(function(res){
+    if(res.nivel!=='NC'&&res.nivel!=='PEND') return;
+    var fp=(res.fecha||'')+'|'+res.importe+'|'+(res.desc||'').slice(0,60);
+    if(!candidatosFp.has(fp)){candidatosFp.add(fp);candidatos.push({fecha:res.fecha,desc:res.desc,importe:res.importe});}
+  });
+  var nc=candidatos.filter(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
     if(usadasFpSet.has(fp)) return false;
     if(!q) return true;
