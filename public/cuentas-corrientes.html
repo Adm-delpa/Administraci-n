@@ -1118,6 +1118,7 @@ function abrirModalCbte(codigo, nombre) {
     const fmt2 = v => (v !== 0 && v != null) ? '$ ' + Math.round(v).toLocaleString('es-AR') : '—';
     // Ordenar por fecha ascendente (más viejo primero)
     const sorted = [...rows].sort((a,b) => (a.fecha||'') < (b.fecha||'') ? -1 : (a.fecha||'') > (b.fecha||'') ? 1 : 0);
+    const fmtFecha = s => { if (!s || s === '—') return '—'; const [y,m,d] = s.split('-'); return d+'/'+m+'/'+y; };
     // Abreviar sucursal
     const sucAbr = s => s ? s.replace(/CASA CENTRAL/i,'Central').replace(/SUCURSAL DOLORES/i,'Dolores').replace(/DOLORES/i,'Dolores') : '—';
     let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>'
@@ -1130,8 +1131,8 @@ function abrirModalCbte(codigo, nombre) {
         + td(r.tipo || '—')
         + td(r.desc || '—')
         + td(r.num || '—')
-        + td(r.fecha || '—')
-        + td(r.vto || '—')
+        + td(fmtFecha(r.fecha))
+        + td(fmtFecha(r.vto))
         + td(r.mora != null && r.mora !== 0 ? Math.round(r.mora) : '—', true)
         + td(fmt2(r.saldo), true, esNeg ? ';color:#B91C1C' : '')
         + td(fmt2(r.importe), true, esNeg ? ';color:#B91C1C' : '')
