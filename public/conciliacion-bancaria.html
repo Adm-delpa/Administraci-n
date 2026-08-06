@@ -692,7 +692,7 @@ tr:hover td{background:#f9fbff}
 var USER = null;
 var state = {
   clientes: {},
-  chess: [], banco: [],
+  chess: [], banco: [], bancoActivo: [],
   checksumChess: null, checksumBanco: null,
   resultados: [],
   filtroMes: null,
@@ -898,11 +898,13 @@ async function loadResultados(){
         if(newPeso>oldPeso) Object.assign(fpMap[fp],r);
       }
     });
-    // Acumular banco de todos los períodos guardados
-    if(data[k].banco&&data[k].banco.length>0){
+    // Acumular banco histórico de todos los períodos (para vincular modal)
+    // bancoActivo usa bancoActivo guardado si existe, sino banco (retrocompat)
+    var savedBanco=(data[k].bancoActivo&&data[k].bancoActivo.length>0)?data[k].bancoActivo:(data[k].banco||[]);
+    if(savedBanco.length>0){
       var bancoFpMap={};
       state.banco.forEach(function(b){bancoFpMap[fingerprint(b)]=true;});
-      data[k].banco.forEach(function(b){
+      savedBanco.forEach(function(b){
         var fp=fingerprint(b);
         if(!bancoFpMap[fp]){bancoFpMap[fp]=true;state.banco.push(b);}
       });
@@ -1108,7 +1110,7 @@ async function sincronizarChess(){
     verificarListo();
     showAlert('alert-ok', `Chess ERP: ${agregados} nuevos movimientos agregados (${desde} al ${hasta}). Total: ${state.chess.length}`);
     registrarAccion('chess_import','Importó Chess ERP: '+agregados+' nuevos movimientos ('+desde+' al '+hasta+')');
-    if(state.banco.length>0) await procesar();
+    if(state.bancoActivo.length>0) await procesar();
   } catch(e) {
     showAlert('alert-info', 'Error al importar desde Chess: ' + e.message);
   } finally {
@@ -1193,7 +1195,7 @@ async function procesarRawBanco(raw,file,now){
     hkeys.forEach(function(k){obj[String(raw[headerIdx][k]||k).trim()]=r2[k];});
     return obj;
   });
-  state.banco=[];
+  state.banco=[]; state.bancoActivo=[];
   var todasLasSeqs=[];
   dataRows.forEach(function(r2){
     var seq=String(r2['Número Secuencia']||r2['Numero Secuencia']||'').trim();
@@ -1215,7 +1217,8 @@ async function procesarRawBanco(raw,file,now){
     if(descUp.indexOf('11730349')>=0) return;
     if(descUp.indexOf('TRASP/ACREDITACION PRESTAMO')>=0) return;
     if(extraerCUIT(desc)==='30566130633') return;
-    state.banco.push({seq:seq,fecha:fecha,desc:desc,importe:imp});
+    var mov={seq:seq,fecha:fecha,desc:desc,importe:imp};
+    state.banco.push(mov); state.bancoActivo.push(mov);
   });
   markFileCard('banco','Extracto bancario',state.banco.length+' acreditaciones',now);
   document.getElementById('fname-banco').textContent=file.name;
@@ -1434,7 +1437,7 @@ async function mpGuardar(){
   await guardarPendientes();
   cerrarModalPendientes();
   toast('Pendientes guardados — procesando...','ok-t');
-  if(state.banco.length>0) await procesar();
+  if(state.bancoActivo.length>0) await procesar();
 }
 
 function actualizarContadorPendientes(){
@@ -1509,7 +1512,7 @@ async function procesar(){
   var chess=state.chess.map(function(m){
     return Object.assign({},m,{fecha:parseFecha(String(m.fecha||''))});
   });
-  var banco=state.banco.map(function(b){
+  var banco=(state.bancoActivo.length>0?state.bancoActivo:state.banco).map(function(b){
     return Object.assign({},b,{fecha:parseFecha(String(b.fecha||''))});
   });
   var cuitMap={},codMap=state.clientes;
@@ -1858,7 +1861,7 @@ async function guardarResultados(){
     try{
       await fetch('/api/datos/conciliacion',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({periodo:mes,datos:{resultados:byMes[mes],_savedAt:savedAt,banco:state.banco,chess:state.chess}})
+        body:JSON.stringify({periodo:mes,datos:{resultados:byMes[mes],_savedAt:savedAt,bancoActivo:state.bancoActivo,banco:state.banco,chess:state.chess}})
       });
     }catch(e){ toast('Error al guardar '+mes,'err-t'); }
   }
