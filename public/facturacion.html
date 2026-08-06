@@ -182,6 +182,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
   <div class="tabs">
     <button class="tab active" onclick="showTab('resumen')">Resumen del período</button>
     <button class="tab" onclick="showTab('evolucion')">Evolución mensual</button>
+    <button class="tab" onclick="showTab('negro')">Venta en negro</button>
     <button class="tab admin-only" onclick="showTab('carga')" id="tab-carga-btn" style="display:none">Cargar datos</button>
   </div>
 
@@ -302,6 +303,23 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
     </div>
   </div>
 
+  <!-- TAB VENTA EN NEGRO -->
+  <div id="tab-negro" style="display:none">
+    <div id="negro-nodata" style="display:none;text-align:center;padding:3rem 1rem;color:#9896A0;font-size:13px">Cargá al menos un período para ver este análisis.</div>
+    <div id="negro-content">
+      <!-- Por sucursal -->
+      <div class="card" style="margin-bottom:1rem">
+        <div style="font-size:12px;font-weight:700;color:#56555A;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.05em">Por sucursal</div>
+        <div id="negro-suc-table"></div>
+      </div>
+      <!-- Por cliente -->
+      <div class="card">
+        <div style="font-size:12px;font-weight:700;color:#56555A;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.05em">Por cliente</div>
+        <div id="negro-cli-table"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB CARGA (solo admin) -->
   <div id="tab-carga" style="display:none">
     <div class="upload-panel">
@@ -364,10 +382,11 @@ function n(v){return typeof v==='number'?v:parseFloat(v)||0;}
 // ── TABS ──
 var charts={};
 function showTab(name){
-  ['resumen','evolucion','carga'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===name?'block':'none';});
-  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['resumen','evolucion','carga'][i]===name);});
+  ['resumen','evolucion','negro','carga'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===name?'block':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['resumen','evolucion','negro','carga'][i]===name);});
   if(name==='resumen') renderResumen();
   if(name==='evolucion') renderEvolucion();
+  if(name==='negro') renderVentaNegro();
   if(name==='carga') renderSaved();
 }
 
@@ -448,6 +467,13 @@ function calcular(wbV,wbC,wbR){
   const colTIVA=Object.keys(sr).find(k=>k==='Tipo IVA')||'Tipo IVA';
   let prvta=0,prdvo=0,compPres=0;
   const condPres={RI:0,MT:0,CF:0,EX:0,NC:0};
+  const venNegro_rows=[];
+  const colSuc=Object.keys(sr).find(k=>k==='Descripcion Sucursal')||'Descripcion Sucursal';
+  const colCli=Object.keys(sr).find(k=>k==='Cliente')||'Cliente';
+  const colRazon=Object.keys(sr).find(k=>k==='Razon Social')||'Razon Social';
+  const colNum=Object.keys(sr).find(k=>k==='Numero')||'Numero';
+  const colFecha=Object.keys(sr).find(k=>k==='Fecha Comprobante')||'Fecha Comprobante';
+  const colDescCbte=Object.keys(sr).find(k=>k==='Descripcion Comprobante')||'Descripcion Comprobante';
   rowsR.forEach(r=>{
     const tipo=(r[colComp]||'').toString().trim().toUpperCase();
     const neto=n(r[colSN]);
@@ -456,10 +482,15 @@ function calcular(wbV,wbC,wbR){
     if(tipo==='PRVTA'||tipo==='PRDVO'){
       const c=(r[colTIVA]||'').toString().trim().toUpperCase();
       if(condPres[c]!==undefined)condPres[c]+=neto;else condPres['NC']+=neto;
+      const fRaw=r[colFecha];
+      let fStr='';
+      if(fRaw instanceof Date&&!isNaN(fRaw)) fStr=fRaw.toISOString().slice(0,10);
+      else if(fRaw){const d=new Date(fRaw);if(!isNaN(d))fStr=d.toISOString().slice(0,10);}
+      venNegro_rows.push({tipo,descTipo:(r[colDescCbte]||'').toString().trim(),suc:(r[colSuc]||'').toString().trim(),cli:(r[colCli]||'').toString().trim(),razon:(r[colRazon]||'').toString().trim(),num:(r[colNum]||'').toString().trim(),fecha:fStr,neto});
     }
   });
   const pres_neto=prvta+prdvo;
-  return{lv_neto,lv_iva,tc,condAB,compAB:rowsV.length,prvta_neto:prvta,prdvo_neto:prdvo,pres_neto,condPres,compPres,total_venta:lv_neto+pres_neto,iva_compras,perc3337,iva_fin:lv_iva-iva_compras-perc3337,_fechaMax:fechaMax?fechaMax.toISOString().slice(0,10):null};
+  return{lv_neto,lv_iva,tc,condAB,compAB:rowsV.length,prvta_neto:prvta,prdvo_neto:prdvo,pres_neto,condPres,compPres,venNegro_rows,total_venta:lv_neto+pres_neto,iva_compras,perc3337,iva_fin:lv_iva-iva_compras-perc3337,_fechaMax:fechaMax?fechaMax.toISOString().slice(0,10):null};
 }
 
 // ── RENDER ──
@@ -617,6 +648,147 @@ function renderSaved(){
     const d=db[k];const c=d.estado==='completo';
     return`<div class="saved-row"><div style="display:flex;align-items:center;gap:8px;color:#56555A;font-weight:500"><span class="sdot ${c?'dg':'da'}"></span>${fP(k)}<span class="status-badge ${c?'badge-c':'badge-e'}" style="font-size:10px;padding:2px 7px">${c?'Completo':'En curso'}</span></div><div style="display:flex;align-items:center;gap:10px"><span style="color:#9896A0;font-family:'JetBrains Mono',monospace;font-size:11px">${fmt(d.total_venta)}</span>${isAdmin?`<button class="del-btn" onclick="borrar('${k}')">Borrar</button>`:''}</div></div>`;
   }).join('');
+}
+
+// ── VENTA EN NEGRO ──
+function renderVentaNegro(){
+  const keys=Object.keys(db).sort();
+  if(!keys.length){
+    document.getElementById('negro-nodata').style.display='block';
+    document.getElementById('negro-content').style.display='none';
+    return;
+  }
+  document.getElementById('negro-nodata').style.display='none';
+  document.getElementById('negro-content').style.display='block';
+
+  // Acumular filas de todos los períodos
+  const rows=[];
+  keys.forEach(k=>{
+    const d=db[k];
+    if(d.venNegro_rows&&d.venNegro_rows.length){
+      d.venNegro_rows.forEach(r=>rows.push(Object.assign({},r,{periodo:k})));
+    }
+  });
+
+  if(!rows.length){
+    document.getElementById('negro-suc-table').innerHTML='<div style="font-size:12px;color:#9896A0">Sin datos de venta en negro en los períodos cargados.</div>';
+    document.getElementById('negro-cli-table').innerHTML='';
+    return;
+  }
+
+  const totalNeto=rows.reduce((s,r)=>s+r.neto,0);
+
+  // ── Por sucursal ──
+  const sucMap={};
+  rows.forEach(r=>{
+    if(!sucMap[r.suc]) sucMap[r.suc]={suc:r.suc,cnt:0,neto:0};
+    sucMap[r.suc].cnt++;
+    sucMap[r.suc].neto+=r.neto;
+  });
+  const sucs=Object.values(sucMap).sort((a,b)=>b.neto-a.neto);
+  const thStyle='padding:.45rem .6rem;font-size:11px;font-weight:700;color:#56555A;text-align:left;border-bottom:2px solid #DDDBD6;white-space:nowrap';
+  const tdStyle='padding:.4rem .6rem;font-size:12px;border-bottom:1px solid #F0EEEB;white-space:nowrap';
+  const tdRStyle='padding:.4rem .6rem;font-size:12px;border-bottom:1px solid #F0EEEB;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums';
+  let sucHtml=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="${thStyle}">Sucursal</th>
+      <th style="${thStyle};text-align:right">Comprobantes</th>
+      <th style="${thStyle};text-align:right">Importe neto</th>
+      <th style="${thStyle};text-align:right">%</th>
+    </tr></thead><tbody>`;
+  sucs.forEach(s=>{
+    const pct=totalNeto?Math.abs(s.neto)/Math.abs(totalNeto)*100:0;
+    sucHtml+=`<tr>
+      <td style="${tdStyle}">${s.suc||'—'}</td>
+      <td style="${tdRStyle}">${s.cnt}</td>
+      <td style="${tdRStyle}">${fmt(s.neto)}</td>
+      <td style="${tdRStyle}">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:6px;background:#F0EEEB;border-radius:3px;min-width:60px"><div style="width:${pct.toFixed(1)}%;height:100%;background:#C4820A;border-radius:3px"></div></div>
+          <span style="color:#C4820A;font-weight:600">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  // Fila total
+  sucHtml+=`<tr style="background:#FAFAF9">
+    <td style="${tdStyle};font-weight:700">Total</td>
+    <td style="${tdRStyle};font-weight:700">${rows.length}</td>
+    <td style="${tdRStyle};font-weight:700">${fmt(totalNeto)}</td>
+    <td style="${tdRStyle}"></td>
+  </tr>`;
+  sucHtml+='</tbody></table></div>';
+  document.getElementById('negro-suc-table').innerHTML=sucHtml;
+
+  // ── Por cliente ──
+  const cliMap={};
+  rows.forEach(r=>{
+    const key=r.cli+'|'+r.razon;
+    if(!cliMap[key]) cliMap[key]={cli:r.cli,razon:r.razon,cnt:0,neto:0,rows:[]};
+    cliMap[key].cnt++;
+    cliMap[key].neto+=r.neto;
+    cliMap[key].rows.push(r);
+  });
+  const clis=Object.values(cliMap).sort((a,b)=>b.neto-a.neto);
+
+  let cliHtml=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse" id="negro-cli-tbl">
+    <thead><tr>
+      <th style="${thStyle}">Cliente</th>
+      <th style="${thStyle};text-align:right">Comp.</th>
+      <th style="${thStyle};text-align:right">Importe neto</th>
+      <th style="${thStyle};text-align:right">%</th>
+      <th style="${thStyle}"></th>
+    </tr></thead><tbody>`;
+
+  clis.forEach((c,idx)=>{
+    const pct=totalNeto?Math.abs(c.neto)/Math.abs(totalNeto)*100:0;
+    const detId='negro-det-'+idx;
+    cliHtml+=`<tr style="cursor:pointer" onclick="toggleNegroDet('${detId}')">
+      <td style="${tdStyle}"><span style="font-weight:600">${c.razon||'—'}</span><br><span style="font-size:11px;color:#9896A0">Cod. ${c.cli}</span></td>
+      <td style="${tdRStyle}">${c.cnt}</td>
+      <td style="${tdRStyle}">${fmt(c.neto)}</td>
+      <td style="${tdRStyle}">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:6px;background:#F0EEEB;border-radius:3px;min-width:50px"><div style="width:${pct.toFixed(1)}%;height:100%;background:#C4820A;border-radius:3px"></div></div>
+          <span style="color:#C4820A;font-weight:600">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td style="${tdRStyle}"><span id="${detId}-ico" style="font-size:10px;color:#9896A0">▼</span></td>
+    </tr>
+    <tr id="${detId}" style="display:none;background:#FAFAF9">
+      <td colspan="5" style="padding:.5rem 1rem 1rem">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr>
+            <th style="padding:.3rem .5rem;color:#56555A;font-weight:700;text-align:left;border-bottom:1px solid #DDDBD6">Período</th>
+            <th style="padding:.3rem .5rem;color:#56555A;font-weight:700;text-align:left;border-bottom:1px solid #DDDBD6">Tipo</th>
+            <th style="padding:.3rem .5rem;color:#56555A;font-weight:700;text-align:left;border-bottom:1px solid #DDDBD6">N°</th>
+            <th style="padding:.3rem .5rem;color:#56555A;font-weight:700;text-align:left;border-bottom:1px solid #DDDBD6">Fecha</th>
+            <th style="padding:.3rem .5rem;color:#56555A;font-weight:700;text-align:left;border-bottom:1px solid #DDDBD6">Sucursal</th>
+            <th style="padding:.3rem .5rem;color:#56555A;font-weight:700;text-align:right;border-bottom:1px solid #DDDBD6">Neto</th>
+          </tr></thead><tbody>`;
+    c.rows.forEach(r=>{
+      cliHtml+=`<tr>
+        <td style="padding:.28rem .5rem;color:#56555A">${fP(r.periodo)}</td>
+        <td style="padding:.28rem .5rem">${r.descTipo||r.tipo}</td>
+        <td style="padding:.28rem .5rem;font-variant-numeric:tabular-nums">${r.num}</td>
+        <td style="padding:.28rem .5rem">${r.fecha||'—'}</td>
+        <td style="padding:.28rem .5rem">${r.suc}</td>
+        <td style="padding:.28rem .5rem;text-align:right;font-variant-numeric:tabular-nums;${r.neto<0?'color:#B91C1C':''}">${fmt(r.neto)}</td>
+      </tr>`;
+    });
+    cliHtml+='</tbody></table></td></tr>';
+  });
+  cliHtml+='</tbody></table></div>';
+  document.getElementById('negro-cli-table').innerHTML=cliHtml;
+}
+
+function toggleNegroDet(id){
+  const row=document.getElementById(id);
+  const ico=document.getElementById(id+'-ico');
+  if(!row) return;
+  const open=row.style.display==='none'||row.style.display==='';
+  row.style.display=open?'table-row':'none';
+  if(ico) ico.textContent=open?'▲':'▼';
 }
 
 // ── INIT ──
