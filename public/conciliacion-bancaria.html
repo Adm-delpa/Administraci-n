@@ -1721,20 +1721,39 @@ async function procesar(){
 
   if(mesPT){
     // Construir sets de chess ya matcheados para limpiar PT de cualquier período
-    var chessMatchadoFps=new Set();   // por fingerprint exacto
-    var chessMatchadoClave=new Set(); // por codCli+fecha+importe (tolerante a cambios de desc/ref)
+    var chessMatchadoFps=new Set();
+    var chessMatchadoClave=new Set();
     chess.forEach(function(c,i){
       if(!sisUsado[i]) return;
       var ptDesc='CHESS: '+(c.ref||c.nomCli||c.codCli||'').slice(0,60);
       chessMatchadoFps.add(c.fecha+'|'+parseFloat(c.haber).toFixed(2)+'|'+ptDesc.slice(0,60));
       chessMatchadoClave.add(c.fecha+'|'+parseInt(c.codCli,10)+'|'+parseFloat(c.haber).toFixed(2));
     });
+    // Lookup de N1/MAN/CONC por codCli+importe → fechas conciliadas (para cleanup agresivo cross-período)
+    var concPorCliImp={};
+    state.resultados.forEach(function(r){
+      if(r.nivel!=='N1'&&r.nivel!=='MAN'&&r.nivel!=='CONC') return;
+      var key=parseInt(r.codCli,10)+'|'+parseFloat(r.importe).toFixed(2);
+      if(!concPorCliImp[key]) concPorCliImp[key]=[];
+      concPorCliImp[key].push(r.fecha||'');
+    });
     // Eliminar PT del mes actual (se regeneran) y PT de otros meses cuyo Chess ya tiene match
     state.resultados=state.resultados.filter(function(r){
       if(r.nivel!=='PT') return true;
       if(r.fecha&&r.fecha.slice(0,7)===mesPT) return false;
+      // Por fingerprint o clave directa
       var clave=r.fecha+'|'+parseInt(r.codCli,10)+'|'+parseFloat(r.importe).toFixed(2);
-      return !chessMatchadoFps.has(fingerprint(r))&&!chessMatchadoClave.has(clave);
+      if(chessMatchadoFps.has(fingerprint(r))||chessMatchadoClave.has(clave)) return false;
+      // Cleanup agresivo: si hay N1/MAN del mismo cliente e importe dentro de 45 días → no es PT real
+      var key=parseInt(r.codCli,10)+'|'+parseFloat(r.importe).toFixed(2);
+      if(key!=='NaN|NaN'&&concPorCliImp[key]){
+        var ptD=new Date((r.fecha||'')+'T00:00:00');
+        for(var di=0;di<concPorCliImp[key].length;di++){
+          var cd=new Date((concPorCliImp[key][di]||'')+'T00:00:00');
+          if(Math.abs(ptD-cd)/(864e5)<=45) return false;
+        }
+      }
+      return true;
     });
 
     // Sumar banco por codCli (via CUIT) para el período
