@@ -658,6 +658,123 @@ function parseCSV(text) {
 }
 
 // ── PROCESS ROWS ──
+function processComprobanteFormat(rows, keys, fc) {
+  const tn = v => { if (typeof v === 'number') return v; return parseFloat(String(v).replace(/[^\d.,-]/g, '').replace(',', '.')) || 0; };
+  const excelDate = v => { if (!v) return ''; if (typeof v === 'number' && v > 40000) { const d = new Date(Math.round((v-25569)*86400*1000)); return d.toISOString().slice(0,10); } const d = new Date(v); return isNaN(d)?'':d.toISOString().slice(0,10); };
+  const sp = s => { const str = String(s || '').trim(); const i = str.indexOf(' - '); return i > 0 ? [str.slice(0,i).trim(), str.slice(i+3).trim()] : ['',str]; };
+
+  const cCli      = keys.find(k => k.trim() === 'Cliente');
+  const cRazon    = keys.find(k => k.trim() === 'Razón social');
+  const cSaldo    = keys.find(k => k.trim() === 'Saldo');
+  const cImporte  = keys.find(k => k.trim() === 'Importe Total');
+  const cComp     = keys.find(k => k.trim() === 'Comprobante');
+  const cDescComp = keys.find(k => k.trim() === 'Descripción Comprobante');
+  const cNum      = keys.find(k => k.trim() === 'Número');
+  const cFecha    = keys.find(k => k.trim() === 'Fecha');
+  const cFechaVto = keys.find(k => k.trim() === 'Fecha Vencido');
+  const cMora     = keys.find(k => k.trim() === 'Días de Mora');
+  const cAntig    = keys.find(k => k.trim() === 'Antigüedad deuda');
+  const cSucDesc  = keys.find(k => k.trim() === 'Descripción Sucursal');
+  const cVendDesc = keys.find(k => k.trim() === 'Descripción Vendedor');
+  const cConj     = keys.find(k => k.trim() === 'Conjunto');
+  const cConjDesc = keys.find(k => k.trim() === 'Descripción Conjunto');
+  const cLoc      = keys.find(k => k.trim() === 'Localidad');
+
+  // Fecha del reporte: primera fila
+  let fecha = '—';
+  if (cFecha && rows[0][cFecha]) {
+    const raw = rows[0][cFecha];
+    if (typeof raw === 'number' && raw > 40000) {
+      const d = new Date(Math.round((raw-25569)*86400*1000));
+      fecha = d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+    } else {
+      const s = String(raw).trim();
+      const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (m) fecha = m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+m[3];
+      else fecha = s;
+    }
+  }
+
+  const map = {}, detalleMap = {};
+  for (const r of rows) {
+    const cliRaw = r[cCli] || '';
+    const [cod, nomRaw] = sp(String(cliRaw));
+    const nom = (cRazon && r[cRazon]) ? String(r[cRazon]).trim() : nomRaw;
+    if (!nom) continue;
+    const codigo = String(cod || '').replace(/^0+/,'');
+    const saldo  = tn(r[cSaldo]);
+    const mora   = cMora ? tn(r[cMora]) : 0;
+    const antig  = cAntig ? tn(r[cAntig]) : 0;
+    const suc    = cSucDesc ? String(r[cSucDesc]||'').trim() : '';
+    const vend   = cVendDesc ? String(r[cVendDesc]||'').trim() : '';
+    const loc    = cLoc ? String(r[cLoc]||'').trim() : '';
+    const conjCod = cConj ? String(r[cConj]||'0').trim() : '0';
+    const conjNom = cConjDesc ? String(r[cConjDesc]||'').trim() : '';
+    const conjStr = (conjCod === '0' || conjCod === '') ? 'Sin conjunto' : conjCod;
+    if (conjNom && conjNom !== 'SIN CONJUNTO' && conjCod !== '0') {
+      if (!CONJ_NAMES) CONJ_NAMES = {};
+      CONJ_NAMES[conjCod] = conjNom;
+    }
+
+    if (!map[codigo||nom]) map[codigo||nom] = { cliente: nom, codigo, saldo: 0, d7: 0, d15: 0, d30: 0, d60: 0, d60p: 0, antiguedad: 0, cantCbte: 0, vendedor: vend, localidad: loc, sucursal: suc, canal: '', conjuntos: new Set([conjStr]), grupos: [], multiVendedor: false };
+    const rec = map[codigo||nom];
+    rec.saldo += saldo;
+    rec.cantCbte++;
+    rec.antiguedad = Math.max(rec.antiguedad, antig);
+    if (!rec.vendedor && vend) rec.vendedor = vend;
+    if (!rec.localidad && loc) rec.localidad = loc;
+    if (!rec.sucursal && suc) rec.sucursal = suc;
+    rec.conjuntos.add(conjStr);
+    // Buckets por días de mora
+    if (mora <= 0)       rec.d7   += 0;  // no vencido, no suma a buckets
+    else if (mora <= 7)  rec.d7   += saldo;
+    else if (mora <= 15) rec.d15  += saldo;
+    else if (mora <= 30) rec.d30  += saldo;
+    else if (mora <= 60) rec.d60  += saldo;
+    else                 rec.d60p += saldo;
+
+    // Detalle por cliente
+    const codKey = codigo || nom;
+    if (!detalleMap[codKey]) detalleMap[codKey] = [];
+    detalleMap[codKey].push({
+      tipo:    cComp    ? String(r[cComp]||'').trim().toUpperCase() : '',
+      desc:    cDescComp? String(r[cDescComp]||'').trim() : '',
+      num:     cNum     ? String(r[cNum]||'').trim() : '',
+      fecha:   excelDate(r[cFecha]),
+      vto:     excelDate(r[cFechaVto]),
+      saldo,
+      importe: cImporte ? tn(r[cImporte]) : 0,
+      mora,
+      suc
+    });
+  }
+
+  const data = Object.values(map).map(r => {
+    const conjs = [...r.conjuntos];
+    r.conjuntos = conjs;
+    r.grupos = conjs.filter(c => c !== 'Sin conjunto').map(c => ({ id: c, nombre: (CONJ_NAMES||{})[c] || 'Grupo '+c }));
+    ['saldo','d7','d15','d30','d60','d60p'].forEach(k => r[k] = Math.round((r[k]||0)*100)/100);
+    r.antiguedad = Math.round(r.antiguedad);
+    return r;
+  });
+
+  const gmap = {};
+  for (const r of data) {
+    for (const g of r.grupos) {
+      if (!gmap[g.id]) gmap[g.id] = { id: g.id, nombre: g.nombre, clientes: [] };
+      gmap[g.id].clientes.push({ codigo: r.codigo, cliente: r.cliente, vendedor: r.vendedor, saldo: r.saldo });
+    }
+  }
+  const grupos = Object.values(gmap).map(g => {
+    g.clientes.sort((a,b) => b.saldo - a.saldo);
+    g.deudaTotal    = g.clientes.filter(c => c.saldo > 0).reduce((s,c) => s+c.saldo, 0);
+    g.acreedorTotal = g.clientes.filter(c => c.saldo < 0).reduce((s,c) => s+c.saldo, 0);
+    return g;
+  }).sort((a,b) => b.deudaTotal - a.deudaTotal);
+
+  return { data, multi: {}, grupos, fecha, detalleClientes: detalleMap };
+}
+
 function processRows(rows) {
   if (!rows || !rows.length) return null;
   const keys = Object.keys(rows[0]);
@@ -669,7 +786,14 @@ function processRows(rows) {
   const cD60p = keys.find(k => /\+60/i.test(k));
   const cAntig = fc('Antigüedad', 'Antiguedad'), cCbte = fc('Cant');
   const cComp = fc('Comprobante'), cDescComp = fc('DescripciónComprobante','DescripcionComprobante'), cNum = fc('Número','Numero'), cFechaVto = fc('FechaVencido','Fecha Vencido'), cSaldoCbte = fc('Saldo'), cImporte = fc('ImporteTotal','Importe Total'), cMora = fc('DíasdeMora','Dias de Mora','DiasdeMora');
-  if (!cCli || !cSaldo) { console.warn('[processRows] columnas no encontradas. Keys:', keys.join(' | ')); return null; }
+  if (!cCli) return null;
+
+  // Formato "Detallado por comprobante" (Chess exportarExcel plDet=true): una fila por comprobante
+  if (!cSaldo && cComp && cSaldoCbte) {
+    return processComprobanteFormat(rows, keys, fc);
+  }
+
+  if (!cSaldo) { console.warn('[processRows] columnas no encontradas. Keys:', keys.join(' | ')); return null; }
   let fecha = '—';
   if (cFecha && rows[0][cFecha]) {
     const raw = rows[0][cFecha];
