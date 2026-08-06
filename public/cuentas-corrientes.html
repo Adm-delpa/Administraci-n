@@ -673,6 +673,7 @@ function processComprobanteFormat(rows, keys, fc) {
   const cConj     = keys.find(k => k.trim() === 'Conjunto');
   const cConjDesc = keys.find(k => k.trim() === 'Descripción Conjunto');
   const cLoc      = keys.find(k => k.trim() === 'Localidad');
+  const cAgrupDesc = keys.find(k => k.trim() === 'Descripción Agrupación');
 
   // Fecha del reporte: primera fila
   let fecha = '—';
@@ -691,6 +692,7 @@ function processComprobanteFormat(rows, keys, fc) {
 
   const map = {}, detalleMap = {};
   for (const r of rows) {
+    if (cAgrupDesc && String(r[cAgrupDesc]||'').includes('0005-PC')) continue;
     const cliRaw = String(r[cCli] || '').trim();
     const [cod, nomRaw] = sp(cliRaw);
     const rawNom = (cRazon && r[cRazon]) ? String(r[cRazon]).trim() : nomRaw;
