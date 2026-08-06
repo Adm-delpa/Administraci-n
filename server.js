@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const https = require('https');
 const querystring = require('querystring');
+const zlib = require('zlib');
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -806,8 +807,12 @@ function httpsRequest(options, body) {
       const chunks = [];
       res.on('data', chunk => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
       res.on('end', () => {
-        const buf = Buffer.concat(chunks);
-        resolve({ status: res.statusCode, headers: res.headers, body: binary ? buf : buf.toString('utf8') });
+        const raw = Buffer.concat(chunks);
+        const encoding = (res.headers['content-encoding'] || '').toLowerCase();
+        const finish = (buf) => resolve({ status: res.statusCode, headers: res.headers, body: binary ? buf : buf.toString('utf8') });
+        if (encoding === 'gzip') zlib.gunzip(raw, (err, buf) => err ? finish(raw) : finish(buf));
+        else if (encoding === 'deflate') zlib.inflate(raw, (err, buf) => err ? finish(raw) : finish(buf));
+        else finish(raw);
       });
     });
     req.on('error', reject);
