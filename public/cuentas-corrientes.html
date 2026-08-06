@@ -1108,18 +1108,23 @@ function abrirModalCbte(codigo, nombre) {
   document.getElementById('modal-cbte-titulo').textContent = nombre;
   document.getElementById('modal-cbte-sub').textContent = rows.length ? rows.length + ' comprobantes' : 'Sin comprobantes registrados';
 
-  const th = s => `<th style="padding:.4rem .6rem;font-size:11px;font-weight:700;color:#56555A;text-align:${s==='r'?'right':'left'};border-bottom:2px solid #DDDBD6;white-space:nowrap">`;
-  const td = (v,r,extra) => `<td style="padding:.35rem .6rem;font-size:12px;border-bottom:1px solid #F0EEEB;${r?'text-align:right;font-variant-numeric:tabular-nums':''}${extra||''}">${v}</td>`;
+  const p = 'padding:.3rem .5rem';
+  const th = (r) => `<th style="${p};font-size:10px;font-weight:700;color:#56555A;text-align:${r?'right':'left'};border-bottom:2px solid #DDDBD6;white-space:nowrap">`;
+  const td = (v,r,extra) => `<td style="${p};font-size:11px;border-bottom:1px solid #F0EEEB;${r?'text-align:right;font-variant-numeric:tabular-nums':''}${extra||''}">${v}</td>`;
 
   if (!rows.length) {
     document.getElementById('modal-cbte-body').innerHTML = '<p style="color:#9896A0;font-size:13px">No hay comprobantes cargados para este cliente. Importá el saldo total desde Cuentas Corrientes para ver el detalle.</p>';
   } else {
     const fmt2 = v => (v !== 0 && v != null) ? '$ ' + Math.round(v).toLocaleString('es-AR') : '—';
-    let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr>'
-      + th()+'Tipo</th>' + th()+'Descripción</th>' + th()+'N°</th>' + th()+'Fecha</th>' + th()+'Vencimiento</th>'
-      + th('r')+'Días mora</th>' + th('r')+'Saldo</th>' + th('r')+'Importe total</th>' + th()+'Sucursal</th>'
+    // Ordenar por fecha ascendente (más viejo primero)
+    const sorted = [...rows].sort((a,b) => (a.fecha||'') < (b.fecha||'') ? -1 : (a.fecha||'') > (b.fecha||'') ? 1 : 0);
+    // Abreviar sucursal
+    const sucAbr = s => s ? s.replace(/CASA CENTRAL/i,'Central').replace(/SUCURSAL DOLORES/i,'Dolores').replace(/DOLORES/i,'Dolores') : '—';
+    let html = '<table style="width:100%;border-collapse:collapse"><thead><tr>'
+      + th()+'Tipo</th>' + th()+'Desc.</th>' + th()+'N°</th>' + th()+'Fecha</th>' + th()+'Vto.</th>'
+      + th(true)+'Mora</th>' + th(true)+'Saldo</th>' + th(true)+'Importe</th>' + th()+'Suc.</th>'
       + '</tr></thead><tbody>';
-    rows.forEach(r => {
+    sorted.forEach(r => {
       const esNeg = (r.saldo||0) < 0;
       html += '<tr>'
         + td(r.tipo || '—')
@@ -1130,13 +1135,14 @@ function abrirModalCbte(codigo, nombre) {
         + td(r.mora != null && r.mora !== 0 ? Math.round(r.mora) : '—', true)
         + td(fmt2(r.saldo), true, esNeg ? ';color:#B91C1C' : '')
         + td(fmt2(r.importe), true, esNeg ? ';color:#B91C1C' : '')
-        + td(r.suc || '—')
+        + td(sucAbr(r.suc))
         + '</tr>';
     });
     const totalSaldo = rows.reduce((s,r) => s + (r.saldo||0), 0);
     const totalImporte = rows.reduce((s,r) => s + (r.importe||0), 0);
-    html += `<tr style="background:#FAFAF9;font-weight:700"><td colspan="6" style="padding:.4rem .6rem;font-size:12px;border-top:2px solid #DDDBD6">Total</td><td style="padding:.4rem .6rem;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;border-top:2px solid #DDDBD6">${fmt2(totalSaldo)}</td><td style="padding:.4rem .6rem;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;border-top:2px solid #DDDBD6">${fmt2(totalImporte)}</td><td style="border-top:2px solid #DDDBD6"></td></tr>`;
-    html += '</tbody></table></div>';
+    const tf = `${p};font-size:11px;border-top:2px solid #DDDBD6`;
+    html += `<tr style="background:#FAFAF9;font-weight:700"><td colspan="6" style="${tf}">Total</td><td style="${tf};text-align:right;font-variant-numeric:tabular-nums">${fmt2(totalSaldo)}</td><td style="${tf};text-align:right;font-variant-numeric:tabular-nums">${fmt2(totalImporte)}</td><td style="${tf}"></td></tr>`;
+    html += '</tbody></table>';
     document.getElementById('modal-cbte-body').innerHTML = html;
   }
 
