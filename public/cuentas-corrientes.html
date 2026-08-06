@@ -693,7 +693,8 @@ function processComprobanteFormat(rows, keys, fc) {
   for (const r of rows) {
     const cliRaw = String(r[cCli] || '').trim();
     const [cod, nomRaw] = sp(cliRaw);
-    const nom = (cRazon && r[cRazon]) ? String(r[cRazon]).trim() : nomRaw;
+    const rawNom = (cRazon && r[cRazon]) ? String(r[cRazon]).trim() : nomRaw;
+    const nom = sp(rawNom)[1] || rawNom; // strip "code - " prefix si existe
     if (!nom) continue;
     // Si no hay separador " - ", el campo Cliente es solo el código numérico
     const rawCode = cod || cliRaw;
@@ -1099,10 +1100,10 @@ async function cargarFacuracionDB() {
 }
 
 function abrirModalCbte(codigo, nombre) {
-  // Recopilar comprobantes de todos los períodos para este cliente
   const codigoNorm = String(codigo).replace(/^0+/,'');
   const det = facturacionDB['current'] && facturacionDB['current'].detalleClientes;
   const rows = (det && det[codigoNorm]) ? det[codigoNorm] : [];
+  console.log('[modal] codigo:', codigoNorm, '| rows:', rows.length, '| det keys:', det ? Object.keys(det).slice(0,5) : 'null');
 
   document.getElementById('modal-cbte-titulo').textContent = nombre;
   document.getElementById('modal-cbte-sub').textContent = rows.length ? rows.length + ' comprobantes' : 'Sin comprobantes registrados';
