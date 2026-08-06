@@ -321,6 +321,11 @@ tr:hover td{background:#FAFBFC}
       <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       Importar desde Chess ERP
     </button>
+    <label class="btn-import" style="background:#C4820A;cursor:pointer">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Reporte de comprobantes
+      <input type="file" accept=".xlsx,.xls" onchange="importComprobantes(this)" style="display:none">
+    </label>
     <span class="import-hint" id="impSt"></span>
   </div>
 </div>
@@ -589,6 +594,56 @@ function importFile(input) {
 }
 
 function setSt(msg, type) { const el = document.getElementById('impSt'); el.innerHTML = msg; el.className = 'imp-st imp-' + type; }
+
+async function importComprobantes(input) {
+  if (!isAdmin) return;
+  const file = input.files[0]; if (!file) return;
+  setSt('Procesando comprobantes…', 'loading');
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array', cellDates:true});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:0});
+    if (!rows.length) { setSt('Archivo vacío o sin datos.', 'err'); return; }
+    const sr = rows[0];
+    const keys = Object.keys(sr);
+    const fc = (...ns) => keys.find(k => ns.some(n => k === n)) || ns[0];
+    const colComp = fc('Comprobante'), colDescCbte = fc('Descripcion Comprobante');
+    const colSuc = fc('Descripcion Sucursal'), colCli = fc('Cliente'), colRazon = fc('Razon Social');
+    const colNum = fc('Numero'), colFecha = fc('Fecha Comprobante');
+    const colSN = fc('Subtotal Neto'), colSF = fc('Subtotal Final');
+    const n = v => { if (typeof v === 'number') return v; return parseFloat(String(v).replace(/[^\d.,-]/g,'').replace(',','.')) || 0; };
+    const comprobantes_rows = [];
+    rows.forEach(r => {
+      const tipo = (r[colComp]||'').toString().trim().toUpperCase();
+      const fRaw = r[colFecha];
+      let fStr = '';
+      if (fRaw instanceof Date && !isNaN(fRaw)) fStr = fRaw.toISOString().slice(0,10);
+      else if (fRaw) { const d = new Date(fRaw); if (!isNaN(d)) fStr = d.toISOString().slice(0,10); }
+      comprobantes_rows.push({
+        tipo, descTipo: (r[colDescCbte]||'').toString().trim(),
+        suc: (r[colSuc]||'').toString().trim(),
+        cli: (r[colCli]||'').toString().trim(),
+        razon: (r[colRazon]||'').toString().trim(),
+        num: (r[colNum]||'').toString().trim(),
+        fecha: fStr, neto: n(r[colSN]), total: n(r[colSF])
+      });
+    });
+    // Guardar en /api/datos/cobranzas como campo comprobantes_rows
+    const existing = await fetch('/api/datos/cobranzas').then(r=>r.ok?r.json():{});
+    const current = (existing['current'] || {});
+    current.comprobantes_rows = comprobantes_rows;
+    current._savedAt = new Date().toISOString();
+    await fetch('/api/datos/cobranzas', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({periodo:'current', datos: current})
+    });
+    // Actualizar en memoria
+    facturacionDB['current'] = {comprobantes_rows};
+    setSt('✓ ' + comprobantes_rows.length + ' comprobantes cargados', 'ok');
+  } catch(e) { setSt('Error: ' + e.message, 'err'); }
+  input.value = '';
+}
 
 async function sincronizarChessCC() {
   const btn = document.getElementById('btn-chess-cc');
@@ -1002,19 +1057,25 @@ var facturacionDB = {};
 
 async function cargarFacuracionDB() {
   try {
-    const r = await fetch('/api/datos/facturacion');
-    if (r.ok) facturacionDB = await r.json();
+    const r = await fetch('/api/datos/cobranzas');
+    if (r.ok) {
+      const d = await r.json();
+      if (d['current'] && d['current'].comprobantes_rows) {
+        facturacionDB['current'] = {comprobantes_rows: d['current'].comprobantes_rows};
+      }
+    }
   } catch(e) {}
 }
 
 function abrirModalCbte(codigo, nombre) {
   // Recopilar comprobantes de todos los períodos para este cliente
   const rows = [];
+  const codigoNorm = String(codigo).replace(/^0+/,'');
   Object.keys(facturacionDB).sort().forEach(k => {
     const d = facturacionDB[k];
     if (!d.comprobantes_rows) return;
     d.comprobantes_rows.forEach(r => {
-      if (String(r.cli).replace(/^0+/,'') === String(codigo).replace(/^0+/,'')) {
+      if (String(r.cli).replace(/^0+/,'') === codigoNorm) {
         rows.push(Object.assign({}, r, {periodo: k}));
       }
     });
