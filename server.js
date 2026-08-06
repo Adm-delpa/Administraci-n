@@ -905,15 +905,28 @@ app.post('/api/chess/saldos', async (req, res) => {
       binary: true
     });
 
-    const bodyLen = dataRes.body ? dataRes.body.length : 0;
-    const contentType = (dataRes.headers['content-type'] || '');
-    console.log('[Chess saldos] status:', dataRes.status, 'content-type:', contentType, 'bytes:', bodyLen);
-    if (bodyLen > 0 && bodyLen < 2000) console.log('[Chess saldos] body preview:', dataRes.body.toString('utf8').slice(0, 500));
-    if (!dataRes.body || bodyLen < 100) {
-      const preview = bodyLen > 0 ? dataRes.body.toString('utf8').slice(0, 300) : '(vacío)';
-      return res.status(502).json({ error: `Chess respondió ${dataRes.status} (${bodyLen}b): ${preview}` });
+    // Chess devuelve JSON con la ruta del archivo generado
+    let filePath;
+    try {
+      const meta = JSON.parse(dataRes.body.toString('utf8'));
+      if (!meta.pcfile) throw new Error('sin pcfile');
+      filePath = meta.pcfile; // ej: /static/downloads/saldototalXXX.xlsx
+    } catch(e) {
+      return res.status(502).json({ error: `Chess respondió formato inesperado: ${dataRes.body.toString('utf8').slice(0,200)}` });
     }
-    const b64 = Buffer.isBuffer(dataRes.body) ? dataRes.body.toString('base64') : Buffer.from(dataRes.body).toString('base64');
+
+    // Segunda request: descargar el Excel generado
+    const fileRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: '/AR459' + filePath,
+      method: 'GET',
+      headers: { 'Cookie': cookies, 'Referer': 'https://delpalacio.chesserp.com/AR459/' },
+      binary: true
+    });
+
+    const fileLen = fileRes.body ? fileRes.body.length : 0;
+    if (fileLen < 100) return res.status(502).json({ error: `No se pudo descargar el Excel generado (${fileLen} bytes)` });
+    const b64 = fileRes.body.toString('base64');
     res.json({ ok: true, excel: b64 });
   } catch(err) {
     console.error('Chess saldos error:', err);
