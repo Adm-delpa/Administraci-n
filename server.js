@@ -800,11 +800,15 @@ app.get('/api/feriados/:year', async (req, res) => {
 // ── CHESS ERP INTEGRATION ──
 
 function httpsRequest(options, body) {
+  const binary = options.binary;
   return new Promise((resolve, reject) => {
     const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+      const chunks = [];
+      res.on('data', chunk => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        resolve({ status: res.statusCode, headers: res.headers, body: binary ? buf : buf.toString('utf8') });
+      });
     });
     req.on('error', reject);
     if (body) req.write(body);
@@ -895,14 +899,15 @@ app.post('/api/chess/saldos', async (req, res) => {
 
     const dataRes = await httpsRequest({
       hostname: 'delpalacio.chesserp.com',
-      path: '/AR459/web/api/saldoTotalDeudores/ObtenerSaldoTotalDeudores?pcEmp=0&pcSuc=1,%202&piLineaCredito=1&pdFec=null&pcDocs=-1&plactual=true',
+      path: '/AR459/web/api/saldoTotalDeudores/exportarExcel?pcEmp=0&pcSucur=1,%202&piLineaCredito=1&pdFecsal=null&pcDocs=-1&plactual=true&plDet=true&plApertura=false',
       method: 'GET',
-      headers: { 'Cookie': cookies, 'Referer': 'https://delpalacio.chesserp.com/AR459/', 'Accept': 'application/json' }
+      headers: { 'Cookie': cookies, 'Referer': 'https://delpalacio.chesserp.com/AR459/', 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*' },
+      binary: true
     });
 
-    let parsed;
-    try { parsed = JSON.parse(dataRes.body); } catch(e) { return res.status(502).json({ error: 'Respuesta Chess inválida' }); }
-    res.json({ ok: true, data: parsed.ttsaldototaldeudores || [] });
+    if (!dataRes.body || dataRes.body.length < 100) return res.status(502).json({ error: 'Chess no devolvió el archivo Excel' });
+    const b64 = Buffer.isBuffer(dataRes.body) ? dataRes.body.toString('base64') : Buffer.from(dataRes.body).toString('base64');
+    res.json({ ok: true, excel: b64 });
   } catch(err) {
     console.error('Chess saldos error:', err);
     res.status(500).json({ error: 'Error al conectar con Chess ERP' });

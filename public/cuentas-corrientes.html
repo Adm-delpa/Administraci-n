@@ -597,96 +597,41 @@ async function sincronizarChessCC() {
   btn.disabled = true;
   setSt('Conectando con Chess ERP...', 'loading');
   try {
-    const r = await fetch('/api/chess/saldos', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username:userData?.username,nombre:userData?.nombre}) });
+    const r = await fetch('/api/chess/saldos', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
     const json = await r.json();
     if (!r.ok) throw new Error(json.error || 'Error desconocido');
+    if (!json.excel) throw new Error('Chess no devolvió el archivo');
 
-    // Convertir formato Chess → formato interno de cobranzas
-    const hoy = new Date();
-    const fechaStr = hoy.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+    setSt('Procesando comprobantes...', 'loading');
+    // Decodificar base64 → ArrayBuffer → XLSX
+    const binStr = atob(json.excel);
+    const bytes = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+    const wb = XLSX.read(bytes.buffer, { type: 'array' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: 0 });
+    if (!rows.length) throw new Error('El archivo de Chess está vacío');
 
-    // Agrupar por idcliente y sumar saldos de todas las sucursales
-    var mapaClientes = {};
-    json.data.forEach(function(c) {
-      if ((c.dscanal || '').toUpperCase().includes('CLIE PEOPLE')) return;
-      var id = c.idcliente;
-      if (!id) return;
-      if (!mapaClientes[id]) {
-        mapaClientes[id] = {
-          codigo: String(id).replace(/^0+/, ''),
-          cliente: (c.nombre || '').replace(/^\d+\s*-\s*/, ''),
-          saldo: 0, d7: 0, d15: 0, d30: 0, d60: 0, d60p: 0,
-          antiguedad: 0, cantCbte: 0,
-          sucursal: '', localidad: '',
-          vendedor: (c.dsperso || '').replace(/^\d+\s*-\s*/, ''),
-          canal: (c.dscanal || '').replace(/^\d+\s*-\s*/, ''),
-          conjuntos: ['Sin conjunto'], grupos: [], multiVendedor: false,
-        };
-      }
-      var rec = mapaClientes[id];
-      rec.saldo  += parseFloat(c.saltot  || 0);
-      rec.d7     += parseFloat(c.saldo7  || 0);
-      rec.d15    += parseFloat(c.saldo15 || 0);
-      rec.d30    += parseFloat(c.saldo30 || 0);
-      rec.d60    += parseFloat(c.saldo60 || 0);
-      rec.d60p   += parseFloat(c.saldomas|| 0);
-      rec.antiguedad = Math.max(rec.antiguedad, parseInt(c.diasdeu || 0));
-      rec.cantCbte  += parseInt(c.cntcbte || 0);
-      // Sucursal
-      var suc = c.idSucur === 2 ? 'Dolores' : 'Central';
-      rec.sucursal = rec.sucursal && rec.sucursal !== suc ? 'Central / Dolores' : suc;
-      if (!rec.localidad) rec.localidad = (c.dsLocalidad || '').replace(/^\w+\s*-\s*/, '');
-      // Grupos/conjuntos
-      var codConj = c.codconj || c.codConjunto || 0;
-      var dsConj  = (c.dsconj  || c.dsConjunto  || '').trim();
-      if (codConj && codConj !== 0 && dsConj && dsConj !== 'SIN CONJUNTO') {
-        var conjId = String(codConj);
-        if (!rec._conjSet) rec._conjSet = new Set();
-        if (!rec._conjSet.has(conjId)) {
-          rec._conjSet.add(conjId);
-          rec.conjuntos.push(conjId);
-          rec.grupos.push({ id: conjId, nombre: dsConj });
-        }
-      }
-    });
-    DATA = Object.values(mapaClientes).map(function(r) {
-      r.saldo  = Math.round(r.saldo  * 100) / 100;
-      r.d7     = Math.round(r.d7     * 100) / 100;
-      r.d15    = Math.round(r.d15    * 100) / 100;
-      r.d30    = Math.round(r.d30    * 100) / 100;
-      r.d60    = Math.round(r.d60    * 100) / 100;
-      r.d60p   = Math.round(r.d60p   * 100) / 100;
-      return r;
-    }).filter(function(c) { return c.saldo !== 0; });
+    const res = processRows(rows);
+    if (!res) throw new Error('Formato del archivo Chess no reconocido');
 
-    MULTI = {};
-    var gmapCC = {};
-    DATA.forEach(function(r) {
-      (r.grupos || []).forEach(function(g) {
-        if (!gmapCC[g.id]) gmapCC[g.id] = { id: g.id, nombre: g.nombre, clientes: [] };
-        gmapCC[g.id].clientes.push({ codigo: r.codigo, cliente: r.cliente, vendedor: r.vendedor, saldo: r.saldo });
-      });
-    });
-    GRUPOS = Object.values(gmapCC).map(function(g) {
-      g.clientes.sort(function(a, b) { return b.saldo - a.saldo; });
-      g.deudaTotal = g.clientes.filter(function(c) { return c.saldo > 0; }).reduce(function(s, c) { return s + c.saldo; }, 0);
-      g.acreedorTotal = g.clientes.filter(function(c) { return c.saldo < 0; }).reduce(function(s, c) { return s + c.saldo; }, 0);
-      return g;
-    }).sort(function(a, b) { return b.deudaTotal - a.deudaTotal; });
-    currentFecha = fechaStr; lastUpdate = Date.now();
+    DATA = res.data; MULTI = res.multi; GRUPOS = res.grupos; currentFecha = res.fecha;
+    lastUpdate = Date.now();
+    buildConjNames(DATA);
     filtered = [...DATA]; searchTerm = '';
     resetFiltersInternal(); rebuildFilters(); render();
-    document.getElementById('fechaBadge') && (document.getElementById('fechaBadge').textContent = 'Al ' + fechaStr);
-    document.getElementById('footerFecha').textContent = 'Datos al ' + fechaStr;
+    document.getElementById('fechaBadge') && (document.getElementById('fechaBadge').textContent = 'Al ' + currentFecha);
+    document.getElementById('footerFecha').textContent = 'Datos al ' + currentFecha;
 
-    const payload = { data: DATA, multi: MULTI, grupos: GRUPOS, fecha: fechaStr, _savedAt: new Date().toISOString() };
+    const payload = { data: DATA, multi: MULTI, grupos: GRUPOS, fecha: currentFecha, detalleClientes: res.detalleClientes || {}, _savedAt: new Date().toISOString() };
     const resp = await fetch('/api/datos/cobranzas', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ periodo: 'current', datos: payload })
     });
     if (!resp.ok) throw new Error('Error al guardar');
+    facturacionDB['current'] = { detalleClientes: res.detalleClientes || {} };
     setSt('✓ Chess ERP — ' + DATA.length + ' clientes con saldo', 'ok');
     actualizarUltimaCarga(new Date().toISOString());
+    checkFreshness();
     document.getElementById('noDatos').style.display = 'none';
     document.getElementById('mainContent').style.display = '';
   } catch(e) {
