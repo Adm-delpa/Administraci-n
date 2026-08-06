@@ -669,7 +669,7 @@ function processRows(rows) {
   const cD60p = keys.find(k => /\+60/i.test(k));
   const cAntig = fc('Antigüedad', 'Antiguedad'), cCbte = fc('Cant');
   const cComp = fc('Comprobante'), cDescComp = fc('DescripciónComprobante','DescripcionComprobante'), cNum = fc('Número','Numero'), cFechaVto = fc('FechaVencido','Fecha Vencido'), cSaldoCbte = fc('Saldo'), cImporte = fc('ImporteTotal','Importe Total'), cMora = fc('DíasdeMora','Dias de Mora','DiasdeMora');
-  if (!cCli || !cSaldo) return null;
+  if (!cCli || !cSaldo) { console.warn('[processRows] columnas no encontradas. Keys:', keys.join(' | ')); return null; }
   let fecha = '—';
   if (cFecha && rows[0][cFecha]) {
     const raw = rows[0][cFecha];
