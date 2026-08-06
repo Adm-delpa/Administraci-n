@@ -1051,6 +1051,16 @@ function sortVend(key, e) {
 }
 
 // ── GRUPOS ──
+function grupoCliRow(c) {
+  const enc = JSON.stringify(c.cliente).replace(/"/g,'&quot;');
+  const cls = c.saldo > 0 ? 'pos' : c.saldo < 0 ? 'neg' : 'zer';
+  const monto = c.saldo !== 0 ? fmt(c.saldo) : '$ 0';
+  return '<div class="gc-cli-row" style="cursor:pointer" onclick="abrirModalCbte(\'' + (c.codigo||'') + '\',' + enc + ')">'
+    + '<span class="td-cod" style="flex-shrink:0">' + (c.codigo||'—') + '</span>'
+    + '<span class="gc-cli-name" title="' + c.cliente + '">' + c.cliente + '</span>'
+    + '<span class="gc-cli-monto ' + cls + '">' + monto + '</span>'
+    + '</div>';
+}
 function renderGrupos() {
   const glist = GRUPOS;
   const totalDeuda = glist.reduce((s, g) => s + g.deudaTotal, 0);
@@ -1060,7 +1070,7 @@ function renderGrupos() {
   kpi('kGrupoCant', 'Grupos con deuda activa', conGrupos, '');
   kpi('kGrupoAcr', 'Saldo acreedor en grupos', fmt(totalAcr), 'azul');
   document.getElementById('subGrupos').textContent = glist.length + ' grupos registrados';
-  document.getElementById('grupoGrid').innerHTML = glist.map(g => '<div class="grupo-card"><div class="gc-hdr"><div><div class="gc-nombre">' + g.nombre + '</div><div class="gc-id" style="margin-top:3px">Conjunto ' + g.id + '</div></div><div style="text-align:right"><div class="gc-deuda-label">Deuda total</div><div class="gc-deuda-total">' + (g.deudaTotal > 0 ? fmt(g.deudaTotal) : 'Sin deuda') + '</div>' + (g.acreedorTotal < 0 ? '<div class="gc-deuda-label" style="margin-top:4px">Saldo acreedor</div><div style="font-size:13px;font-weight:700;color:var(--azul)">' + fmt(Math.abs(g.acreedorTotal)) + '</div>' : '') + '</div></div><div class="gc-clientes">' + g.clientes.map(c => '<div class="gc-cli-row"><span class="td-cod" style="flex-shrink:0">' + (c.codigo || '—') + '</span><span class="gc-cli-name" title="' + c.cliente + '">' + c.cliente + '</span><span class="gc-cli-monto ' + (c.saldo > 0 ? 'pos' : c.saldo < 0 ? 'neg' : 'zer') + '">' + (c.saldo !== 0 ? fmt(c.saldo) : '$ 0') + '</span></div>').join('') + '</div></div>').join('');
+  document.getElementById('grupoGrid').innerHTML = glist.map(g => '<div class="grupo-card"><div class="gc-hdr"><div><div class="gc-nombre">' + g.nombre + '</div><div class="gc-id" style="margin-top:3px">Conjunto ' + g.id + '</div></div><div style="text-align:right"><div class="gc-deuda-label">Deuda total</div><div class="gc-deuda-total">' + (g.deudaTotal > 0 ? fmt(g.deudaTotal) : 'Sin deuda') + '</div>' + (g.acreedorTotal < 0 ? '<div class="gc-deuda-label" style="margin-top:4px">Saldo acreedor</div><div style="font-size:13px;font-weight:700;color:var(--azul)">' + fmt(Math.abs(g.acreedorTotal)) + '</div>' : '') + '</div></div><div class="gc-clientes">' + g.clientes.map(grupoCliRow).join('') + '</div></div>').join('');
 }
 
 // ── VENDEDORES ──
