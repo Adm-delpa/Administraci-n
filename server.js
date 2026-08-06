@@ -905,7 +905,11 @@ app.post('/api/chess/saldos', async (req, res) => {
       binary: true
     });
 
-    if (!dataRes.body || dataRes.body.length < 100) return res.status(502).json({ error: 'Chess no devolvió el archivo Excel' });
+    const bodyLen = dataRes.body ? dataRes.body.length : 0;
+    const contentType = (dataRes.headers['content-type'] || '');
+    console.log('[Chess saldos] status:', dataRes.status, 'content-type:', contentType, 'bytes:', bodyLen);
+    if (bodyLen > 0 && bodyLen < 2000) console.log('[Chess saldos] body preview:', dataRes.body.toString('utf8').slice(0, 500));
+    if (!dataRes.body || bodyLen < 100) return res.status(502).json({ error: `Chess respondió ${dataRes.status} con ${bodyLen} bytes` });
     const b64 = Buffer.isBuffer(dataRes.body) ? dataRes.body.toString('base64') : Buffer.from(dataRes.body).toString('base64');
     res.json({ ok: true, excel: b64 });
   } catch(err) {
