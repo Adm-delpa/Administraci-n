@@ -931,8 +931,8 @@ app.post('/api/chess/saldos', async (req, res) => {
 
     const fileLen = fileRes.body ? fileRes.body.length : 0;
     if (fileLen < 100) return res.status(502).json({ error: `No se pudo descargar el Excel generado (${fileLen} bytes)` });
-    const b64 = fileRes.body.toString('base64');
-    res.json({ ok: true, excel: b64 });
+    res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(fileRes.body);
   } catch(err) {
     console.error('Chess saldos error:', err);
     res.status(500).json({ error: 'Error al conectar con Chess ERP' });

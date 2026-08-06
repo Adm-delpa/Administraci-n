@@ -598,16 +598,10 @@ async function sincronizarChessCC() {
   setSt('Conectando con Chess ERP...', 'loading');
   try {
     const r = await fetch('/api/chess/saldos', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
-    const json = await r.json();
-    if (!r.ok) throw new Error(json.error || 'Error desconocido');
-    if (!json.excel) throw new Error('Chess no devolvió el archivo');
-
+    if (!r.ok) { const json = await r.json(); throw new Error(json.error || 'Error desconocido'); }
     setSt('Procesando comprobantes...', 'loading');
-    // Decodificar base64 → ArrayBuffer → XLSX
-    const binStr = atob(json.excel);
-    const bytes = new Uint8Array(binStr.length);
-    for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-    const wb = XLSX.read(bytes.buffer, { type: 'array' });
+    const buf = await r.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: 0 });
     if (!rows.length) throw new Error('El archivo de Chess está vacío');
 
