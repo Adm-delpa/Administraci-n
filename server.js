@@ -909,7 +909,10 @@ app.post('/api/chess/saldos', async (req, res) => {
     const contentType = (dataRes.headers['content-type'] || '');
     console.log('[Chess saldos] status:', dataRes.status, 'content-type:', contentType, 'bytes:', bodyLen);
     if (bodyLen > 0 && bodyLen < 2000) console.log('[Chess saldos] body preview:', dataRes.body.toString('utf8').slice(0, 500));
-    if (!dataRes.body || bodyLen < 100) return res.status(502).json({ error: `Chess respondió ${dataRes.status} con ${bodyLen} bytes` });
+    if (!dataRes.body || bodyLen < 100) {
+      const preview = bodyLen > 0 ? dataRes.body.toString('utf8').slice(0, 300) : '(vacío)';
+      return res.status(502).json({ error: `Chess respondió ${dataRes.status} (${bodyLen}b): ${preview}` });
+    }
     const b64 = Buffer.isBuffer(dataRes.body) ? dataRes.body.toString('base64') : Buffer.from(dataRes.body).toString('base64');
     res.json({ ok: true, excel: b64 });
   } catch(err) {
