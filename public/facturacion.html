@@ -479,12 +479,14 @@ function calcular(wbV,wbC,wbR){
   let prvta=0,prdvo=0,compPres=0;
   const condPres={RI:0,MT:0,CF:0,EX:0,NC:0};
   const venNegro_rows=[];
+  const comprobantes_rows=[];
   const colSuc=Object.keys(sr).find(k=>k==='Descripcion Sucursal')||'Descripcion Sucursal';
   const colCli=Object.keys(sr).find(k=>k==='Cliente')||'Cliente';
   const colRazon=Object.keys(sr).find(k=>k==='Razon Social')||'Razon Social';
   const colNum=Object.keys(sr).find(k=>k==='Numero')||'Numero';
   const colFecha=Object.keys(sr).find(k=>k==='Fecha Comprobante')||'Fecha Comprobante';
   const colDescCbte=Object.keys(sr).find(k=>k==='Descripcion Comprobante')||'Descripcion Comprobante';
+  const colSF=Object.keys(sr).find(k=>k==='Subtotal Final')||'Subtotal Final';
   rowsR.forEach(r=>{
     const tipo=(r[colComp]||'').toString().trim().toUpperCase();
     const neto=n(r[colSN]);
@@ -493,15 +495,17 @@ function calcular(wbV,wbC,wbR){
     if(tipo==='PRVTA'||tipo==='PRDVO'){
       const c=(r[colTIVA]||'').toString().trim().toUpperCase();
       if(condPres[c]!==undefined)condPres[c]+=neto;else condPres['NC']+=neto;
-      const fRaw=r[colFecha];
-      let fStr='';
-      if(fRaw instanceof Date&&!isNaN(fRaw)) fStr=fRaw.toISOString().slice(0,10);
-      else if(fRaw){const d=new Date(fRaw);if(!isNaN(d))fStr=d.toISOString().slice(0,10);}
-      venNegro_rows.push({tipo,descTipo:(r[colDescCbte]||'').toString().trim(),suc:(r[colSuc]||'').toString().trim(),cli:(r[colCli]||'').toString().trim(),razon:(r[colRazon]||'').toString().trim(),num:(r[colNum]||'').toString().trim(),fecha:fStr,neto});
     }
+    const fRaw=r[colFecha];
+    let fStr='';
+    if(fRaw instanceof Date&&!isNaN(fRaw)) fStr=fRaw.toISOString().slice(0,10);
+    else if(fRaw){const d=new Date(fRaw);if(!isNaN(d))fStr=d.toISOString().slice(0,10);}
+    const row={tipo,descTipo:(r[colDescCbte]||'').toString().trim(),suc:(r[colSuc]||'').toString().trim(),cli:(r[colCli]||'').toString().trim(),razon:(r[colRazon]||'').toString().trim(),num:(r[colNum]||'').toString().trim(),fecha:fStr,neto,total:n(r[colSF])};
+    comprobantes_rows.push(row);
+    if(tipo==='PRVTA'||tipo==='PRDVO') venNegro_rows.push(row);
   });
   const pres_neto=prvta+prdvo;
-  return{lv_neto,lv_iva,tc,condAB,compAB:rowsV.length,prvta_neto:prvta,prdvo_neto:prdvo,pres_neto,condPres,compPres,venNegro_rows,total_venta:lv_neto+pres_neto,iva_compras,perc3337,iva_fin:lv_iva-iva_compras-perc3337,_fechaMax:fechaMax?fechaMax.toISOString().slice(0,10):null};
+  return{lv_neto,lv_iva,tc,condAB,compAB:rowsV.length,prvta_neto:prvta,prdvo_neto:prdvo,pres_neto,condPres,compPres,venNegro_rows,comprobantes_rows,total_venta:lv_neto+pres_neto,iva_compras,perc3337,iva_fin:lv_iva-iva_compras-perc3337,_fechaMax:fechaMax?fechaMax.toISOString().slice(0,10):null};
 }
 
 // ── RENDER ──
