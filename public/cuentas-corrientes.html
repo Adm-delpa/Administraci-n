@@ -693,6 +693,8 @@ function processComprobanteFormat(rows, keys, fc) {
   const map = {}, detalleMap = {};
   for (const r of rows) {
     if (cAgrupDesc && String(r[cAgrupDesc]||'').includes('0005-PC')) continue;
+    const _descComp = String(r[cDescComp]||'').toUpperCase();
+    if (_descComp.includes('FALTANTE') || _descComp.includes('SOBRANTE')) continue;
     const cliRaw = String(r[cCli] || '').trim();
     const [cod, nomRaw] = sp(cliRaw);
     const rawNom = (cRazon && r[cRazon]) ? String(r[cRazon]).trim() : nomRaw;
