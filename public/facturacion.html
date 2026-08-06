@@ -27,6 +27,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
 .tabs{display:flex;gap:3px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:3px;margin-bottom:1.5rem;overflow-x:auto}
 .tab{padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600;color:#56555A;cursor:pointer;white-space:nowrap;border:none;background:transparent;transition:all .15s}
 .tab.active{background:#1E6FD9;color:#fff;box-shadow:0 1px 4px rgba(30,111,217,.35)}
+.negro-suc-btn{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;color:#56555A;cursor:pointer;border:1px solid #DDDBD6;background:#fff;transition:all .15s}
+.negro-suc-btn:hover:not(.negro-suc-active){background:#F2F1EE}
+.negro-suc-active{background:#C4820A;color:#fff;border-color:#C4820A}
 .tab:hover:not(.active){background:#F2F1EE}
 /* SEC LABEL */
 .sec-label{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9896A0;margin:1.75rem 0 .85rem}
@@ -314,7 +317,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
       </div>
       <!-- Por cliente -->
       <div class="card">
-        <div style="font-size:12px;font-weight:700;color:#56555A;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.05em">Por cliente</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div style="font-size:12px;font-weight:700;color:#56555A;text-transform:uppercase;letter-spacing:.05em">Por cliente</div>
+          <div style="display:flex;gap:4px" id="negro-suc-filter">
+            <button onclick="filtroNegroSuc('')" class="negro-suc-btn negro-suc-active" data-suc="">Todas</button>
+            <button onclick="filtroNegroSuc('CASA CENTRAL')" class="negro-suc-btn" data-suc="CASA CENTRAL">Casa Central</button>
+            <button onclick="filtroNegroSuc('SUCURSAL DOLORES')" class="negro-suc-btn" data-suc="SUCURSAL DOLORES">Dolores</button>
+          </div>
+        </div>
         <div id="negro-cli-table"></div>
       </div>
     </div>
@@ -651,6 +661,16 @@ function renderSaved(){
 }
 
 // ── VENTA EN NEGRO ──
+var negroSucFiltro='';
+
+function filtroNegroSuc(suc){
+  negroSucFiltro=suc;
+  document.querySelectorAll('.negro-suc-btn').forEach(b=>{
+    b.classList.toggle('negro-suc-active',b.dataset.suc===suc);
+  });
+  renderNegroClientes();
+}
+
 function renderVentaNegro(){
   const keys=Object.keys(db).sort();
   if(!keys.length){
@@ -719,8 +739,24 @@ function renderVentaNegro(){
   </tr>`;
   sucHtml+='</tbody></table></div>';
   document.getElementById('negro-suc-table').innerHTML=sucHtml;
+  negroAllRows=rows;
+  renderNegroClientes();
+}
 
-  // ── Por cliente ──
+var negroAllRows=[];
+
+function renderNegroClientes(){
+  const rows=negroSucFiltro?negroAllRows.filter(r=>r.suc===negroSucFiltro):negroAllRows;
+  const totalNeto=rows.reduce((s,r)=>s+r.neto,0);
+  const thStyle='padding:.45rem .6rem;font-size:11px;font-weight:700;color:#56555A;text-align:left;border-bottom:2px solid #DDDBD6;white-space:nowrap';
+  const tdStyle='padding:.4rem .6rem;font-size:12px;border-bottom:1px solid #F0EEEB;white-space:nowrap';
+  const tdRStyle='padding:.4rem .6rem;font-size:12px;border-bottom:1px solid #F0EEEB;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums';
+
+  if(!rows.length){
+    document.getElementById('negro-cli-table').innerHTML='<div style="font-size:12px;color:#9896A0;padding:.5rem 0">Sin datos para esta sucursal.</div>';
+    return;
+  }
+
   const cliMap={};
   rows.forEach(r=>{
     const key=r.cli+'|'+r.razon;
@@ -731,7 +767,7 @@ function renderVentaNegro(){
   });
   const clis=Object.values(cliMap).sort((a,b)=>b.neto-a.neto);
 
-  let cliHtml=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse" id="negro-cli-tbl">
+  let cliHtml=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
     <thead><tr>
       <th style="${thStyle}">Cliente</th>
       <th style="${thStyle};text-align:right">Comp.</th>
