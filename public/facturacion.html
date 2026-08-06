@@ -310,6 +310,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
   <div id="tab-negro" style="display:none">
     <div id="negro-nodata" style="display:none;text-align:center;padding:3rem 1rem;color:#9896A0;font-size:13px">Cargá al menos un período para ver este análisis.</div>
     <div id="negro-content">
+      <div style="font-size:13px;font-weight:600;color:#56555A;margin-bottom:1rem">Período: <span id="negro-periodo-lbl" style="color:#1E6FD9">—</span></div>
       <!-- Por sucursal -->
       <div class="card" style="margin-bottom:1rem">
         <div style="font-size:12px;font-weight:700;color:#56555A;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.05em">Por sucursal</div>
@@ -681,9 +682,14 @@ function renderVentaNegro(){
   document.getElementById('negro-nodata').style.display='none';
   document.getElementById('negro-content').style.display='block';
 
-  // Acumular filas de todos los períodos
+  // Título del período activo
+  const periodoLbl=mesActivo?fP(mesActivo):'—';
+  document.getElementById('negro-periodo-lbl').textContent=periodoLbl;
+
+  // Solo el mes activo
   const rows=[];
-  keys.forEach(k=>{
+  const keysActivos=mesActivo?[mesActivo]:keys;
+  keysActivos.forEach(k=>{
     const d=db[k];
     if(d.venNegro_rows&&d.venNegro_rows.length){
       d.venNegro_rows.forEach(r=>rows.push(Object.assign({},r,{periodo:k})));
