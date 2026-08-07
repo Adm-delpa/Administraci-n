@@ -377,6 +377,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
         <button id="tab-btn-nueva" onclick="switchTab('nueva')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#0D4FA0;border-bottom:2px solid #0D4FA0;margin-bottom:-2px;cursor:pointer">Cargar precio</button>
         <button id="tab-btn-lista" onclick="switchTab('lista')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer">Ver tarifas</button>
         <button id="tab-btn-zonas" onclick="switchTab('zonas')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer">Zonas</button>
+        <button id="tab-btn-choferes" onclick="switchTab('choferes')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer">Choferes</button>
       </div>
 
       <!-- TAB: CARGAR PRECIO -->
@@ -440,6 +441,36 @@ label{font-size:12px;font-weight:600;color:#6B6876}
           <button onclick="document.getElementById('tf-filtro-mes').value='';renderTarifas()" style="padding:5px 10px;border:1.5px solid #DDDBD6;background:none;border-radius:7px;font-family:inherit;font-size:12px;cursor:pointer;color:#6B6876">Todos</button>
         </div>
         <div id="tarifas-list" style="display:flex;flex-direction:column;gap:6px;max-height:380px;overflow-y:auto"></div>
+      </div>
+
+      <!-- TAB: CHOFERES -->
+      <div id="tab-choferes" style="display:none;flex-direction:column;gap:10px">
+        <div style="background:#f8f9fc;border:1px solid #DDDBD6;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:12px;font-weight:700;color:#6B6876;text-transform:uppercase;letter-spacing:.05em" id="chofer-form-titulo">Nuevo chofer</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group">
+              <label>Nombre completo</label>
+              <input type="text" id="chofer-nombre" placeholder="Nombre del chofer" style="border:1.5px solid #DDDBD6;border-radius:6px;padding:7px 10px;font-family:inherit;font-size:13px;outline:none">
+            </div>
+            <div class="form-group">
+              <label>Empresa de transporte</label>
+              <select id="chofer-empresa" style="width:100%">
+                <option value="">— elegir —</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button onclick="cancelarEditarChofer()" id="chofer-btn-cancel" style="display:none;padding:6px 12px;border:1.5px solid #DDDBD6;background:none;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;color:#6B6876">Cancelar</button>
+            <button onclick="guardarChofer()" style="padding:6px 14px;background:#0D4FA0;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" id="chofer-btn-guardar">Agregar chofer</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="chofer-busq" placeholder="Buscar chofer..." oninput="renderChoferesList()" style="flex:1;border:1.5px solid #DDDBD6;border-radius:6px;padding:6px 10px;font-family:inherit;font-size:13px;outline:none">
+          <select id="chofer-fil-emp" onchange="renderChoferesList()" style="border:1.5px solid #DDDBD6;border-radius:6px;padding:6px 10px;font-family:inherit;font-size:13px;outline:none;background:#fff">
+            <option value="">Todas las empresas</option>
+          </select>
+        </div>
+        <div id="choferes-list" style="display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto"></div>
       </div>
 
       <!-- TAB: ZONAS -->
@@ -604,6 +635,15 @@ async function cargar() {
     tarifas    = (data && data.tarifas   && Array.isArray(data.tarifas.tarifas))     ? data.tarifas.tarifas   : [];
     zonas      = (data && data.tarifas   && Array.isArray(data.tarifas.zonas))       ? data.tarifas.zonas     : [];
     rdfValues  = (data && data.rdf       && Array.isArray(data.rdf.valores))         ? data.rdf.valores       : [];
+    var choferesDB = (data && data.tarifas && Array.isArray(data.tarifas.choferes)) ? data.tarifas.choferes : [];
+    if(choferesDB.length){
+      choferes = choferesDB;
+    } else {
+      // Primera vez: sembrar desde el mapa hardcodeado y guardar
+      choferes = Object.keys(CHOFER_EMPRESA).map(function(n){ return {nombre:n, empresa:CHOFER_EMPRESA[n]}; });
+      guardarTarifasDB();
+    }
+    buildChoferMap();
   } catch(e) { registros = []; tarifas = []; }
   calcStats(); renderFiltroMes(true); renderFiltroEmpresa(); renderTabla();
 }
@@ -618,7 +658,7 @@ async function guardarRegistrosDB() {
 async function guardarTarifasDB() {
   await fetch('/api/datos/transporte', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({periodo:'tarifas', datos:{tarifas, zonas}})
+    body: JSON.stringify({periodo:'tarifas', datos:{tarifas, zonas, choferes}})
   });
 }
 
@@ -937,8 +977,9 @@ var EMPRESAS_LISTA = [
 var editZonaIdx=null;
 
 function switchTab(tab){
-  ['nueva','lista','zonas'].forEach(function(t){
-    document.getElementById('tab-'+t).style.display = t===tab ? (t==='zonas'?'flex':'block') : 'none';
+  ['nueva','lista','zonas','choferes'].forEach(function(t){
+    var flexTabs=['zonas','choferes'];
+    document.getElementById('tab-'+t).style.display = t===tab ? (flexTabs.indexOf(t)>=0?'flex':'block') : 'none';
     var btn=document.getElementById('tab-btn-'+t);
     btn.style.color = t===tab ? '#0D4FA0' : '#9896A0';
     btn.style.borderBottomColor = t===tab ? '#0D4FA0' : 'transparent';
@@ -946,6 +987,7 @@ function switchTab(tab){
   if(tab==='nueva'){ renderZonasSelect(); renderCargadosMes(); }
   if(tab==='lista') renderTarifas();
   if(tab==='zonas'){ renderCheckboxesZona(); renderZonasList(); }
+  if(tab==='choferes'){ renderChoferesEmpresaSelect(); renderChoferesList(); }
 }
 
 function abrirModalTarifas(){
@@ -1144,6 +1186,100 @@ function fmtMes(mes){
   if(!mes||mes==='Sin mes') return 'Sin mes';
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var p=mes.split('-'); return (meses[parseInt(p[1],10)-1]||p[1])+' '+p[0];
+}
+
+// ── CHOFERES ──
+var editChoferIdx = null;
+
+function buildChoferMap(){
+  CHOFER_EMPRESA = {};
+  choferes.forEach(function(c){ CHOFER_EMPRESA[c.nombre] = c.empresa; });
+  TODOS_CHOFERES = Object.keys(CHOFER_EMPRESA).sort();
+}
+
+function renderChoferesEmpresaSelect(){
+  var selForm = document.getElementById('chofer-empresa');
+  var selFil  = document.getElementById('chofer-fil-emp');
+  [selForm, selFil].forEach(function(sel, i){
+    var val = sel.value;
+    sel.innerHTML = i===0 ? '<option value="">— elegir —</option>' : '<option value="">Todas las empresas</option>';
+    EMPRESAS_LISTA.forEach(function(e){
+      sel.innerHTML += '<option value="'+esc(e)+'">'+esc(e.replace('Transporte ',''))+'</option>';
+    });
+    sel.value = val;
+  });
+}
+
+function renderChoferesList(){
+  var q   = (document.getElementById('chofer-busq').value||'').toLowerCase();
+  var emp = document.getElementById('chofer-fil-emp').value;
+  var lista = choferes.filter(function(c){
+    if(q && !c.nombre.toLowerCase().includes(q)) return false;
+    if(emp && c.empresa !== emp) return false;
+    return true;
+  }).slice().sort(function(a,b){ return a.nombre < b.nombre ? -1 : 1; });
+  var cont = document.getElementById('choferes-list');
+  if(!lista.length){
+    cont.innerHTML = '<div style="padding:14px;text-align:center;color:#9896A0;font-size:13px">Sin resultados.</div>';
+    return;
+  }
+  cont.innerHTML = lista.map(function(c){
+    var idx = choferes.indexOf(c);
+    return '<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:8px 12px">'
+      +'<div style="flex:1;min-width:0">'
+        +'<span style="font-size:13px;font-weight:600;color:#18181A">'+esc(c.nombre)+'</span>'
+        +'<span style="font-size:11px;background:#f0f4ff;color:#0D4FA0;border-radius:4px;padding:2px 7px;margin-left:8px">'+esc((EMPRESA_CORTA[c.empresa]||c.empresa))+'</span>'
+      +'</div>'
+      +'<button class="btn-edit" onclick="editarChofer('+idx+')">Editar</button>'
+      +'<button class="btn-del" onclick="eliminarChofer('+idx+')">✕</button>'
+    +'</div>';
+  }).join('');
+}
+
+function guardarChofer(){
+  var nombre  = (document.getElementById('chofer-nombre').value||'').trim();
+  var empresa = document.getElementById('chofer-empresa').value;
+  if(!nombre){ toast('Ingresá el nombre del chofer.','err-t'); return; }
+  if(!empresa){ toast('Seleccioná la empresa.','err-t'); return; }
+  if(editChoferIdx !== null){
+    choferes[editChoferIdx] = {nombre, empresa};
+  } else {
+    var existe = choferes.findIndex(function(c){ return c.nombre.toLowerCase()===nombre.toLowerCase(); });
+    if(existe>=0){ choferes[existe]={nombre,empresa}; }
+    else { choferes.push({nombre,empresa}); }
+  }
+  buildChoferMap();
+  guardarTarifasDB();
+  toast((editChoferIdx!==null?'Chofer actualizado':'Chofer agregado')+': '+nombre,'ok-t');
+  cancelarEditarChofer();
+  renderChoferesList();
+}
+
+function editarChofer(idx){
+  editChoferIdx = idx;
+  var c = choferes[idx];
+  document.getElementById('chofer-nombre').value  = c.nombre;
+  document.getElementById('chofer-empresa').value = c.empresa;
+  document.getElementById('chofer-form-titulo').textContent = 'Editar chofer';
+  document.getElementById('chofer-btn-guardar').textContent = 'Guardar cambios';
+  document.getElementById('chofer-btn-cancel').style.display = 'inline-block';
+}
+
+function cancelarEditarChofer(){
+  editChoferIdx = null;
+  document.getElementById('chofer-nombre').value  = '';
+  document.getElementById('chofer-empresa').value = '';
+  document.getElementById('chofer-form-titulo').textContent = 'Nuevo chofer';
+  document.getElementById('chofer-btn-guardar').textContent = 'Agregar chofer';
+  document.getElementById('chofer-btn-cancel').style.display = 'none';
+}
+
+async function eliminarChofer(idx){
+  if(!confirm('¿Eliminar el chofer "'+choferes[idx].nombre+'"?')) return;
+  choferes.splice(idx,1);
+  buildChoferMap();
+  try{ await guardarTarifasDB(); toast('Chofer eliminado.','ok-t'); renderChoferesList(); }
+  catch(e){ toast('Error al eliminar.','err-t'); }
 }
 
 // ── ZONAS ──
