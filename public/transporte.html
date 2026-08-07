@@ -1038,29 +1038,47 @@ function renderTarifas(){
     container.innerHTML='<div style="padding:16px;text-align:center;color:#9896A0;font-size:13px">'+(filtroMes?'Sin tarifas para ese mes.':'No hay tarifas cargadas todavía.')+'</div>';
     return;
   }
-  // Agrupar por mes
+  // Agrupar: mes → empresa+destino+valor → [origenes]
   var porMes={};
-  lista.forEach(function(t,origIdx){
+  lista.forEach(function(t){
     var m=t.mes||'Sin mes';
-    if(!porMes[m]) porMes[m]=[];
-    porMes[m].push({t,origIdx:tarifas.indexOf(t)});
+    if(!porMes[m]) porMes[m]={};
+    var gKey=t.empresa+'||'+t.destino+'||'+t.valor;
+    if(!porMes[m][gKey]) porMes[m][gKey]={empresa:t.empresa,destino:t.destino,valor:t.valor,origenes:[],indices:[]};
+    porMes[m][gKey].origenes.push(t.origen);
+    porMes[m][gKey].indices.push(tarifas.indexOf(t));
   });
   var html='';
   Object.keys(porMes).sort().reverse().forEach(function(mes){
     html+='<div style="font-size:11px;font-weight:700;color:#6B6876;text-transform:uppercase;letter-spacing:.05em;padding:6px 0 4px">'+fmtMes(mes)+'</div>';
-    porMes[mes].forEach(function(item){
-      var t=item.t; var i=item.origIdx;
-      html+='<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:8px 12px">'
+    Object.values(porMes[mes]).forEach(function(g){
+      var idxList=g.indices.join(',');
+      html+='<div style="background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px">'
         +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:13px;font-weight:600;color:#18181A">'+esc(t.empresa)+'</div>'
-          +'<div style="font-size:11px;color:#6B6876;margin-top:2px">'+esc(t.origen)+' → '+esc(t.destino)+'</div>'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+            +'<span style="font-size:13px;font-weight:600;color:#18181A">'+esc(g.empresa)+'</span>'
+            +'<span style="font-size:12px;color:#6B6876">→ '+esc(g.destino)+'</span>'
+          +'</div>'
+          +'<div style="display:flex;flex-wrap:wrap;gap:4px">'
+            +g.origenes.map(function(o){ return '<span style="font-size:11px;background:#f0f4ff;color:#0D4FA0;border-radius:4px;padding:2px 7px">'+esc(o)+'</span>'; }).join('')
+          +'</div>'
         +'</div>'
-        +'<div style="font-size:14px;font-weight:700;color:#0D4FA0;white-space:nowrap">$'+fmtN(t.valor)+'</div>'
-        +'<button class="btn-del" onclick="eliminarTarifa('+i+')" title="Eliminar">✕</button>'
+        +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+          +'<span style="font-size:14px;font-weight:700;color:#0D4FA0">$'+fmtN(g.valor)+'</span>'
+          +'<button class="btn-del" onclick="eliminarGrupoTarifas(['+idxList+'])" title="Eliminar grupo">✕</button>'
+        +'</div>'
       +'</div>';
     });
   });
   container.innerHTML=html;
+}
+
+async function eliminarGrupoTarifas(indices){
+  if(!confirm('¿Eliminar '+indices.length+' tarifa'+(indices.length>1?'s':'')+' de este grupo?')) return;
+  // Eliminar de mayor a menor para no desplazar índices
+  indices.slice().sort(function(a,b){return b-a;}).forEach(function(i){ tarifas.splice(i,1); });
+  try{ await guardarTarifasDB(); toast('Tarifas eliminadas.','ok-t'); renderTarifas(); }
+  catch(e){ toast('Error al eliminar.','err-t'); }
 }
 
 function fmtMes(mes){
