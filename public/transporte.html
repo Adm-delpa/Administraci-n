@@ -152,7 +152,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
 
   <div class="filtros">
     <input type="text" id="f-busq" placeholder="Buscar chofer, origen, destino, factura..." oninput="renderTabla()" style="flex:1;min-width:200px">
-    <select id="f-mes-fil" onchange="renderFiltroEmpresa();renderTabla()"><option value="">Todos los meses</option></select>
+    <select id="f-mes-fil" onchange="calcStats();renderFiltroEmpresa();renderTabla()"><option value="">Todos los meses</option></select>
     <select id="f-destino-fil" onchange="renderTabla()">
       <option value="">Todos los destinos</option>
       <option>Dolores</option>
@@ -676,9 +676,11 @@ function getRdfMes(mes) {
 // ── STATS / TABLA ─────────────────────────────────────────────────────────────
 
 function calcStats() {
-  document.getElementById('st-total').textContent = registros.length;
-  document.getElementById('st-envase').textContent = registros.filter(function(r){ return r.envase==='si'; }).length;
-  var desc = registros.reduce(function(s,r){ return s+(parseFloat(r.descuento)||0); }, 0);
+  var mes = document.getElementById('f-mes-fil').value;
+  var base = mes ? registros.filter(function(r){ return (r.fecha||'').slice(0,7)===mes; }) : registros;
+  document.getElementById('st-total').textContent = base.length;
+  document.getElementById('st-envase').textContent = base.filter(function(r){ return r.envase==='si'; }).length;
+  var desc = base.reduce(function(s,r){ return s+(parseFloat(r.descuento)||0); }, 0);
   document.getElementById('st-desc').textContent = '$'+fmtN(desc);
 }
 
