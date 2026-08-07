@@ -371,53 +371,60 @@ label{font-size:12px;font-weight:600;color:#6B6876}
 
       <!-- TABS -->
       <div style="display:flex;gap:0;border-bottom:2px solid #DDDBD6">
-        <button id="tab-btn-nueva" onclick="switchTab('nueva')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#0D4FA0;border-bottom:2px solid #0D4FA0;margin-bottom:-2px;cursor:pointer">Cargar tarifas</button>
+        <button id="tab-btn-nueva" onclick="switchTab('nueva')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#0D4FA0;border-bottom:2px solid #0D4FA0;margin-bottom:-2px;cursor:pointer">Cargar precio</button>
         <button id="tab-btn-lista" onclick="switchTab('lista')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer">Ver tarifas</button>
         <button id="tab-btn-zonas" onclick="switchTab('zonas')" style="padding:8px 18px;border:none;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#9896A0;border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer">Zonas</button>
       </div>
 
-      <!-- TAB: CARGAR TARIFAS -->
+      <!-- TAB: CARGAR PRECIO -->
       <div id="tab-nueva">
         <div style="display:flex;flex-direction:column;gap:12px">
-          <!-- Fila mes + destino + valor -->
-          <div style="display:flex;gap:10px;align-items:flex-end">
-            <div class="form-group" style="flex:1">
+          <!-- Fila principal -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end">
+            <div class="form-group">
               <label>Mes</label>
-              <input type="month" id="tf-mes" style="border:1.5px solid #DDDBD6;border-radius:7px;padding:7px 10px;font-family:inherit;font-size:13px;outline:none;width:100%">
+              <input type="month" id="tf-mes" onchange="renderCargadosMes()" style="border:1.5px solid #DDDBD6;border-radius:7px;padding:7px 10px;font-family:inherit;font-size:13px;outline:none;width:100%">
             </div>
-            <div class="form-group" style="flex:1">
+            <div class="form-group">
+              <label>Transportista</label>
+              <select id="tf-empresa" onchange="actualizarPreviewPrecio()" style="width:100%">
+                <option value="">— elegir —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Zona origen</label>
+              <select id="tf-zona" onchange="actualizarPreviewPrecio()" style="width:100%">
+                <option value="">— elegir —</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label>Destino</label>
-              <select id="tf-destino" style="width:100%">
+              <select id="tf-destino" onchange="actualizarPreviewPrecio()" style="width:100%">
                 <option value="">— Seleccioná —</option>
                 <option>Dolores</option>
                 <option>Mar de Ajó</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1">
-              <label>Valor ($)</label>
-              <input type="number" id="tf-valor" placeholder="0" min="0" step="0.01" style="border:1.5px solid #DDDBD6;border-radius:7px;padding:7px 10px;font-family:inherit;font-size:13px;outline:none;width:100%">
-            </div>
+          </div>
+          <div class="form-group">
+            <label>Valor ($)</label>
+            <input type="number" id="tf-valor" placeholder="0" min="0" step="0.01" style="border:1.5px solid #DDDBD6;border-radius:7px;padding:7px 10px;font-family:inherit;font-size:13px;outline:none;width:100%">
           </div>
 
-          <!-- Empresas -->
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#6B6876;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Empresas de transporte</div>
-            <div id="tf-empresas-check" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-          </div>
-
-          <!-- Orígenes -->
-          <div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <span style="font-size:12px;font-weight:700;color:#6B6876;text-transform:uppercase;letter-spacing:.05em">Orígenes</span>
-              <span style="font-size:11px;color:#9896A0" id="tf-zonas-btns"></span>
-            </div>
-            <div id="tf-origenes-check" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;background:#f8f9fc;border:1px solid #DDDBD6;border-radius:8px;padding:10px"></div>
+          <!-- Preview orígenes de la zona -->
+          <div id="tf-zona-preview" style="display:none;background:#EEF4FF;border:1.5px solid #dbe8ff;border-radius:8px;padding:10px 12px;font-size:12px;color:#0D4FA0">
+            <span id="tf-zona-preview-txt"></span>
           </div>
 
           <!-- Botón -->
-          <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px">
-            <span id="tf-count-label" style="font-size:12px;color:#9896A0"></span>
-            <button onclick="guardarTarifa()" style="padding:8px 20px;background:#0D4FA0;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer" id="tf-btn-guardar">Agregar tarifas</button>
+          <div style="display:flex;justify-content:flex-end">
+            <button onclick="guardarPrecio()" style="padding:8px 20px;background:#0D4FA0;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Guardar precio</button>
+          </div>
+
+          <!-- Precios ya cargados para el mes -->
+          <div id="tf-cargados-wrap" style="display:none">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9896A0;margin-bottom:6px" id="tf-cargados-title"></div>
+            <div id="tf-cargados" style="display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto"></div>
           </div>
         </div>
       </div>
@@ -918,115 +925,144 @@ function switchTab(tab){
     btn.style.color = t===tab ? '#0D4FA0' : '#9896A0';
     btn.style.borderBottomColor = t===tab ? '#0D4FA0' : 'transparent';
   });
+  if(tab==='nueva'){ renderZonasSelect(); renderCargadosMes(); }
   if(tab==='lista') renderTarifas();
   if(tab==='zonas'){ renderCheckboxesZona(); renderZonasList(); }
 }
 
 function abrirModalTarifas(){
   switchTab('nueva');
-  renderEmpresasCheck();
-  renderOrigenesCheck();
-  renderZonasBtns();
-  // Mes por defecto: mes actual
+  renderEmpresasSelect();
+  renderZonasSelect();
   var now=new Date();
   var mesDefault=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   document.getElementById('tf-mes').value=mesDefault;
+  document.getElementById('tf-empresa').value='';
+  document.getElementById('tf-zona').value='';
   document.getElementById('tf-destino').value='';
   document.getElementById('tf-valor').value='';
-  actualizarContadorTarifas();
+  document.getElementById('tf-zona-preview').style.display='none';
+  renderCargadosMes();
   document.getElementById('modal-tarifas').classList.add('open');
 }
 
 function cerrarModalTarifas(){ document.getElementById('modal-tarifas').classList.remove('open'); }
 
-function renderEmpresasCheck(){
-  document.getElementById('tf-empresas-check').innerHTML=EMPRESAS_LISTA.map(function(e){
-    return '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#fff;border:1.5px solid #DDDBD6;border-radius:7px;padding:6px 10px;white-space:nowrap">'
-      +'<input type="checkbox" class="tf-emp-cb" value="'+esc(e)+'" onchange="actualizarContadorTarifas()" style="cursor:pointer"> '+esc(e.replace('Transporte ',''))
-      +'</label>';
-  }).join('');
-}
-
-function renderOrigenesCheck(){
-  document.getElementById('tf-origenes-check').innerHTML=ORIGENES_LISTA.map(function(o){
-    return '<label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:3px 0">'
-      +'<input type="checkbox" class="tf-ori-cb" value="'+esc(o)+'" onchange="actualizarContadorTarifas()" style="cursor:pointer"> '+esc(o)
-      +'</label>';
-  }).join('');
-}
-
-function renderZonasBtns(){
-  var cont=document.getElementById('tf-zonas-btns');
-  if(!zonas.length){ cont.innerHTML=''; return; }
-  cont.innerHTML=zonas.map(function(z,i){
-    return '<button onclick="toggleZonaOrigen('+i+')" style="padding:3px 10px;border:1.5px solid #0D4FA0;background:#EEF4FF;color:#0D4FA0;border-radius:20px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">'+esc(z.nombre)+'</button>';
-  }).join('');
-}
-
-function toggleZonaOrigen(zi){
-  var origenesZona=zonas[zi].origenes;
-  var cbs=document.querySelectorAll('.tf-ori-cb');
-  // Ver si todos los de la zona están tildados
-  var todos=origenesZona.every(function(o){
-    return Array.from(cbs).some(function(cb){ return cb.value===o&&cb.checked; });
+function renderEmpresasSelect(){
+  var sel=document.getElementById('tf-empresa');
+  sel.innerHTML='<option value="">— elegir —</option>';
+  EMPRESAS_LISTA.forEach(function(e){
+    sel.innerHTML+='<option value="'+esc(e)+'">'+esc(e.replace('Transporte ',''))+'</option>';
   });
-  cbs.forEach(function(cb){
-    if(origenesZona.indexOf(cb.value)>=0) cb.checked=!todos;
-  });
-  actualizarContadorTarifas();
 }
 
-function actualizarContadorTarifas(){
-  var emps=document.querySelectorAll('.tf-emp-cb:checked').length;
-  var oris=document.querySelectorAll('.tf-ori-cb:checked').length;
-  var total=emps*oris;
-  var lbl=document.getElementById('tf-count-label');
-  var btn=document.getElementById('tf-btn-guardar');
-  if(total>0){
-    lbl.textContent=total+' tarifa'+(total>1?'s':'')+' ('+emps+' empresa'+(emps>1?'s':'')+' × '+oris+' origen'+(oris>1?'s':'')+')';
-    btn.textContent='Agregar '+total+' tarifa'+(total>1?'s':'');
-  } else {
-    lbl.textContent='';
-    btn.textContent='Agregar tarifas';
+function renderZonasSelect(){
+  var sel=document.getElementById('tf-zona');
+  sel.innerHTML='<option value="">— elegir —</option>';
+  if(!zonas.length){
+    sel.innerHTML+='<option disabled>— Sin zonas (creá en pestaña Zonas) —</option>';
+    return;
   }
+  zonas.forEach(function(z){
+    sel.innerHTML+='<option value="'+esc(z.nombre)+'">'+esc(z.nombre)+'</option>';
+  });
 }
 
-async function guardarTarifa(){
+function actualizarPreviewPrecio(){
+  var zonaNombre=document.getElementById('tf-zona').value;
+  var preview=document.getElementById('tf-zona-preview');
+  var txt=document.getElementById('tf-zona-preview-txt');
+  if(!zonaNombre){ preview.style.display='none'; return; }
+  var z=zonas.find(function(x){ return x.nombre===zonaNombre; });
+  if(!z||!z.origenes.length){ preview.style.display='none'; return; }
+  txt.innerHTML='<strong>'+z.origenes.length+' origen'+(z.origenes.length>1?'es':'')+' en '+esc(zonaNombre)+':</strong> '+z.origenes.map(function(o){ return esc(o); }).join(' · ');
+  preview.style.display='block';
+}
+
+async function guardarPrecio(){
   var mes=document.getElementById('tf-mes').value;
+  var empresa=document.getElementById('tf-empresa').value;
+  var zonaNombre=document.getElementById('tf-zona').value;
   var destino=document.getElementById('tf-destino').value;
   var valor=parseFloat(document.getElementById('tf-valor').value)||0;
-  var empresas=Array.from(document.querySelectorAll('.tf-emp-cb:checked')).map(function(c){ return c.value; });
-  var origenes=Array.from(document.querySelectorAll('.tf-ori-cb:checked')).map(function(c){ return c.value; });
   if(!mes){ toast('Seleccioná el mes.','err-t'); return; }
+  if(!empresa){ toast('Seleccioná el transportista.','err-t'); return; }
+  if(!zonaNombre){ toast('Seleccioná la zona origen.','err-t'); return; }
   if(!destino){ toast('Seleccioná el destino.','err-t'); return; }
   if(!valor){ toast('Ingresá el valor.','err-t'); return; }
-  if(!empresas.length){ toast('Seleccioná al menos una empresa.','err-t'); return; }
-  if(!origenes.length){ toast('Seleccioná al menos un origen.','err-t'); return; }
+  var z=zonas.find(function(x){ return x.nombre===zonaNombre; });
+  if(!z||!z.origenes.length){ toast('La zona no tiene orígenes configurados.','err-t'); return; }
   var actualizados=0, creadas=0;
-  empresas.forEach(function(empresa){
-    origenes.forEach(function(origen){
-      var t={empresa,origen,destino,valor,mes};
-      var existe=tarifas.findIndex(function(x){ return x.empresa===empresa&&x.origen===origen&&x.destino===destino&&x.mes===mes; });
-      if(existe>=0){ tarifas[existe]=t; } else { tarifas.push(t); creadas++; }
-      registros.forEach(function(r){
-        var emp=CHOFER_EMPRESA[r.chofer]||'';
-        var rMes=r.fecha?r.fecha.slice(0,7):'';
-        if(emp===empresa&&r.origen===origen&&r.destino===destino&&rMes===mes){ r.valor=valor; actualizados++; }
-      });
+  z.origenes.forEach(function(origen){
+    var t={empresa,origen,destino,valor,mes};
+    var existe=tarifas.findIndex(function(x){ return x.empresa===empresa&&x.origen===origen&&x.destino===destino&&x.mes===mes; });
+    if(existe>=0){ tarifas[existe]=t; } else { tarifas.push(t); creadas++; }
+    registros.forEach(function(r){
+      var emp=CHOFER_EMPRESA[r.chofer]||'';
+      var rMes=r.fecha?r.fecha.slice(0,7):'';
+      if(emp===empresa&&r.origen===origen&&r.destino===destino&&rMes===mes){ r.valor=valor; actualizados++; }
     });
   });
   try{
     await guardarTarifasDB();
     if(actualizados) await guardarRegistrosDB();
-    toast(creadas+' tarifa'+(creadas!==1?'s':'')+' guardada'+(creadas!==1?'s':'')+(actualizados?' — '+actualizados+' viaje'+(actualizados>1?'s':'')+' actualizado'+(actualizados>1?'s':''):'')+'.' ,'ok-t');
-    // Limpiar selección para la próxima carga
-    document.querySelectorAll('.tf-emp-cb,.tf-ori-cb').forEach(function(cb){ cb.checked=false; });
+    toast('Precio guardado — '+z.origenes.length+' tarifa'+(z.origenes.length>1?'s':'')+(actualizados?' · '+actualizados+' viaje'+(actualizados>1?'s':'')+' actualizado'+(actualizados>1?'s':''):'')+'.' ,'ok-t');
+    document.getElementById('tf-empresa').value='';
+    document.getElementById('tf-zona').value='';
     document.getElementById('tf-destino').value='';
     document.getElementById('tf-valor').value='';
-    actualizarContadorTarifas();
+    document.getElementById('tf-zona-preview').style.display='none';
+    renderCargadosMes();
     calcStats(); renderTabla();
   } catch(e){ toast('Error al guardar.','err-t'); }
 }
+
+function renderCargadosMes(){
+  var mes=document.getElementById('tf-mes').value;
+  var wrap=document.getElementById('tf-cargados-wrap');
+  var cont=document.getElementById('tf-cargados');
+  var title=document.getElementById('tf-cargados-title');
+  if(!mes){ wrap.style.display='none'; return; }
+  var del=tarifas.filter(function(t){ return t.mes===mes; });
+  if(!del.length){ wrap.style.display='none'; return; }
+  // Agrupar: empresa + zona (detectar) + destino + valor
+  // Para mostrar: grupo por empresa+destino+valor, chips = zonas detectadas
+  var grupos={};
+  del.forEach(function(t,gi){
+    var zonaDetect=detectarZona(t.origen)||t.origen;
+    var key=t.empresa+'||'+t.destino+'||'+t.valor+'||'+zonaDetect;
+    if(!grupos[key]) grupos[key]={empresa:t.empresa,destino:t.destino,valor:t.valor,zona:zonaDetect,indices:[tarifas.indexOf(t)]};
+    else grupos[key].indices.push(tarifas.indexOf(t));
+  });
+  title.textContent='Precios cargados — '+fmtMes(mes);
+  cont.innerHTML=Object.values(grupos).map(function(g){
+    var idxList=g.indices.join(',');
+    return '<div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:8px 12px">'
+      +'<div style="flex:1;min-width:0">'
+        +'<span style="font-size:13px;font-weight:600;color:#18181A">'+esc(g.empresa.replace('Transporte ',''))+'</span>'
+        +'<span style="font-size:12px;color:#9896A0;margin:0 6px">→</span>'
+        +'<span style="font-size:12px;color:#6B6876">'+esc(g.destino)+'</span>'
+        +'<span style="font-size:11px;background:#f0f4ff;color:#0D4FA0;border-radius:4px;padding:2px 7px;margin-left:8px">'+esc(g.zona)+'</span>'
+      +'</div>'
+      +'<span style="font-size:13px;font-weight:700;color:#0D4FA0;flex-shrink:0">$'+fmtN(g.valor)+'</span>'
+      +'<button class="btn-del" onclick="eliminarGrupoTarifas(['+idxList+']);renderCargadosMes()" title="Eliminar">✕</button>'
+    +'</div>';
+  }).join('');
+  wrap.style.display='block';
+}
+
+function detectarZona(origen){
+  for(var i=0;i<zonas.length;i++){
+    if(zonas[i].origenes.indexOf(origen)>=0) return zonas[i].nombre;
+  }
+  return null;
+}
+
+// Kept for backward compat (used from zonas tab)
+function renderEmpresasCheck(){}
+function renderOrigenesCheck(){}
+function renderZonasBtns(){}
+function actualizarContadorTarifas(){}
 
 async function eliminarTarifa(idx){
   if(!confirm('¿Eliminar esta tarifa?')) return;
