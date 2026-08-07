@@ -152,7 +152,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
 
   <div class="filtros">
     <input type="text" id="f-busq" placeholder="Buscar chofer, origen, destino, factura..." oninput="renderTabla()" style="flex:1;min-width:200px">
-    <select id="f-mes-fil" onchange="renderTabla()"><option value="">Todos los meses</option></select>
+    <select id="f-mes-fil" onchange="renderFiltroEmpresa();renderTabla()"><option value="">Todos los meses</option></select>
     <select id="f-destino-fil" onchange="renderTabla()">
       <option value="">Todos los destinos</option>
       <option>Dolores</option>
@@ -648,13 +648,16 @@ function mesActual() {
 }
 
 function renderFiltroEmpresa() {
+  var mes = document.getElementById('f-mes-fil').value;
+  var regFiltrados = mes ? registros.filter(function(r){ return (r.fecha||'').slice(0,7)===mes; }) : registros;
+  var empresas = [...new Set(regFiltrados.map(function(r){ return CHOFER_EMPRESA[r.chofer]||''; }).filter(Boolean))].sort();
   var sel = document.getElementById('f-empresa-fil');
   var val = sel.value;
   sel.innerHTML = '<option value="">Todos los transportistas</option>';
-  EMPRESAS_LISTA.forEach(function(e){
+  empresas.forEach(function(e){
     sel.innerHTML += '<option value="'+esc(e)+'">'+(EMPRESA_CORTA[e]||e)+'</option>';
   });
-  sel.value = val;
+  if(empresas.indexOf(val)>=0) sel.value = val; else sel.value='';
 }
 
 function renderFiltroMes(primeraCarga) {
