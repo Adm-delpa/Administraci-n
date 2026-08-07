@@ -1791,6 +1791,15 @@ async function procesar(){
       if(!c.fecha||c.fecha.slice(0,7)!==mesPT) return;
       var cod=parseInt(c.codCli,10);
       if(!cod) return;
+      // No generar PT si este movimiento Chess ya está conciliado (N1/MAN/CONC) en resultados guardados
+      var keyConc=cod+'|'+parseFloat(c.haber).toFixed(2);
+      if(concPorCliImp[keyConc]){
+        var chD=new Date(c.fecha+'T00:00:00');
+        var yaConc=concPorCliImp[keyConc].some(function(f){
+          return Math.abs(new Date(f+'T00:00:00')-chD)/(864e5)<=45;
+        });
+        if(yaConc) return;
+      }
       var totalChess=chessSumCli[cod]||0;
       var totalBanco=bancoSumCli[cod]||0;
       if(totalChess<=totalBanco+0.01) return;
