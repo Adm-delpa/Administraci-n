@@ -158,6 +158,9 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       <option>Dolores</option>
       <option>Mar de Ajó</option>
     </select>
+    <select id="f-empresa-fil" onchange="renderTabla()">
+      <option value="">Todos los transportistas</option>
+    </select>
     <select id="f-envase-fil" onchange="renderTabla()">
       <option value="">Con/sin envase</option>
       <option value="si">Con envase litro</option>
@@ -602,7 +605,7 @@ async function cargar() {
     zonas      = (data && data.tarifas   && Array.isArray(data.tarifas.zonas))       ? data.tarifas.zonas     : [];
     rdfValues  = (data && data.rdf       && Array.isArray(data.rdf.valores))         ? data.rdf.valores       : [];
   } catch(e) { registros = []; tarifas = []; }
-  calcStats(); renderFiltroMes(true); renderTabla();
+  calcStats(); renderFiltroMes(true); renderFiltroEmpresa(); renderTabla();
 }
 
 async function guardarRegistrosDB() {
@@ -644,6 +647,17 @@ function mesActual() {
   return hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
 }
 
+function renderFiltroEmpresa() {
+  var empresas = [...new Set(registros.map(function(r){ return CHOFER_EMPRESA[r.chofer]||''; }).filter(Boolean))].sort();
+  var sel = document.getElementById('f-empresa-fil');
+  var val = sel.value;
+  sel.innerHTML = '<option value="">Todos los transportistas</option>';
+  empresas.forEach(function(e){
+    sel.innerHTML += '<option value="'+esc(e)+'">'+(EMPRESA_CORTA[e]||e)+'</option>';
+  });
+  sel.value = val;
+}
+
 function renderFiltroMes(primeraCarga) {
   var meses = [...new Set(registros.map(function(r){ return (r.fecha||'').slice(0,7); }).filter(Boolean))].sort().reverse();
   var sel = document.getElementById('f-mes-fil');
@@ -662,11 +676,13 @@ function renderTabla() {
   var fm = document.getElementById('f-mes-fil').value;
   var fd = document.getElementById('f-destino-fil').value;
   var fe = document.getElementById('f-envase-fil').value;
+  var femp = document.getElementById('f-empresa-fil').value;
   var fil = registros.filter(function(r){
     if(q){ var hay=(r.chofer||'').toLowerCase().includes(q)||(r.origen||'').toLowerCase().includes(q)||(r.destino||'').toLowerCase().includes(q)||(r.factura1||'').includes(q)||(r.factura2||'').includes(q); if(!hay) return false; }
     if(fm && (r.fecha||'').slice(0,7)!==fm) return false;
     if(fd && r.destino!==fd) return false;
     if(fe && r.envase!==fe)  return false;
+    if(femp && (CHOFER_EMPRESA[r.chofer]||'')!==femp) return false;
     return true;
   });
   fil.sort(function(a,b){ return (a.fecha||'') < (b.fecha||'') ? -1 : 1; });
