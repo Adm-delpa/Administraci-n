@@ -1019,6 +1019,11 @@ async function guardarTarifa(){
     await guardarTarifasDB();
     if(actualizados) await guardarRegistrosDB();
     toast(creadas+' tarifa'+(creadas!==1?'s':'')+' guardada'+(creadas!==1?'s':'')+(actualizados?' — '+actualizados+' viaje'+(actualizados>1?'s':'')+' actualizado'+(actualizados>1?'s':''):'')+'.' ,'ok-t');
+    // Limpiar selección para la próxima carga
+    document.querySelectorAll('.tf-emp-cb,.tf-ori-cb').forEach(function(cb){ cb.checked=false; });
+    document.getElementById('tf-destino').value='';
+    document.getElementById('tf-valor').value='';
+    actualizarContadorTarifas();
     calcStats(); renderTabla();
   } catch(e){ toast('Error al guardar.','err-t'); }
 }
