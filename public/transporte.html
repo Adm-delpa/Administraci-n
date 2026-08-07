@@ -648,11 +648,10 @@ function mesActual() {
 }
 
 function renderFiltroEmpresa() {
-  var empresas = [...new Set(registros.map(function(r){ return CHOFER_EMPRESA[r.chofer]||''; }).filter(Boolean))].sort();
   var sel = document.getElementById('f-empresa-fil');
   var val = sel.value;
   sel.innerHTML = '<option value="">Todos los transportistas</option>';
-  empresas.forEach(function(e){
+  EMPRESAS_LISTA.forEach(function(e){
     sel.innerHTML += '<option value="'+esc(e)+'">'+(EMPRESA_CORTA[e]||e)+'</option>';
   });
   sel.value = val;
