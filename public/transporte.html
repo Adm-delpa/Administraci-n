@@ -645,7 +645,7 @@ async function cargar() {
     }
     buildChoferMap();
   } catch(e) { registros = []; tarifas = []; }
-  calcStats(); renderFiltroMes(true); renderFiltroEmpresa(); renderTabla();
+  renderFiltroMes(true); renderFiltroEmpresa(); calcStats(); renderTabla();
 }
 
 async function guardarRegistrosDB() {
