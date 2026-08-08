@@ -2147,9 +2147,6 @@ function filtrarModalVincularChess(){
   Object.values(state.clientes||{}).forEach(function(cl){if(cl.cuit) cuitMapLocal2[normCUIT(cl.cuit)]=cl;});
   var cliCuitFiltro=mvcCuitDetectado?cuitMapLocal2[mvcCuitDetectado]:null;
   function matchChess(c,q){
-    if(mvcCuitDetectado&&!q&&cliCuitFiltro){
-      if(parseInt(c.codCli,10)!==parseInt(cliCuitFiltro.c,10)) return false;
-    }
     if(!q) return true;
     return (c.nomCli||'').toLowerCase().includes(q)||
            (c.codCli||'').toLowerCase().includes(q)||
