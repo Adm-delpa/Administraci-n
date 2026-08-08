@@ -2253,17 +2253,20 @@ function filtrarModalVincular(){
     var fp=(res.fecha||'')+'|'+res.importe+'|'+(res.desc||'').slice(0,60);
     if(!candidatosFp.has(fp)){candidatosFp.add(fp);candidatos.push({fecha:res.fecha,desc:res.desc,importe:res.importe});}
   });
+  function matchBanco(b,q){
+    if(!q) return true;
+    var imp=String(b.importe).replace('.',',');
+    return (b.desc||'').toLowerCase().includes(q)||imp.includes(q)||String(Math.round(b.importe)).includes(q)||(b.fecha||'').includes(q);
+  }
   var nc=candidatos.filter(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
     if(usadasFpSet.has(fp)) return false;
-    if(!q) return true;
-    return (b.desc||'').toLowerCase().includes(q)||fmtN(b.importe).includes(q)||(b.fecha||'').includes(q);
+    return matchBanco(b,q);
   });
   var yaConc=candidatos.filter(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
     if(!usadasFpSet.has(fp)) return false;
-    if(!q) return true;
-    return (b.desc||'').toLowerCase().includes(q)||fmtN(b.importe).includes(q)||(b.fecha||'').includes(q);
+    return matchBanco(b,q);
   }).map(function(b){ return Object.assign({},b,{_yaConc:true}); });
   if(r){
     nc.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
