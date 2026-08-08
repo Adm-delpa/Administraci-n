@@ -2259,25 +2259,37 @@ function filtrarModalVincular(){
     if(!q) return true;
     return (b.desc||'').toLowerCase().includes(q)||String(b.importe).includes(q)||(b.fecha||'').includes(q);
   });
+  // También incluir ya-conciliados que coincidan con la búsqueda (para casos de mismo pago)
+  var yaConc=[];
+  if(q){
+    candidatos.forEach(function(b){
+      var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
+      if(!usadasFpSet.has(fp)) return;
+      if((b.desc||'').toLowerCase().includes(q)||String(b.importe).includes(q)||(b.fecha||'').includes(q))
+        yaConc.push(Object.assign({},b,{_yaConc:true}));
+    });
+  }
   if(r) nc.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
+  var todos=nc.concat(yaConc);
   var html='';
-  if(!nc.length){html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">No hay movimientos no conciliados</div>';}
-  nc.forEach(function(b,i){
+  if(!todos.length){html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">No hay movimientos disponibles. Buscá por importe para ver movimientos ya conciliados.</div>';}
+  todos.forEach(function(b,i){
     var diff=r?Math.abs(b.importe-r.importe):null;
     var diffLabel=diff===0?'<span style="font-size:11px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px">Exacto</span>'
       :'<span style="font-size:11px;background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:4px">Dif: $'+fmtN(diff)+'</span>';
+    var yaConcLabel=b._yaConc?'<span style="font-size:11px;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:4px;margin-left:4px">Ya conciliado</span>':'';
     var sel=mvSelBanco&&mvSelBanco._mvI===i;
-    html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'#fef9ee':'transparent')+'" onclick="selBancoMV('+i+')" data-mvi="'+i+'">'
+    html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'#fef9ee':(b._yaConc?'#f8faff':'transparent'))+'" onclick="selBancoMV('+i+')" data-mvi="'+i+'">'
       +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
       +'<span style="font-size:14px;font-weight:600;color:#1a1a1a">$'+fmtN(b.importe)+'</span>'
       +'<span style="font-size:12px;color:#64748b">'+fmtFechaDisplay(b.fecha)+'</span>'
       +'</div>'
       +'<div style="font-size:12px;color:#475569;margin-top:2px">'+esc(b.desc||'')+'</div>'
-      +'<div style="margin-top:4px">'+diffLabel+'</div>'
+      +'<div style="margin-top:4px">'+diffLabel+yaConcLabel+'</div>'
       +'</div>';
   });
   document.getElementById('mv-list').innerHTML=html;
-  document.getElementById('mv-list')._ncData=nc;
+  document.getElementById('mv-list')._ncData=todos;
 }
 function selBancoMV(i){
   var nc=document.getElementById('mv-list')._ncData||[];
@@ -2295,12 +2307,14 @@ async function vincularPT(){
   pt.bancDesc=mvSelBanco.desc||'';
   pt.bancImporte=mvSelBanco.importe;
   pt.motivo='Banco: '+fmtFechaDisplay(mvSelBanco.fecha)+' $'+fmtN(mvSelBanco.importe)+(mvSelBanco.desc?' — '+mvSelBanco.desc.slice(0,60):'');
-  // Marcar el movimiento bancario NC/PEND como consumido
-  state.resultados.forEach(function(res){
-    if((res.nivel==='NC'||res.nivel==='PEND')&&(res.fecha+'|'+res.importe+'|'+(res.desc||'').slice(0,60))===bancoFp){
-      res.nivel='MAN'; res.bancoFp=bancoFp;
-    }
-  });
+  // Marcar el movimiento bancario NC/PEND como consumido (solo si no estaba ya conciliado)
+  if(!mvSelBanco._yaConc){
+    state.resultados.forEach(function(res){
+      if((res.nivel==='NC'||res.nivel==='PEND')&&(res.fecha+'|'+res.importe+'|'+(res.desc||'').slice(0,60))===bancoFp){
+        res.nivel='MAN'; res.bancoFp=bancoFp;
+      }
+    });
+  }
   loading(true);
   try{
     await guardarResultados();
