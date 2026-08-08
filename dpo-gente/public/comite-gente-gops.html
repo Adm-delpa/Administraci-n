@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOPs — Comité de Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:18px 24px}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:18px}
+
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.year-select{background:#fff;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit}
+.gop-select{background:#fff;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit;min-width:180px}
+
+/* Resumen cards */
+.resumen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.resumen-card{background:#fff;border:1px solid #D8DEE8;border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;text-align:center}
+.resumen-card:hover{border-color:#2563A8;box-shadow:0 3px 12px rgba(37,99,168,.09)}
+.resumen-card.active{border-color:#2563A8;box-shadow:0 3px 12px rgba(37,99,168,.12)}
+.resumen-nombre{font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.resumen-pct{font-size:22px;font-weight:800;line-height:1}
+.resumen-bar{height:5px;background:#EEF0F6;border-radius:3px;margin-top:8px;overflow:hidden}
+.resumen-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+
+/* Tabla de checklist */
+.checklist-section{background:#fff;border:1px solid #D8DEE8;border-radius:12px;overflow:hidden}
+.checklist-header{background:#1B3F72;color:#fff;padding:14px 18px;font-size:14px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.checklist-header .meta{font-size:11px;font-weight:600;color:rgba(255,255,255,.7)}
+
+.bloque-header{background:#F5F7FB;padding:10px 18px;font-size:12px;font-weight:700;color:#1B3F72;border-bottom:1px solid #EEF0F6;display:flex;justify-content:space-between;align-items:center}
+.bloque-pct{font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px}
+
+.pregunta-row{display:flex;align-items:flex-start;gap:12px;padding:10px 18px;border-bottom:1px solid #F2F4F8;font-size:12.5px;line-height:1.5;color:#3B4F6B}
+.pregunta-row:last-child{border-bottom:none}
+.pregunta-texto{flex:1;min-width:0}
+.meses-row{display:flex;gap:4px;flex-shrink:0;align-items:center}
+.mes-btn{width:32px;height:26px;border:1.5px solid #D8DEE8;border-radius:5px;font-size:9px;font-weight:700;cursor:pointer;background:#fff;font-family:inherit;transition:all .12s;display:flex;align-items:center;justify-content:center;padding:0}
+.mes-btn.ok{background:#DCFCE7;border-color:#86EFAC;color:#166534}
+.mes-btn.nook{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+.mes-btn.na{background:#F3F4F6;border-color:#D1D5DB;color:#6B7280}
+
+/* Meses header */
+.meses-header{display:flex;gap:4px;flex-shrink:0}
+.mes-label{width:32px;text-align:center;font-size:8px;font-weight:700;color:#8A97AA;text-transform:uppercase}
+
+.loading{text-align:center;padding:40px;color:#8A97AA;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/comite-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">GOPs — Grupos Operativos</span>
+</div>
+
+<div class="page-header">
+  <h1>GOPs — Grupos Operativos de Personas</h1>
+  <p>Checklist mensual de alineamiento · Meta ≥ 80% · Comité de Gente Logístico</p>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <select id="yearSel" class="year-select" onchange="cargar()"></select>
+  </div>
+
+  <div id="resumenGrid" class="resumen-grid"></div>
+
+  <div id="checklistWrap">
+    <div class="loading">Cargando...</div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const anioActual = new Date().getFullYear();
+let PREGUNTAS = [];
+let RESPUESTAS = {};
+let GOP_ACTIVO = null;
+
+function initYears() {
+  const sel = document.getElementById('yearSel');
+  for (let y = anioActual; y >= anioActual - 3; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
+  }
+  sel.value = anioActual;
+}
+
+function respKey(pid, mes) { return pid + '_' + mes; }
+
+function getValor(pid, mes) { return RESPUESTAS[respKey(pid, mes)] || ''; }
+
+function gopNames() {
+  const seen = [];
+  PREGUNTAS.forEach(p => { if (!seen.includes(p.gop)) seen.push(p.gop); });
+  return seen;
+}
+
+function gopPct(gop, mes) {
+  const preg = PREGUNTAS.filter(p => p.gop === gop);
+  if (!preg.length) return null;
+  const bloques = [];
+  preg.forEach(p => { if (!bloques.includes(p.bloque)) bloques.push(p.bloque); });
+  let sum = 0, count = 0;
+  bloques.forEach(b => {
+    const bp = bloquePct(gop, b, mes);
+    if (bp !== null) { sum += bp; count++; }
+  });
+  return count === 0 ? null : sum / count;
+}
+
+function gopPctAnual(gop) {
+  let sum = 0, count = 0;
+  for (let m = 1; m <= 12; m++) {
+    const preg = PREGUNTAS.filter(p => p.gop === gop);
+    const tiene = preg.some(p => getValor(p.id, m) !== '');
+    if (tiene) { sum += gopPct(gop, m); count++; }
+  }
+  return count === 0 ? null : sum / count;
+}
+
+function pctColor(v) {
+  if (v === null) return '#8A97AA';
+  if (v >= 0.8) return '#16A34A';
+  if (v >= 0.5) return '#D97706';
+  return '#DC2626';
+}
+
+function renderResumen() {
+  const gops = gopNames();
+  const grid = document.getElementById('resumenGrid');
+  grid.innerHTML = gops.map(g => {
+    const active = g === GOP_ACTIVO ? ' active' : '';
+    return `<div class="resumen-card${active}" onclick="seleccionarGop('${g}')">
+      <div class="resumen-nombre">${g}</div>
+    </div>`;
+  }).join('');
+}
+
+function seleccionarGop(gop) {
+  GOP_ACTIVO = gop;
+  renderResumen();
+  renderChecklist();
+}
+
+function bloquePct(gop, bloque, mes) {
+  const preg = PREGUNTAS.filter(p => p.gop === gop && p.bloque === bloque);
+  let ok = 0, total = 0, hayAlgo = false;
+  preg.forEach(p => {
+    const v = getValor(p.id, mes);
+    if (v === 'N/A') return;
+    total++;
+    if (v === 'OK') { ok++; hayAlgo = true; }
+    else if (v === 'NO OK') { hayAlgo = true; }
+  });
+  if (!hayAlgo) return null;
+  return total === 0 ? null : ok / total;
+}
+
+function renderChecklist() {
+  const wrap = document.getElementById('checklistWrap');
+  if (!GOP_ACTIVO) { wrap.innerHTML = '<div class="loading">Seleccioná un GOP arriba.</div>'; return; }
+
+  const preg = PREGUNTAS.filter(p => p.gop === GOP_ACTIVO);
+  const bloques = [];
+  preg.forEach(p => { if (!bloques.includes(p.bloque)) bloques.push(p.bloque); });
+
+  const mesHeader = `<div class="meses-header">${MESES.map(m => `<div class="mes-label">${m}</div>`).join('')}</div>`;
+
+  const mesNaAll = preg;
+  function isMesAllNa(mes) { return mesNaAll.every(p => getValor(p.id, mes) === 'N/A'); }
+
+  let html = `<div class="checklist-section">
+    <div class="checklist-header">
+      <span>GOP ${GOP_ACTIVO}</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onclick="window.location.href='/comite-gente/pda?nuevo=1&gop=${encodeURIComponent(GOP_ACTIVO)}'" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">+ Crear Acción</button>
+        <span class="meta">Meta: ≥ 80% alineamiento</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #EEF0F6;background:#F5F7FB">
+      <span style="font-size:11px;font-weight:700;color:#5E6E89;flex:1">% Alineamiento:</span>
+      <div class="meses-row" id="pctRow">
+        ${MESES.map((m, i) => {
+          const mes = i + 1;
+          const pct = gopPct(GOP_ACTIVO, mes);
+          const pctStr = pct === null ? '—' : Math.round(pct * 100) + '%';
+          const color = pctColor(pct);
+          return `<div style="width:32px;text-align:center;font-size:10px;font-weight:800;color:${color}">${pctStr}</div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid #EEF0F6;background:#FAFBFD">
+      <span style="font-size:11px;font-weight:700;color:#5E6E89;flex:1">Marcar mes completo como N/A:</span>
+      <div class="meses-row">
+        ${MESES.map((m, i) => {
+          const mes = i + 1;
+          const isNa = isMesAllNa(mes);
+          return `<button class="mes-btn ${isNa ? 'na' : ''}" onclick="toggleMesNa(${mes})" title="${m} — N/A todo el mes" style="font-size:8px">${isNa ? 'N/A' : m}</button>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  bloques.forEach(b => {
+    const bPreg = preg.filter(p => p.bloque === b);
+    html += `<div class="bloque-header">
+      <span>${b}</span>
+      <div class="meses-header">
+        ${MESES.map((m, i) => {
+          const mes = i + 1;
+          const bp = bloquePct(GOP_ACTIVO, b, mes);
+          const bpStr = bp === null ? m : Math.round(bp * 100) + '%';
+          const color = bp === null ? '#8A97AA' : (bp >= 0.8 ? '#16A34A' : bp >= 0.5 ? '#D97706' : '#DC2626');
+          return `<div class="mes-label" style="color:${color};font-weight:${bp !== null ? '800' : '700'};font-size:${bp !== null ? '9px' : '8px'}">${bpStr}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+    bPreg.forEach(p => {
+      html += `<div class="pregunta-row">
+        <div class="pregunta-texto">${p.pregunta}</div>
+        <div class="meses-row">
+          ${MESES.map((m, i) => {
+            const mes = i + 1;
+            const v = getValor(p.id, mes);
+            let cls = '', label = '';
+            if (v === 'OK') { cls = 'ok'; label = '✓'; }
+            else if (v === 'NO OK') { cls = 'nook'; label = '✗'; }
+            else if (v === 'N/A') { cls = 'na'; label = 'NA'; }
+            return `<button class="mes-btn ${cls}" onclick="toggleResp(${p.id},${mes},this)" title="${MESES[i]}">${label}</button>`;
+          }).join('')}
+        </div>
+      </div>`;
+    });
+  });
+
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+function updatePctRow() {
+  const row = document.getElementById('pctRow');
+  if (!row || !GOP_ACTIVO) return;
+  row.innerHTML = MESES.map((m, i) => {
+    const mes = i + 1;
+    const pct = gopPct(GOP_ACTIVO, mes);
+    const pctStr = pct === null ? '—' : Math.round(pct * 100) + '%';
+    const color = pctColor(pct);
+    return `<div style="width:32px;text-align:center;font-size:10px;font-weight:800;color:${color}">${pctStr}</div>`;
+  }).join('');
+}
+
+async function toggleMesNa(mes) {
+  const preg = PREGUNTAS.filter(p => p.gop === GOP_ACTIVO);
+  const allNa = preg.every(p => getValor(p.id, mes) === 'N/A');
+  const nuevoValor = allNa ? '' : 'N/A';
+  const anio = document.getElementById('yearSel').value;
+  for (const p of preg) {
+    RESPUESTAS[respKey(p.id, mes)] = nuevoValor;
+    fetch('/api/comite/gops/respuestas', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gop_pregunta_id: p.id, anio: Number(anio), mes, valor: nuevoValor })
+    });
+  }
+  renderResumen();
+  renderChecklist();
+}
+
+async function toggleResp(pid, mes, btn) {
+  const current = getValor(pid, mes);
+  const cycle = ['', 'OK', 'NO OK', 'N/A'];
+  const next = cycle[(cycle.indexOf(current) + 1) % cycle.length];
+
+  RESPUESTAS[respKey(pid, mes)] = next;
+
+  let cls = '', label = '';
+  if (next === 'OK') { cls = 'ok'; label = '✓'; }
+  else if (next === 'NO OK') { cls = 'nook'; label = '✗'; }
+  else if (next === 'N/A') { cls = 'na'; label = 'NA'; }
+  btn.className = 'mes-btn ' + cls;
+  btn.textContent = label;
+
+  updatePctRow();
+  renderResumen();
+
+  const anio = document.getElementById('yearSel').value;
+  await fetch('/api/comite/gops/respuestas', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gop_pregunta_id: pid, anio: Number(anio), mes, valor: next })
+  });
+}
+
+async function cargar() {
+  const anio = document.getElementById('yearSel').value;
+  const wrap = document.getElementById('checklistWrap');
+  wrap.innerHTML = '<div class="loading">Cargando...</div>';
+
+  try {
+    if (!PREGUNTAS.length) {
+      const r = await fetch('/api/comite/gops/preguntas');
+      PREGUNTAS = await r.json();
+    }
+
+    const r2 = await fetch('/api/comite/gops/respuestas?anio=' + anio);
+    const resp = await r2.json();
+    RESPUESTAS = {};
+    resp.forEach(r => { RESPUESTAS[respKey(r.gop_pregunta_id, r.mes)] = r.valor; });
+
+    if (!GOP_ACTIVO && PREGUNTAS.length) GOP_ACTIVO = PREGUNTAS[0].gop;
+    renderResumen();
+    renderChecklist();
+  } catch(e) {
+    wrap.innerHTML = '<div class="loading" style="color:#B91C1C">Error al cargar.</div>';
+  }
+}
+
+initYears();
+cargar();
+</script>
+</body>
+</html>

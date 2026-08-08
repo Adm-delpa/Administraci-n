@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI Turnover — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.page-header h1{font-size:15px;font-weight:700;color:#fff}
+.page-header p{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px}
+.header-btns{display:flex;gap:8px}
+.btn-header{background:#fff;color:#1B3F72;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-header:hover{background:#EBF2FA}
+.btn-header.secondary{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.btn-header.secondary:hover{background:rgba(255,255,255,.25)}
+
+.controls{display:flex;align-items:center;gap:10px;padding:10px 20px;background:#fff;border-bottom:1px solid #D8DEE8;flex-wrap:wrap}
+.year-sel{font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;border:1.5px solid #D8DEE8;background:#F2F4F8;color:#18243A;cursor:pointer;font-family:inherit}
+.loaded-label{font-size:11px;color:#8A97AA}
+.badge-pend{background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer}
+.badge-pend:hover{background:#FDE68A}
+
+.tbl-outer{overflow-x:auto;padding:16px 20px}
+table{border-collapse:collapse;font-size:11px;min-width:900px;width:100%}
+thead th{background:#1B3F72;color:#fff;padding:6px 8px;font-weight:600;text-align:right;white-space:nowrap;position:sticky;top:0;z-index:3}
+thead th:first-child{text-align:left;min-width:200px;position:sticky;left:0;z-index:4;background:#1B3F72}
+.th-obj{background:#E85D04}
+.th-ytd{background:#2563A8}
+.th-aa{background:#5E6E89}
+.th-vs{background:#065F46}
+
+tbody td{padding:5px 8px;border-bottom:1px solid #EEF0F6;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;background:#fff}
+tbody td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:2;font-size:11px;padding-left:10px}
+tbody tr:hover td{background:#F7F9FC}
+tbody tr:hover td:first-child{background:#F7F9FC}
+
+.sec-row td{background:#1B3F72 !important;color:#fff !important;font-weight:700;font-size:11px;letter-spacing:.02em}
+.sec-row td:first-child{background:#1B3F72 !important;color:#fff !important;position:sticky;left:0;z-index:2}
+.sub td:first-child{padding-left:22px;color:#5E6E89}
+.empty-cell{color:#CBD2DC}
+.pos{color:#065F46;font-weight:600}
+.neg{color:#B91C1C;font-weight:600}
+
+.tto-g{background:#D1FAE5;color:#065F46;font-weight:700;border-radius:4px;padding:1px 5px;font-size:10px}
+.tto-y{background:#FEF3C7;color:#92400E;font-weight:700;border-radius:4px;padding:1px 5px;font-size:10px}
+.tto-r{background:#FEE2E2;color:#B91C1C;font-weight:700;border-radius:4px;padding:1px 5px;font-size:10px}
+
+.req-si{background:#FEE2E2;color:#B91C1C;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
+.req-no{background:#D1FAE5;color:#065F46;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
+.req-pend{background:#FEF3C7;color:#92400E;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px}
+
+/* Modals */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:92vw;max-width:480px;padding:24px;display:flex;flex-direction:column;gap:16px;max-height:90vh;overflow-y:auto}
+.modal.wide{max-width:560px}
+.modal-title{font-size:15px;font-weight:700;color:#18243A}
+.modal-sub{font-size:12px;color:#5E6E89;margin-top:2px}
+.form-row{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:11px;font-weight:600;color:#5E6E89;text-transform:uppercase;letter-spacing:.04em}
+.form-select,.form-input{font-size:13px;padding:8px 10px;border:1.5px solid #D8DEE8;border-radius:8px;font-family:inherit;color:#18243A;background:#fff;width:100%}
+.form-select:focus,.form-input:focus{outline:none;border-color:#2563A8}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.btn-cancel{background:#F2F4F8;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;color:#5E6E89;cursor:pointer;font-family:inherit}
+.btn-cancel:hover{background:#E5E7EB}
+.btn-primary{background:#2563A8;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit}
+.btn-primary:hover{background:#1B3F72}
+.btn-primary:disabled{opacity:.5;cursor:default}
+.upload-zone{border:2px dashed #D8DEE8;border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .15s}
+.upload-zone:hover{border-color:#2563A8}
+
+/* Tooltips de fórmula */
+.tip-label{cursor:help;border-bottom:1px dotted #8A97AA}
+#formula-tip{position:fixed;background:#18243A;color:#fff;font-size:11px;line-height:1.6;padding:7px 11px;border-radius:7px;white-space:pre-wrap;max-width:300px;z-index:9999;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.3);display:none}
+.upload-zone p{font-size:12px;color:#8A97AA;margin-top:6px}
+.upload-zone.has-file{border-color:#2563A8;background:#EBF2FA}
+.upload-zone.has-file p{color:#2563A8}
+
+.confirm-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+.confirm-item{background:#F2F4F8;border-radius:8px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.confirm-info{flex:1;min-width:0}
+.confirm-name{font-size:13px;font-weight:600;color:#18243A}
+.confirm-detail{font-size:11px;color:#8A97AA;margin-top:2px}
+.confirm-btns{display:flex;gap:6px;flex-shrink:0}
+.btn-si{background:#FEE2E2;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#B91C1C;cursor:pointer;font-family:inherit}
+.btn-si:hover,.btn-si.active{background:#B91C1C;color:#fff}
+.btn-no{background:#D1FAE5;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#065F46;cursor:pointer;font-family:inherit}
+.btn-no:hover,.btn-no.active{background:#065F46;color:#fff}
+
+.obj-hint{font-size:11px;color:#8A97AA;background:#F2F4F8;border-radius:6px;padding:8px 10px}
+.pct-input-wrap{position:relative}
+.pct-input-wrap input{padding-right:28px}
+.pct-suffix{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#8A97AA}
+
+.msg-ok{background:#D1FAE5;color:#065F46;font-size:12px;font-weight:600;padding:8px 12px;border-radius:6px}
+.msg-err{background:#FEE2E2;color:#B91C1C;font-size:12px;padding:8px 12px;border-radius:6px}
+.loading-row td{text-align:center;color:#8A97AA;padding:20px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/talento-hub'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">KPI Turnover</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1>Dashboard Turnover</h1>
+    <p>Indicadores de rotación · Del Palacio S.A.</p>
+  </div>
+  <div class="header-btns">
+    <button class="btn-header secondary" onclick="abrirBajasIndet()">📋 Bajas indet.</button>
+    <button class="btn-header secondary" onclick="abrirObjetivos()">⚙ Editar objetivo</button>
+    <button class="btn-header" onclick="abrirCarga()">↑ Cargar dotación</button>
+  </div>
+</div>
+
+<div class="controls">
+  <select class="year-sel" id="yearSel" onchange="onFiltroChange()">
+    <option>2026</option><option>2025</option><option>2024</option>
+  </select>
+  <select class="year-sel" id="sectorSel" onchange="cargarDashboard()" style="min-width:160px">
+    <option value="">Todos los sectores</option>
+  </select>
+  <select class="year-sel" id="sucursalSel" onchange="cargarDashboard()" style="min-width:160px">
+    <option value="">Todas las sucursales</option>
+  </select>
+  <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap">
+    <input type="checkbox" id="chkOperacion" onchange="cargarDashboard()" style="width:15px;height:15px;cursor:pointer">
+    Solo Operación
+  </label>
+  <span class="loaded-label" id="loadedLabel">—</span>
+  <span class="badge-pend" id="badgePend" style="display:none" onclick="abrirPendientes()">⚠ Bajas pendientes de confirmación</span>
+</div>
+
+<div class="tbl-outer">
+<table id="dashTable">
+  <thead>
+    <tr>
+      <th>Métrica</th>
+      <th>ENE</th><th>FEB</th><th>MAR</th><th>ABR</th><th>MAY</th><th>JUN</th>
+      <th>JUL</th><th>AGO</th><th>SEP</th><th>OCT</th><th>NOV</th><th>DIC</th>
+      <th class="th-obj">OBJ</th>
+      <th class="th-ytd">YTD</th>
+      <th class="th-aa">2025 AA</th>
+      <th class="th-vs">vs AA</th>
+    </tr>
+  </thead>
+  <tbody id="dashBody">
+    <tr class="loading-row"><td colspan="17">Cargando...</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Sección documentos -->
+<div style="max-width:800px;margin:0 auto;padding:20px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em">Documentos</div>
+    <button class="btn-header" style="background:#2563A8;color:#fff;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none" onclick="document.getElementById('docInput').click()">+ Subir archivo</button>
+    <input type="file" id="docInput" style="display:none" multiple
+      accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*"
+      onchange="subirDoc(this)">
+  </div>
+  <div id="docList" style="display:flex;flex-direction:column;gap:10px">
+    <div style="text-align:center;padding:30px;color:#8A97AA;font-size:13px">Cargando...</div>
+  </div>
+</div>
+
+<!-- Modal visor documentos -->
+<div id="modalDoc" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;width:92vw;height:92vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #EEF0F6;flex-shrink:0">
+      <span id="docVisorNombre" style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%"></span>
+      <div style="display:flex;gap:8px;flex-shrink:0;align-items:center">
+        <div id="docVisorSheetTabs" style="display:none;gap:4px;max-width:400px;overflow-x:auto;display:flex"></div>
+        <a id="docVisorDl" href="" style="background:#F2F4F8;border:1.5px solid #D8DEE8;border-radius:4px;padding:5px 12px;font-size:12px;font-weight:600;color:#18243A;text-decoration:none">Descargar</a>
+        <button onclick="cerrarDocVisor()" style="background:none;border:none;font-size:22px;color:#8A97AA;cursor:pointer;line-height:1">×</button>
+      </div>
+    </div>
+    <iframe id="docVisorFrame" src="" style="flex:1;border:none;display:none"></iframe>
+    <div id="docVisorRender" style="flex:1;overflow:auto;padding:20px 28px;font-size:13px;font-family:inherit;line-height:1.6;display:none"></div>
+    <div id="docVisorLoading" style="flex:1;display:flex;align-items:center;justify-content:center;color:#8A97AA;font-size:13px">Cargando...</div>
+  </div>
+</div>
+
+<!-- Modal: Cargar dotación -->
+<div class="modal-bg" id="modalCarga">
+  <div class="modal">
+    <div>
+      <div class="modal-title">Cargar dotación</div>
+      <div class="modal-sub">Seleccioná el período y subí el archivo Excel del mes</div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row">
+        <label class="form-label">Año</label>
+        <select class="form-select" id="cargaAnio">
+          <option>2026</option><option>2025</option><option>2024</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Mes</label>
+        <select class="form-select" id="cargaMes">
+          <option value="1">Enero</option><option value="2">Febrero</option>
+          <option value="3">Marzo</option><option value="4">Abril</option>
+          <option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option>
+          <option value="9">Septiembre</option><option value="10">Octubre</option>
+          <option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
+    </div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('cargaFile').click()">
+      <div style="font-size:28px">📊</div>
+      <p id="uploadZoneTxt">Hacé click para seleccionar el archivo Excel</p>
+      <input type="file" id="cargaFile" style="display:none" accept=".xlsx,.xls" onchange="onFileSelect(this)">
+    </div>
+    <div id="cargaMsg" style="display:none"></div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn-cancel" style="color:#c0392b;border-color:#c0392b" onclick="borrarMes()">🗑 Borrar mes</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-cancel" onclick="cerrarModal('modalCarga')">Cancelar</button>
+        <button class="btn-primary" id="btnImportar" onclick="importar()" disabled>Importar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar reemplazos -->
+<div class="modal-bg" id="modalConfirm">
+  <div class="modal wide">
+    <div>
+      <div class="modal-title">¿Requiere reemplazo?</div>
+      <div class="modal-sub">Estas bajas indeterminadas necesitan confirmación para calcular el % TTO</div>
+    </div>
+    <div class="confirm-list" id="confirmList"></div>
+    <div id="confirmMsg" style="display:none"></div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modalConfirm')">Cerrar</button>
+      <button class="btn-primary" id="btnConfirmar" onclick="guardarConfirmaciones()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Pendientes -->
+<div class="modal-bg" id="modalPend">
+  <div class="modal wide">
+    <div>
+      <div class="modal-title">Bajas pendientes de confirmación</div>
+      <div class="modal-sub">Indicá si cada baja indeterminada requiere reemplazo</div>
+    </div>
+    <div class="confirm-list" id="pendList"></div>
+    <div id="pendMsg" style="display:none"></div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modalPend')">Cerrar</button>
+      <button class="btn-primary" onclick="guardarPendientes()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Objetivo -->
+<div class="modal-bg" id="modalObj">
+  <div class="modal">
+    <div>
+      <div class="modal-title">Editar objetivo</div>
+      <div class="modal-sub">El objetivo se compara contra el % TTO Indeterminados YTD</div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">% TTO Indeterminados — Objetivo anual</label>
+      <div class="pct-input-wrap">
+        <input type="number" class="form-input" id="objInput" step="0.1" min="0" max="100" placeholder="2.2">
+        <span class="pct-suffix">%</span>
+      </div>
+      <div class="obj-hint">Condición DPO: &lt; 20% · Objetivo 2025 real: 3,3%</div>
+    </div>
+    <div id="objMsg" style="display:none"></div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modalObj')">Cancelar</button>
+      <button class="btn-primary" onclick="guardarObjetivo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBajasIndet">
+  <div class="modal wide" style="max-width:640px">
+    <div>
+      <div class="modal-title">Bajas indeterminadas</div>
+      <div class="modal-sub" id="bajasIndetSub"></div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:#1B3F72;color:#fff">
+            <th style="padding:6px 8px;text-align:left;font-weight:600">Nombre</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:600">Sector</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:600">Posición</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:600">Salida</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:600">Fecha</th>
+            <th style="padding:6px 8px;text-align:center;font-weight:600">Reposición</th>
+          </tr>
+        </thead>
+        <tbody id="bajasIndetBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modalBajasIndet')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+let dashData = null;
+let confirmaciones = {};
+let pendConfirmaciones = {};
+
+function anioActivo() { return parseInt(document.getElementById('yearSel').value); }
+
+function pct(v) {
+  if (v === null || v === undefined) return null;
+  return (v * 100).toFixed(1) + '%';
+}
+function n(v) { return v === null || v === undefined ? null : v; }
+function semaforo(val) {
+  if (val === null || val === undefined) return '';
+  const p = val * 100;
+  if (p < 10) return '<span class="tto-g">' + p.toFixed(1) + '%</span>';
+  if (p <= 20) return '<span class="tto-y">' + p.toFixed(1) + '%</span>';
+  return '<span class="tto-r">' + p.toFixed(1) + '%</span>';
+}
+
+function cell(val, isPercent) {
+  if (val === null || val === undefined) return '<td class="empty-cell">—</td>';
+  if (isPercent) return '<td>' + (val * 100).toFixed(1) + '%</td>';
+  return '<td>' + val + '</td>';
+}
+function cellVs(v) {
+  if (v === null || v === undefined) return '<td class="empty-cell">—</td>';
+  if (v > 0) return '<td class="pos">+' + v + '</td>';
+  if (v < 0) return '<td class="neg">' + v + '</td>';
+  return '<td>0</td>';
+}
+function cellVsPct(v) {
+  if (v === null || v === undefined) return '<td class="empty-cell">—</td>';
+  const p = (v * 100).toFixed(1);
+  if (v > 0) return '<td class="pos">+' + p + '%</td>';
+  if (v < 0) return '<td class="neg">' + p + '%</td>';
+  return '<td>0,0%</td>';
+}
+
+function get(m, key) { return dashData && dashData.months[m] ? dashData.months[m][key] : null; }
+function getPrev(m, key) { return dashData && dashData.prevMonths[m] ? dashData.prevMonths[m][key] : null; }
+
+function ytdSum(key) {
+  if (!dashData) return null;
+  let s = 0, found = false;
+  for (let m = 1; m <= 12; m++) {
+    if (dashData.months[m]) { s += dashData.months[m][key] || 0; found = true; }
+  }
+  return found ? s : null;
+}
+
+function ytdAvg(key) {
+  if (!dashData) return null;
+  let s = 0, c = 0;
+  for (let m = 1; m <= 12; m++) {
+    if (dashData.months[m] && dashData.months[m][key] !== null) { s += dashData.months[m][key]; c++; }
+  }
+  return c ? s / c : null;
+}
+
+function ytdLast(key) {
+  if (!dashData) return null;
+  for (let m = 12; m >= 1; m--) {
+    if (dashData.months[m]) return dashData.months[m][key];
+  }
+  return null;
+}
+
+function aaSum(key) {
+  if (!dashData) return null;
+  let s = 0, found = false;
+  for (let m = 1; m <= 12; m++) {
+    if (dashData.prevMonths[m]) { s += dashData.prevMonths[m][key] || 0; found = true; }
+  }
+  return found ? s : null;
+}
+function aaLast(key) {
+  if (!dashData) return null;
+  for (let m = 12; m >= 1; m--) {
+    if (dashData.prevMonths[m]) return dashData.prevMonths[m][key];
+  }
+  return null;
+}
+
+function lbl(text, tip) {
+  if (!tip) return text;
+  return `<span class="tip-label" data-tip="${tip.replace(/"/g,'&quot;')}">${text}</span>`;
+}
+
+function rowNums(label, key, sub, tip) {
+  const vals = MESES.map((_,i) => cell(get(i+1, key)));
+  const ytd = ytdLast(key);
+  const aa  = aaLast(key);
+  const vs  = ytd !== null && aa !== null ? ytd - aa : null;
+  const prefix = sub ? ' class="sub"' : '';
+  return `<tr${prefix}><td>${lbl(label,tip)}</td>${vals.join('')}<td class="empty-cell">—</td><td>${ytd !== null ? ytd : '<span class="empty-cell">—</span>'}</td><td>${aa !== null ? aa : '<span class="empty-cell">—</span>'}</td>${cellVs(vs)}</tr>`;
+}
+
+function rowPct(label, key, sub, showOBJ, tip) {
+  const obj = dashData && dashData.config ? parseFloat(dashData.config.obj_tto_indeterminados) : null;
+  const vals = MESES.map((_,i) => cell(get(i+1, key), true));
+  const ytdVal = ytdLast(key);
+  const aa     = aaLast(key);
+  const vs     = ytdVal !== null && aa !== null ? ytdVal - aa : null;
+  const prefix = sub ? ' class="sub"' : '';
+  const objCell = showOBJ && obj !== null ? `<td class="th-obj" style="text-align:center">${(obj*100).toFixed(1)}%</td>` : '<td class="empty-cell">—</td>';
+  const ytdCell = ytdVal !== null ? `<td>${(ytdVal*100).toFixed(1)}%</td>` : '<td class="empty-cell">—</td>';
+  const aaCell  = aa !== null ? `<td>${(aa*100).toFixed(1)}%</td>` : '<td class="empty-cell">—</td>';
+  return `<tr${prefix}><td>${lbl(label,tip)}</td>${vals.join('')}${objCell}${ytdCell}${aaCell}${cellVsPct(vs)}</tr>`;
+}
+
+function rowTTOPct() {
+  const vals = MESES.map((_,i) => {
+    const m = i+1;
+    const indet = get(m,'tto_indet'), dot = get(m,'dot_indet');
+    const v = (indet !== null && dot) ? indet/dot : null;
+    return v !== null ? `<td>${(v*100).toFixed(1)}%</td>` : '<td class="empty-cell">—</td>';
+  });
+  const obj  = dashData && dashData.config ? parseFloat(dashData.config.obj_tto_indeterminados) : null;
+  const ytdIndet = ytdSum('tto_indet');
+  const ytdDot   = ytdSum('dot_indet');
+  const ytdVal   = ytdIndet !== null && ytdDot ? ytdIndet / ytdDot : null;
+  const aa       = aaSum('tto_indet') !== null && aaSum('dot_indet') ? aaSum('tto_indet') / aaSum('dot_indet') : null;
+  const vs       = ytdVal !== null && aa !== null ? ytdVal - aa : null;
+  const objCell  = obj !== null ? `<td class="th-obj" style="text-align:center">${(obj*100).toFixed(1)}%</td>` : '<td class="empty-cell">—</td>';
+  const ytdSem   = ytdVal !== null ? semaforo(ytdVal) : '<span class="empty-cell">—</span>';
+  const aaCell   = aa !== null ? `${(aa*100).toFixed(1)}%` : '—';
+  return `<tr><td>% TTO Indeterminados [obj &lt;20%]</td>${vals.join('')}${objCell}<td>${ytdSem}</td><td>${aaCell}</td>${cellVsPct(vs)}</tr>`;
+}
+
+function rowTTOOpPct() {
+  const vals = MESES.map((_,i) => {
+    const m = i+1;
+    const indet = get(m,'tto_indet_op'), dot = get(m,'dot_op_indet');
+    const v = (indet !== null && dot) ? indet/dot : null;
+    return v !== null ? `<td>${(v*100).toFixed(1)}%</td>` : '<td class="empty-cell">—</td>';
+  });
+  const ytdIndet = ytdSum('tto_indet_op');
+  const ytdDot   = ytdSum('dot_op_indet');
+  const ytdVal   = ytdIndet !== null && ytdDot ? ytdIndet / ytdDot : null;
+  const aa       = aaSum('tto_indet_op') !== null && aaSum('dot_op_indet') ? aaSum('tto_indet_op') / aaSum('dot_op_indet') : null;
+  const vs       = ytdVal !== null && aa !== null ? ytdVal - aa : null;
+  const ytdSem   = ytdVal !== null ? `${(ytdVal*100).toFixed(1)}%` : '<span class="empty-cell">—</span>';
+  const aaCell   = aa !== null ? `${(aa*100).toFixed(1)}%` : '—';
+  return `<tr><td>${lbl('% TTO Indeterminados [Operación]','Bajas indeterminadas con reemplazo de posiciones CHOFER, AYUDANTE u OPERARIO/A ÷ dotación de esas posiciones')}</td>${vals.join('')}<td class="th-obj empty-cell">—</td><td>${ytdSem}</td><td>${aaCell}</td>${cellVsPct(vs)}</tr>`;
+}
+
+function rowReq() {
+  const cells = MESES.map((_,i) => {
+    const m = i + 1;
+    if (!dashData || !dashData.months[m]) return '<td class="empty-cell">—</td>';
+    const d = dashData.months[m];
+    // We just show tto_indet (with reemplazo=true) count here as SI/NO indicator
+    // If tto raw exits > tto_indet, some are NO
+    return '<td class="empty-cell">—</td>'; // simplified — shown in confirmation flow
+  });
+  return `<tr class="sub" style="font-size:10px;color:#8A97AA"><td style="color:#8A97AA;font-style:italic">¿Requiere reemplazo?</td>${cells.join('')}<td></td><td></td><td></td><td></td></tr>`;
+}
+
+function secRow(label) {
+  return `<tr class="sec-row"><td colspan="17">${label}</td></tr>`;
+}
+
+function buildTable() {
+  if (!dashData) return;
+  const loadedMonths = MESES.filter((_,i) => dashData.months[i+1]).map((_,i) => MESES[i]);
+  const loaded = Object.keys(dashData.months).filter(m => dashData.months[m]);
+  document.getElementById('loadedLabel').textContent = loaded.length
+    ? 'Meses cargados: ' + loaded.map(m => MESES[m-1]).join(' · ')
+    : 'Sin datos cargados';
+
+  const pend = dashData.pendientes || 0;
+  const badge = document.getElementById('badgePend');
+  if (pend > 0) { badge.style.display = ''; badge.textContent = `⚠ ${pend} baja${pend>1?'s':''} pendiente${pend>1?'s':''} de confirmación`; }
+  else badge.style.display = 'none';
+
+  let html = '';
+
+  // DOTACIÓN TOTAL
+  html += secRow('👥 Dotación total');
+  html += rowNums('Dotación total', 'dot_total', false, 'Empleados activos al cierre del mes\n(ftes = sí)');
+  html += rowNums('→ Indeterminados', 'dot_indet', true, 'Activos con contrato INDETERMINADO');
+  html += rowNums('→ Temporada', 'dot_temp', true, 'Activos con contrato POR TEMPORADA');
+  html += rowNums('Dotación mujeres', 'dot_muj', false, 'Empleadas activas (género = FEMENINO)');
+  html += rowNums('Dotación hombres', 'dot_hom', false, 'Empleados activos (género = MASCULINO)');
+  html += rowPct('% representatividad ♀', 'pct_muj', false, false, 'Mujeres activas / Dotación total');
+  html += rowPct('% representatividad ♂', 'pct_hom', false, false, 'Hombres activos / Dotación total');
+
+  // DOTACIÓN POR SECTOR
+  html += secRow('Dotación por sector');
+  html += rowNums('Ventas', 'sec_ventas', true, 'Activos cuyo sector contiene "VENT"');
+  html += rowNums('Logística', 'sec_log', true, 'Activos cuyo sector contiene "LOG" o "DEP"');
+  html += rowNums('Administración', 'sec_adm', true, 'Activos cuyo sector contiene "ADM"');
+  html += rowNums('Otros / Directorio', 'sec_otros', true, 'Activos que no son Ventas, Logística ni Administración');
+
+  // INGRESOS
+  html += secRow('🟢 Ingresos del mes');
+  html += rowNums('Total ingresos', 'ing_total', false, 'Empleados cuya fecha_ingreso cae dentro del mes');
+  html += rowNums('→ Indeterminados', 'ing_indet', true, 'Ingresos del mes con contrato INDETERMINADO');
+  html += rowNums('→ Temporada', 'ing_temp', true, 'Ingresos del mes con contrato POR TEMPORADA');
+  html += rowNums('Ingresos mujeres', 'ing_muj', false, 'Ingresos del mes con género = FEMENINO');
+  html += rowNums('Ingresos hombres', 'ing_hom', false, 'Ingresos del mes con género = MASCULINO');
+
+  // TURNOVER
+  html += secRow('🔴 Turnover · R6.2.1 y R6.2.2');
+  html += rowNums('TTO total (bajas/dotación)', 'tto_total', false, 'Bajas cuya fecha_salida cae dentro del mes\n(ftes = no)');
+  html += rowNums('→ TTO temporada', 'tto_temp', true, 'Bajas del mes con contrato POR TEMPORADA');
+  html += rowNums('→ TTO indeterminados (c/ reemplazo)', 'tto_indet', true, 'Bajas del mes con contrato INDETERMINADO');
+  html += rowNums('TTO voluntario (renuncia)', 'tto_vol', false, 'Bajas del mes con tipo_salida = RENUNCIA');
+  html += rowNums('TTO involuntario (despido)', 'tto_invol', false, 'Bajas del mes con tipo_salida = DESPIDO o CAUSA');
+  html += rowNums('TTO mujeres', 'tto_muj', false, 'Bajas del mes con género = FEMENINO');
+  html += rowNums('TTO hombres', 'tto_hom', false, 'Bajas del mes con género = MASCULINO');
+  html += rowTTOPct();
+  html += rowTTOOpPct();
+
+  // OBJETIVOS vs AA — semáforo en YTD
+  html += secRow('🎯 Objetivos vs año anterior · R6.2.7');
+  {
+    const ytdIndet = ytdSum('tto_indet');
+    const ytdDot   = ytdSum('dot_total');
+    const ytdVal   = ytdIndet !== null && ytdDot ? ytdIndet / ytdDot : null;
+    const mCells   = MESES.map(() => '<td class="empty-cell">—</td>').join('');
+    const sem      = ytdVal !== null ? semaforo(ytdVal) : '<span class="empty-cell">—</span>';
+    html += `<tr><td style="font-size:10px;color:#5E6E89">Semáforo % TTO indeterminados</td>${mCells}<td class="empty-cell">—</td><td>${sem}</td><td class="empty-cell">—</td><td class="empty-cell">—</td></tr>`;
+  }
+
+  // GÉNERO Y DIVERSIDAD
+  html += secRow('♀♂ Género y diversidad (DEI)');
+  html += rowPct('% mujeres total', 'pct_muj', false, false, 'Mujeres activas / Dotación total');
+  html += rowPct('% hombres total', 'pct_hom', false, false, 'Hombres activos / Dotación total');
+  html += rowPct('% mujeres en ventas', 'pct_ven_muj', false, false, 'Mujeres en Ventas / Total en Ventas');
+  html += rowPct('% mujeres en logística', 'pct_log_muj', false, false, 'Mujeres en Logística / Total en Logística');
+  html += rowPct('% mujeres en administración', 'pct_adm_muj', false, false, 'Mujeres en Administración / Total en Administración');
+  html += rowPct('% mujeres en liderazgo', 'pct_lid_muj', false, false, 'Mujeres líderes / Total líderes\n(columna "LÍDERES ftes" del Excel)');
+
+  // GENERACIONES
+  html += secRow('📅 Generaciones');
+  html += rowPct('Baby Boomer (1945–1964)', 'pct_gen_boomer', false, false, 'Activos nacidos entre 1945 y 1964 / Dotación total');
+  html += rowPct('Generación X (1965–1981)', 'pct_gen_x', false, false, 'Activos nacidos entre 1965 y 1981 / Dotación total');
+  html += rowPct('Generación Y (1982–1994)', 'pct_gen_y', false, false, 'Activos nacidos entre 1982 y 1994 / Dotación total');
+  html += rowPct('Generación Z (1995–2009)', 'pct_gen_z', false, false, 'Activos nacidos entre 1995 y 2009 / Dotación total');
+
+  document.getElementById('dashBody').innerHTML = html;
+}
+
+async function onFiltroChange() {
+  await cargarFiltros();
+  cargarDashboard();
+}
+
+async function cargarFiltros() {
+  const anio = anioActivo();
+  try {
+    const r = await fetch('/api/turnover/filtros?anio=' + anio);
+    const { sectores, sucursales } = await r.json();
+    const secSel = document.getElementById('sectorSel');
+    const sucSel = document.getElementById('sucursalSel');
+    const secVal = secSel.value, sucVal = sucSel.value;
+    secSel.innerHTML = '<option value="">Todos los sectores</option>' + sectores.map(s=>`<option value="${s}">${s}</option>`).join('');
+    sucSel.innerHTML = '<option value="">Todas las sucursales</option>' + sucursales.map(s=>`<option value="${s}">${s}</option>`).join('');
+    if (sectores.includes(secVal)) secSel.value = secVal;
+    if (sucursales.includes(sucVal)) sucSel.value = sucVal;
+  } catch(e) {}
+}
+
+async function cargarDashboard() {
+  document.getElementById('dashBody').innerHTML = '<tr class="loading-row"><td colspan="17">Cargando...</td></tr>';
+  try {
+    const anio = anioActivo();
+    const sector   = document.getElementById('sectorSel').value;
+    const sucursal = document.getElementById('sucursalSel').value;
+    const soloOp   = document.getElementById('chkOperacion').checked;
+    let url = '/api/turnover/dashboard?anio=' + anio;
+    if (sector)   url += '&sector='   + encodeURIComponent(sector);
+    if (sucursal) url += '&sucursal=' + encodeURIComponent(sucursal);
+    if (soloOp)   url += '&posiciones=' + encodeURIComponent('CHOFER,AYUDANTE,OPERARIO/A');
+    const r = await fetch(url);
+    dashData = await r.json();
+    buildTable();
+  } catch(e) {
+    document.getElementById('dashBody').innerHTML = '<tr class="loading-row"><td colspan="17">Error al cargar datos</td></tr>';
+  }
+}
+
+// ── Cargar dotación ──
+function abrirCarga() {
+  document.getElementById('cargaAnio').value = anioActivo();
+  document.getElementById('cargaMes').value = new Date().getMonth() + 1;
+  document.getElementById('btnImportar').disabled = true;
+  document.getElementById('uploadZoneTxt').textContent = 'Hacé click para seleccionar el archivo Excel';
+  document.getElementById('uploadZone').classList.remove('has-file');
+  document.getElementById('cargaMsg').style.display = 'none';
+  document.getElementById('modalCarga').classList.add('open');
+}
+
+function onFileSelect(inp) {
+  if (inp.files.length) {
+    document.getElementById('uploadZoneTxt').textContent = inp.files[0].name;
+    document.getElementById('uploadZone').classList.add('has-file');
+    document.getElementById('btnImportar').disabled = false;
+  }
+}
+
+async function borrarMes() {
+  const anio = document.getElementById('cargaAnio').value;
+  const mes  = document.getElementById('cargaMes').value;
+  const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  if (!confirm(`¿Borrar todos los datos de ${MESES[mes]} ${anio}? Esta acción no se puede deshacer.`)) return;
+  const msg = document.getElementById('cargaMsg');
+  msg.style.display = ''; msg.className = ''; msg.textContent = 'Borrando...';
+  try {
+    const r = await fetch(`/api/turnover/dotacion/${mes}?anio=${anio}`, { method: 'DELETE' });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error al borrar');
+    cerrarModal('modalCarga');
+    await cargarDashboard();
+  } catch(e) {
+    msg.className = 'msg-err'; msg.textContent = e.message;
+  }
+}
+
+async function importar() {
+  const btn = document.getElementById('btnImportar');
+  btn.disabled = true; btn.textContent = 'Importando...';
+  const msg = document.getElementById('cargaMsg');
+  try {
+    const fd = new FormData();
+    fd.append('anio', document.getElementById('cargaAnio').value);
+    fd.append('mes',  document.getElementById('cargaMes').value);
+    fd.append('archivo', document.getElementById('cargaFile').files[0]);
+    const r = await fetch('/api/turnover/importar', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error al importar');
+
+    cerrarModal('modalCarga');
+    await cargarDashboard();
+
+    if (data.bajas_indeterminadas && data.bajas_indeterminadas.length) {
+      abrirConfirm(data.bajas_indeterminadas);
+    }
+  } catch(e) {
+    msg.style.display = '';
+    msg.className = 'msg-err';
+    msg.textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Importar';
+  }
+}
+
+// ── Confirmaciones (post-import) ──
+function abrirConfirm(bajas) {
+  confirmaciones = {};
+  const list = document.getElementById('confirmList');
+  list.innerHTML = bajas.map(b => `
+    <div class="confirm-item">
+      <div class="confirm-info">
+        <div class="confirm-name">${b.nombre}</div>
+        <div class="confirm-detail">${b.tipo_salida} · ${b.sector} · ${b.posicion}</div>
+      </div>
+      <div class="confirm-btns">
+        <button class="btn-si" id="si_${b.id}" onclick="toggleReemplazo(${b.id},true)">Sí</button>
+        <button class="btn-no" id="no_${b.id}" onclick="toggleReemplazo(${b.id},false)">No</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('confirmMsg').style.display = 'none';
+  document.getElementById('modalConfirm').classList.add('open');
+}
+
+function toggleReemplazo(id, val) {
+  confirmaciones[id] = val;
+  document.getElementById('si_' + id).classList.toggle('active', val === true);
+  document.getElementById('no_' + id).classList.toggle('active', val === false);
+}
+
+async function guardarConfirmaciones() {
+  const lista = Object.entries(confirmaciones).map(([id, v]) => ({ id: parseInt(id), requiere_reemplazo: v }));
+  if (!lista.length) { cerrarModal('modalConfirm'); return; }
+  const r = await fetch('/api/turnover/confirmar-reemplazos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ confirmaciones: lista }) });
+  if (r.ok) { cerrarModal('modalConfirm'); cargarDashboard(); }
+}
+
+// ── Pendientes ──
+async function abrirPendientes() {
+  pendConfirmaciones = {};
+  const r = await fetch('/api/turnover/pendientes?anio=' + anioActivo());
+  const items = await r.json();
+  const mesNom = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  document.getElementById('pendList').innerHTML = items.map(b => `
+    <div class="confirm-item">
+      <div class="confirm-info">
+        <div class="confirm-name">${b.nombre} ${b.apellido} <span style="font-size:10px;color:#8A97AA">(${mesNom[b.mes-1]})</span></div>
+        <div class="confirm-detail">${b.tipo_salida||'—'} · ${b.sector||''} · ${b.posicion||''}</div>
+      </div>
+      <div class="confirm-btns">
+        <button class="btn-si" id="psi_${b.id}" onclick="togglePend(${b.id},true)">Sí</button>
+        <button class="btn-no" id="pno_${b.id}" onclick="togglePend(${b.id},false)">No</button>
+      </div>
+    </div>
+  `).join('') || '<div style="text-align:center;padding:20px;color:#8A97AA;font-size:13px">No hay pendientes</div>';
+  document.getElementById('pendMsg').style.display = 'none';
+  document.getElementById('modalPend').classList.add('open');
+}
+
+function togglePend(id, val) {
+  pendConfirmaciones[id] = val;
+  document.getElementById('psi_' + id).classList.toggle('active', val === true);
+  document.getElementById('pno_' + id).classList.toggle('active', val === false);
+}
+
+async function guardarPendientes() {
+  const lista = Object.entries(pendConfirmaciones).map(([id,v]) => ({ id: parseInt(id), requiere_reemplazo: v }));
+  if (!lista.length) { cerrarModal('modalPend'); return; }
+  const r = await fetch('/api/turnover/confirmar-reemplazos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ confirmaciones: lista }) });
+  if (r.ok) { cerrarModal('modalPend'); cargarDashboard(); }
+}
+
+// ── Objetivo ──
+async function abrirObjetivos() {
+  const r = await fetch('/api/turnover/config?anio=' + anioActivo());
+  const cfg = await r.json();
+  document.getElementById('objInput').value = cfg.obj_tto_indeterminados ? (parseFloat(cfg.obj_tto_indeterminados) * 100).toFixed(1) : '2.2';
+  document.getElementById('objMsg').style.display = 'none';
+  document.getElementById('modalObj').classList.add('open');
+}
+
+async function guardarObjetivo() {
+  const val = parseFloat(document.getElementById('objInput').value);
+  if (isNaN(val)) return;
+  const r = await fetch('/api/turnover/config', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anio: anioActivo(), obj_tto_indeterminados: val / 100 })
+  });
+  if (r.ok) { cerrarModal('modalObj'); cargarDashboard(); }
+}
+
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-bg').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+
+cargarFiltros().then(() => cargarDashboard());
+cargarDocs();
+
+function docIcono(tipo) {
+  if (!tipo) return '📎';
+  if (tipo.includes('pdf')) return '📄';
+  if (tipo.includes('word') || tipo.includes('msword')) return '📝';
+  if (tipo.includes('sheet') || tipo.includes('excel')) return '📊';
+  if (tipo.includes('presentation') || tipo.includes('powerpoint')) return '📊';
+  if (tipo.startsWith('image/')) return '🖼️';
+  return '📎';
+}
+
+async function cargarDocs() {
+  const list = document.getElementById('docList');
+  try {
+    const r = await fetch('/api/turnover/archivos');
+    const docs = await r.json();
+    if (!docs.length) {
+      list.innerHTML = '<div style="text-align:center;padding:30px;color:#8A97AA;font-size:13px">No hay documentos cargados aún.</div>';
+      return;
+    }
+    list.innerHTML = docs.map(d => `
+      <div style="background:#fff;border:1px solid #D8DEE8;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px">
+        <div style="font-size:28px;flex-shrink:0">${docIcono(d.tipo)}</div>
+        <div style="flex:1;font-size:13px;font-weight:600;color:#18243A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${d.nombre}">${d.nombre}</div>
+        <button onclick="abrirDocVisor(${d.id},'${d.nombre.replace(/'/g,"\\'")}','${(d.tipo||'').replace(/'/g,"\\'")}')" style="background:#F2F4F8;border:1.5px solid #D8DEE8;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit;white-space:nowrap">Ver</button>
+        <button onclick="eliminarDoc(${d.id})" style="background:none;border:none;color:#CBD2DC;cursor:pointer;font-size:17px;padding:4px;line-height:1;flex-shrink:0">🗑</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:#B91C1C;font-size:13px">Error al cargar.</div>';
+  }
+}
+
+async function subirDoc(input) {
+  if (!input.files.length) return;
+  document.getElementById('docList').innerHTML = '<div style="text-align:center;padding:20px;color:#5E6E89;font-size:13px">Subiendo...</div>';
+  for (const file of input.files) {
+    const fd = new FormData();
+    fd.append('archivo', file);
+    await fetch('/api/turnover/archivos', { method: 'POST', body: fd });
+  }
+  input.value = '';
+  cargarDocs();
+}
+
+async function eliminarDoc(id) {
+  if (!confirm('¿Eliminar este archivo?')) return;
+  await fetch('/api/turnover/archivos/' + id, { method: 'DELETE' });
+  cargarDocs();
+}
+
+let _xlsxWB = null;
+
+function _showDocLoading() {
+  document.getElementById('docVisorLoading').style.display = 'flex';
+  document.getElementById('docVisorFrame').style.display = 'none';
+  document.getElementById('docVisorRender').style.display = 'none';
+  document.getElementById('docVisorSheetTabs').style.display = 'none';
+}
+function _showDocFrame(src) {
+  document.getElementById('docVisorFrame').src = src;
+  document.getElementById('docVisorFrame').style.display = 'block';
+  document.getElementById('docVisorLoading').style.display = 'none';
+  document.getElementById('docVisorRender').style.display = 'none';
+  document.getElementById('docVisorSheetTabs').style.display = 'none';
+}
+function _showDocRender(html, sheets) {
+  const r = document.getElementById('docVisorRender');
+  r.innerHTML = html;
+  r.style.display = 'block';
+  document.getElementById('docVisorLoading').style.display = 'none';
+  document.getElementById('docVisorFrame').style.display = 'none';
+  const tabs = document.getElementById('docVisorSheetTabs');
+  if (sheets && sheets.length > 1) {
+    tabs.innerHTML = sheets.map((s,i) =>
+      `<button onclick="renderXlsxSheet(${i})" id="shtab_${i}" style="padding:3px 10px;border-radius:4px;border:1px solid #D8DEE8;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:${i===0?'#1B3F72':'#fff'};color:${i===0?'#fff':'#5A6880'}">${s}</button>`
+    ).join('');
+    tabs.style.display = 'flex';
+  } else {
+    tabs.style.display = 'none';
+  }
+}
+
+function renderXlsxSheet(idx) {
+  if (!_xlsxWB) return;
+  const sheetName = _xlsxWB.SheetNames[idx];
+  const ws = _xlsxWB.Sheets[sheetName];
+  const html = XLSX.utils.sheet_to_html(ws, { id:'xlsheet', editable:false });
+  document.getElementById('docVisorRender').innerHTML = html;
+  document.querySelectorAll('#docVisorSheetTabs button').forEach((b,i) => {
+    b.style.background = i===idx ? '#1B3F72' : '#fff';
+    b.style.color = i===idx ? '#fff' : '#5A6880';
+  });
+}
+
+async function abrirDocVisor(id, nombre, tipo) {
+  const url = '/api/turnover/archivos/' + id + '/file';
+  document.getElementById('docVisorNombre').textContent = nombre;
+  document.getElementById('docVisorDl').href = url;
+  document.getElementById('docVisorDl').download = nombre;
+  document.getElementById('modalDoc').style.display = 'flex';
+  _showDocLoading();
+  _xlsxWB = null;
+
+  const ext = nombre.split('.').pop().toLowerCase();
+  const esExcel = ext === 'xlsx' || ext === 'xls' || (tipo && (tipo.includes('sheet') || tipo.includes('excel')));
+  const esWord  = ext === 'docx' || ext === 'doc'  || (tipo && (tipo.includes('word') || tipo.includes('msword')));
+  const esPDF   = ext === 'pdf'  || (tipo && tipo.includes('pdf'));
+
+  if (esPDF) {
+    _showDocFrame(url);
+    return;
+  }
+
+  try {
+    const resp = await fetch(url);
+    const buf  = await resp.arrayBuffer();
+
+    if (esExcel) {
+      if (!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      _xlsxWB = XLSX.read(buf, { type:'array' });
+      const sheetName = _xlsxWB.SheetNames[0];
+      const ws = _xlsxWB.Sheets[sheetName];
+      const html = XLSX.utils.sheet_to_html(ws, { id:'xlsheet', editable:false });
+      _showDocRender(
+        `<style>
+          #xlsheet{border-collapse:collapse;font-size:12px;width:100%}
+          #xlsheet td,#xlsheet th{border:1px solid #D8DEE8;padding:5px 8px;white-space:nowrap}
+          #xlsheet tr:first-child td,#xlsheet tr:first-child th{background:#1B3F72;color:#fff;font-weight:700}
+          #xlsheet tr:nth-child(even) td{background:#F5F7FB}
+        </style>` + html,
+        _xlsxWB.SheetNames
+      );
+    } else if (esWord) {
+      if (!window.mammoth) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+      const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+      _showDocRender(
+        `<style>
+          #docVisorRender h1,#docVisorRender h2,#docVisorRender h3{color:#1B3F72;margin:1em 0 .4em;font-size:1em;font-weight:700}
+          #docVisorRender p{margin-bottom:.7em}
+          #docVisorRender table{border-collapse:collapse;width:100%;margin:1em 0;font-size:12px}
+          #docVisorRender td,#docVisorRender th{border:1px solid #D8DEE8;padding:5px 8px}
+          #docVisorRender th{background:#F5F7FB;font-weight:700}
+        </style>` + result.value,
+        null
+      );
+    } else {
+      _showDocFrame(url);
+    }
+  } catch(e) {
+    document.getElementById('docVisorRender').innerHTML = `<div style="color:#B91C1C;padding:20px">Error al cargar el archivo: ${e.message}</div>`;
+    document.getElementById('docVisorRender').style.display = 'block';
+    document.getElementById('docVisorLoading').style.display = 'none';
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function cerrarDocVisor() {
+  document.getElementById('modalDoc').style.display = 'none';
+  document.getElementById('docVisorFrame').src = '';
+  document.getElementById('docVisorRender').innerHTML = '';
+  _xlsxWB = null;
+}
+
+function repPill(val, id) {
+  if (val === true)  return `<span class="req-si"  style="cursor:pointer" onclick="toggleRep(this,${id})">SÍ</span>`;
+  if (val === false) return `<span class="req-no"  style="cursor:pointer" onclick="toggleRep(this,${id})">NO</span>`;
+  return                     `<span class="req-pend" style="cursor:pointer" onclick="toggleRep(this,${id})">PENDIENTE</span>`;
+}
+
+async function toggleRep(el, id) {
+  const cur = el.textContent.trim();
+  // ciclo: PENDIENTE → SÍ → NO → PENDIENTE
+  const next = cur === 'PENDIENTE' ? true : cur === 'SÍ' ? false : null;
+  el.style.opacity = '0.5';
+  await fetch(`/api/turnover/bajas-indet/${id}`, {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ requiere_reemplazo: next })
+  });
+  el.outerHTML = repPill(next, id);
+  cargarDashboard(); // actualiza badge y tto_indet
+}
+
+async function abrirBajasIndet() {
+  const anio = document.getElementById('yearSel').value;
+  const rows = await fetch(`/api/turnover/bajas-indet?anio=${anio}`).then(r=>r.json());
+  const meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  document.getElementById('bajasIndetSub').textContent = `${rows.length} baja${rows.length!==1?'s':''} indeterminada${rows.length!==1?'s':''} · ${anio}`;
+  document.getElementById('bajasIndetBody').innerHTML = rows.map(r => {
+    const fecha = r.fecha_salida ? r.fecha_salida.substring(0,10) : '—';
+    const mes = r.fecha_salida ? meses[parseInt(r.fecha_salida.substring(5,7))] : '';
+    return `<tr style="border-bottom:1px solid #EEF0F6">
+      <td style="padding:5px 8px">${r.nombre} ${r.apellido}</td>
+      <td style="padding:5px 8px;color:#5E6E89">${r.sector||'—'}</td>
+      <td style="padding:5px 8px;color:#5E6E89">${r.posicion||'—'}</td>
+      <td style="padding:5px 8px">${r.tipo_salida||'—'}</td>
+      <td style="padding:5px 8px;white-space:nowrap">${fecha} <span style="color:#8A97AA">${mes}</span></td>
+      <td style="padding:5px 8px;text-align:center">${repPill(r.requiere_reemplazo, r.id)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('modalBajasIndet').classList.add('open');
+}
+
+// Tooltips de fórmula
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('.tip-label');
+  if (!el) return;
+  const tip = document.getElementById('formula-tip');
+  tip.textContent = el.dataset.tip;
+  tip.style.display = 'block';
+});
+document.addEventListener('mousemove', e => {
+  const tip = document.getElementById('formula-tip');
+  if (!tip || tip.style.display === 'none') return;
+  const x = e.clientX + 14, y = e.clientY + 14;
+  tip.style.left = (x + tip.offsetWidth > window.innerWidth ? x - tip.offsetWidth - 20 : x) + 'px';
+  tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? y - tip.offsetHeight - 20 : y) + 'px';
+});
+document.addEventListener('mouseout', e => {
+  if (!e.target.closest('.tip-label')) return;
+  const tip = document.getElementById('formula-tip');
+  if (tip) tip.style.display = 'none';
+});
+</script>
+<div id="formula-tip"></div>
+</body>
+</html>

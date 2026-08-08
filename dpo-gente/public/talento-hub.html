@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talento y Crecimiento — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:18px 24px}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.wrap{max-width:700px;margin:0 auto;padding:32px 20px;display:flex;flex-direction:column;gap:24px}
+.section-label{font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.mod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.mod-card{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:24px 20px;cursor:pointer;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;transition:box-shadow .15s,border-color .15s;text-align:left;width:100%;font-family:inherit}
+.mod-card:hover{border-color:#2563A8;box-shadow:0 4px 18px rgba(37,99,168,.13)}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#2563A8)}
+.mod-card.coming::before{background:#D8DEE8}
+.mod-card.coming{cursor:default;opacity:.6}
+.mod-card.coming:hover{border-color:#D8DEE8;box-shadow:none}
+.mod-icon{font-size:32px;line-height:1}
+.mod-title{font-size:15px;font-weight:700;color:#18243A}
+.mod-desc{font-size:12px;color:#8A97AA;line-height:1.6;flex:1}
+.mod-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.mod-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.badge-blue{background:#DBEAFE;color:#1D4ED8}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-orange{background:#FEF3C7;color:#92400E}
+.badge-purple{background:#EDE9FE;color:#4C1D95}
+.badge-gray{background:#F2F4F8;color:#5E6E89}
+.mod-arr{font-size:11px;color:#2563A8;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Talento y Crecimiento</span>
+</div>
+
+<div class="page-header">
+  <h1>Talento y Crecimiento</h1>
+  <p>Desarrollo de personas y ciclo de talento · DPO Gente</p>
+</div>
+
+<div class="wrap">
+
+  <div>
+    <div class="section-label">Módulos</div>
+    <div class="mod-grid">
+
+      <button class="mod-card" style="--accent:#1B3F72" onclick="window.location.href='/ciclo-gente-hub'">
+        <div class="mod-icon">🔄</div>
+        <div class="mod-title">Ciclo de Gente</div>
+        <div class="mod-desc">OPR, evaluación del distribuidor y evaluación de desempeño. Ciclo completo de gestión del talento.</div>
+        <div class="mod-footer">
+          <span class="mod-badge badge-blue">People Cycle</span>
+          <span class="mod-arr">Abrir →</span>
+        </div>
+      </button>
+
+      <button class="mod-card" style="--accent:#2563A8" onclick="window.location.href='/kpi-turnover'">
+        <div class="mod-icon">📉</div>
+        <div class="mod-title">KPI Turnover</div>
+        <div class="mod-desc">Seguimiento de rotación voluntaria e involuntaria. Análisis por período y sector.</div>
+        <div class="mod-footer">
+          <span class="mod-badge badge-blue">Rotación</span>
+          <span class="mod-arr">Abrir →</span>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+</script>
+</body>
+</html>

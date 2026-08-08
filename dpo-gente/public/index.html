@@ -83,7 +83,8 @@ async function login(){
     const d=await r.json();
     if(!r.ok){ showErr(d.error||'Error al ingresar.'); return; }
     const username=nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-');
-    sessionStorage.setItem('user', JSON.stringify({username,nombre}));
+    sessionStorage.setItem('user', JSON.stringify({username,nombre,admin:d.admin||false,modulos:d.modulos||[]}));
+    if(d.admin) sessionStorage.setItem('x-admin-key', password);
     window.location.href='/pilar-gente';
   }catch(e){ showErr('No se pudo conectar con el servidor.'); }
   finally{ btn.disabled=false; btn.textContent='Ingresar'; }

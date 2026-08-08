@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ciclo de Gente — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:18px 24px}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.wrap{max-width:700px;margin:0 auto;padding:32px 20px;display:flex;flex-direction:column;gap:24px}
+.section-label{font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.mod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.mod-card{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:24px 20px;cursor:pointer;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;transition:box-shadow .15s,border-color .15s;text-align:left;width:100%;font-family:inherit}
+.mod-card:hover{border-color:#2563A8;box-shadow:0 4px 18px rgba(37,99,168,.13)}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#2563A8)}
+.mod-card.coming::before{background:#D8DEE8}
+.mod-card.coming{cursor:default;opacity:.6}
+.mod-card.coming:hover{border-color:#D8DEE8;box-shadow:none}
+.mod-icon{font-size:32px;line-height:1}
+.mod-title{font-size:15px;font-weight:700;color:#18243A}
+.mod-desc{font-size:12px;color:#8A97AA;line-height:1.6;flex:1}
+.mod-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.mod-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.badge-blue{background:#DBEAFE;color:#1D4ED8}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-gold{background:#FEF3C7;color:#92400E}
+.badge-purple{background:#EDE9FE;color:#4C1D95}
+.badge-gray{background:#F2F4F8;color:#5E6E89}
+.mod-arr{font-size:11px;color:#2563A8;font-weight:600}
+
+/* PDF viewer card */
+.doc-card{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:box-shadow .15s,border-color .15s;position:relative;overflow:hidden}
+.doc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#E85D04}
+.doc-card:hover{border-color:#E85D04;box-shadow:0 4px 18px rgba(232,93,4,.1)}
+.doc-icon{font-size:36px;flex-shrink:0}
+.doc-info{flex:1}
+.doc-title{font-size:14px;font-weight:700;color:#18243A}
+.doc-desc{font-size:12px;color:#8A97AA;margin-top:2px}
+.doc-btn{background:#E85D04;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit}
+.doc-btn:hover{background:#C44D03}
+
+/* Upload area */
+.upload-area{border:2px dashed #D8DEE8;border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s}
+.upload-area:hover{border-color:#1B3F72}
+.upload-area p{font-size:12px;color:#8A97AA;margin-top:6px}
+.upload-area input{display:none}
+
+/* Archivos multi */
+.arch-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.arch-upload-btn{background:#E85D04;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.arch-upload-btn:hover{background:#C44D03}
+.arch-list{display:flex;flex-direction:column;gap:10px}
+.arch-item{background:#fff;border:1px solid #D8DEE8;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.arch-item-icon{font-size:26px;flex-shrink:0}
+.arch-item-name{flex:1;font-size:13px;font-weight:600;color:#18243A;word-break:break-word}
+.arch-item-date{font-size:11px;color:#8A97AA;margin-top:2px}
+.arch-item-btn{background:#F2F4F8;border:1.5px solid #D8DEE8;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit;white-space:nowrap}
+.arch-item-btn:hover{background:#E85D04;color:#fff;border-color:#E85D04}
+.arch-del-btn{background:none;border:none;color:#CBD2DC;cursor:pointer;font-size:16px;padding:4px;line-height:1}
+.arch-del-btn:hover{color:#EF4444}
+.arch-empty{font-size:13px;color:#8A97AA;text-align:center;padding:24px 0}
+.arch-uploading{font-size:13px;color:#5E6E89;text-align:center;padding:12px 0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/talento-hub'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Ciclo de Gente</span>
+</div>
+
+<div class="page-header">
+  <h1>Ciclo de Gente</h1>
+  <p>People Cycle · Talento y Crecimiento · DPO Gente</p>
+</div>
+
+<div class="wrap">
+
+  <div>
+    <div class="section-label">Módulos</div>
+    <div class="mod-grid">
+
+      <button class="mod-card" style="--accent:#065F46" onclick="window.location.href='/opr'">
+        <div class="mod-icon">🏆</div>
+        <div class="mod-title">OPR</div>
+        <div class="mod-desc">Revisión de desempeño individual. Notas OPR, riesgo de salida, plan de movimientos y comentarios por persona.</div>
+        <div class="mod-footer">
+          <span class="mod-badge badge-green">Desempeño</span>
+          <span class="mod-arr">Abrir →</span>
+        </div>
+      </button>
+
+      <button class="mod-card" style="--accent:#2563A8" onclick="window.location.href='/evaluacion-distribuidor'">
+        <div class="mod-icon">🏢</div>
+        <div class="mod-title">Evaluación del Distribuidor</div>
+        <div class="mod-desc">Evaluación integral del desempeño del distribuidor como organización.</div>
+        <div class="mod-footer">
+          <span class="mod-badge badge-blue">Distribuidor</span>
+          <span class="mod-arr">Abrir →</span>
+        </div>
+      </button>
+
+      <button class="mod-card" style="--accent:#2563A8" onclick="window.location.href='/evaluacion-desempeno'">
+        <div class="mod-icon">📋</div>
+        <div class="mod-title">Evaluación de Desempeño</div>
+        <div class="mod-desc">Evaluación individual de desempeño por colaborador. Seguimiento de objetivos y competencias.</div>
+        <div class="mod-footer">
+          <span class="mod-badge badge-blue">Desempeño</span>
+          <span class="mod-arr">Abrir →</span>
+        </div>
+      </button>
+
+    </div>
+  </div>
+
+  <div>
+    <div class="arch-header">
+      <div class="section-label" style="margin-bottom:0">Documentos</div>
+      <button class="arch-upload-btn" onclick="document.getElementById('archInput').click()">+ Subir archivo</button>
+      <input type="file" id="archInput" style="display:none" multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" onchange="subirArchivo(this)">
+    </div>
+    <div id="archList" class="arch-list"><div class="arch-empty">Cargando...</div></div>
+  </div>
+
+</div>
+
+<!-- Modal visor -->
+<div id="modalVisor" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;width:90vw;height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #EEF0F6;flex-shrink:0">
+      <span id="visorNombre" style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%"></span>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <div id="visorSheetTabs" style="display:none;gap:4px;max-width:340px;overflow-x:auto"></div>
+        <a id="visorDownload" href="" download style="background:#F2F4F8;border:1.5px solid #D8DEE8;border-radius:4px;padding:5px 12px;font-size:12px;font-weight:600;color:#18243A;text-decoration:none">Descargar</a>
+        <button onclick="cerrarVisor()" style="background:none;border:none;font-size:20px;color:#8A97AA;cursor:pointer;line-height:1">×</button>
+      </div>
+    </div>
+    <iframe id="visorFrame" src="" style="flex:1;border:none;display:none"></iframe>
+    <div id="visorRender" style="flex:1;overflow:auto;padding:20px 28px;font-size:13px;line-height:1.6;display:none"></div>
+    <div id="visorLoading" style="flex:1;display:flex;align-items:center;justify-content:center;color:#8A97AA;font-size:13px">Cargando...</div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+function archivoIcono(tipo) {
+  if (!tipo) return '📄';
+  if (tipo.includes('pdf')) return '📄';
+  if (tipo.includes('word') || tipo.includes('msword')) return '📝';
+  if (tipo.includes('sheet') || tipo.includes('excel')) return '📊';
+  if (tipo.startsWith('image/')) return '🖼️';
+  return '📎';
+}
+
+function formatFecha(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+async function cargarArchivos() {
+  const list = document.getElementById('archList');
+  try {
+    const r = await fetch('/api/ciclogente/archivos');
+    const archivos = await r.json();
+    if (!archivos.length) {
+      list.innerHTML = '<div class="arch-empty">No hay documentos cargados aún.</div>';
+      return;
+    }
+    list.innerHTML = archivos.map(a => `
+      <div class="arch-item">
+        <div class="arch-item-icon">${archivoIcono(a.tipo)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="arch-item-name">${a.nombre}</div>
+        </div>
+        <button class="arch-item-btn" onclick="abrirVisor(${a.id},'${a.nombre.replace(/'/g,"\\'")}','${a.tipo}')">Ver</button>
+        <button class="arch-del-btn" onclick="eliminarArchivo(${a.id})" title="Eliminar">🗑</button>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="arch-empty">Error al cargar.</div>';
+  }
+}
+
+async function subirArchivo(input) {
+  if (!input.files.length) return;
+  const list = document.getElementById('archList');
+  list.innerHTML = '<div class="arch-uploading">Subiendo...</div>';
+  for (const file of input.files) {
+    const fd = new FormData();
+    fd.append('archivo', file);
+    await fetch('/api/ciclogente/archivos', { method: 'POST', body: fd });
+  }
+  input.value = '';
+  cargarArchivos();
+}
+
+async function eliminarArchivo(id) {
+  if (!confirm('¿Eliminar este archivo?')) return;
+  await fetch('/api/ciclogente/archivos/' + id, { method: 'DELETE' });
+  cargarArchivos();
+}
+
+let _visorWB = null;
+
+function _visorShowLoading() {
+  document.getElementById('visorLoading').style.display = 'flex';
+  document.getElementById('visorFrame').style.display = 'none';
+  document.getElementById('visorRender').style.display = 'none';
+  document.getElementById('visorSheetTabs').style.display = 'none';
+}
+function _visorShowFrame(src) {
+  document.getElementById('visorFrame').src = src;
+  document.getElementById('visorFrame').style.display = 'block';
+  document.getElementById('visorLoading').style.display = 'none';
+  document.getElementById('visorRender').style.display = 'none';
+  document.getElementById('visorSheetTabs').style.display = 'none';
+}
+function _visorShowRender(html, sheets) {
+  const r = document.getElementById('visorRender');
+  r.innerHTML = html; r.style.display = 'block';
+  document.getElementById('visorLoading').style.display = 'none';
+  document.getElementById('visorFrame').style.display = 'none';
+  const tabs = document.getElementById('visorSheetTabs');
+  if (sheets && sheets.length > 1) {
+    tabs.innerHTML = sheets.map((s,i) => `<button onclick="visorRenderSheet(${i})" id="vshtab_${i}" style="padding:3px 10px;border-radius:4px;border:1px solid #D8DEE8;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:${i===0?'#1B3F72':'#fff'};color:${i===0?'#fff':'#5A6880'}">${s}</button>`).join('');
+    tabs.style.display = 'flex';
+  } else { tabs.style.display = 'none'; }
+}
+function visorRenderSheet(idx) {
+  if (!_visorWB) return;
+  const ws = _visorWB.Sheets[_visorWB.SheetNames[idx]];
+  document.getElementById('visorRender').innerHTML = xlsxSheetHtml(ws);
+  document.querySelectorAll('#visorSheetTabs button').forEach((b,i) => { b.style.background = i===idx?'#1B3F72':'#fff'; b.style.color = i===idx?'#fff':'#5A6880'; });
+}
+function xlsxSheetHtml(ws) {
+  const html = XLSX.utils.sheet_to_html(ws, { id:'xlsheet', editable:false });
+  return `<style>#xlsheet{border-collapse:collapse;font-size:12px;width:100%}#xlsheet td,#xlsheet th{border:1px solid #D8DEE8;padding:5px 8px;white-space:nowrap}#xlsheet tr:first-child td,#xlsheet tr:first-child th{background:#1B3F72;color:#fff;font-weight:700}#xlsheet tr:nth-child(even) td{background:#F5F7FB}</style>` + html;
+}
+function loadScript(src) {
+  return new Promise((res,rej) => { const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+}
+
+async function abrirVisor(id, nombre, tipo) {
+  const url = '/api/ciclogente/archivos/' + id + '/file';
+  document.getElementById('visorNombre').textContent = nombre;
+  document.getElementById('visorDownload').href = url;
+  document.getElementById('visorDownload').download = nombre;
+  document.getElementById('modalVisor').style.display = 'flex';
+  _visorShowLoading(); _visorWB = null;
+  const ext = nombre.split('.').pop().toLowerCase();
+  const esExcel = ext==='xlsx'||ext==='xls'||(tipo&&(tipo.includes('sheet')||tipo.includes('excel')));
+  const esWord  = ext==='docx'||ext==='doc'||(tipo&&(tipo.includes('word')||tipo.includes('msword')));
+  const esPDF   = ext==='pdf'||(tipo&&tipo.includes('pdf'));
+  if (esPDF) { _visorShowFrame(url); return; }
+  try {
+    const buf = await (await fetch(url)).arrayBuffer();
+    if (esExcel) {
+      if (!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      _visorWB = XLSX.read(buf, { type:'array' });
+      _visorShowRender(xlsxSheetHtml(_visorWB.Sheets[_visorWB.SheetNames[0]]), _visorWB.SheetNames);
+    } else if (esWord) {
+      if (!window.mammoth) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+      const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+      _visorShowRender(`<style>#visorRender h1,#visorRender h2,#visorRender h3{color:#1B3F72;margin:1em 0 .4em;font-weight:700}#visorRender p{margin-bottom:.7em}#visorRender table{border-collapse:collapse;width:100%;margin:1em 0;font-size:12px}#visorRender td,#visorRender th{border:1px solid #D8DEE8;padding:5px 8px}#visorRender th{background:#F5F7FB;font-weight:700}</style>` + result.value, null);
+    } else { _visorShowFrame(url); }
+  } catch(e) {
+    document.getElementById('visorRender').innerHTML = `<div style="color:#B91C1C;padding:20px">Error: ${e.message}</div>`;
+    document.getElementById('visorRender').style.display = 'block';
+    document.getElementById('visorLoading').style.display = 'none';
+  }
+}
+
+function cerrarVisor() {
+  document.getElementById('modalVisor').style.display = 'none';
+  document.getElementById('visorFrame').src = '';
+  document.getElementById('visorRender').innerHTML = '';
+  _visorWB = null;
+}
+
+cargarArchivos();
+</script>
+</body>
+</html>

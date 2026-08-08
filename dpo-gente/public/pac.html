@@ -1,0 +1,897 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAC — Plan Anual de Capacitación</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40;flex-wrap:wrap}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.topbar-btn{padding:6px 13px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.topbar-btn:hover{background:#163260}
+.topbar-btn.ghost{background:#fff;color:#1B3F72;border:1px solid #D8DEE8}
+.topbar-btn.ghost:hover{background:#F7F8FB}
+.topbar-sep{color:#D8DEE8}
+
+.page-header{background:#1B3F72;padding:16px 24px 18px}
+.page-header h1{font-size:15px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+
+/* Sidebar accesos rápidos */
+.sidebar-links{position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:30;display:flex;flex-direction:column;gap:8px;padding:8px}
+.sidebar-link{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #D8DEE8;border-radius:0 10px 10px 0;padding:10px 14px 10px 12px;font-size:11.5px;font-weight:600;color:#1B3F72;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .15s;white-space:nowrap}
+.sidebar-link:hover{background:#EBF2FA;border-color:#2563A8;box-shadow:0 4px 12px rgba(37,99,168,.15)}
+.sidebar-link .sb-icon{font-size:16px;line-height:1}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-val{font-size:24px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.kpi.navy .kpi-val{color:#1B3F72}
+.kpi.teal .kpi-val{color:#0891B2}
+.kpi.green .kpi-val{color:#10B981}
+.kpi.red .kpi-val{color:#DC2626}
+.kpi.orange .kpi-val{color:#D97706}
+.kpi-meta{font-size:10px;color:#8A97AA;margin-top:3px}
+.kpi-bar{height:4px;border-radius:2px;background:#EEF0F6;margin-top:8px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;background:#10B981;transition:width .3s}
+.kpi-bar-fill.warn{background:#F59E0B}
+.kpi-bar-fill.danger{background:#DC2626}
+
+/* TABS */
+.tabs{display:flex;gap:2px;margin-bottom:20px;background:#E8EBF0;border-radius:8px;padding:3px;width:fit-content}
+.tab{padding:6px 16px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:#5A6880}
+.tab.active{background:#fff;color:#1B3F72;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* FILTROS */
+.filters{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.filter-sel{padding:6px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;color:#18243A;background:#fff;cursor:pointer}
+
+/* PILARES */
+.pilar-section{margin-bottom:14px}
+.pilar-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:#fff;border:1px solid #EEF0F6;border-radius:8px 8px 0 0;cursor:pointer;user-select:none}
+.pilar-hdr:hover{background:#FAFBFD}
+.pilar-hdr.collapsed{border-radius:8px}
+.pilar-nombre{font-size:12.5px;font-weight:700;color:#18243A;display:flex;align-items:center;gap:8px}
+.pilar-chevron{font-size:10px;color:#8A97AA;transition:transform .2s;display:inline-block}
+.pilar-chevron.open{transform:rotate(90deg)}
+.pilar-stats{display:flex;gap:10px;align-items:center}
+.pilar-stat{font-size:11px;color:#5A6880;font-variant-numeric:tabular-nums}
+.pilar-pct{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.pct-green{background:#D1FAE5;color:#065F46}
+.pct-orange{background:#FEF3C7;color:#92400E}
+.pct-red{background:#FEE2E2;color:#B91C1C}
+.pct-gray{background:#F1F5F9;color:#64748B}
+
+/* TABLA CAPS */
+.table-wrap{background:#fff;border:1px solid #EEF0F6;border-top:none;border-radius:0 0 8px 8px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:700px}
+thead th{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em;padding:8px 12px;text-align:left;border-bottom:1px solid #EEF0F6;white-space:nowrap;background:#FAFBFD}
+tbody tr{border-bottom:1px solid #F5F6FA;cursor:pointer;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#F7F8FB}
+td{padding:9px 12px;font-size:12px;color:#18243A;vertical-align:middle}
+.td-nombre{font-weight:600;max-width:260px}
+.td-date{color:#5A6880;font-size:11px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* BADGES */
+.badge-realizada{background:#D1FAE5;color:#065F46;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.badge-pendiente{background:#F1F5F9;color:#64748B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.tipo-dpo{background:#EBF2FA;color:#1B3F72;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.tipo-interno{background:#F0FDF4;color:#15803D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.pct-pill{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ROW ACTIONS */
+.row-actions{display:flex;gap:5px;opacity:0;transition:opacity .15s}
+tbody tr:hover .row-actions{opacity:1}
+.btn-row{padding:3px 9px;border:1px solid #D8DEE8;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#5A6880;white-space:nowrap}
+.btn-row:hover{background:#F7F8FB}
+.btn-row.danger:hover{background:#FEE2E2;border-color:#FECACA;color:#B91C1C}
+.btn-row.primary{background:#1B3F72;color:#fff;border-color:#1B3F72}
+.btn-row.primary:hover{background:#163260}
+
+/* VISTA POR PERSONA */
+.persona-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.persona-card{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.persona-card:hover{box-shadow:0 4px 16px rgba(27,63,114,.1);border-color:#B8CCE8}
+.persona-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.persona-avatar{width:36px;height:36px;border-radius:50%;background:#EBF2FA;color:#1B3F72;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.persona-nombre{font-size:13px;font-weight:700;color:#18243A}
+.persona-pos{font-size:11px;color:#8A97AA}
+.persona-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.p-stat{text-align:center;padding:6px 4px;background:#F7F8FB;border-radius:6px}
+.p-stat-val{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.p-stat-lbl{font-size:9.5px;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.p-stat.green .p-stat-val{color:#10B981}
+.p-stat.orange .p-stat-val{color:#D97706}
+.p-stat.red .p-stat-val{color:#DC2626}
+.p-stat.navy .p-stat-val{color:#1B3F72}
+.recap-alert{display:flex;align-items:center;gap:6px;padding:6px 9px;background:#FEF3C7;border-radius:6px;font-size:11px;font-weight:600;color:#92400E;margin-top:4px}
+
+/* CALENDARIO */
+.cal-wrap{display:flex;flex-direction:column;gap:16px}
+.cal-month{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
+.cal-month-hdr{padding:10px 16px;background:#1B3F72;display:flex;align-items:center;justify-content:space-between}
+.cal-month-nombre{font-size:13px;font-weight:700;color:#fff;text-transform:capitalize}
+.cal-month-count{font-size:11px;color:rgba(255,255,255,.6)}
+.cal-items{padding:8px 0}
+.cal-item{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid #F5F6FA;cursor:pointer;transition:background .1s}
+.cal-item:last-child{border-bottom:none}
+.cal-item:hover{background:#F7F8FB}
+.cal-item-dia{min-width:28px;font-size:12px;font-weight:700;color:#1B3F72;font-variant-numeric:tabular-nums}
+.cal-item-info{flex:1}
+.cal-item-nombre{font-size:12.5px;font-weight:600;color:#18243A}
+.cal-item-pilar{font-size:10.5px;color:#8A97AA;margin-top:1px}
+.cal-empty{padding:14px 16px;font-size:12px;color:#8A97AA;text-align:center}
+
+/* MODAL GENERICO */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:min(740px,97vw);max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:13px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#1B3F72}
+.modal-titulo{font-size:13.5px;font-weight:700;color:#fff}
+.modal-close{background:none;border:none;font-size:18px;color:rgba(255,255,255,.6);cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#fff}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.one{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{padding:8px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;background:#fff;font-family:inherit}
+.form-input:focus,.form-select:focus{outline:none;border-color:#2563A8}
+.form-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #EEF0F6}
+.btn-cancel{padding:7px 14px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#5A6880;cursor:pointer}
+.btn-save{padding:7px 16px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:#1B3F72;color:#fff;cursor:pointer}
+.btn-save:hover{background:#163260}
+
+/* NOMINA EN MODAL FORM */
+.nomina-section{margin-top:6px}
+.nomina-hdr-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.nomina-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.nomina-hint{font-size:10.5px;color:#8A97AA}
+.nomina-grid{display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;border:1px solid #EEF0F6;border-radius:6px;padding:4px}
+.nomina-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px}
+.nomina-row:hover{background:#F7F8FB}
+.nomina-nombre-cell{flex:1;font-size:12px;color:#18243A;font-weight:500}
+.nomina-pos{font-size:10.5px;color:#8A97AA}
+.check-cell{display:flex;align-items:center;gap:4px;font-size:11px;color:#5A6880;white-space:nowrap;min-width:72px}
+.check-cell input{width:13px;height:13px;cursor:pointer;accent-color:#1B3F72}
+.check-cell.green input{accent-color:#059669}
+.nomina-row.no-aplica .nomina-nombre-cell,.nomina-row.no-aplica .nomina-pos{color:#C0C8D4}
+
+/* DETALLE CAP */
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.det-section .det-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.det-section .det-value{font-size:12.5px;color:#18243A}
+.det-link{color:#2563A8;text-decoration:none;font-size:12.5px;font-weight:600}
+.det-link:hover{text-decoration:underline}
+.asis-table{width:100%;border-collapse:collapse}
+.asis-table th{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;text-align:left;border-bottom:1px solid #EEF0F6}
+.asis-table td{padding:7px 8px;border-bottom:1px solid #F5F6FA;font-size:12px;vertical-align:middle}
+.asis-table tr:last-child td{border-bottom:none}
+.asis-table .no-aplica td{color:#C0C8D4}
+
+/* DETALLE PERSONA */
+.pers-cap-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.pers-cap-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F7F8FB;border-radius:7px;font-size:12px}
+.pers-cap-nombre{font-weight:600;color:#18243A}
+.pers-cap-pilar{font-size:10.5px;color:#8A97AA;margin-top:1px}
+.pers-section-title{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px}
+
+.saving{opacity:.5;pointer-events:none}
+.empty{color:#8A97AA;font-size:12px;padding:16px 0;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-btn ghost" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Plan Anual de Capacitación — PAC 2026</span>
+  <button class="topbar-btn ghost" onclick="exportarCSV()">⬇ Exportar</button>
+  <button class="topbar-btn" onclick="abrirModalNueva()">+ Nueva capacitación</button>
+</div>
+
+<div class="sidebar-links">
+  <a class="sidebar-link" href="https://docs.google.com/document/d/1flEWyLlZOz2PT_VjFBme6W8C8YODfECd/edit?usp=drive_web&ouid=103182582570726480238&rtpof=true" target="_blank"><span class="sb-icon">📄</span>SOP del PAC</a>
+  <a class="sidebar-link" href="https://horamda.github.io/delPalacio_DPO/" target="_blank"><span class="sb-icon">🎓</span>Recursos Disponibles</a>
+  <a class="sidebar-link" href="https://docs.google.com/forms/d/e/1FAIpQLSe-AUp61i3_Gu9o80Bb3SSuZES36meCbSOlIIdhrRvKLTAMmg/viewform" target="_blank"><span class="sb-icon">📬</span>Solicitud de Recursos</a>
+  <a class="sidebar-link" href="https://docs.google.com/spreadsheets/d/1-DB9m0YuGoEozN4MbW_Phfe5zZEIrqwP/edit?gid=2019900718#gid=2019900718" target="_blank"><span class="sb-icon">💰</span>Presupuesto PAC</a>
+  <a class="sidebar-link" href="https://docs.google.com/spreadsheets/d/1kXn4JUsLgBaVEz84xzvmEDaYH3O2NFUQPC0NRA29rQU/edit?usp=sharing" target="_blank"><span class="sb-icon">📊</span>Int. Formación</a>
+</div>
+
+<div class="page-header">
+  <h1>Plan Anual de Capacitación (PAC) 2026</h1>
+  <p>Meta adherencia GANTT ≥ 90% · Meta aprobados ≥ 80% · Dolores</p>
+</div>
+
+<div class="wrap">
+  <div class="kpi-row">
+    <div class="kpi navy"><div class="kpi-label">Total capacitaciones</div><div class="kpi-val" id="kpi-total">—</div></div>
+    <div class="kpi teal"><div class="kpi-label">Programadas</div><div class="kpi-val" id="kpi-realizadas">—</div><div class="kpi-meta">con fecha asignada</div></div>
+    <div class="kpi" id="kpi-gantt-box"><div class="kpi-label">Adherencia GANTT</div><div class="kpi-val" id="kpi-gantt">—</div><div class="kpi-meta" id="kpi-gantt-meta">Meta ≥ 90%</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-gantt-bar" style="width:0%"></div></div></div>
+    <div class="kpi" id="kpi-apro-box"><div class="kpi-label">% Aprobados</div><div class="kpi-val" id="kpi-apro">—</div><div class="kpi-meta">Meta ≥ 80% · solo realizadas</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-apro-bar" style="width:0%"></div></div></div>
+    <div class="kpi" id="kpi-recap-box" style="cursor:pointer" onclick="verTab('personas')"><div class="kpi-label">Recapacitaciones</div><div class="kpi-val" id="kpi-recap">—</div><div class="kpi-meta">personas con pendientes</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-caps"     onclick="verTab('caps')">Por capacitación</button>
+    <button class="tab"        id="tab-personas" onclick="verTab('personas')">Por persona</button>
+    <button class="tab"        id="tab-cal"      onclick="verTab('cal')">Calendario</button>
+  </div>
+
+  <div class="filters" id="filtros-caps">
+    <select class="filter-sel" id="fil-pilar"  onchange="renderCaps()"><option value="">Todos los pilares</option></select>
+    <select class="filter-sel" id="fil-estado" onchange="renderCaps()">
+      <option value="">Todos los estados</option>
+      <option value="realizada">Realizadas</option>
+      <option value="pendiente">Pendientes</option>
+    </select>
+    <select class="filter-sel" id="fil-tipo" onchange="renderCaps()">
+      <option value="">Todos los tipos</option>
+      <option value="dpo">Equipo DPO</option>
+      <option value="interno">Interno Distribuidor</option>
+    </select>
+  </div>
+
+  <div id="contenido"></div>
+</div>
+
+<!-- MODAL FORM -->
+<div class="modal-bg" id="modal-form-bg">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modal-form-titulo">Nueva capacitación</span>
+      <button class="modal-close" onclick="cerrarModalForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="f-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Pilar</label>
+          <select class="form-select" id="f-pilar"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" id="f-tipo">
+            <option value="Interno Distribuidor">Interno Distribuidor</option>
+            <option value="EQUIPO DPO">Equipo DPO</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label class="form-label">Nombre de la capacitación</label>
+          <input class="form-input" id="f-nombre" type="text" placeholder="Ej: Manejo defensivo">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha programada</label>
+          <input class="form-input" id="f-fecha-prog" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de ejecución</label>
+          <input class="form-input" id="f-fecha-ejec" type="date">
+        </div>
+      </div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="form-group">
+          <label class="form-label">Link a presentación</label>
+          <input class="form-input" id="f-material" type="url" placeholder="https://drive.google.com/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Link a respuestas</label>
+          <input class="form-input" id="f-respuestas" type="url" placeholder="https://forms.google.com/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Link a formulario</label>
+          <input class="form-input" id="f-formulario" type="url" placeholder="https://forms.google.com/...">
+        </div>
+      </div>
+
+      <div class="nomina-section">
+        <div class="nomina-hdr-row">
+          <span class="nomina-label">Asistencia por persona</span>
+          <span class="nomina-hint">Aplica → Asistió → Aprobó</span>
+        </div>
+        <div class="nomina-grid" id="nomina-grid"></div>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="cerrarModalForm()">Cancelar</button>
+        <button class="btn-save" onclick="guardarCapacitacion()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE CAP -->
+<div class="modal-bg" id="modal-det-bg">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modal-det-titulo">—</span>
+      <button class="modal-close" onclick="cerrarModalDet()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-det-body"></div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE PERSONA -->
+<div class="modal-bg" id="modal-pers-bg">
+  <div class="modal" style="width:min(620px,97vw)">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modal-pers-titulo">—</span>
+      <button class="modal-close" onclick="cerrarModalPers()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-pers-body"></div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+let CAPS = [], NOMINA = [], VISTA = 'caps';
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function parseLocal(s) {
+  if (!s) return null;
+  const p = String(s).slice(0,10).split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+function fmtDate(s) {
+  const d = parseLocal(s);
+  if (!d) return '—';
+  return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+function fmtDateCorto(s) {
+  const d = parseLocal(s);
+  if (!d) return '—';
+  return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit' });
+}
+
+function estadoCap(c) { return c.fecha_ejecucion ? 'realizada' : 'pendiente'; }
+function tipoCap(c) { return (c.responsable||'').toLowerCase().includes('dpo') ? 'dpo' : 'interno'; }
+function tipoBadge(c) {
+  return tipoCap(c) === 'dpo'
+    ? '<span class="tipo-dpo">Equipo DPO</span>'
+    : '<span class="tipo-interno">Interno</span>';
+}
+function getAplican(c) { return (c.asistentes||[]).filter(a => a.aplica); }
+function pctAsistencia(c) {
+  const a = getAplican(c);
+  if (!a.length) return null;
+  return Math.round(a.filter(x => x.asistio).length / a.length * 100);
+}
+function pctAprobados(c) {
+  const asist = getAplican(c).filter(x => x.asistio);
+  if (!asist.length) return null;
+  return Math.round(asist.filter(x => x.aprobado).length / asist.length * 100);
+}
+function pctPill(pct, meta) {
+  if (pct === null) return '<span class="pct-pill pct-gray">—</span>';
+  const cls = pct >= meta ? 'pct-green' : pct >= meta - 20 ? 'pct-orange' : 'pct-red';
+  return `<span class="pct-pill ${cls}">${pct}%</span>`;
+}
+
+/* ─── KPIs ─── */
+function renderKPIs() {
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const total = CAPS.length;
+  const realizadas = CAPS.filter(c => c.fecha_programada).length;
+  // GANTT: caps con fecha_programada <= hoy (ya debían haber pasado)
+  const capsEnGantt = CAPS.filter(c => { const d = parseLocal(c.fecha_programada); return d && d <= hoy; });
+  const gantt = capsEnGantt.length > 0 ? Math.round(capsEnGantt.filter(c => c.fecha_ejecucion).length / capsEnGantt.length * 100) : 0;
+  let totalAsist = 0, totalAprob = 0;
+  CAPS.filter(c => c.fecha_ejecucion).forEach(c => {
+    const a = getAplican(c).filter(x => x.asistio);
+    totalAsist += a.length; totalAprob += a.filter(x => x.aprobado).length;
+  });
+  const pctApro = totalAsist > 0 ? Math.round(totalAprob / totalAsist * 100) : null;
+  let recap = 0;
+  const personasRecap = {};
+  CAPS.filter(c => c.fecha_ejecucion).forEach(c => {
+    getAplican(c).forEach(a => { if (a.asistio && !a.aprobado) personasRecap[a.nomina_id] = true; });
+  });
+  recap = Object.keys(personasRecap).length;
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-realizadas').textContent = realizadas;
+  document.getElementById('kpi-gantt').textContent = gantt + '%';
+  document.getElementById('kpi-gantt-meta').textContent = `${capsEnGantt.filter(c=>c.fecha_ejecucion).length}/${capsEnGantt.length} comprometidas al hoy · meta ≥ 90%`;
+  const gBar = document.getElementById('kpi-gantt-bar');
+  gBar.style.width = Math.min(gantt,100) + '%';
+  gBar.className = 'kpi-bar-fill' + (gantt >= 90 ? '' : gantt >= 60 ? ' warn' : ' danger');
+  document.getElementById('kpi-gantt-box').className = 'kpi ' + (gantt >= 90 ? 'green' : gantt >= 60 ? 'orange' : 'red');
+  document.getElementById('kpi-apro').textContent = pctApro !== null ? pctApro + '%' : '—';
+  const aBar = document.getElementById('kpi-apro-bar');
+  if (pctApro !== null) {
+    aBar.style.width = Math.min(pctApro,100) + '%';
+    aBar.className = 'kpi-bar-fill' + (pctApro >= 80 ? '' : pctApro >= 60 ? ' warn' : ' danger');
+    document.getElementById('kpi-apro-box').className = 'kpi ' + (pctApro >= 80 ? 'green' : pctApro >= 60 ? 'orange' : 'red');
+  } else { aBar.style.width = '0%'; document.getElementById('kpi-apro-box').className = 'kpi'; }
+  document.getElementById('kpi-recap').textContent = recap;
+  document.getElementById('kpi-recap-box').className = 'kpi ' + (recap === 0 ? 'green' : 'red');
+}
+
+/* ─── VISTA CAPS ─── */
+function filtrar() {
+  const fp = document.getElementById('fil-pilar').value;
+  const fe = document.getElementById('fil-estado').value;
+  const ft = document.getElementById('fil-tipo').value;
+  return CAPS.filter(c => {
+    if (fp && c.pilar !== fp) return false;
+    if (fe && estadoCap(c) !== fe) return false;
+    if (ft && tipoCap(c) !== ft) return false;
+    return true;
+  });
+}
+
+function renderCaps() {
+  if (VISTA !== 'caps') return;
+  const caps = filtrar();
+  const pilares = [...new Set(caps.map(c => c.pilar))].sort();
+  const cont = document.getElementById('contenido');
+  if (!caps.length) { cont.innerHTML = '<div class="empty">Sin resultados.</div>'; return; }
+  cont.innerHTML = pilares.map(p => {
+    const items = caps.filter(c => c.pilar === p);
+    const real = items.filter(c => c.fecha_ejecucion).length;
+    const gantt = Math.round(real / items.length * 100);
+    const pctCls = gantt >= 90 ? 'pct-green' : gantt >= 60 ? 'pct-orange' : gantt > 0 ? 'pct-red' : 'pct-gray';
+    // % asistencia y aprobados del pilar (solo caps realizadas)
+    let pAsist = null, pAprob = null;
+    let tAsist = 0, tAplican = 0, tAprob = 0, tAsistTot = 0;
+    items.filter(c => c.fecha_ejecucion).forEach(c => {
+      const apl = getAplican(c);
+      tAplican += apl.length;
+      tAsist   += apl.filter(x => x.asistio).length;
+      const asist = apl.filter(x => x.asistio);
+      tAsistTot += asist.length;
+      tAprob    += asist.filter(x => x.aprobado).length;
+    });
+    if (tAplican > 0) pAsist = Math.round(tAsist   / tAplican  * 100);
+    if (tAsistTot > 0) pAprob = Math.round(tAprob  / tAsistTot * 100);
+    const pillA  = pctPill(pAsist, 90);
+    const pillAp = pctPill(pAprob, 80);
+    return `<div class="pilar-section">
+      <div class="pilar-hdr collapsed" onclick="togglePilar(this)">
+        <span class="pilar-nombre"><span class="pilar-chevron">▶</span>${p}</span>
+        <div class="pilar-stats">
+          <span class="pilar-stat">${real}/${items.length} realizadas</span>
+          <span class="pilar-pct ${pctCls}">${gantt}% GANTT</span>
+          <span class="pilar-stat">Asistencia ${pillA}</span>
+          <span class="pilar-stat">Aprobados ${pillAp}</span>
+        </div>
+      </div>
+      <div class="table-wrap" style="display:none">
+        <table><thead><tr>
+          <th>Capacitación</th><th>Tipo</th><th>Fecha prog.</th>
+          <th>Fecha ejec.</th><th>Estado</th><th>Aplican</th>
+          <th>Asistencia</th><th>Aprobados</th><th></th>
+        </tr></thead><tbody>
+        ${items.map(c => {
+          const aplican = getAplican(c).length;
+          const pA = pctAsistencia(c), pAp = pctAprobados(c);
+          const estBadge = estadoCap(c) === 'realizada'
+            ? '<span class="badge-realizada">✓ Realizada</span>'
+            : '<span class="badge-pendiente">Pendiente</span>';
+          return `<tr onclick="abrirDetalle(${c.id})">
+            <td class="td-nombre">${c.nombre}</td>
+            <td>${tipoBadge(c)}</td>
+            <td class="td-date">${fmtDate(c.fecha_programada)}</td>
+            <td class="td-date">${fmtDate(c.fecha_ejecucion)}</td>
+            <td>${estBadge}</td>
+            <td class="td-date">${aplican > 0 ? aplican + ' pers.' : '<span style="color:#C0C8D4">—</span>'}</td>
+            <td>${pctPill(pA, 90)}</td>
+            <td>${pctPill(pAp, 80)}</td>
+            <td onclick="event.stopPropagation()">
+              <div class="row-actions">
+                <button class="btn-row primary" onclick="abrirModalEditar(${c.id})">Editar</button>
+                <button class="btn-row danger" onclick="eliminar(${c.id})">✕</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePilar(hdr) {
+  const tabla = hdr.nextElementSibling;
+  const chev = hdr.querySelector('.pilar-chevron');
+  const open = tabla.style.display !== 'none';
+  tabla.style.display = open ? 'none' : '';
+  chev.classList.toggle('open', !open);
+  hdr.classList.toggle('collapsed', open);
+}
+
+/* ─── VISTA POR PERSONA ─── */
+function renderPersonas() {
+  if (VISTA !== 'personas') return;
+  const cont = document.getElementById('contenido');
+  if (!NOMINA.length) { cont.innerHTML = '<div class="empty">Sin nómina cargada.</div>'; return; }
+  cont.innerHTML = '<div class="persona-grid">' + NOMINA.map(p => {
+    const ini = (p.apellido[0]||'') + (p.nombre[0]||'');
+    let aplican = 0, asistio = 0, aprobo = 0, recap = 0;
+    CAPS.forEach(c => {
+      const row = (c.asistentes||[]).find(a => a.nomina_id === p.id);
+      if (row && row.aplica) {
+        aplican++;
+        if (c.fecha_ejecucion && row.asistio) { asistio++; if (row.aprobado) aprobo++; else recap++; }
+      }
+    });
+    const pctA  = aplican > 0 && asistio >= 0 ? null : null; // se calcula abajo
+    const _pctA  = asistio > 0 && aplican > 0 ? Math.round(asistio / aplican * 100) : null;
+    const _pctAp = asistio > 0 ? Math.round(aprobo / asistio * 100) : null;
+    const sA  = _pctA  === null ? 'p-stat navy' : _pctA  >= 90 ? 'p-stat green' : _pctA  >= 70 ? 'p-stat orange' : 'p-stat red';
+    const sAp = _pctAp === null ? 'p-stat'      : _pctAp >= 80 ? 'p-stat green' : _pctAp >= 60 ? 'p-stat orange' : 'p-stat red';
+    return `<div class="persona-card" onclick="abrirModalPersona(${p.id})">
+      <div class="persona-card-hdr">
+        <div class="persona-avatar">${ini}</div>
+        <div><div class="persona-nombre">${p.apellido}, ${p.nombre.split(' ')[0]}</div>
+        <div class="persona-pos">${p.posicion}</div></div>
+      </div>
+      <div class="persona-stats">
+        <div class="p-stat navy"><div class="p-stat-val" style="color:#1B3F72">${aplican}</div><div class="p-stat-lbl">Le aplican</div></div>
+        <div class="${sA}"><div class="p-stat-val">${_pctA !== null ? _pctA+'%' : '—'}</div><div class="p-stat-lbl">Asistencia</div></div>
+        <div class="${sAp}"><div class="p-stat-val">${_pctAp !== null ? _pctAp+'%' : '—'}</div><div class="p-stat-lbl">Aprobados</div></div>
+      </div>
+      ${recap > 0 ? `<div class="recap-alert">⚠ Recapacitación pendiente: ${recap} cap${recap>1?'s':''}</div>` : ''}
+    </div>`;
+  }).join('') + '</div>';
+}
+
+/* ─── MODAL PERSONA ─── */
+function abrirModalPersona(id) {
+  const p = NOMINA.find(x => x.id === id);
+  if (!p) return;
+  const realizadas = [], programadas = [], sinFecha = [];
+  CAPS.forEach(c => {
+    const row = (c.asistentes||[]).find(a => a.nomina_id === id);
+    if (!row || !row.aplica) return;
+    if (c.fecha_ejecucion) realizadas.push({ c, row });
+    else if (c.fecha_programada) programadas.push({ c, row });
+    else sinFecha.push({ c, row });
+  });
+  programadas.sort((a,b) => (a.c.fecha_programada||'') < (b.c.fecha_programada||'') ? -1 : 1);
+
+  function itemRealizada({ c, row }) {
+    const asistBadge = row.asistio ? '✅' : '❌';
+    const aproBadge  = row.asistio ? (row.aprobado ? '✅' : '❌') : '';
+    return `<div class="pers-cap-item">
+      <div style="flex:1">
+        <div class="pers-cap-nombre">${c.nombre}</div>
+        <div class="pers-cap-pilar">${c.pilar}</div>
+      </div>
+      <span style="font-size:11px;color:#5A6880;white-space:nowrap">${fmtDateCorto(c.fecha_ejecucion)}</span>
+      <div style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+        <span style="font-size:10px;color:#8A97AA">Asistió</span>${asistBadge}
+        ${row.asistio ? `<span style="font-size:10px;color:#8A97AA;margin-left:2px">Aprobó</span>${aproBadge}` : ''}
+      </div>
+    </div>`;
+  }
+  function itemProgramada({ c }) {
+    return `<div class="pers-cap-item">
+      <div style="flex:1">
+        <div class="pers-cap-nombre">${c.nombre}</div>
+        <div class="pers-cap-pilar">${c.pilar}</div>
+      </div>
+      <span style="font-size:11px;color:#1B3F72;font-weight:600;white-space:nowrap">📅 ${fmtDate(c.fecha_programada)}</span>
+    </div>`;
+  }
+  function itemSinFecha({ c }) {
+    return `<div class="pers-cap-item" style="opacity:.55">
+      <div style="flex:1">
+        <div class="pers-cap-nombre">${c.nombre}</div>
+        <div class="pers-cap-pilar">${c.pilar}</div>
+      </div>
+      <span style="font-size:11px;color:#8A97AA;white-space:nowrap">Sin fecha</span>
+    </div>`;
+  }
+
+  let html = '';
+  if (realizadas.length) html += `<div class="pers-section-title">Realizadas (${realizadas.length})</div><div class="pers-cap-list">${realizadas.map(itemRealizada).join('')}</div>`;
+  if (programadas.length) html += `<div class="pers-section-title">Próximas programadas (${programadas.length})</div><div class="pers-cap-list">${programadas.map(itemProgramada).join('')}</div>`;
+  if (sinFecha.length) html += `<div class="pers-section-title">Sin fecha asignada (${sinFecha.length})</div><div class="pers-cap-list">${sinFecha.map(itemSinFecha).join('')}</div>`;
+  if (!html) html = '<div class="empty">No tiene capacitaciones asignadas.</div>';
+
+  document.getElementById('modal-pers-titulo').textContent = `${p.apellido}, ${p.nombre.split(' ')[0]} — ${p.posicion}`;
+  document.getElementById('modal-pers-body').innerHTML = html;
+  document.getElementById('modal-pers-bg').classList.add('open');
+}
+function cerrarModalPers() { document.getElementById('modal-pers-bg').classList.remove('open'); }
+
+/* ─── VISTA CALENDARIO ─── */
+function renderCalendario() {
+  if (VISTA !== 'cal') return;
+  const cont = document.getElementById('contenido');
+  const conFecha = CAPS.filter(c => c.fecha_programada).map(c => {
+    const d = parseLocal(c.fecha_programada);
+    return { ...c, _d: d };
+  }).filter(c => c._d && c._d.getMonth() >= 2 && c._d.getMonth() <= 10 && c._d.getFullYear() === 2026)
+    .sort((a,b) => a._d - b._d);
+
+  const meses = [2,3,4,5,6,7,8,9,10];
+  const hayAlgo = conFecha.length > 0;
+
+  if (!hayAlgo) {
+    cont.innerHTML = '<div class="empty">No hay capacitaciones con fecha programada todavía. Editá cada capacitación para asignarle una fecha y aparecerá aquí.</div>';
+    return;
+  }
+
+  cont.innerHTML = '<div class="cal-wrap">' + meses.map(m => {
+    const items = conFecha.filter(c => c._d.getMonth() === m);
+    return `<div class="cal-month">
+      <div class="cal-month-hdr">
+        <span class="cal-month-nombre">${MESES[m]} 2026</span>
+        <span class="cal-month-count">${items.length} capacitación${items.length !== 1 ? 'es' : ''}</span>
+      </div>
+      ${items.length
+        ? `<div class="cal-items">${items.map(c => `
+          <div class="cal-item" onclick="abrirDetalle(${c.id})">
+            <span class="cal-item-dia">${String(c._d.getDate()).padStart(2,'0')}</span>
+            <div class="cal-item-info">
+              <div class="cal-item-nombre">${c.nombre}</div>
+              <div class="cal-item-pilar">${c.pilar}</div>
+            </div>
+            ${tipoBadge(c)}
+            ${estadoCap(c) === 'realizada' ? '<span class="badge-realizada">✓ Realizada</span>' : ''}
+          </div>`).join('')}</div>`
+        : '<div class="cal-empty">Sin capacitaciones programadas para este mes</div>'}
+    </div>`;
+  }).join('') + '</div>';
+}
+
+/* ─── TABS ─── */
+function verTab(tab) {
+  VISTA = tab;
+  ['caps','personas','cal'].forEach(t => document.getElementById('tab-'+t).classList.toggle('active', t === tab));
+  document.getElementById('filtros-caps').style.display = tab === 'caps' ? '' : 'none';
+  if (tab === 'caps') renderCaps();
+  else if (tab === 'personas') renderPersonas();
+  else renderCalendario();
+}
+
+/* ─── FILTROS / CARGA ─── */
+function poblarFiltros() {
+  const pilares = [...new Set(CAPS.map(c => c.pilar))].sort();
+  const fil = document.getElementById('fil-pilar');
+  const val = fil.value;
+  fil.innerHTML = '<option value="">Todos los pilares</option>' + pilares.map(p => `<option value="${p}" ${val===p?'selected':''}>${p}</option>`).join('');
+  const fSel = document.getElementById('f-pilar');
+  const fVal = fSel.value;
+  fSel.innerHTML = '<option value="">— Seleccioná —</option>' + pilares.map(p => `<option value="${p}" ${fVal===p?'selected':''}>${p}</option>`).join('') + '<option value="__nuevo">+ Nuevo pilar…</option>';
+}
+
+async function cargar() {
+  try {
+    [CAPS, NOMINA] = await Promise.all([
+      fetch('/api/pac').then(r => r.json()),
+      fetch('/api/pac/nomina').then(r => r.json())
+    ]);
+    poblarFiltros(); renderKPIs();
+    if (VISTA === 'caps') renderCaps();
+    else if (VISTA === 'personas') renderPersonas();
+    else renderCalendario();
+  } catch(e) { document.getElementById('contenido').innerHTML = '<div class="empty">Error al cargar.</div>'; }
+}
+
+/* ─── MODAL FORM ─── */
+function renderNominaGrid(asistentesActuales) {
+  const aMap = {};
+  (asistentesActuales||[]).forEach(a => { aMap[a.nomina_id] = a; });
+  const hasFechaEjec = !!document.getElementById('f-fecha-ejec').value;
+  document.getElementById('nomina-grid').innerHTML = NOMINA.map(p => {
+    const a = aMap[p.id] || { aplica: false, asistio: false, aprobado: false };
+    return `<div class="nomina-row ${a.aplica?'':'no-aplica'}" id="nrow-${p.id}">
+      <div style="flex:1">
+        <div class="nomina-nombre-cell">${p.apellido}, ${p.nombre.split(' ')[0]}</div>
+        <div class="nomina-pos">${p.posicion}</div>
+      </div>
+      <label class="check-cell" title="Aplica">
+        <input type="checkbox" data-nom="${p.id}" data-chk="aplica" ${a.aplica?'checked':''} onchange="onAplicaChange(${p.id},this.checked)">
+        Aplica
+      </label>
+      <label class="check-cell green" title="Asistió" style="${!a.aplica||!hasFechaEjec?'opacity:.35;pointer-events:none':''}">
+        <input type="checkbox" data-nom="${p.id}" data-chk="asistio" ${a.asistio?'checked':''} onchange="onAsistioChange(${p.id},this.checked)">
+        Asistió
+      </label>
+      <label class="check-cell" title="Aprobó" style="${!a.asistio||!hasFechaEjec?'opacity:.35;pointer-events:none':''}">
+        <input type="checkbox" data-nom="${p.id}" data-chk="aprobado" ${a.aprobado?'checked':''}>
+        Aprobó
+      </label>
+    </div>`;
+  }).join('');
+}
+
+function onAplicaChange(nomId, val) {
+  const row = document.getElementById('nrow-' + nomId);
+  row.classList.toggle('no-aplica', !val);
+  if (!val) { row.querySelector('[data-chk="asistio"]').checked = false; row.querySelector('[data-chk="aprobado"]').checked = false; }
+  const hasFechaEjec = !!document.getElementById('f-fecha-ejec').value;
+  row.querySelector('[data-chk="asistio"]').closest('label').style.cssText = (!val||!hasFechaEjec) ? 'opacity:.35;pointer-events:none' : '';
+  row.querySelector('[data-chk="aprobado"]').closest('label').style.cssText = 'opacity:.35;pointer-events:none';
+}
+function onAsistioChange(nomId, val) {
+  const row = document.getElementById('nrow-' + nomId);
+  const lblApro = row.querySelector('[data-chk="aprobado"]').closest('label');
+  if (!val) row.querySelector('[data-chk="aprobado"]').checked = false;
+  lblApro.style.cssText = val ? '' : 'opacity:.35;pointer-events:none';
+}
+
+document.getElementById('f-fecha-ejec').addEventListener('change', function() {
+  const tiene = !!this.value;
+  document.querySelectorAll('[data-chk="asistio"]').forEach(chk => {
+    const aplica = document.querySelector(`[data-nom="${chk.dataset.nom}"][data-chk="aplica"]`)?.checked;
+    chk.closest('label').style.cssText = (!aplica||!tiene) ? 'opacity:.35;pointer-events:none' : '';
+    if (!tiene) { chk.checked = false; const ap = document.querySelector(`[data-nom="${chk.dataset.nom}"][data-chk="aprobado"]`); if(ap) ap.checked = false; }
+  });
+});
+
+document.getElementById('f-pilar').addEventListener('change', function() {
+  if (this.value === '__nuevo') {
+    const nuevo = prompt('Nombre del nuevo pilar:');
+    if (nuevo?.trim()) { const opt = new Option(nuevo.trim(), nuevo.trim(), true, true); this.insertBefore(opt, this.lastElementChild); this.value = nuevo.trim(); }
+    else this.value = '';
+  }
+});
+
+function getAsistentesForm() {
+  return NOMINA.map(p => ({
+    nomina_id: p.id,
+    aplica:   document.querySelector(`[data-nom="${p.id}"][data-chk="aplica"]`)?.checked || false,
+    asistio:  document.querySelector(`[data-nom="${p.id}"][data-chk="asistio"]`)?.checked || false,
+    aprobado: document.querySelector(`[data-nom="${p.id}"][data-chk="aprobado"]`)?.checked || false
+  }));
+}
+
+function abrirModalNueva() {
+  ['f-id','f-nombre','f-fecha-prog','f-fecha-ejec','f-material','f-respuestas','f-formulario'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-pilar').value = '';
+  document.getElementById('f-tipo').value = 'Interno Distribuidor';
+  document.getElementById('modal-form-titulo').textContent = 'Nueva capacitación';
+  renderNominaGrid([]);
+  document.getElementById('modal-form-bg').classList.add('open');
+}
+
+function abrirModalEditar(id) {
+  const c = CAPS.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('f-id').value = c.id;
+  document.getElementById('f-pilar').value = c.pilar || '';
+  document.getElementById('f-tipo').value = c.responsable || 'Interno Distribuidor';
+  document.getElementById('f-nombre').value = c.nombre || '';
+  document.getElementById('f-fecha-prog').value = c.fecha_programada ? String(c.fecha_programada).slice(0,10) : '';
+  document.getElementById('f-fecha-ejec').value = c.fecha_ejecucion  ? String(c.fecha_ejecucion).slice(0,10)  : '';
+  document.getElementById('f-material').value   = c.material_link    || '';
+  document.getElementById('f-respuestas').value = c.link_respuestas  || '';
+  document.getElementById('f-formulario').value = c.link_formulario  || '';
+  document.getElementById('modal-form-titulo').textContent = 'Editar capacitación';
+  renderNominaGrid(c.asistentes || []);
+  document.getElementById('modal-form-bg').classList.add('open');
+}
+function cerrarModalForm() { document.getElementById('modal-form-bg').classList.remove('open'); }
+
+async function guardarCapacitacion() {
+  const id    = document.getElementById('f-id').value;
+  const pilar = document.getElementById('f-pilar').value.trim();
+  const nombre = document.getElementById('f-nombre').value.trim();
+  if (!pilar || !nombre) { alert('Completá el pilar y el nombre.'); return; }
+  const body = {
+    pilar, nombre,
+    responsable:      document.getElementById('f-tipo').value,
+    fecha_programada: document.getElementById('f-fecha-prog').value || null,
+    fecha_ejecucion:  document.getElementById('f-fecha-ejec').value || null,
+    material_link:    document.getElementById('f-material').value.trim()   || null,
+    link_respuestas:  document.getElementById('f-respuestas').value.trim() || null,
+    link_formulario:  document.getElementById('f-formulario').value.trim() || null,
+    asistentes:       getAsistentesForm()
+  };
+  try {
+    document.querySelector('#modal-form-bg .modal-body').classList.add('saving');
+    const r = await fetch(id ? `/api/pac/${id}` : '/api/pac', {
+      method: id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    cerrarModalForm(); await cargar();
+  } catch(e) { alert('Error al guardar: ' + e.message); }
+  finally { document.querySelector('#modal-form-bg .modal-body').classList.remove('saving'); }
+}
+
+async function eliminar(id) {
+  const c = CAPS.find(x => x.id === id);
+  if (!confirm(`¿Eliminar "${c?.nombre}"?`)) return;
+  try { await fetch(`/api/pac/${id}`, { method: 'DELETE' }); await cargar(); }
+  catch(e) { alert('Error al eliminar.'); }
+}
+
+/* ─── MODAL DETALLE CAP ─── */
+function abrirDetalle(id) {
+  const c = CAPS.find(x => x.id === id);
+  if (!c) return;
+  const aplican = getAplican(c);
+  const pA = pctAsistencia(c), pAp = pctAprobados(c);
+  const estBadge = estadoCap(c) === 'realizada' ? '<span class="badge-realizada">✓ Realizada</span>' : '<span class="badge-pendiente">Pendiente</span>';
+  const ejecutada = !!c.fecha_ejecucion;
+  const asisRows = NOMINA.map(p => {
+    const a = (c.asistentes||[]).find(x => x.nomina_id === p.id) || {};
+    if (!a.aplica) return '';
+    const dash = '<span style="color:#D8DEE8">—</span>';
+    const asistioCell = !ejecutada ? dash : (a.asistio ? '✅' : '❌');
+    const aproboCell  = !ejecutada || !a.asistio ? dash : (a.aprobado ? '✅' : '❌');
+    return `<tr>
+      <td style="font-weight:600">${p.apellido}, ${p.nombre.split(' ')[0]}</td>
+      <td style="text-align:center">${asistioCell}</td>
+      <td style="text-align:center">${aproboCell}</td>
+    </tr>`;
+  }).filter(Boolean).join('');
+  document.getElementById('modal-det-titulo').textContent = c.nombre;
+  document.getElementById('modal-det-body').innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      ${estBadge} ${tipoBadge(c)}
+      <span style="font-size:11.5px;color:#5A6880">Pilar: <strong>${c.pilar}</strong></span>
+      ${pA  !== null ? `<span style="font-size:11.5px;color:#5A6880">Asistencia: ${pctPill(pA,90)}</span>` : ''}
+      ${pAp !== null ? `<span style="font-size:11.5px;color:#5A6880">Aprobados: ${pctPill(pAp,80)}</span>` : ''}
+    </div>
+    <div class="det-grid">
+      <div class="det-section"><div class="det-label">Fecha programada</div><div class="det-value">${fmtDate(c.fecha_programada)}</div></div>
+      <div class="det-section"><div class="det-label">Fecha de ejecución</div><div class="det-value">${fmtDate(c.fecha_ejecucion)}</div></div>
+      <div class="det-section"><div class="det-label">Link a presentación</div><div class="det-value">${c.material_link ? `<a class="det-link" href="${c.material_link}" target="_blank">📎 Ver presentación →</a>` : '—'}</div></div>
+      <div class="det-section"><div class="det-label">Link a respuestas</div><div class="det-value">${c.link_respuestas ? `<a class="det-link" href="${c.link_respuestas}" target="_blank">📋 Ver respuestas →</a>` : '—'}</div></div>
+      <div class="det-section"><div class="det-label">Link a formulario</div><div class="det-value">${c.link_formulario ? `<a class="det-link" href="${c.link_formulario}" target="_blank">📝 Ver formulario →</a>` : '—'}</div></div>
+    </div>
+    <div class="det-section">
+      <div class="det-label" style="margin-bottom:8px">Asistencia nominal (${aplican.length} aplican)</div>
+      <table class="asis-table">
+        <thead><tr><th>Persona</th><th style="text-align:center">Asistió</th><th style="text-align:center">Aprobó</th></tr></thead>
+        <tbody>${asisRows}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid #EEF0F6;margin-top:14px">
+      <button class="btn-cancel" onclick="cerrarModalDet()">Cerrar</button>
+      <button class="btn-save" onclick="cerrarModalDet();abrirModalEditar(${c.id})">Editar</button>
+    </div>`;
+  document.getElementById('modal-det-bg').classList.add('open');
+}
+function cerrarModalDet() { document.getElementById('modal-det-bg').classList.remove('open'); }
+
+/* ─── EXPORTAR CSV ─── */
+function exportarCSV() {
+  const filas = [['Pilar','Tipo','Capacitación','Fecha Programada','Fecha Ejecución','Estado','Aplican','% Asistencia','% Aprobados']];
+  CAPS.forEach(c => {
+    filas.push([c.pilar, tipoCap(c)==='dpo'?'Equipo DPO':'Interno Distribuidor', c.nombre,
+      c.fecha_programada?String(c.fecha_programada).slice(0,10):'',
+      c.fecha_ejecucion ?String(c.fecha_ejecucion).slice(0,10) :'',
+      estadoCap(c)==='realizada'?'Realizada':'Pendiente', getAplican(c).length,
+      pctAsistencia(c)!==null?pctAsistencia(c)+'%':'', pctAprobados(c)!==null?pctAprobados(c)+'%':''
+    ]);
+  });
+  const csv = '﻿' + filas.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = 'PAC-2026.csv'; a.click();
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape'){ cerrarModalForm(); cerrarModalDet(); cerrarModalPers(); }});
+document.getElementById('modal-form-bg').addEventListener('click', e => { if(e.target===e.currentTarget) cerrarModalForm(); });
+document.getElementById('modal-det-bg').addEventListener('click',  e => { if(e.target===e.currentTarget) cerrarModalDet();  });
+document.getElementById('modal-pers-bg').addEventListener('click', e => { if(e.target===e.currentTarget) cerrarModalPers(); });
+
+cargar();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+name = "estudio-contable"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "ESTUDIO"
+id = "1f814de9e28f4d52914ba29bcd8e7247"

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI Ausentismo — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:22px 24px}
+.page-header h1{font-size:18px;font-weight:800;color:#fff}
+.page-header p{font-size:11.5px;color:rgba(255,255,255,.55);margin-top:4px}
+.wrap{max-width:1400px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:18px}
+
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sel{background:#fff;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit}
+.btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none}
+.btn-primary{background:#2563A8;color:#fff}
+.btn-primary:hover{background:#1B4F8A}
+.btn-secondary{background:#fff;border:1.5px solid #D8DEE8;color:#18243A}
+.btn-secondary:hover{background:#F5F7FB}
+
+.tabs{display:flex;gap:0;border-bottom:2px solid #D8DEE8}
+.tab{padding:10px 20px;font-size:13px;font-weight:600;color:#8A97AA;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab:hover{color:#2563A8}
+.tab.active{color:#2563A8;border-bottom-color:#2563A8}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:16px 18px}
+.kpi-label{font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;color:#18243A;line-height:1}
+.kpi-sub{font-size:11px;color:#8A97AA;margin-top:4px}
+
+/* Grilla */
+.grilla-wrap{overflow-x:auto;background:#fff;border:1px solid #D8DEE8;border-radius:12px}
+.grilla-table{border-collapse:collapse;width:100%;min-width:900px}
+.grilla-table th,.grilla-table td{border:1px solid #EEF0F6;padding:0;text-align:center;font-size:11px}
+.grilla-table th{background:#F5F7FB;padding:6px 4px;font-weight:700;color:#5E6E89;position:sticky;top:0;z-index:2}
+.grilla-table th.dom{background:#FEE2E2;color:#991B1B}
+.grilla-table td.info{text-align:left;padding:4px 8px;font-size:11px;white-space:nowrap;position:sticky;left:0;background:#fff;z-index:1;border-right:2px solid #D8DEE8}
+.grilla-table td.info-sector{background:#F5F7FB;font-weight:700;color:#1B3F72}
+.grilla-table td.dom{background:#FEF2F2}
+.grilla-table td.resumen{background:#F5F7FB;font-weight:700;font-size:10px;padding:4px}
+
+.celda-sel{width:100%;border:none;background:transparent;font-size:10px;font-family:inherit;padding:3px 1px;cursor:pointer;text-align:center;color:#18243A;font-weight:600;appearance:none;-webkit-appearance:none}
+.celda-sel:focus{outline:2px solid #2563A8;outline-offset:-2px}
+.celda-presente{background:#DCFCE7;color:#166534}
+.celda-ausencia{background:#FEE2E2;color:#991B1B}
+.celda-justificada{background:#FEF3C7;color:#92400E}
+.celda-nohabil{background:#F3F4F6;color:#6B7280}
+.celda-na{background:#F3F4F6;color:#9CA3AF}
+
+/* Tabla calculo */
+.calc-table{border-collapse:collapse;width:100%;background:#fff;border:1px solid #D8DEE8;border-radius:12px;overflow:hidden}
+.calc-table th,.calc-table td{border:1px solid #EEF0F6;padding:8px 12px;font-size:12px;text-align:center}
+.calc-table th{background:#1B3F72;color:#fff;font-weight:700}
+.calc-table tr:nth-child(even){background:#FAFBFD}
+.pct-good{color:#16A34A;font-weight:800}
+.pct-warn{color:#D97706;font-weight:800}
+.pct-bad{color:#DC2626;font-weight:800}
+
+.loading{text-align:center;padding:40px;color:#8A97AA;font-size:13px}
+
+/* Import modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;width:420px;max-width:95vw}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px}
+.modal .field{margin-bottom:14px}
+.modal label{font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px}
+.modal input[type=file]{font-size:12px;font-family:inherit}
+.modal .btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.msg-ok{color:#16A34A;font-size:12px;margin-top:8px}
+.msg-err{color:#DC2626;font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">KPI Ausentismo</span>
+</div>
+
+<div class="page-header">
+  <h1>KPI Ausentismo — Grilla Diaria</h1>
+  <p>Registro diario de asistencia · Cálculo automático de KPI · Dolores</p>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <select id="yearSel" class="sel" onchange="cambiarPeriodo()"></select>
+    <select id="mesSel" class="sel" onchange="cambiarPeriodo()"></select>
+    <button class="btn btn-secondary" onclick="abrirImport()">📥 Importar Excel</button>
+    <div style="flex:1"></div>
+    <span id="empCount" style="font-size:11px;color:#8A97AA"></span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="grilla" onclick="switchTab('grilla')">Grilla Mensual</div>
+    <div class="tab" data-tab="calculo" onclick="switchTab('calculo')">KPI Mensual</div>
+    <div class="tab" data-tab="persona" onclick="switchTab('persona')">Ausencias x Persona</div>
+    <div class="tab" data-tab="detalle" onclick="switchTab('detalle')">Detalle Ausencias</div>
+    <div class="tab" data-tab="analisis" onclick="switchTab('analisis')">Análisis</div>
+    <div class="tab" data-tab="comparativa" onclick="switchTab('comparativa')">Comparativa Anual</div>
+  </div>
+
+  <div id="content">
+    <div class="loading">Cargando...</div>
+  </div>
+</div>
+
+<!-- Modal importar -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal">
+    <h3>Importar empleados desde Excel</h3>
+    <div class="field">
+      <label>Archivo Excel (con hoja "Info")</label>
+      <input type="file" id="importFile" accept=".xlsx,.xls">
+    </div>
+    <div id="importMsg"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="cerrarImport()">Cancelar</button>
+      <button class="btn btn-primary" onclick="doImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const VALORES = [
+  '','Presente','Lic.Enfermedad (menor a 20 dias)','Rechazo de ART','In Itineres','N/A',
+  'Lic. Pedida con menos de 48hs','Dias de duelo','NO HABIL','Faltas no programadas',
+  'Vacaciones','Lic. Anses','Lic.Enfermedad (mayor a 20 dias)','Dias gremiales',
+  'Dias compensatorios','Tramites','Suspensión','Falta con aviso (mayor a 48hs)','Lic. Por Accidente'
+];
+const AUSENCIAS = [
+  'Lic.Enfermedad (menor a 20 dias)','Rechazo de ART','In Itineres',
+  'Lic. Pedida con menos de 48hs','Dias de duelo','Faltas no programadas'
+];
+const JUSTIFICADAS = [
+  'Vacaciones','Lic. Anses','Lic.Enfermedad (mayor a 20 dias)',
+  'Dias gremiales','Dias compensatorios','Tramites','Suspensión',
+  'Falta con aviso (mayor a 48hs)','Lic. Por Accidente'
+];
+
+const anioActual = new Date().getFullYear();
+const mesActual = new Date().getMonth() + 1;
+let EMPLEADOS = [];
+let MARCAS = {};
+let TAB_ACTIVO = 'grilla';
+
+function initSelects() {
+  const ySel = document.getElementById('yearSel');
+  for (let y = anioActual; y >= anioActual - 3; y--) {
+    const o = document.createElement('option'); o.value = y; o.textContent = y; ySel.appendChild(o);
+  }
+  ySel.value = anioActual;
+
+  const mSel = document.getElementById('mesSel');
+  MESES.forEach((m, i) => {
+    const o = document.createElement('option'); o.value = i + 1; o.textContent = m; mSel.appendChild(o);
+  });
+  mSel.value = mesActual;
+}
+
+function marcaKey(leg, dia) { return leg + '_' + dia; }
+
+function diasEnMes(anio, mes) { return new Date(anio, mes, 0).getDate(); }
+
+function esDomingo(anio, mes, dia) { return new Date(anio, mes - 1, dia).getDay() === 0; }
+
+function celdaClass(val) {
+  if (!val) return '';
+  if (val === 'Presente') return 'celda-presente';
+  if (val === 'NO HABIL') return 'celda-nohabil';
+  if (val === 'N/A') return 'celda-na';
+  if (AUSENCIAS.includes(val)) return 'celda-ausencia';
+  if (JUSTIFICADAS.includes(val)) return 'celda-justificada';
+  return '';
+}
+
+function valAbrev(val) {
+  if (!val) return '';
+  if (val === 'Presente') return 'P';
+  if (val === 'NO HABIL') return 'NH';
+  if (val === 'N/A') return 'N/A';
+  if (val === 'Vacaciones') return 'VAC';
+  if (val === 'Faltas no programadas') return 'FNP';
+  if (val === 'Lic.Enfermedad (menor a 20 dias)') return 'LE<20';
+  if (val === 'Lic.Enfermedad (mayor a 20 dias)') return 'LE>20';
+  if (val === 'Rechazo de ART') return 'ART';
+  if (val === 'In Itineres') return 'II';
+  if (val === 'Lic. Pedida con menos de 48hs') return 'LP48';
+  if (val === 'Dias de duelo') return 'DD';
+  if (val === 'Lic. Anses') return 'ANSES';
+  if (val === 'Dias gremiales') return 'GREM';
+  if (val === 'Dias compensatorios') return 'COMP';
+  if (val === 'Tramites') return 'TRAM';
+  if (val === 'Suspensión') return 'SUSP';
+  if (val === 'Falta con aviso (mayor a 48hs)') return 'FA48';
+  if (val === 'Lic. Por Accidente') return 'ACC';
+  return val.substring(0, 4);
+}
+
+function switchTab(tab) {
+  TAB_ACTIVO = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderTab();
+}
+
+async function cambiarPeriodo() {
+  await cargarMarcas();
+  renderTab();
+}
+
+async function cargarEmpleados() {
+  const r = await fetch('/api/auskpi/empleados');
+  EMPLEADOS = await r.json();
+  document.getElementById('empCount').textContent = EMPLEADOS.length + ' empleados';
+}
+
+async function cargarMarcas() {
+  const anio = document.getElementById('yearSel').value;
+  const mes = document.getElementById('mesSel').value;
+  const r = await fetch(`/api/auskpi/marcas?anio=${anio}&mes=${mes}`);
+  const data = await r.json();
+  MARCAS = {};
+  data.forEach(m => { MARCAS[marcaKey(m.legajo, m.dia)] = m.valor; });
+}
+
+function renderTab() {
+  const cont = document.getElementById('content');
+  if (TAB_ACTIVO === 'grilla') renderGrilla(cont);
+  else if (TAB_ACTIVO === 'calculo') renderCalculo(cont);
+  else if (TAB_ACTIVO === 'persona') renderPersona(cont);
+  else if (TAB_ACTIVO === 'detalle') renderDetalle(cont);
+  else if (TAB_ACTIVO === 'analisis') renderAnalisis(cont);
+  else if (TAB_ACTIVO === 'comparativa') renderComparativa(cont);
+}
+
+function renderGrilla(cont) {
+  if (!EMPLEADOS.length) {
+    cont.innerHTML = '<div class="loading">No hay empleados cargados. Importá el Excel primero.</div>';
+    return;
+  }
+  const anio = +document.getElementById('yearSel').value;
+  const mes = +document.getElementById('mesSel').value;
+  const dias = diasEnMes(anio, mes);
+  const diasSemana = ['D','L','M','M','J','V','S'];
+
+  let html = '<div class="grilla-wrap"><table class="grilla-table"><thead><tr>';
+  html += '<th style="min-width:180px;text-align:left;padding-left:8px">Empleado</th>';
+  html += '<th style="min-width:70px">Sector</th>';
+  for (let d = 1; d <= dias; d++) {
+    const dow = new Date(anio, mes - 1, d).getDay();
+    const isDom = dow === 0;
+    html += `<th class="${isDom ? 'dom' : ''}" style="min-width:38px">${d}<br><span style="font-size:9px;font-weight:500">${diasSemana[dow]}</span></th>`;
+  }
+  html += '<th style="min-width:35px">JN</th><th style="min-width:35px">AUS</th><th style="min-width:35px">AJ</th>';
+  html += '</tr></thead><tbody>';
+
+  let currentSector = '';
+  EMPLEADOS.forEach(emp => {
+    if (emp.sector !== currentSector) {
+      currentSector = emp.sector;
+      html += `<tr><td class="info info-sector" colspan="${dias + 4}">${currentSector}</td></tr>`;
+    }
+
+    html += '<tr>';
+    html += `<td class="info">${emp.apellido}, ${emp.nombre} <span style="color:#8A97AA;font-size:10px">(${emp.legajo})</span></td>`;
+    html += `<td style="font-size:10px;color:#5E6E89;white-space:nowrap">${emp.sector}</td>`;
+
+    let jn = 0, aus = 0, aj = 0;
+    for (let d = 1; d <= dias; d++) {
+      const isDom = esDomingo(anio, mes, d);
+      const key = marcaKey(emp.legajo, d);
+      let val = MARCAS[key] || '';
+      if (isDom && !val) val = 'NO HABIL';
+
+      if (val === 'Presente') jn++;
+      else if (AUSENCIAS.includes(val)) aus++;
+      else if (JUSTIFICADAS.includes(val)) aj++;
+
+      const cls = celdaClass(val);
+      const abrev = valAbrev(val);
+
+      html += `<td class="${isDom && !val ? 'dom' : ''} ${cls}" style="padding:0;position:relative">`;
+      html += `<select class="celda-sel ${cls}" onchange="guardarMarca('${emp.legajo}',${d},this.value,this)"
+        data-leg="${emp.legajo}" data-dia="${d}">`;
+      VALORES.forEach(v => {
+        html += `<option value="${v}" ${v === val ? 'selected' : ''}>${v || '—'}</option>`;
+      });
+      html += '</select></td>';
+    }
+
+    html += `<td class="resumen">${jn}</td>`;
+    html += `<td class="resumen" style="color:#991B1B">${aus}</td>`;
+    html += `<td class="resumen" style="color:#92400E">${aj}</td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+
+  // Leyenda
+  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:10px">';
+  html += '<span><span style="display:inline-block;width:14px;height:14px;background:#DCFCE7;border-radius:3px;vertical-align:middle"></span> Presente</span>';
+  html += '<span><span style="display:inline-block;width:14px;height:14px;background:#FEE2E2;border-radius:3px;vertical-align:middle"></span> Ausencia</span>';
+  html += '<span><span style="display:inline-block;width:14px;height:14px;background:#FEF3C7;border-radius:3px;vertical-align:middle"></span> Justificada</span>';
+  html += '<span><span style="display:inline-block;width:14px;height:14px;background:#F3F4F6;border-radius:3px;vertical-align:middle"></span> No hábil / N/A</span>';
+  html += '</div>';
+
+  cont.innerHTML = html;
+}
+
+async function guardarMarca(legajo, dia, valor, sel) {
+  const anio = +document.getElementById('yearSel').value;
+  const mes = +document.getElementById('mesSel').value;
+  MARCAS[marcaKey(legajo, dia)] = valor;
+
+  sel.className = 'celda-sel ' + celdaClass(valor);
+  sel.parentElement.className = celdaClass(valor);
+
+  // Update row totals
+  const row = sel.closest('tr');
+  const selects = row.querySelectorAll('.celda-sel');
+  let jn = 0, aus = 0, aj = 0;
+  selects.forEach(s => {
+    const v = s.value;
+    if (v === 'Presente') jn++;
+    else if (AUSENCIAS.includes(v)) aus++;
+    else if (JUSTIFICADAS.includes(v)) aj++;
+  });
+  const resCells = row.querySelectorAll('td.resumen');
+  if (resCells[0]) resCells[0].textContent = jn;
+  if (resCells[1]) resCells[1].textContent = aus;
+  if (resCells[2]) resCells[2].textContent = aj;
+
+  await fetch('/api/auskpi/marcas', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ legajo, anio, mes, dia, valor })
+  });
+}
+
+async function renderCalculo(cont) {
+  cont.innerHTML = '<div class="loading">Cargando...</div>';
+  const anio = document.getElementById('yearSel').value;
+  const [r, dhR] = await Promise.all([
+    fetch('/api/auskpi/calculo?anio=' + anio),
+    fetch('/api/auskpi/dias-habiles?anio=' + anio)
+  ]);
+  const data = await r.json();
+  const diasHabiles = await dhR.json();
+
+  let html = '<div style="background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:16px 18px;margin-bottom:14px">';
+  html += '<div style="font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Días hábiles por mes</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">';
+  for (let m = 1; m <= 12; m++) {
+    const val = diasHabiles[m] || '';
+    html += `<div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:11px;font-weight:600;color:#5E6E89;width:30px">${MESES[m-1].substring(0,3)}</span>
+      <input type="number" min="0" max="31" value="${val}" onchange="guardarDiasHab(${m},this.value)"
+        style="width:50px;padding:4px 6px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12px;font-weight:600;text-align:center;font-family:inherit">
+    </div>`;
+  }
+  html += '</div></div>';
+
+  html += '<table class="calc-table"><thead><tr>';
+  html += '<th>Mes</th><th>Jornada Normal</th><th>Ausencias</th><th>Au. Justificada</th>';
+  html += '<th>Días Laborales</th><th>Cant. Empleados</th><th>% KPI Ausentismo</th>';
+  html += '</tr></thead><tbody>';
+
+  data.forEach(m => {
+    const pctStr = m.pct !== null ? (m.pct * 100).toFixed(2) + '%' : '—';
+    const pctCls = m.pct === null ? '' : m.pct <= 0.02 ? 'pct-good' : m.pct <= 0.05 ? 'pct-warn' : 'pct-bad';
+    html += `<tr>
+      <td style="font-weight:700">${MESES[m.mes - 1]}</td>
+      <td>${m.presente}</td>
+      <td style="color:#991B1B;font-weight:600">${m.ausencia}</td>
+      <td>${m.justificada}</td>
+      <td>${m.dias_laborales}</td>
+      <td>${m.empleados}</td>
+      <td class="${pctCls}">${pctStr}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
+async function guardarDiasHab(mes, valor) {
+  const anio = +document.getElementById('yearSel').value;
+  await fetch('/api/auskpi/dias-habiles', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anio, mes, dias: parseInt(valor) || 0 })
+  });
+  renderCalculo(document.getElementById('content'));
+}
+
+async function renderPersona(cont) {
+  cont.innerHTML = '<div class="loading">Cargando...</div>';
+  const anio = document.getElementById('yearSel').value;
+  const r = await fetch('/api/auskpi/por-persona?anio=' + anio);
+  const data = await r.json();
+
+  let html = '<div class="grilla-wrap"><table class="calc-table"><thead><tr>';
+  html += '<th style="text-align:left;padding-left:12px">Empleado</th><th>Sector</th>';
+  MESES.forEach(m => { html += `<th>${m.substring(0, 3)}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  let currentSector = '';
+  data.forEach(p => {
+    if (p.sector !== currentSector) {
+      currentSector = p.sector;
+      html += `<tr><td colspan="${14}" style="background:#1B3F72;color:#fff;font-weight:700;text-align:left;padding:8px 12px">${currentSector}</td></tr>`;
+    }
+    html += '<tr>';
+    html += `<td style="text-align:left;padding-left:12px;white-space:nowrap">${p.apellido}, ${p.nombre}</td>`;
+    html += `<td style="font-size:11px">${p.sector}</td>`;
+    for (let m = 1; m <= 12; m++) {
+      const val = p.meses[m];
+      if (val === null || val === undefined) {
+        html += '<td style="color:#8A97AA">—</td>';
+      } else {
+        const pct = (val * 100).toFixed(1) + '%';
+        const cls = val === 0 ? 'pct-good' : val <= 0.05 ? 'pct-warn' : 'pct-bad';
+        html += `<td class="${cls}">${pct}</td>`;
+      }
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+async function renderComparativa(cont) {
+  cont.innerHTML = '<div class="loading">Cargando...</div>';
+  const anio = +document.getElementById('yearSel').value;
+  const [r1, r2] = await Promise.all([
+    fetch('/api/auskpi/calculo?anio=' + (anio - 1)),
+    fetch('/api/auskpi/calculo?anio=' + anio)
+  ]);
+  const prev = await r1.json();
+  const curr = await r2.json();
+
+  let html = '<table class="calc-table"><thead><tr>';
+  html += `<th>Mes</th><th>${anio - 1}</th><th>${anio}</th><th>Δ ${anio} vs ${anio - 1}</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (let m = 0; m < 12; m++) {
+    const p = prev[m]?.pct;
+    const c = curr[m]?.pct;
+    const pStr = p !== null && p !== undefined ? (p * 100).toFixed(2) + '%' : 'N/A';
+    const cStr = c !== null && c !== undefined ? (c * 100).toFixed(2) + '%' : 'N/A';
+    let delta = '—';
+    let deltaCls = '';
+    if (p !== null && p !== undefined && c !== null && c !== undefined) {
+      const d = (c - p) * 100;
+      delta = (d >= 0 ? '+' : '') + d.toFixed(2) + ' pp';
+      deltaCls = d <= 0 ? 'pct-good' : 'pct-bad';
+    }
+    html += `<tr>
+      <td style="font-weight:700">${MESES[m]}</td>
+      <td>${pStr}</td>
+      <td>${cStr}</td>
+      <td class="${deltaCls}">${delta}</td>
+    </tr>`;
+  }
+
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
+async function renderDetalle(cont) {
+  cont.innerHTML = '<div class="loading">Cargando...</div>';
+  const anio = document.getElementById('yearSel').value;
+  const r = await fetch('/api/auskpi/detalle?anio=' + anio);
+  const data = await r.json();
+
+  let html = '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">';
+  html += '<select id="filtSector" class="sel" onchange="filtrarDetalle()" style="font-size:12px"><option value="">Todos los sectores</option>';
+  const sectores = [...new Set(data.map(d => d.sector))];
+  sectores.forEach(s => { html += `<option value="${s}">${s}</option>`; });
+  html += '</select>';
+  html += '<input id="filtPersona" type="text" placeholder="Buscar persona..." oninput="filtrarDetalle()" class="sel" style="font-size:12px;min-width:180px">';
+  html += '<select id="filtCategoria" class="sel" onchange="filtrarDetalle()" style="font-size:12px"><option value="">Todas las categorías</option>';
+  const cats = [...new Set(data.map(d => d.categoria))];
+  cats.forEach(c => { html += `<option value="${c}">${c}</option>`; });
+  html += '</select>';
+  html += '</div>';
+
+  html += '<div class="grilla-wrap"><table class="calc-table" id="tablaDetalle"><thead><tr>';
+  html += '<th style="text-align:left;padding-left:12px">Desde</th>';
+  html += '<th style="text-align:left">Hasta</th>';
+  html += '<th style="text-align:left">Empleado</th>';
+  html += '<th style="text-align:left">Sector</th>';
+  html += '<th style="text-align:center">Días</th>';
+  html += '<th style="text-align:left">Categoría</th>';
+  html += '<th style="text-align:left">Enf./Afección</th>';
+  // Motivo column removed
+  html += '</tr></thead><tbody>';
+
+  data.forEach((b, i) => {
+    const desde = `${anio}-${String(b.mes).padStart(2,'0')}-${String(b.dia_desde).padStart(2,'0')}`;
+    const hasta = `${anio}-${String(b.mes).padStart(2,'0')}-${String(b.dia_hasta).padStart(2,'0')}`;
+    html += `<tr data-sector="${b.sector}" data-nombre="${b.apellido} ${b.nombre}" data-cat="${b.categoria}">
+      <td style="text-align:left;padding-left:12px;font-weight:600">${desde}</td>
+      <td style="text-align:left">${hasta}</td>
+      <td style="text-align:left;font-weight:600">${b.apellido} ${b.nombre}</td>
+      <td style="text-align:left">${b.sector}</td>
+      <td style="text-align:center;font-weight:700;color:#991B1B">${b.dias}</td>
+      <td style="text-align:left"><span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${b.categoria}</span></td>
+      <td style="text-align:left"><input type="text" value="${(b.enfermedad||'').replace(/"/g,'&quot;')}" placeholder="Ej: Gripe..."
+        onchange="guardarDetalle('${b.legajo}',${b.mes},${b.dia_desde},${b.dia_hasta},'${b.categoria.replace(/'/g,"\\'")}',this.value)"
+        style="border:1px solid #D8DEE8;border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;width:140px"></td>
+    </tr>`;
+  });
+
+  if (!data.length) html += '<tr><td colspan="7" style="color:#8A97AA;padding:20px">No hay ausencias registradas.</td></tr>';
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function filtrarDetalle() {
+  const sector = document.getElementById('filtSector').value.toLowerCase();
+  const persona = document.getElementById('filtPersona').value.toLowerCase();
+  const cat = document.getElementById('filtCategoria').value;
+  document.querySelectorAll('#tablaDetalle tbody tr').forEach(tr => {
+    const s = (tr.dataset.sector || '').toLowerCase();
+    const n = (tr.dataset.nombre || '').toLowerCase();
+    const c = tr.dataset.cat || '';
+    const show = (!sector || s === sector.toLowerCase()) && (!persona || n.includes(persona)) && (!cat || c === cat);
+    tr.style.display = show ? '' : 'none';
+  });
+}
+
+async function guardarDetalle(legajo, mes, diaDesde, diaHasta, categoria, enfermedad) {
+  const anio = +document.getElementById('yearSel').value;
+  await fetch('/api/auskpi/detalle', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ legajo, anio, mes, dia_desde: diaDesde, dia_hasta: diaHasta, categoria, enfermedad, motivo: '' })
+  });
+}
+
+async function renderAnalisis(cont) {
+  cont.innerHTML = '<div class="loading">Cargando...</div>';
+  const anio = document.getElementById('yearSel').value;
+  const r = await fetch('/api/auskpi/analisis?anio=' + anio);
+  const data = await r.json();
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:18px">';
+
+  // Días perdidos por sector
+  html += '<div style="background:#fff;border:1px solid #D8DEE8;border-radius:12px;overflow:hidden">';
+  html += '<div style="background:#1B3F72;color:#fff;padding:12px 18px;font-size:13px;font-weight:700">Días perdidos por Sector</div>';
+  const sectorEntries = Object.entries(data.porSector).sort((a,b) => b[1] - a[1]);
+  const maxSector = sectorEntries.length ? sectorEntries[0][1] : 1;
+  if (sectorEntries.length) {
+    sectorEntries.forEach(([sector, dias]) => {
+      const pct = (dias / maxSector * 100).toFixed(0);
+      html += `<div style="padding:10px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;font-weight:600;width:120px">${sector}</span>
+        <div style="flex:1;background:#EEF0F6;border-radius:4px;height:18px;overflow:hidden">
+          <div style="width:${pct}%;background:#2563A8;height:100%;border-radius:4px;transition:width .3s"></div>
+        </div>
+        <span style="font-size:13px;font-weight:800;color:#18243A;min-width:30px;text-align:right">${dias}</span>
+      </div>`;
+    });
+  } else {
+    html += '<div style="padding:20px;color:#8A97AA;font-size:12px">Sin datos</div>';
+  }
+  html += '</div>';
+
+  // Días perdidos por motivo
+  html += '<div style="background:#fff;border:1px solid #D8DEE8;border-radius:12px;overflow:hidden">';
+  html += '<div style="background:#1B3F72;color:#fff;padding:12px 18px;font-size:13px;font-weight:700">Días perdidos por Categoría</div>';
+  const motivoEntries = Object.entries(data.porMotivo).sort((a,b) => b[1] - a[1]);
+  const maxMotivo = motivoEntries.length ? motivoEntries[0][1] : 1;
+  if (motivoEntries.length) {
+    motivoEntries.forEach(([motivo, dias]) => {
+      const pct = (dias / maxMotivo * 100).toFixed(0);
+      html += `<div style="padding:10px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;gap:12px">
+        <span style="font-size:11px;font-weight:600;width:180px">${motivo}</span>
+        <div style="flex:1;background:#EEF0F6;border-radius:4px;height:18px;overflow:hidden">
+          <div style="width:${pct}%;background:#D97706;height:100%;border-radius:4px;transition:width .3s"></div>
+        </div>
+        <span style="font-size:13px;font-weight:800;color:#18243A;min-width:30px;text-align:right">${dias}</span>
+      </div>`;
+    });
+  } else {
+    html += '<div style="padding:20px;color:#8A97AA;font-size:12px">Sin datos</div>';
+  }
+  html += '</div>';
+
+  // Días perdidos por enfermedad
+  html += '<div style="background:#fff;border:1px solid #D8DEE8;border-radius:12px;overflow:hidden">';
+  html += '<div style="background:#1B3F72;color:#fff;padding:12px 18px;font-size:13px;font-weight:700">Días perdidos por Enfermedad / Afección</div>';
+  const enfEntries = Object.entries(data.porEnfermedad).sort((a,b) => b[1] - a[1]);
+  const maxEnf = enfEntries.length ? enfEntries[0][1] : 1;
+  if (enfEntries.length) {
+    enfEntries.forEach(([enf, dias]) => {
+      const pct = (dias / maxEnf * 100).toFixed(0);
+      html += `<div style="padding:10px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;gap:12px">
+        <span style="font-size:11px;font-weight:600;width:180px">${enf}</span>
+        <div style="flex:1;background:#EEF0F6;border-radius:4px;height:18px;overflow:hidden">
+          <div style="width:${pct}%;background:#DC2626;height:100%;border-radius:4px;transition:width .3s"></div>
+        </div>
+        <span style="font-size:13px;font-weight:800;color:#18243A;min-width:30px;text-align:right">${dias}</span>
+      </div>`;
+    });
+  } else {
+    html += '<div style="padding:20px;color:#8A97AA;font-size:12px">Cargá enfermedad/afección en la pestaña Detalle Ausencias.</div>';
+  }
+  html += '</div>';
+
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+function abrirImport() {
+  document.getElementById('importMsg').innerHTML = '';
+  document.getElementById('importFile').value = '';
+  document.getElementById('modalImport').classList.add('show');
+}
+function cerrarImport() { document.getElementById('modalImport').classList.remove('show'); }
+
+async function doImport() {
+  const file = document.getElementById('importFile').files[0];
+  if (!file) return;
+  const msg = document.getElementById('importMsg');
+  msg.innerHTML = '<span style="color:#8A97AA">Importando...</span>';
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/auskpi/importar', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (r.ok) {
+      msg.innerHTML = `<span class="msg-ok">✓ ${d.empleados} empleados y ${d.marcas} marcas importadas.</span>`;
+      await cargarEmpleados();
+      await cargarMarcas();
+      renderTab();
+    } else {
+      msg.innerHTML = `<span class="msg-err">${d.error}</span>`;
+    }
+  } catch(e) {
+    msg.innerHTML = `<span class="msg-err">Error: ${e.message}</span>`;
+  }
+}
+
+async function init() {
+  initSelects();
+  await cargarEmpleados();
+  await cargarMarcas();
+  renderTab();
+}
+
+init();
+</script>
+</body>
+</html>

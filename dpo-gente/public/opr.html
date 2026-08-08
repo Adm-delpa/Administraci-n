@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPR — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:20px 24px 22px}
+.page-header h1{font-size:18px;font-weight:800;color:#fff}
+.page-header p{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
+
+.wrap{max-width:1300px;margin:0 auto;padding:20px 20px 60px}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
+select.per-sel{border:1px solid #D8DEE8;border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fff;color:#18243A;cursor:pointer}
+.btn{border:none;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.btn-primary{background:#2563A8;color:#fff}.btn-primary:hover{background:#1B4F8A}
+.btn-ghost{background:#F2F4F8;color:#18243A;border:1px solid #D8DEE8}.btn-ghost:hover{background:#E8ECF2}
+.btn-danger{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}.btn-danger:hover{background:#FEE2E2}
+.btn-green{background:#065F46;color:#fff}.btn-green:hover{background:#047857}
+
+/* Filtros */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:12px 14px;background:#fff;border-radius:10px;border:1px solid #E8ECF2}
+.filter-label{font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;align-self:center;white-space:nowrap}
+select.flt{border:1px solid #D8DEE8;border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;background:#fff;color:#18243A;cursor:pointer}
+.filter-count{font-size:12px;color:#8A97AA;margin-left:4px}
+
+/* Cards grid */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+
+/* Card persona */
+.persona-card{background:#fff;border-radius:12px;border:1px solid #E2E8F0;padding:16px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s}
+.persona-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.08)}
+
+.card-top{display:flex;align-items:flex-start;gap:12px}
+.card-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0}
+.card-info{flex:1;min-width:0}
+.card-nombre{font-size:14px;font-weight:700;color:#18243A;line-height:1.3}
+.card-pos{font-size:11.5px;color:#64748B;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-sub{font-size:11px;color:#94A3B8;margin-top:1px}
+
+/* Nota badge grande */
+.nota-badge{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;flex-shrink:0}
+.nota-M{background:#DCFCE7;color:#15803D}
+.nota-E{background:#DBEAFE;color:#1D4ED8}
+.nota-N{background:#FEF9C3;color:#A16207}
+.nota-U{background:#FEE2E2;color:#DC2626}
+.nota-{background:#F1F5F9;color:#94A3B8}
+
+/* Historia de notas */
+.notas-hist{display:flex;gap:6px;align-items:center}
+.hist-item{display:flex;flex-direction:column;align-items:center;gap:2px}
+.hist-year{font-size:9px;color:#94A3B8;font-weight:600}
+.hist-nota{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.hist-arrow{color:#CBD5E1;font-size:12px;margin-top:6px}
+
+/* Badges secundarios */
+.badge-row{display:flex;gap:6px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-riesgo-Alto{background:#FEE2E2;color:#DC2626}
+.badge-riesgo-Medio{background:#FEF3C7;color:#92400E}
+.badge-riesgo-Bajo{background:#D1FAE5;color:#065F46}
+.badge-move{background:#EDE9FE;color:#6D28D9}
+.badge-mapeo{background:#E0F2FE;color:#0369A1}
+.badge-sector{background:#F1F5F9;color:#475569}
+
+/* Comentario */
+.card-comment{font-size:11.5px;color:#475569;line-height:1.55;border-left:3px solid #E2E8F0;padding-left:10px}
+.card-comment.truncado{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.expand-btn{background:none;border:none;color:#2563A8;font-size:11px;font-weight:600;cursor:pointer;padding:0;margin-top:2px}
+
+/* KPIs */
+.kpis{display:flex;flex-direction:column;gap:3px}
+.kpi-item{font-size:11px;color:#64748B;display:flex;gap:6px}
+.kpi-label{font-weight:700;color:#94A3B8;flex-shrink:0}
+
+/* Antigüedad */
+.ant-row{display:flex;gap:14px}
+.ant-item{font-size:11px;color:#64748B}
+.ant-item span{font-weight:700;color:#18243A}
+
+/* Stats bar */
+.stats-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.stat-chip{background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:8px}
+.stat-num{font-size:20px;font-weight:800}
+.stat-lbl{font-size:11px;color:#64748B;line-height:1.3}
+.stat-M .stat-num{color:#15803D}
+.stat-E .stat-num{color:#1D4ED8}
+.stat-N .stat-num{color:#A16207}
+.stat-U .stat-num{color:#DC2626}
+
+/* Modal upload */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:14px;padding:24px;width:420px;max-width:94vw}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
+.form-group input,.form-group textarea{width:100%;border:1px solid #D8DEE8;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.toast{position:fixed;bottom:22px;right:22px;background:#1E293B;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+
+.empty-state{text-align:center;padding:60px 20px;color:#94A3B8}
+.empty-state p{font-size:14px}
+
+/* Archivos */
+.archivos-section{margin-top:28px;background:#fff;border-radius:12px;border:1px solid #E2E8F0;overflow:hidden}
+.archivos-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #EEF0F6}
+.archivos-title{font-size:13px;font-weight:700;color:#18243A}
+.archivos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:16px}
+.arch-card{border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;background:#FAFBFD;cursor:pointer;transition:box-shadow .15s}
+.arch-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.1)}
+.arch-preview{height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;background:#F2F4F8}
+.arch-footer{padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.arch-name{font-size:11px;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.arch-del{background:none;border:none;color:#DC2626;cursor:pointer;font-size:14px;flex-shrink:0}
+.arch-upload-zone{border:2px dashed #D8DEE8;border-radius:8px;padding:24px;text-align:center;cursor:pointer;margin:16px;transition:border-color .2s}
+.arch-upload-zone:hover{border-color:#2563A8}
+.arch-upload-zone input{display:none}
+.arch-upload-label{font-size:12.5px;font-weight:600;color:#5E6E89;margin-top:6px}
+.arch-upload-hint{font-size:11px;color:#94A3B8;margin-top:3px}
+.arch-empty{padding:24px;text-align:center;color:#94A3B8;font-size:12.5px}
+
+/* Visor modal */
+.visor-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center}
+.visor-overlay.open{display:flex}
+.visor-box{background:#fff;border-radius:10px;width:92vw;height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.visor-head{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #EEF0F6;flex-shrink:0}
+.visor-head span{font-size:13px;font-weight:700;color:#18243A}
+.visor-actions{display:flex;gap:8px;align-items:center}
+.visor-frame{flex:1;border:none;width:100%;height:100%}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/ciclo-gente-hub'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">OPR — Revisión de Desempeño</span>
+</div>
+
+<div class="page-header">
+  <h1>Revisión de Desempeño (OPR)</h1>
+  <p>Objetivos y Plan de Resultados · DPO Gente</p>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <select class="per-sel" id="selPeriodo" onchange="cargarPeriodo()">
+        <option value="">— Seleccionar período —</option>
+      </select>
+      <button class="btn btn-danger" id="btnEliminar" style="display:none" onclick="eliminarPeriodo()">✕ Eliminar</button>
+    </div>
+    <button class="btn btn-green" onclick="abrirUpload()">↑ Subir OPR</button>
+  </div>
+
+  <div id="mainContent" style="display:none">
+    <!-- Stats -->
+    <div class="stats-bar" id="statsBar"></div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <span class="filter-label">Filtrar por</span>
+      <select class="flt" id="fltSector" onchange="aplicarFiltros()"><option value="">Sector</option></select>
+      <select class="flt" id="fltPosicion" onchange="aplicarFiltros()"><option value="">Posición</option></select>
+      <select class="flt" id="fltSucursal" onchange="aplicarFiltros()"><option value="">Sucursal</option></select>
+      <select class="flt" id="fltNota" onchange="aplicarFiltros()">
+        <option value="">Nota final</option>
+        <option>M</option><option>E</option><option>N</option><option>U</option>
+      </select>
+      <select class="flt" id="fltRiesgo" onchange="aplicarFiltros()">
+        <option value="">Riesgo de salida</option>
+        <option>Alto</option><option>Medio</option><option>Bajo</option>
+      </select>
+      <select class="flt" id="fltMov" onchange="aplicarFiltros()">
+        <option value="">Movimiento</option>
+        <option value="SI">Para moverse</option>
+        <option value="NO">Sin movimiento</option>
+      </select>
+      <span class="filter-count" id="filterCount"></span>
+    </div>
+
+    <div class="cards-grid" id="cardsGrid"></div>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    <p>Seleccioná un período para ver las OPR</p>
+  </div>
+
+  <!-- Sección archivos -->
+  <div class="archivos-section" id="archivosSection" style="display:none">
+    <div class="archivos-header">
+      <span class="archivos-title">Archivos del período</span>
+      <button class="btn btn-ghost" onclick="document.getElementById('archFile').click()" style="font-size:12px;padding:5px 12px">+ Subir archivo</button>
+      <input type="file" id="archFile" accept=".xlsx,.xls,.pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg" multiple style="display:none" onchange="subirArchivo(this)">
+    </div>
+    <div id="archivosGrid" class="archivos-grid"></div>
+  </div>
+</div>
+
+<!-- Visor -->
+<div class="visor-overlay" id="visorOverlay">
+  <div class="visor-box">
+    <div class="visor-head">
+      <span id="visorNombre"></span>
+      <div class="visor-actions" style="display:flex;gap:8px;align-items:center">
+        <div id="visorSheetTabs" style="display:none;gap:4px;max-width:340px;overflow-x:auto"></div>
+        <a id="visorDescargar" href="#" download class="btn btn-ghost" style="font-size:12px;padding:5px 12px;text-decoration:none">Descargar</a>
+        <button onclick="cerrarVisor()" class="btn btn-ghost" style="font-size:18px;padding:2px 10px">×</button>
+      </div>
+    </div>
+    <iframe id="visorFrame" class="visor-frame" src="" style="display:none"></iframe>
+    <div id="visorRender" style="flex:1;overflow:auto;padding:20px 28px;font-size:13px;line-height:1.6;display:none"></div>
+    <div id="visorLoading" style="flex:1;display:flex;align-items:center;justify-content:center;color:#8A97AA;font-size:13px">Cargando...</div>
+  </div>
+</div>
+
+<!-- Modal upload -->
+<div class="modal-overlay" id="modalUpload" style="display:none" onclick="if(event.target===this)cerrarUpload()">
+  <div class="modal">
+    <h3>Subir planilla OPR</h3>
+    <div class="form-group">
+      <label>Período (ej: OPR 2026)</label>
+      <input type="text" id="inpPeriodo" placeholder="OPR 2026">
+    </div>
+    <div class="form-group">
+      <label>Archivo Excel (.xlsx)</label>
+      <input type="file" id="inpFile" accept=".xlsx,.xls">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarUpload()">Cancelar</button>
+      <button class="btn btn-green" id="btnSubir" onclick="subirOPR()">Subir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const el = id => document.getElementById(id);
+let periodos = [], personas = [], periodoActual = null;
+let USER = {};
+
+const NOTA_COLOR = {
+  M: { bg: '#DCFCE7', fg: '#15803D' },
+  E: { bg: '#DBEAFE', fg: '#1D4ED8' },
+  N: { bg: '#FEF9C3', fg: '#A16207' },
+  U: { bg: '#FEE2E2', fg: '#DC2626' },
+  '': { bg: '#F1F5F9', fg: '#94A3B8' },
+};
+
+function notaColor(n) { return NOTA_COLOR[n] || NOTA_COLOR['']; }
+
+function avatarColor(nombre) {
+  const colors = ['#2563A8','#065F46','#7C3AED','#C2410C','#0369A1','#92400E','#1D4ED8'];
+  let h = 0; for (const c of nombre) h = (h * 31 + c.charCodeAt(0)) % colors.length;
+  return colors[h];
+}
+
+function iniciales(nombre) {
+  const parts = nombre.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return nombre.substring(0, 2).toUpperCase();
+}
+
+function showToast(msg, dur=3000) {
+  const t = el('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+async function init() {
+  try {
+    const s = await fetch('/api/session').then(r=>r.json());
+    USER = s.user || {};
+  } catch {}
+  await cargarPeriodos();
+}
+
+async function cargarPeriodos() {
+  periodos = await fetch('/api/opr/periodos').then(r=>r.json()).catch(()=>[]);
+  const sel = el('selPeriodo');
+  sel.innerHTML = '<option value="">— Seleccionar período —</option>';
+  periodos.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.periodo;
+    sel.appendChild(o);
+  });
+  if (periodos.length) {
+    const anioActual = new Date().getFullYear().toString();
+    const match = periodos.find(p => p.periodo.includes(anioActual));
+    sel.value = (match || periodos[0]).id;
+    cargarPeriodo();
+  }
+}
+
+async function cargarPeriodo() {
+  const id = el('selPeriodo').value;
+  if (!id) { el('mainContent').style.display='none'; el('emptyState').style.display=''; el('btnEliminar').style.display='none'; return; }
+  periodoActual = periodos.find(p => String(p.id) === String(id));
+  el('btnEliminar').style.display = '';
+  personas = await fetch(`/api/opr/personas/${id}`).then(r=>r.json()).catch(()=>[]);
+  poblarFiltros();
+  aplicarFiltros();
+  el('mainContent').style.display = '';
+  el('emptyState').style.display = 'none';
+}
+
+function poblarFiltros() {
+  const uniq = (arr) => ['', ...new Set(arr.filter(Boolean).sort())];
+  const fill = (id, vals) => {
+    const sel = el(id);
+    const cur = sel.value;
+    const first = sel.options[0];
+    sel.innerHTML = '';
+    sel.appendChild(first);
+    vals.filter(v=>v).forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+    if (vals.includes(cur)) sel.value = cur;
+  };
+  fill('fltSector',   uniq(personas.map(p=>p.sector)));
+  fill('fltPosicion', uniq(personas.map(p=>p.posicion)));
+  fill('fltSucursal', uniq(personas.map(p=>p.sucursal)));
+}
+
+function aplicarFiltros() {
+  const fSec  = el('fltSector').value;
+  const fPos  = el('fltPosicion').value;
+  const fSuc  = el('fltSucursal').value;
+  const fNota = el('fltNota').value;
+  const fRie  = el('fltRiesgo').value;
+  const fMov  = el('fltMov').value;
+
+  const filtradas = personas.filter(p => {
+    if (fSec  && p.sector   !== fSec)  return false;
+    if (fPos  && p.posicion !== fPos)  return false;
+    if (fSuc  && p.sucursal !== fSuc)  return false;
+    if (fNota && p.nota_final !== fNota) return false;
+    if (fRie  && p.riesgo_salida !== fRie) return false;
+    if (fMov === 'SI' && !/^s/i.test(p.para_moverse)) return false;
+    if (fMov === 'NO' && /^s/i.test(p.para_moverse)) return false;
+    return true;
+  });
+
+  renderStats(filtradas);
+  renderCards(filtradas);
+  el('filterCount').textContent = filtradas.length === personas.length
+    ? `${personas.length} personas`
+    : `${filtradas.length} de ${personas.length}`;
+}
+
+function renderStats(lista) {
+  const cnt = n => lista.filter(p=>p.nota_final===n).length;
+  el('statsBar').innerHTML = ['M','E','N','U'].map(n => {
+    const c = notaColor(n);
+    return `<div class="stat-chip stat-${n}">
+      <span class="stat-num" style="color:${c.fg}">${cnt(n)}</span>
+      <div class="stat-lbl">Nota <strong>${n || '—'}</strong><br><span style="font-size:10px;color:#94A3B8">${notaNombre(n)}</span></div>
+    </div>`;
+  }).join('') + `<div class="stat-chip">
+    <span class="stat-num" style="color:#6D28D9">${lista.filter(p=>/^s/i.test(p.para_moverse)).length}</span>
+    <div class="stat-lbl">Para<br>moverse</div>
+  </div>
+  <div class="stat-chip">
+    <span class="stat-num" style="color:#DC2626">${lista.filter(p=>p.riesgo_salida==='Alto').length}</span>
+    <div class="stat-lbl">Riesgo<br>alto</div>
+  </div>`;
+}
+
+function notaNombre(n) {
+  return {M:'Muy bueno',E:'Esperado',N:'Necesita mejora',U:'Urgente'}[n]||'';
+}
+
+function renderCards(lista) {
+  if (!lista.length) {
+    el('cardsGrid').innerHTML = '<div style="color:#94A3B8;font-size:13px;padding:20px">No hay personas que coincidan con los filtros.</div>';
+    return;
+  }
+  el('cardsGrid').innerHTML = lista.map(p => cardHTML(p)).join('');
+}
+
+function cardHTML(p) {
+  const nc = notaColor(p.nota_final || '');
+  const av = avatarColor(p.nombre);
+  const ini = iniciales(p.nombre);
+
+  // Historia de notas
+  const notaHist = buildNotaHist(p);
+
+  // Badges
+  const riesgoBadge = p.riesgo_salida
+    ? `<span class="badge badge-riesgo-${p.riesgo_salida}">⚠ ${p.riesgo_salida}</span>` : '';
+  const movBadge = /^s/i.test(p.para_moverse)
+    ? `<span class="badge badge-move">↑ ${p.plazo_movimiento || 'Para moverse'}</span>` : '';
+  const sectorBadge = `<span class="badge badge-sector">${p.sector || ''}</span>`;
+
+  // Comentario
+  const comentario = (p.comentario_humand || p.comentario_opr || '').trim();
+  const comentarioHTML = comentario
+    ? `<div class="card-comment truncado" id="cmt-${p.id}">${comentario}</div>
+       <button class="expand-btn" onclick="toggleComentario(${p.id}, this)">Ver más</button>`
+    : '';
+
+  // KPIs
+  const kpis = [p.kpi1, p.kpi2, p.kpi3].filter(Boolean);
+  const kpisHTML = kpis.length ? `<div class="kpis">${kpis.map((k,i)=>`<div class="kpi-item"><span class="kpi-label">KPI ${i+1}</span>${k}</div>`).join('')}</div>` : '';
+
+  // Antigüedad
+  const antHTML = (p.antiguedad || p.tiempo_posicion)
+    ? `<div class="ant-row">
+        ${p.antiguedad ? `<div class="ant-item">Antigüedad: <span>${p.antiguedad} años</span></div>` : ''}
+        ${p.tiempo_posicion ? `<div class="ant-item">En posición: <span>${p.tiempo_posicion} años</span></div>` : ''}
+       </div>` : '';
+
+  return `<div class="persona-card">
+    <div class="card-top">
+      <div class="card-avatar" style="background:${av}">${ini}</div>
+      <div class="card-info">
+        <div class="card-nombre">${p.nombre}</div>
+        <div class="card-pos">${p.posicion || '—'}</div>
+        <div class="card-sub">${[p.sucursal, p.sector].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div class="nota-badge nota-${p.nota_final||''}" style="background:${nc.bg};color:${nc.fg}">${p.nota_final||'—'}</div>
+    </div>
+    ${notaHist}
+    <div class="badge-row">${sectorBadge}${riesgoBadge}${movBadge}</div>
+    ${antHTML}
+    ${kpisHTML}
+    ${comentarioHTML}
+  </div>`;
+}
+
+function buildNotaHist(p) {
+  // Determinar qué notas históricas hay
+  const hist = [];
+  if (p.nota_ant2) hist.push({ year: '2 atrás', nota: p.nota_ant2 });
+  if (p.nota_ant1) hist.push({ year: '1 atrás', nota: p.nota_ant1 });
+  if (p.nota_prelim) hist.push({ year: 'Prelim.', nota: p.nota_prelim });
+  if (!hist.length) return '';
+
+  const items = hist.map(h => {
+    const c = notaColor(h.nota);
+    return `<div class="hist-item">
+      <div class="hist-nota" style="background:${c.bg};color:${c.fg}">${h.nota}</div>
+      <div class="hist-year">${h.year}</div>
+    </div>
+    <div class="hist-arrow">→</div>`;
+  });
+
+  const final = p.nota_final ? `<div class="hist-item">
+    <div class="hist-nota" style="background:${notaColor(p.nota_final).bg};color:${notaColor(p.nota_final).fg};font-weight:800;border:2px solid currentColor">${p.nota_final}</div>
+    <div class="hist-year">Final</div>
+  </div>` : '';
+
+  return `<div class="notas-hist" style="padding:6px 0;border-top:1px solid #F1F5F9;border-bottom:1px solid #F1F5F9">${items.join('')}${final}</div>`;
+}
+
+function toggleComentario(id, btn) {
+  const el2 = document.getElementById('cmt-' + id);
+  if (el2.classList.contains('truncado')) {
+    el2.classList.remove('truncado');
+    btn.textContent = 'Ver menos';
+  } else {
+    el2.classList.add('truncado');
+    btn.textContent = 'Ver más';
+  }
+}
+
+async function eliminarPeriodo() {
+  if (!periodoActual) return;
+  if (!confirm(`¿Eliminar "${periodoActual.periodo}"? Se borrarán todos los datos.`)) return;
+  await fetch(`/api/opr/periodos/${periodoActual.id}`, { method: 'DELETE' });
+  showToast('Período eliminado');
+  await cargarPeriodos();
+}
+
+function abrirUpload() { el('modalUpload').style.display='flex'; }
+function cerrarUpload() { el('modalUpload').style.display='none'; }
+
+async function subirOPR() {
+  const periodo = el('inpPeriodo').value.trim();
+  const file = el('inpFile').files[0];
+  if (!periodo) { alert('Ingresá el nombre del período'); return; }
+  if (!file)    { alert('Seleccioná un archivo'); return; }
+
+  const btn = el('btnSubir');
+  btn.textContent = 'Subiendo…'; btn.disabled = true;
+
+  const fd = new FormData();
+  fd.append('periodo', periodo);
+  fd.append('file', file);
+
+  try {
+    const r = await fetch('/api/opr/upload', { method: 'POST', body: fd }).then(r=>r.json());
+    if (r.error) { alert('Error: ' + r.error); return; }
+    showToast(`✓ ${r.personas} personas cargadas`);
+    cerrarUpload();
+    await cargarPeriodos();
+    el('selPeriodo').value = r.periodo_id;
+    cargarPeriodo();
+  } catch(e) {
+    alert('Error al subir: ' + e.message);
+  } finally {
+    btn.textContent = 'Subir'; btn.disabled = false;
+  }
+}
+
+// --- Archivos OPR ---
+function archivoIcono(tipo) {
+  if (!tipo) return '📄';
+  if (tipo.includes('pdf')) return '📕';
+  if (tipo.includes('sheet') || tipo.includes('excel') || tipo.includes('xls')) return '📗';
+  if (tipo.includes('word') || tipo.includes('doc')) return '📘';
+  if (tipo.startsWith('image/')) return '🖼';
+  return '📄';
+}
+
+async function cargarArchivos() {
+  if (!periodoActual) return;
+  const r = await fetch(`/api/opr/archivos?periodo_id=${periodoActual.id}`).then(r=>r.json()).catch(()=>[]);
+  const grid = el('archivosGrid');
+  if (!r.length) {
+    grid.innerHTML = '<div class="arch-empty">Sin archivos. Subí el primero con el botón de arriba.</div>';
+    return;
+  }
+  grid.innerHTML = r.map(a => `
+    <div class="arch-card" onclick="abrirVisor(${a.id},'${a.nombre.replace(/'/g,"\\'")}','${a.tipo||''}')">
+      <div class="arch-preview">${archivoIcono(a.tipo)}</div>
+      <div class="arch-footer">
+        <span class="arch-name" title="${a.nombre}">${a.nombre}</span>
+        <button class="arch-del" onclick="event.stopPropagation();eliminarArchivo(${a.id})" title="Eliminar">×</button>
+      </div>
+    </div>`).join('');
+}
+
+async function subirArchivo(input) {
+  if (!input.files.length || !periodoActual) return;
+  const btn = input.previousElementSibling;
+  btn.textContent = 'Subiendo...'; btn.disabled = true;
+  for (const file of input.files) {
+    const fd = new FormData();
+    fd.append('periodo_id', periodoActual.id);
+    fd.append('archivo', file);
+    await fetch('/api/opr/archivos', { method: 'POST', body: fd });
+  }
+  input.value = '';
+  btn.textContent = '+ Subir archivo'; btn.disabled = false;
+  cargarArchivos();
+}
+
+async function eliminarArchivo(id) {
+  if (!confirm('¿Eliminar este archivo?')) return;
+  await fetch(`/api/opr/archivos/${id}`, { method: 'DELETE' });
+  cargarArchivos();
+}
+
+let _visorWB = null;
+function _visorShowLoading() { el('visorLoading').style.display='flex'; el('visorFrame').style.display='none'; el('visorRender').style.display='none'; el('visorSheetTabs').style.display='none'; }
+function _visorShowFrame(src) { el('visorFrame').src=src; el('visorFrame').style.display='block'; el('visorLoading').style.display='none'; el('visorRender').style.display='none'; el('visorSheetTabs').style.display='none'; }
+function _visorShowRender(html, sheets) {
+  const r=el('visorRender'); r.innerHTML=html; r.style.display='block';
+  el('visorLoading').style.display='none'; el('visorFrame').style.display='none';
+  const tabs=el('visorSheetTabs');
+  if (sheets&&sheets.length>1) { tabs.innerHTML=sheets.map((s,i)=>`<button onclick="visorRenderSheet(${i})" id="vshtab_${i}" style="padding:3px 10px;border-radius:4px;border:1px solid #D8DEE8;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;background:${i===0?'#1B3F72':'#fff'};color:${i===0?'#fff':'#5A6880'}">${s}</button>`).join(''); tabs.style.display='flex'; } else { tabs.style.display='none'; }
+}
+function visorRenderSheet(idx) { if(!_visorWB)return; const ws=_visorWB.Sheets[_visorWB.SheetNames[idx]]; el('visorRender').innerHTML=xlsxSheetHtml(ws); document.querySelectorAll('#visorSheetTabs button').forEach((b,i)=>{b.style.background=i===idx?'#1B3F72':'#fff';b.style.color=i===idx?'#fff':'#5A6880';}); }
+function xlsxSheetHtml(ws) { return `<style>#xlsheet{border-collapse:collapse;font-size:12px;width:100%}#xlsheet td,#xlsheet th{border:1px solid #D8DEE8;padding:5px 8px;white-space:nowrap}#xlsheet tr:first-child td,#xlsheet tr:first-child th{background:#1B3F72;color:#fff;font-weight:700}#xlsheet tr:nth-child(even) td{background:#F5F7FB}</style>`+XLSX.utils.sheet_to_html(ws,{id:'xlsheet',editable:false}); }
+function loadScript(src) { return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);}); }
+
+async function abrirVisor(id, nombre, tipo) {
+  const url = `/api/opr/archivos/${id}/file`;
+  el('visorNombre').textContent = nombre;
+  el('visorDescargar').href = url;
+  el('visorOverlay').classList.add('open');
+  _visorShowLoading(); _visorWB = null;
+  const ext = nombre.split('.').pop().toLowerCase();
+  const esExcel = ext==='xlsx'||ext==='xls'||(tipo&&(tipo.includes('sheet')||tipo.includes('excel')));
+  const esWord  = ext==='docx'||ext==='doc'||(tipo&&(tipo.includes('word')||tipo.includes('msword')));
+  const esPDF   = ext==='pdf'||(tipo&&tipo.includes('pdf'))||tipo.startsWith('image/');
+  if (esPDF) { _visorShowFrame(url); return; }
+  try {
+    const buf = await (await fetch(url)).arrayBuffer();
+    if (esExcel) {
+      if (!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      _visorWB = XLSX.read(buf,{type:'array'});
+      _visorShowRender(xlsxSheetHtml(_visorWB.Sheets[_visorWB.SheetNames[0]]),_visorWB.SheetNames);
+    } else if (esWord) {
+      if (!window.mammoth) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+      const result = await mammoth.convertToHtml({arrayBuffer:buf});
+      _visorShowRender(`<style>#visorRender h1,#visorRender h2,#visorRender h3{color:#1B3F72;margin:1em 0 .4em;font-weight:700}#visorRender p{margin-bottom:.7em}#visorRender table{border-collapse:collapse;width:100%;margin:1em 0;font-size:12px}#visorRender td,#visorRender th{border:1px solid #D8DEE8;padding:5px 8px}#visorRender th{background:#F5F7FB;font-weight:700}</style>`+result.value,null);
+    } else { _visorShowFrame(url); }
+  } catch(e) {
+    el('visorRender').innerHTML=`<div style="color:#B91C1C;padding:20px">Error: ${e.message}</div>`;
+    el('visorRender').style.display='block'; el('visorLoading').style.display='none';
+  }
+}
+
+function cerrarVisor() {
+  el('visorOverlay').classList.remove('open');
+  el('visorFrame').src = '';
+  el('visorRender').innerHTML = '';
+  _visorWB = null;
+}
+
+// Extender cargarPeriodo para mostrar archivos
+const _cargarPeriodoOrig = cargarPeriodo;
+cargarPeriodo = async function() {
+  await _cargarPeriodoOrig();
+  if (el('selPeriodo').value) {
+    el('archivosSection').style.display = '';
+    cargarArchivos();
+  } else {
+    el('archivosSection').style.display = 'none';
+  }
+};
+
+init();
+</script>
+</body>
+</html>

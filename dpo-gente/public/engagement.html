@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engagement — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:20px 24px 22px}
+.page-header h1{font-size:18px;font-weight:800;color:#fff}
+.page-header p{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
+
+.wrap{max-width:1200px;margin:0 auto;padding:20px 20px 40px}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
+select.per-sel{border:1px solid #D8DEE8;border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fff;color:#18243A;cursor:pointer}
+.btn{border:none;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.btn-primary{background:#2563A8;color:#fff}.btn-primary:hover{background:#1B4F8A}
+.btn-ghost{background:#F2F4F8;color:#18243A;border:1px solid #D8DEE8}.btn-ghost:hover{background:#E8ECF2}
+.btn-danger{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}.btn-danger:hover{background:#FEE2E2}
+.btn-green{background:#065F46;color:#fff}.btn-green:hover{background:#047857}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;border-bottom:2px solid #E8ECF2;margin-bottom:20px}
+.tab{padding:8px 16px;font-size:13px;font-weight:600;color:#8A97AA;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab.active{color:#2563A8;border-bottom-color:#2563A8}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;color:#18243A;font-variant-numeric:tabular-nums}
+.kpi-val.good{color:#059669}.kpi-val.mid{color:#D97706}.kpi-val.bad{color:#DC2626}
+
+/* Dimension cards */
+.dim-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-bottom:20px}
+.dim-card{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:16px}
+.dim-name{font-size:12px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+.dim-score{font-size:28px;font-weight:800;margin-bottom:10px}
+.bar-wrap{background:#F2F4F8;border-radius:99px;height:8px;overflow:hidden;margin-bottom:6px}
+.bar-fill{height:100%;border-radius:99px;transition:width .5s ease}
+.bar-label{display:flex;justify-content:space-between;font-size:11px;color:#8A97AA}
+
+/* Breakdown table */
+.breakdown{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden;margin-bottom:20px}
+.breakdown-title{font-size:12px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;padding:14px 16px;border-bottom:1px solid #EEF0F6}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#F8F9FB;padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6;white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid #F4F5F8;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFBFC}
+.score-pill{display:inline-block;padding:2px 10px;border-radius:99px;font-weight:700;font-size:12px;min-width:44px;text-align:center}
+.good-pill{background:#D1FAE5;color:#065F46}
+.mid-pill{background:#FEF3C7;color:#92400E}
+.bad-pill{background:#FEE2E2;color:#991B1B}
+
+/* Preguntas */
+.preg-list{display:flex;flex-direction:column;gap:10px}
+.preg-item{background:#fff;border:1px solid #EEF0F6;border-radius:8px;padding:12px 16px}
+.preg-text{font-size:12.5px;color:#18243A;margin-bottom:8px;line-height:1.4}
+.preg-scores{display:flex;gap:8px;flex-wrap:wrap}
+.preg-score-chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;background:#F2F4F8;color:#18243A}
+
+/* Textos */
+.texto-list{display:flex;flex-direction:column;gap:8px}
+.texto-item{background:#fff;border:1px solid #EEF0F6;border-radius:8px;padding:12px 14px}
+.texto-preg{font-size:10.5px;font-weight:700;color:#2563A8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.texto-resp{font-size:13px;color:#18243A;line-height:1.5}
+
+/* Comparación */
+.comp-selectors{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px;margin-bottom:20px}
+.comp-selectors label{font-size:12px;font-weight:600;color:#8A97AA}
+.comp-vs{font-weight:700;color:#8A97AA}
+.comp-table{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
+.comp-table th:first-child{min-width:200px}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-bg.hidden{display:none}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:460px;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #EEF0F6}
+.modal-header h3{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#8A97AA;line-height:1}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.modal-footer{padding:12px 20px;border-top:1px solid #EEF0F6;display:flex;justify-content:flex-end;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em}
+.form-input{border:1px solid #D8DEE8;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit}
+.form-input:focus{outline:none;border-color:#2563A8}
+
+.empty{text-align:center;padding:48px 24px;color:#8A97AA;font-size:13px}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/engagement'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Engagement — Encuesta de Clima</span>
+</div>
+<div class="page-header">
+  <h1>Encuesta de Clima</h1>
+  <p>Ambiente de Trabajo y Compromiso · DPO Gente 2026</p>
+</div>
+
+<div class="wrap">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <select class="per-sel" id="selPeriodo" onchange="cargarPeriodo()">
+        <option value="">— Seleccioná un período —</option>
+      </select>
+<button class="btn btn-danger" id="btnEliminar" onclick="eliminarEncuesta()" style="display:none;font-size:11.5px">✕ Eliminar</button>
+    </div>
+    <button class="btn btn-green" id="btnSubir" onclick="abrirModalSubir()" style="display:none">↑ Subir encuesta</button>
+  </div>
+
+  <!-- Sin datos -->
+  <div id="emptyState" class="empty">
+    <div class="empty-icon">💬</div>
+    <div style="font-weight:700;font-size:15px;color:#18243A;margin-bottom:6px">Sin encuestas cargadas</div>
+    <div>Subí el Excel de resultados para empezar a visualizar los datos.</div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" style="display:none">
+    <!-- KPIs -->
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('total',this)">Total distribuidor</button>
+      <button class="tab" onclick="switchTab('sector',this)">Por sector</button>
+      <button class="tab" onclick="switchTab('posicion',this)">Por posición</button>
+      <button class="tab" onclick="switchTab('jefe',this)">Por jefe</button>
+      <button class="tab" onclick="switchTab('preguntas',this)">Preguntas</button>
+      <button class="tab" onclick="switchTab('textos',this)">Respuestas abiertas</button>
+      <button class="tab" onclick="switchTab('adjuntos',this)">Documentos</button>
+    </div>
+
+    <!-- Total -->
+    <div class="tab-panel active" id="panel-total">
+      <div class="dim-grid" id="dimGrid"></div>
+      <div id="compTotal" style="display:none"></div>
+    </div>
+
+    <!-- Por sector -->
+    <div class="tab-panel" id="panel-sector">
+      <div class="breakdown" id="sectorTable"></div>
+      <div id="compSector" style="display:none"></div>
+    </div>
+
+    <!-- Por posición -->
+    <div class="tab-panel" id="panel-posicion">
+      <div class="breakdown" id="posicionTable"></div>
+      <div id="compPosicion" style="display:none"></div>
+    </div>
+
+    <!-- Por jefe -->
+    <div class="tab-panel" id="panel-jefe">
+      <div class="breakdown" id="jefeTable"></div>
+      <div id="compJefe" style="display:none"></div>
+    </div>
+
+    <!-- Preguntas -->
+    <div class="tab-panel" id="panel-preguntas">
+      <div id="preguntasContent"></div>
+    </div>
+
+    <!-- Respuestas abiertas -->
+    <div class="tab-panel" id="panel-textos">
+      <div id="textosContent"></div>
+    </div>
+
+    <!-- Documentos -->
+    <div class="tab-panel" id="panel-adjuntos">
+      <div class="breakdown" style="margin-bottom:16px">
+        <div class="breakdown-title" style="display:flex;align-items:center;justify-content:space-between">
+          <span>Documentos adjuntos</span>
+          <span id="btnSubirAdj" style="display:none">
+            <label style="cursor:pointer;background:#2563A8;color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600">
+              + Agregar <input type="file" id="inpAdj" style="display:none" accept=".pdf,.ppt,.pptx,.xlsx,.xls,.doc,.docx" onchange="subirAdjunto()">
+            </label>
+          </span>
+        </div>
+        <div id="adjList" style="padding:12px"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal subir encuesta -->
+<div class="modal-bg hidden" id="modalSubir">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Subir encuesta de clima</h3>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Período *</label>
+        <input class="form-input" id="inpPeriodo" placeholder="Ej: H2 2025, H1 2026">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción (opcional)</label>
+        <input class="form-input" id="inpDesc" placeholder="Ej: Segunda medición del año">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Archivo Excel *</label>
+        <input type="file" id="inpFile" accept=".xlsx,.xls" class="form-input">
+      </div>
+      <div id="uploadMsg" style="font-size:12.5px;color:#DC2626;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarSubir" onclick="subirEncuesta()">Subir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+let encuestas = [], resultados = [], textos = [], periodoActual = null, compMode = false, allResults = [];
+
+const el = id => document.getElementById(id);
+
+function scoreColor(v) {
+  if (v === null || v === undefined) return '#8A97AA';
+  if (v >= 75) return '#059669';
+  if (v >= 60) return '#D97706';
+  return '#DC2626';
+}
+function scorePill(v) {
+  if (v === null || v === undefined) return '<span style="color:#8A97AA">—</span>';
+  const cls = v >= 75 ? 'good-pill' : v >= 60 ? 'mid-pill' : 'bad-pill';
+  return `<span class="score-pill ${cls}">${v}</span>`;
+}
+function barColor(v) {
+  if (v >= 75) return '#059669';
+  if (v >= 60) return '#D97706';
+  return '#DC2626';
+}
+
+async function init() {
+  if (USER.admin) {
+    el('btnSubir').style.display = '';
+  }
+  encuestas = await fetch('/api/engagement/encuestas').then(r=>r.json()).catch(()=>[]);
+  poblarSelectores();
+  if (encuestas.length) {
+    el('emptyState').style.display = 'none';
+    el('dashboard').style.display = '';
+    await entrarModoComparacion();
+  }
+}
+
+function poblarSelectores() {
+  const opts = encuestas.map(e => `<option value="${e.id}">${e.periodo}${e.descripcion?' — '+e.descripcion:''}</option>`).join('');
+  el('selPeriodo').innerHTML = '<option value="">— Ver comparación general —</option>' + opts;
+  if (USER.admin && encuestas.length) el('btnEliminar').style.display = '';
+}
+
+async function cargarPeriodo() {
+  const id = el('selPeriodo').value;
+  if (!id) { await entrarModoComparacion(); return; }
+  salirModoComparacion();
+  periodoActual = encuestas.find(e => String(e.id) === String(id));
+  [resultados, textos] = await Promise.all([
+    fetch(`/api/engagement/resultados/${id}`).then(r=>r.json()).catch(()=>[]),
+    fetch(`/api/engagement/textos/${id}`).then(r=>r.json()).catch(()=>[])
+  ]);
+  if (USER.admin) el('btnSubirAdj').style.display = '';
+  await cargarAdjuntos();
+  el('emptyState').style.display = 'none';
+  el('dashboard').style.display = '';
+  // Volver al tab Total al cambiar período
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tab[onclick*="total"]').classList.add('active');
+  el('panel-total').classList.add('active');
+  renderKPIs();
+  renderTotal();
+  renderBreakdown('sector', 'sectorTable', 'Por sector');
+  renderBreakdown('posicion', 'posicionTable', 'Por posición');
+  renderBreakdown('jefe', 'jefeTable', 'Por jefe');
+  renderPreguntas();
+  renderTextos();
+}
+
+function getDims() {
+  return [...new Set(resultados.filter(r=>r.nivel==='dimension').map(r=>r.dimension))];
+}
+function getTotal(dim) {
+  const r = resultados.find(x=>x.nivel==='dimension'&&x.dimension===dim&&x.corte_tipo==='total');
+  return r ? r.puntaje : null;
+}
+
+function renderKPIs() {
+  const dims = getDims();
+  const engDim = dims.find(d=>d.toUpperCase().includes('ENGAGEMENT')) || dims[0];
+  const engVal = getTotal(engDim);
+  let html = `<div class="kpi"><div class="kpi-label">Índice de Engagement</div><div class="kpi-val ${engVal>=75?'good':engVal>=60?'mid':'bad'}">${engVal ?? '—'}</div></div>`;
+  html += `<div class="kpi"><div class="kpi-label">Período</div><div class="kpi-val" style="font-size:18px">${periodoActual?.periodo||''}</div></div>`;
+  const otrosDims = dims.filter(d=>!d.toUpperCase().includes('ENGAGEMENT'));
+  const promOtros = otrosDims.length ? Math.round(otrosDims.reduce((s,d)=>s+(getTotal(d)||0),0)/otrosDims.length) : null;
+  html += `<div class="kpi"><div class="kpi-label">Promedio dimensiones</div><div class="kpi-val ${promOtros>=75?'good':promOtros>=60?'mid':'bad'}">${promOtros??'—'}</div></div>`;
+  const mejor = otrosDims.reduce((b,d)=>{const v=getTotal(d);return (v!==null&&(b===null||v>b.v))?{d,v}:b},null);
+  const peor = otrosDims.reduce((b,d)=>{const v=getTotal(d);return (v!==null&&(b===null||v<b.v))?{d,v}:b},null);
+  html += `<div class="kpi"><div class="kpi-label">Mejor dimensión</div><div class="kpi-val good" style="font-size:16px">${mejor.d||'—'}</div></div>`;
+  html += `<div class="kpi"><div class="kpi-label">A mejorar</div><div class="kpi-val bad" style="font-size:16px">${peor.d||'—'}</div></div>`;
+  el('kpiRow').innerHTML = html;
+}
+
+function renderTotal() {
+  const dims = getDims();
+  let html = '';
+  for (const dim of dims) {
+    const val = getTotal(dim);
+    if (val === null) continue;
+    const color = barColor(val);
+    html += `<div class="dim-card">
+      <div class="dim-name">${dim}</div>
+      <div class="dim-score" style="color:${color}">${val}<span style="font-size:14px;font-weight:500;color:#8A97AA">%</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${val}%;background:${color}"></div></div>
+      <div class="bar-label"><span>0</span><span>100</span></div>
+    </div>`;
+  }
+  el('dimGrid').innerHTML = html;
+}
+
+function renderBreakdown(corte_tipo, containerId, titulo) {
+  const dims = getDims();
+  const valores = [...new Set(resultados.filter(r=>r.corte_tipo===corte_tipo&&r.nivel==='dimension').map(r=>r.corte_valor))].sort();
+  if (!valores.length) { el(containerId).innerHTML = `<div class="empty"><div class="empty-icon">📊</div>Sin datos por ${titulo.toLowerCase()}</div>`; return; }
+  let html = `<div class="breakdown-title">${titulo}</div><div style="overflow-x:auto"><table>
+    <thead><tr><th>Dimensión</th>${valores.map(v=>`<th>${v}</th>`).join('')}</tr></thead>
+    <tbody>`;
+  for (const dim of dims) {
+    html += `<tr><td style="font-weight:600">${dim}</td>`;
+    for (const v of valores) {
+      const r = resultados.find(x=>x.nivel==='dimension'&&x.dimension===dim&&x.corte_tipo===corte_tipo&&x.corte_valor===v);
+      html += `<td>${r ? scorePill(r.puntaje) : '<span style="color:#8A97AA">—</span>'}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  el(containerId).innerHTML = html;
+}
+
+function renderPreguntas() {
+  const dims = getDims();
+  let html = '';
+  for (const dim of dims) {
+    const pregs = [...new Set(resultados.filter(r=>r.nivel==='pregunta'&&r.dimension===dim).map(r=>r.pregunta))];
+    if (!pregs.length) continue;
+    html += `<div class="breakdown" style="margin-bottom:16px">
+      <div class="breakdown-title">${dim}</div>
+      <div class="preg-list" style="padding:12px">`;
+    for (const preg of pregs) {
+      const rs = resultados.filter(r=>r.nivel==='pregunta'&&r.pregunta===preg&&r.corte_tipo==='total');
+      const val = rs[0]?.puntaje;
+      const color = val !== undefined ? barColor(val) : '#8A97AA';
+      html += `<div class="preg-item">
+        <div class="preg-text">${preg}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="bar-wrap" style="flex:1"><div class="bar-fill" style="width:${val??0}%;background:${color}"></div></div>
+          <span style="font-weight:700;color:${color};font-size:14px;min-width:32px;text-align:right">${val??'—'}</span>
+        </div>
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+  el('preguntasContent').innerHTML = html || '<div class="empty">Sin datos de preguntas</div>';
+}
+
+function renderTextos() {
+  if (!textos.length) { el('textosContent').innerHTML = '<div class="empty"><div class="empty-icon">💬</div>Sin respuestas de texto</div>'; return; }
+  const pregs = [...new Set(textos.map(t=>t.pregunta))];
+  let html = '';
+  for (const preg of pregs) {
+    const resps = textos.filter(t=>t.pregunta===preg);
+    html += `<div class="breakdown" style="margin-bottom:16px">
+      <div class="breakdown-title">${preg}</div>
+      <div class="texto-list" style="padding:12px">`;
+    for (const t of resps) {
+      if (!t.respuesta || t.respuesta.trim().length < 3) continue;
+      html += `<div class="texto-item"><div class="texto-resp">${t.respuesta.trim()}</div></div>`;
+    }
+    html += '</div></div>';
+  }
+  el('textosContent').innerHTML = html;
+}
+
+const COMP_COLORS = ['#4F6BED','#059669','#F59E0B','#DC2626','#7C3AED','#0891B2','#DB2777','#65A30D'];
+
+async function entrarModoComparacion() {
+  compMode = true;
+  periodoActual = null;
+  el('kpiRow').innerHTML = '';
+  ['preguntas','textos','adjuntos'].forEach(n => {
+    const btn = document.querySelector(`.tab[onclick*="'${n}'"]`);
+    if (btn) btn.style.display = 'none';
+  });
+  // Cargar todos los resultados una sola vez
+  allResults = await Promise.all(
+    encuestas.map(e => fetch(`/api/engagement/resultados/${e.id}`).then(r=>r.json()).catch(()=>[]))
+  );
+  // Mostrar tab Total por defecto
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tab[onclick*="total"]').classList.add('active');
+  el('panel-total').classList.add('active');
+  mostrarContenidoComp('total');
+}
+
+function mostrarContenidoComp(nombre) {
+  // Ocultar contenido normal, mostrar canvas de comp
+  const normales = { total:'dimGrid', sector:'sectorTable', posicion:'posicionTable', jefe:'jefeTable' };
+  if (normales[nombre]) {
+    el(normales[nombre]).style.display = 'none';
+    el('comp'+nombre.charAt(0).toUpperCase()+nombre.slice(1)).style.display = '';
+  }
+  if (nombre === 'total') dibujarCompTotal();
+  else if (nombre === 'sector') dibujarCompGrupo('sector', 'compSector');
+  else if (nombre === 'posicion') dibujarCompGrupoLinea('posicion', 'compPosicion');
+  else if (nombre === 'jefe') dibujarCompGrupoLinea('jefe', 'compJefe');
+}
+
+function salirModoComparacion() {
+  compMode = false;
+  ['dimGrid','sectorTable','posicionTable','jefeTable'].forEach(id => { const e=el(id); if(e) e.style.display=''; });
+  ['compTotal','compSector','compPosicion','compJefe'].forEach(id => { const e=el(id); if(e) e.style.display='none'; });
+  ['preguntas','textos','adjuntos'].forEach(n => {
+    const btn = document.querySelector(`.tab[onclick*="'${n}'"]`);
+    if (btn) btn.style.display = '';
+  });
+}
+
+// Paleta neutra: azul oscuro, naranja, violeta, teal — no implican bueno/malo
+const COMP_COLORS_2 = ['#1E4E8C','#E07B2A','#6B3FA0','#0E7C7B','#B8320A','#2E6B4F'];
+
+function getCanvasColors() {
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark' ||
+    (!document.documentElement.hasAttribute('data-theme') && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  return { text: isDark?'#CBD5E1':'#374151', grid: isDark?'#2D3748':'#E2E8F0', bg: isDark?'#1E293B':'#FFFFFF' };
+}
+
+function renderLeyenda(colores) {
+  const {text} = getCanvasColors();
+  return encuestas.map((e,i)=>`
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:${text}">
+      <span style="width:14px;height:14px;border-radius:3px;background:${colores[i%colores.length]};display:inline-block"></span>
+      ${e.periodo}
+    </span>`).join('');
+}
+
+function dibujarCompTotal() {
+  const container = el('compTotal');
+  const dims = [];
+  for (const rows of allResults)
+    for (const r of rows)
+      if (r.nivel==='dimension' && r.corte_tipo==='total' && !dims.includes(r.dimension)) dims.push(r.dimension);
+  if (!dims.length) { container.innerHTML = '<div class="empty">Sin datos</div>'; return; }
+  const data = dims.map(dim => allResults.map(rows => rows.find(r=>r.nivel==='dimension'&&r.dimension===dim&&r.corte_tipo==='total')?.puntaje??null));
+  dibujarBarrasH(container, 'chartTotal', dims, data);
+}
+
+function extraerDni(str) {
+  const m = String(str).match(/DNI[:\s.]*(\d{6,10})/i);
+  return m ? m[1] : null;
+}
+function normalizarNombre(str) {
+  return String(str).toUpperCase().replace(/DNI[:\s.]*\d+/gi,'').replace(/[^A-ZÁÉÍÓÚÑ\s]/gi,'').replace(/\s+/g,' ').trim();
+}
+function claveGrupo(str) {
+  const dni = extraerDni(str);
+  return dni ? 'DNI:'+dni : normalizarNombre(str);
+}
+
+function dibujarCompGrupo(corte, containerId) {
+  const container = el(containerId);
+  // Construir lista canónica de grupos con matching por DNI o nombre normalizado
+  const canonicos = []; // { label, clave }
+  for (const rows of allResults) {
+    for (const r of rows) {
+      if (r.nivel !== 'dimension' || r.corte_tipo !== corte) continue;
+      const clave = claveGrupo(r.corte_valor);
+      if (!canonicos.find(c => c.clave === clave)) {
+        canonicos.push({ label: r.corte_valor, clave });
+      }
+    }
+  }
+  if (!canonicos.length) { container.innerHTML = '<div class="empty">Sin datos para esta vista</div>'; return; }
+
+  const grupos = canonicos.map(c => c.label);
+  const data = canonicos.map(c => allResults.map(rows => {
+    // Buscar cualquier corte_valor que tenga la misma clave
+    const vals = rows.filter(r =>
+      r.nivel==='dimension' && r.corte_tipo===corte &&
+      claveGrupo(r.corte_valor)===c.clave && r.puntaje!=null
+    ).map(r => r.puntaje);
+    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+  }));
+
+  // Label limpio: sin el "DNI: XXXXXXXX" al final para que se lea mejor
+  const gruposLimpios = canonicos.map(c => {
+    if (corte === 'jefe') return normalizarNombre(c.label);
+    return c.label;
+  });
+
+  dibujarBarrasH(container, 'chart'+containerId, gruposLimpios, data);
+}
+
+// Tarjeta por persona — X=dimensiones, una línea por período
+function dibujarCompGrupoLinea(corte, containerId) {
+  const container = el(containerId);
+
+  // Personas canónicas
+  const canonicos = [];
+  for (const rows of allResults) {
+    for (const r of rows) {
+      if (r.nivel !== 'dimension' || r.corte_tipo !== corte) continue;
+      const clave = claveGrupo(r.corte_valor);
+      if (!canonicos.find(c => c.clave === clave))
+        canonicos.push({ label: corte==='jefe' ? normalizarNombre(r.corte_valor) : r.corte_valor, clave });
+    }
+  }
+  if (!canonicos.length) { container.innerHTML = '<div class="empty">Sin datos para esta vista</div>'; return; }
+
+  // Dimensiones canónicas (unión de todos los períodos, para esta persona)
+  // Se calculan por tarjeta
+
+  const periodos = encuestas.map(e => e.periodo);
+  const np = periodos.length;
+
+  const cards = canonicos.map(c => {
+    // Dimensiones que tienen dato para esta persona en algún período
+    const dims = [];
+    allResults.forEach(rows => {
+      rows.filter(r => r.nivel==='dimension' && r.corte_tipo===corte && claveGrupo(r.corte_valor)===c.clave)
+          .forEach(r => { if (!dims.includes(r.dimension)) dims.push(r.dimension); });
+    });
+    if (!dims.length) return '';
+
+    // data[periodoIdx][dimIdx] = puntaje | null
+    const pdata = allResults.map(rows =>
+      dims.map(d => rows.find(r => r.nivel==='dimension' && r.corte_tipo===corte &&
+        claveGrupo(r.corte_valor)===c.clave && r.dimension===d)?.puntaje ?? null)
+    );
+
+    const nd = dims.length;
+    const W = Math.max(380, nd * 62 + 60), H = 200;
+    const PL = 32, PR = 16, PT = 20, PB = 60;
+    const CW = W-PL-PR, CH = H-PT-PB;
+
+    // Rango Y dinámico: de minVal-10 a 100
+    const allVals = pdata.flat().filter(v=>v!==null);
+    const minV = allVals.length ? Math.max(0, Math.floor((Math.min(...allVals)-10)/10)*10) : 0;
+    const maxV = 100;
+
+    const xOf = i => PL + (nd===1 ? CW/2 : i/(nd-1)*CW);
+    const yOf = v => PT + CH - ((Math.min(Math.max(v,minV),maxV)-minV)/(maxV-minV))*CH;
+
+    let inner = '';
+    // Grilla horizontal
+    for (let v=minV; v<=maxV; v+=10) {
+      const y=yOf(v);
+      inner += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="${v%20===0?'#E2E8F0':'#F1F5F9'}" stroke-width="1"/>
+      <text x="${PL-4}" y="${y+3.5}" text-anchor="end" font-size="9" fill="#CBD5E1">${v%20===0?v:''}</text>`;
+    }
+    // Labels dimensiones (rotados -40°)
+    dims.forEach((d,i) => {
+      const short = d.length > 18 ? d.substring(0,17)+'…' : d;
+      inner += `<text transform="translate(${xOf(i).toFixed(1)},${H-PB+12}) rotate(-40)" text-anchor="end" font-size="9" fill="#64748B">${short}</text>`;
+    });
+    // Una línea por período
+    pdata.forEach((vals, ei) => {
+      const color = COMP_COLORS_2[ei % COMP_COLORS_2.length];
+      let path=''; let open=false;
+      vals.forEach((v,i) => {
+        if (v===null){open=false;return;}
+        const x=xOf(i), y=yOf(v);
+        path += open ? ` L${x.toFixed(1)},${y.toFixed(1)}` : `M${x.toFixed(1)},${y.toFixed(1)}`;
+        open=true;
+      });
+      if (path) inner += `<path d="${path}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    });
+    // Dots y etiquetas: calcular offsets para evitar superposición
+    dims.forEach((_, dimIdx) => {
+      // Recopilar todos los puntos con valor para esta dimensión
+      const puntos = pdata.map((vals, ei) => vals[dimIdx]!==null ? { ei, v: vals[dimIdx] } : null).filter(Boolean);
+      // Ordenar por valor desc para asignar offset vertical escalonado
+      puntos.sort((a,b) => b.v - a.v);
+      // Detectar grupos con valores iguales o muy cercanos (±3px)
+      const x = xOf(dimIdx);
+      const assigned = puntos.map(p => ({ ...p, rawY: yOf(p.v), offsetY: 0 }));
+      // Escalonar etiquetas: si dos puntos están a menos de 11px, separarlos
+      for (let i=1; i<assigned.length; i++) {
+        const prev = assigned[i-1];
+        const cur = assigned[i];
+        const gap = Math.abs(prev.rawY - cur.rawY);
+        if (gap < 11) {
+          // Apilar hacia abajo
+          cur.offsetY = prev.offsetY + (11 - gap);
+        }
+      }
+      assigned.forEach(({ ei, v, rawY, offsetY }) => {
+        const color = COMP_COLORS_2[ei % COMP_COLORS_2.length];
+        const labelY = rawY < PT+14 ? rawY + 13 + offsetY : rawY - 7 - offsetY;
+        inner += `<circle cx="${x.toFixed(1)}" cy="${rawY.toFixed(1)}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>
+        <text x="${x.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="${color}">${v}</text>`;
+      });
+    });
+
+    // Leyenda períodos
+    const leyenda = periodos.map((p,i) =>
+      `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#374151">
+        <span style="display:inline-block;width:12px;height:3px;border-radius:2px;background:${COMP_COLORS_2[i%COMP_COLORS_2.length]}"></span>${p}
+      </span>`).join('');
+
+    return `<div style="background:#fff;border-radius:10px;border:1px solid #E2E8F0;padding:14px 14px 10px">
+      <div style="font-size:12px;font-weight:700;color:#1E293B;margin-bottom:6px">${c.label}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:8px">${leyenda}</div>
+      <div style="overflow-x:auto">
+        <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">${inner}</svg>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px">${cards.join('')}</div>`;
+}
+
+// Barras horizontales con HTML/CSS — sin Canvas, siempre nítido
+function dibujarBarrasH(container, _id, grupos, data) {
+  const n = encuestas.length;
+
+  // Separar en ambos / solo período A / solo período B (aplica a total)
+  const enAmbos   = grupos.filter((_, i) => data[i].filter(v=>v!==null).length > 1);
+  const soloA     = grupos.filter((_, i) => data[i][0]!==null && data[i].slice(1).every(v=>v===null));
+  const soloB     = grupos.filter((_, i) => data[i][0]===null && data[i][1]!=null);
+  const hayGrupos = enAmbos.length < grupos.length;
+
+  function seccion(lista, titulo) {
+    if (!lista.length) return '';
+    const hdr = titulo ? `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8A97AA;margin:18px 0 6px;padding-left:196px">${titulo}</div>` : '';
+    return hdr + lista.map(dim => {
+      const idx = grupos.indexOf(dim);
+      const vals = data[idx];
+      const filas = vals.map((val, e) => {
+        if (val === null && !hayGrupos) return '';
+        const color = COMP_COLORS_2[e % COMP_COLORS_2.length];
+        if (val === null) return `
+          <div style="display:flex;align-items:center;margin-bottom:4px">
+            <div style="width:192px;min-width:192px"></div>
+            <div style="flex:1;height:22px;display:flex;align-items:center;padding-left:6px">
+              <span style="font-size:11px;color:#8A97AA;font-style:italic">sin dato</span>
+            </div>
+          </div>`;
+        return `
+          <div style="display:flex;align-items:center;margin-bottom:4px">
+            <div style="width:192px;min-width:192px"></div>
+            <div style="flex:1;background:#F1F5F9;border-radius:4px;height:22px;position:relative;overflow:visible">
+              <div class="comp-bar" data-pct="${val}" style="height:100%;width:0%;background:${color};border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)"></div>
+              <span style="position:absolute;left:calc(${val}% + 6px);top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:#374151;white-space:nowrap">${val}</span>
+            </div>
+          </div>`;
+      }).join('');
+      return `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;align-items:flex-start">
+            <div style="width:192px;min-width:192px;text-align:right;padding-right:12px;font-size:12px;font-weight:600;color:#374151;line-height:1.3;padding-top:2px">${dim}</div>
+            <div style="flex:1">${filas}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  const leyenda = `<div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:14px;padding-left:196px">
+    ${encuestas.map((e,i)=>`<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151">
+      <span style="width:12px;height:12px;border-radius:3px;background:${COMP_COLORS_2[i%COMP_COLORS_2.length]};display:inline-block"></span>${e.periodo}
+    </span>`).join('')}
+  </div>`;
+
+  let contenido = '';
+  if (hayGrupos) {
+    contenido = seccion(enAmbos, enAmbos.length ? 'En ambos períodos' : null)
+              + seccion(soloA, `Solo en ${encuestas[0]?.periodo || 'período 1'}`)
+              + seccion(soloB, `Solo en ${encuestas[1]?.periodo || 'período 2'}`);
+  } else {
+    contenido = seccion(grupos, null);
+  }
+
+  container.innerHTML = leyenda + `<div style="overflow-x:auto">${contenido}</div>`;
+
+  // Animar barras
+  requestAnimationFrame(() => {
+    container.querySelectorAll('.comp-bar').forEach(b => {
+      b.style.width = b.dataset.pct + '%';
+    });
+  });
+}
+
+async function cargarAdjuntos() {
+  const id = periodoActual?.id;
+  if (!id) return;
+  const adj = await fetch(`/api/engagement/adjuntos/${id}`).then(r=>r.json()).catch(()=>[]);
+  if (!adj.length) {
+    el('adjList').innerHTML = '<div style="color:#8A97AA;font-size:13px;padding:8px 0">Sin documentos adjuntos. Usá el botón "+ Agregar" para subir un PDF, PPT o Excel.</div>';
+    return;
+  }
+  const iconos = { pdf:'📄', ppt:'📊', pptx:'📊', xls:'📈', xlsx:'📈', doc:'📝', docx:'📝' };
+  el('adjList').innerHTML = adj.map(a => {
+    const ext = a.nombre.split('.').pop().toLowerCase();
+    const icono = iconos[ext] || '📎';
+    const kb = a.tamanio ? (a.tamanio > 1024*1024 ? (a.tamanio/1024/1024).toFixed(1)+' MB' : Math.round(a.tamanio/1024)+' KB') : '';
+    const fecha = new Date(a.fecha_carga).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F4F5F8">
+      <span style="font-size:22px">${icono}</span>
+      <div style="flex:1;min-width:0">
+        <a href="/api/engagement/adjuntos/file/${a.id}" target="_blank" style="font-size:13px;font-weight:600;color:#2563A8;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nombre}</a>
+        <span style="font-size:11px;color:#8A97AA">${kb} · ${fecha}</span>
+      </div>
+      ${USER.admin ? `<button onclick="eliminarAdjunto(${a.id})" style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;padding:4px" title="Eliminar">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function subirAdjunto() {
+  const file = el('inpAdj').files[0];
+  if (!file || !periodoActual) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  await fetch(`/api/engagement/adjuntos/${periodoActual.id}`, {
+    method: 'POST',
+    headers: { 'x-admin-key': sessionStorage.getItem('x-admin-key') || '' },
+    body: fd
+  });
+  el('inpAdj').value = '';
+  await cargarAdjuntos();
+}
+
+async function eliminarAdjunto(id) {
+  if (!confirm('¿Eliminar este documento?')) return;
+  await fetch(`/api/engagement/adjuntos/file/${id}`, {
+    method: 'DELETE',
+    headers: { 'x-admin-key': sessionStorage.getItem('x-admin-key') || '' }
+  });
+  await cargarAdjuntos();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  el('panel-'+name).classList.add('active');
+  if (compMode && ['total','sector','posicion','jefe'].includes(name)) mostrarContenidoComp(name);
+}
+
+function abrirModalSubir() { el('modalSubir').classList.remove('hidden'); }
+function cerrarModal() { el('modalSubir').classList.add('hidden'); el('uploadMsg').style.display='none'; }
+
+async function subirEncuesta() {
+  const periodo = el('inpPeriodo').value.trim();
+  const file = el('inpFile').files[0];
+  if (!periodo) { showMsg('Indicá el período.'); return; }
+  if (!file) { showMsg('Seleccioná un archivo Excel.'); return; }
+  const btn = el('btnConfirmarSubir');
+  btn.disabled = true; btn.textContent = 'Subiendo…';
+  const fd = new FormData();
+  fd.append('periodo', periodo);
+  fd.append('descripcion', el('inpDesc').value.trim());
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/engagement/upload', {
+      method: 'POST',
+      headers: { 'x-admin-key': sessionStorage.getItem('x-admin-key') || '' },
+      body: fd
+    });
+    const d = await r.json();
+    if (!r.ok) { showMsg(d.error || 'Error al subir.'); return; }
+    cerrarModal();
+    el('inpPeriodo').value=''; el('inpDesc').value=''; el('inpFile').value='';
+    encuestas = await fetch('/api/engagement/encuestas').then(r=>r.json()).catch(()=>[]);
+    poblarSelectores();
+    el('selPeriodo').value = d.encuesta_id;
+    await cargarPeriodo();
+  } catch(e) { showMsg('Error de conexión.'); }
+  finally { btn.disabled=false; btn.textContent='Subir'; }
+}
+
+function showMsg(msg) { el('uploadMsg').textContent=msg; el('uploadMsg').style.display=''; }
+
+async function eliminarEncuesta() {
+  const id = el('selPeriodo').value;
+  if (!id) return;
+  const enc = encuestas.find(e=>String(e.id)===id);
+  if (!confirm(`¿Eliminar la encuesta "${enc?.periodo}"? Se borran todos sus datos.`)) return;
+  await fetch(`/api/engagement/encuestas/${id}`, { method:'DELETE', headers:{'x-admin-key':sessionStorage.getItem('x-admin-key')||''} });
+  encuestas = await fetch('/api/engagement/encuestas').then(r=>r.json()).catch(()=>[]);
+  poblarSelectores();
+  resultados=[]; textos=[];
+  if (!encuestas.length) { el('dashboard').style.display='none'; el('emptyState').style.display=''; }
+  else { el('dashboard').style.display=''; el('emptyState').style.display='none'; await entrarModoComparacion(); }
+}
+
+init();
+</script>
+</body>
+</html>

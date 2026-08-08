@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan de Comunicaciones</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:#1B3F72;padding:16px 24px 18px}
+.page-header h1{font-size:15px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.wrap{max-width:1300px;margin:0 auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+
+/* Year selector */
+.year-bar{display:flex;align-items:center;gap:8px}
+.year-btn{background:#fff;border:1.5px solid #D8DEE8;border-radius:4px;padding:5px 14px;font-size:12.5px;font-weight:600;color:#5E6E89;cursor:pointer}
+.year-btn.active{background:#1B3F72;border-color:#1B3F72;color:#fff}
+
+/* Card */
+.card{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #EEF0F6}
+.card-title{font-size:13px;font-weight:700;color:#18243A}
+.card-subtitle{font-size:11px;color:#8A97AA;margin-top:1px}
+
+/* Buttons */
+.btn{padding:6px 14px;border-radius:4px;font-size:12px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#1B3F72;color:#fff}
+.btn-primary:hover{background:#163264}
+.btn-secondary{background:#F2F4F8;color:#18243A;border:1.5px solid #D8DEE8}
+.btn-secondary:hover{background:#E8EBF2}
+.btn-danger{background:#FEF2F2;color:#B91C1C;border:1.5px solid #FCA5A5}
+.btn-danger:hover{background:#FEE2E2}
+.btn-sm{padding:4px 9px;font-size:11px}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#F8F9FC;color:#5E6E89;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;text-align:left;border-bottom:1px solid #EEF0F6;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #F2F4F8;vertical-align:middle;color:#18243A}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFBFD}
+
+/* Month cells */
+.month-cell{text-align:center;width:30px;padding:9px 4px}
+.m-dot{width:14px;height:14px;border-radius:3px;margin:0 auto;cursor:pointer;transition:opacity .15s;title:''}
+.m-dot:hover{opacity:.75}
+.m-empty{background:#E5E7EB}
+.m-prog{background:#F59E0B}
+.m-done{background:#16A34A}
+/* Legend */
+.legend{display:flex;align-items:center;gap:16px;font-size:11px;color:#5E6E89}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+
+/* Tipo badge */
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.badge-dias{background:#FEF9C3;color:#713F12}
+.badge-inst{background:#DBEAFE;color:#1E3A8A}
+.badge-hsma{background:#D1FAE5;color:#065F46}
+.badge-rrhh{background:#EDE9FE;color:#4C1D95}
+
+/* Section row (tipo group) */
+.group-row td{background:#F8F9FC;font-weight:700;font-size:11px;color:#5E6E89;text-transform:uppercase;letter-spacing:.05em;padding:6px 12px}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:640px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #EEF0F6}
+.modal-header h3{font-size:13.5px;font-weight:700}
+.modal-close{background:none;border:none;font-size:18px;color:#8A97AA;cursor:pointer;line-height:1}
+.modal-body{padding:18px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row.full{grid-template-columns:1fr}
+label{display:block;font-size:11px;font-weight:600;color:#5E6E89;margin-bottom:3px}
+input,select,textarea{width:100%;padding:7px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12.5px;font-family:inherit;color:#18243A;background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1B3F72}
+textarea{min-height:72px;resize:vertical}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #EEF0F6}
+
+/* Month select in modal */
+.meses-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:6px}
+.mes-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:#5E6E89}
+.mes-sel{width:100%;font-size:10px;padding:2px 2px;border:1.5px solid #D8DEE8;border-radius:4px;text-align:center}
+
+/* Empty state */
+.empty-state{padding:40px 24px;text-align:center;color:#8A97AA;font-size:13px}
+
+/* Feedback */
+.feedback-meta{font-size:11px;color:#8A97AA}
+.ajuste-tag{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:4px;margin-left:6px}
+
+/* Evidencias */
+.btn-ev{background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;line-height:1}
+.btn-ev:hover{background:#F2F4F8}
+.btn-ev.has-ev{position:relative}
+.btn-ev.has-ev::after{content:attr(data-count);position:absolute;top:-4px;right:-4px;background:#1B3F72;color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:0 4px;line-height:14px}
+.ev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-top:4px}
+.ev-thumb{position:relative;border-radius:6px;overflow:hidden;border:1px solid #EEF0F6;background:#F8F9FC}
+.ev-thumb img{width:100%;height:80px;object-fit:cover;display:block;cursor:pointer}
+.ev-thumb-footer{padding:4px 6px;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.ev-thumb-name{font-size:10px;color:#5E6E89;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.ev-thumb-del{background:none;border:none;cursor:pointer;color:#B91C1C;font-size:12px;flex-shrink:0;padding:0}
+.ev-thumb-mes{position:absolute;top:4px;left:4px;background:rgba(27,63,114,.85);color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px}
+.upload-zone{border:2px dashed #D8DEE8;border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s}
+.upload-zone:hover{border-color:#1B3F72}
+.upload-zone input{display:none}
+.upload-zone p{font-size:12px;color:#8A97AA;margin-top:6px}
+.ev-lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center}
+.ev-lightbox.open{display:flex}
+.ev-lightbox img{max-width:90vw;max-height:90vh;border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.ev-lightbox-close{position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Plan de Comunicaciones</span>
+</div>
+<div class="page-header">
+  <h1>Plan de Comunicaciones</h1>
+  <p>Ambiente de Trabajo y Compromiso · DPO Gente</p>
+</div>
+
+<div class="wrap">
+  <!-- Year selector -->
+  <div class="year-bar" id="yearBar"></div>
+
+  <!-- Plan principal -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Plan de Comunicaciones Internas</div>
+        <div class="card-subtitle">Registro de comunicaciones planificadas y ejecución mensual</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#E5E7EB"></div>Sin programar</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Programado</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div>Realizado</div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirModalComun()">+ Nueva comunicación</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Contenido</th>
+            <th>Emisor</th>
+            <th>Frecuencia</th>
+            <th>Medio</th>
+            <th>Destinatarios</th>
+            <th class="month-cell">E</th>
+            <th class="month-cell">F</th>
+            <th class="month-cell">M</th>
+            <th class="month-cell">A</th>
+            <th class="month-cell">M</th>
+            <th class="month-cell">J</th>
+            <th class="month-cell">J</th>
+            <th class="month-cell">A</th>
+            <th class="month-cell">S</th>
+            <th class="month-cell">O</th>
+            <th class="month-cell">N</th>
+            <th class="month-cell">D</th>
+            <th>Evidencia</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyComun">
+          <tr><td colspan="20" class="empty-state">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Feedback / participación -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Registro de Feedback del Personal</div>
+        <div class="card-subtitle">Aportes, sugerencias y ajustes al plan de comunicaciones</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLScxdvgV094M4VF166eQg5QDkTVgHSvnb2M-Oaa5WONtvt397g/viewform" target="_blank" class="btn btn-secondary" style="text-decoration:none">Abrir formulario</a>
+        <button class="btn btn-primary" onclick="abrirModalFb()">+ Registrar aporte</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Autor</th>
+            <th>Aporte / Sugerencia</th>
+            <th>Generó ajuste</th>
+            <th>Descripción del ajuste</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyFb">
+          <tr><td colspan="6" class="empty-state">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal comunicación -->
+<div class="modal-overlay" id="modalComun">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalComunTitle">Nueva comunicación</h3>
+      <button class="modal-close" onclick="cerrarModal('modalComun')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cId">
+      <div class="form-row">
+        <div>
+          <label>Tipo *</label>
+          <select id="cTipo">
+            <option value="Días Especiales">Días Especiales</option>
+            <option value="Institucional">Institucional</option>
+            <option value="HSMA">HSMA</option>
+            <option value="RRHH">RRHH</option>
+          </select>
+        </div>
+        <div>
+          <label>Frecuencia</label>
+          <select id="cFrecuencia">
+            <option value="">— seleccionar —</option>
+            <option value="Anual">Anual</option>
+            <option value="Semestral">Semestral</option>
+            <option value="Trimestral">Trimestral</option>
+            <option value="Mensual">Mensual</option>
+            <option value="Semanal">Semanal</option>
+            <option value="Eventual">Eventual</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>Contenido / Acción *</label>
+          <input type="text" id="cContenido" placeholder="Descripción de la comunicación">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Emisor</label>
+          <input type="text" id="cEmisor" placeholder="Quién comunica">
+        </div>
+        <div>
+          <label>Medio</label>
+          <input type="text" id="cMedio" placeholder="Canal o medio de comunicación">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>Destinatarios</label>
+          <input type="text" id="cDestinatarios" placeholder="A quiénes va dirigida">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>Por qué / Propósito</label>
+          <textarea id="cPorQue" placeholder="Objetivo o motivación de la comunicación"></textarea>
+        </div>
+      </div>
+      <div>
+        <label>Meses de ejecución</label>
+        <div class="meses-grid">
+          <div class="mes-item"><span>Ene</span><select class="mes-sel" id="m1"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Feb</span><select class="mes-sel" id="m2"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Mar</span><select class="mes-sel" id="m3"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Abr</span><select class="mes-sel" id="m4"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>May</span><select class="mes-sel" id="m5"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Jun</span><select class="mes-sel" id="m6"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Jul</span><select class="mes-sel" id="m7"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Ago</span><select class="mes-sel" id="m8"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Sep</span><select class="mes-sel" id="m9"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Oct</span><select class="mes-sel" id="m10"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Nov</span><select class="mes-sel" id="m11"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+          <div class="mes-item"><span>Dic</span><select class="mes-sel" id="m12"><option value="">—</option><option value="programado">Prog.</option><option value="realizado">Real.</option></select></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modalComun')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarComun()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal evidencias -->
+<div class="modal-overlay" id="modalEv">
+  <div class="modal" style="width:680px">
+    <div class="modal-header">
+      <h3 id="modalEvTitle">Evidencias</h3>
+      <button class="modal-close" onclick="cerrarModal('modalEv')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="evComunId">
+      <!-- Upload -->
+      <div>
+        <label>Subir imagen de evidencia</label>
+        <div style="display:flex;gap:10px;align-items:flex-end;margin-top:4px">
+          <div style="flex:1">
+            <label style="margin-bottom:3px">Mes al que corresponde</label>
+            <select id="evMes" style="width:100%;padding:7px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12.5px">
+              <option value="">— Sin mes específico —</option>
+              <option value="1">Enero</option><option value="2">Febrero</option>
+              <option value="3">Marzo</option><option value="4">Abril</option>
+              <option value="5">Mayo</option><option value="6">Junio</option>
+              <option value="7">Julio</option><option value="8">Agosto</option>
+              <option value="9">Septiembre</option><option value="10">Octubre</option>
+              <option value="11">Noviembre</option><option value="12">Diciembre</option>
+            </select>
+          </div>
+          <div style="flex:2">
+            <label style="margin-bottom:3px">Imagen</label>
+            <div class="upload-zone" onclick="document.getElementById('evFile').click()">
+              <input type="file" id="evFile" accept="image/*" onchange="previewUpload(this)">
+              <div id="evFileLabel">Clic para seleccionar imagen</div>
+              <p>JPG, PNG, WEBP</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;text-align:right">
+          <button class="btn btn-primary" onclick="subirEvidencia()" id="btnSubir" disabled>Subir evidencia</button>
+        </div>
+      </div>
+      <hr style="border:none;border-top:1px solid #EEF0F6;margin:4px 0">
+      <!-- Lista de evidencias -->
+      <div>
+        <label>Evidencias cargadas</label>
+        <div class="ev-grid" id="evGrid"><p style="color:#8A97AA;font-size:12px">Sin evidencias aún.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="ev-lightbox" id="evLightbox" onclick="cerrarLightbox()">
+  <button class="ev-lightbox-close" onclick="cerrarLightbox()">×</button>
+  <img id="evLightboxImg" src="">
+</div>
+
+<!-- Modal feedback -->
+<div class="modal-overlay" id="modalFb">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalFbTitle">Nuevo aporte</h3>
+      <button class="modal-close" onclick="cerrarModal('modalFb')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fId">
+      <div class="form-row">
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="fFecha">
+        </div>
+        <div>
+          <label>Autor / Referente</label>
+          <input type="text" id="fAutor" placeholder="Nombre o sector">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div>
+          <label>Aporte / Sugerencia *</label>
+          <textarea id="fAporte" placeholder="Descripción del feedback recibido"></textarea>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <input type="checkbox" id="fGeneroAjuste" style="width:auto" onchange="toggleAjuste()">
+          <label style="margin:0;cursor:pointer" for="fGeneroAjuste">Generó un ajuste al plan</label>
+        </div>
+      </div>
+      <div class="form-row full" id="ajusteRow" style="display:none">
+        <div>
+          <label>Descripción del ajuste realizado</label>
+          <textarea id="fAjusteDesc" placeholder="Qué se modificó en el plan"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modalFb')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarFb()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const MESES = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+const MESES_ABR = ['E','F','M','A','M','J','J','A','S','O','N','D'];
+let anioActual = new Date().getFullYear();
+let comunData = [];
+let fbData = [];
+
+// --- Year bar ---
+function renderYearBar() {
+  const bar = document.getElementById('yearBar');
+  const years = [];
+  for (let y = 2024; y <= anioActual + 1; y++) years.push(y);
+  bar.innerHTML = years.map(y =>
+    `<button class="year-btn${y === anioActual ? ' active' : ''}" onclick="setAnio(${y})">${y}</button>`
+  ).join('');
+}
+
+function setAnio(y) {
+  anioActual = y;
+  renderYearBar();
+  cargarTodo();
+}
+
+// --- Load ---
+async function cargarTodo() {
+  await Promise.all([cargarComun(), cargarFb()]);
+}
+
+async function cargarComun() {
+  const r = await fetch(`/api/pc/comunicaciones?anio=${anioActual}`);
+  comunData = await r.json();
+  renderTablaComun();
+  cargarBadgesEvidencias();
+}
+
+async function cargarFb() {
+  const r = await fetch(`/api/pc/feedback?anio=${anioActual}`);
+  fbData = await r.json();
+  renderTablaFb();
+}
+
+// --- Render tabla comunicaciones ---
+const TIPO_ORDER = ['Días Especiales','Institucional','HSMA','RRHH'];
+
+function badgeTipo(tipo) {
+  const cls = tipo === 'Días Especiales' ? 'badge-dias'
+    : tipo === 'Institucional' ? 'badge-inst'
+    : tipo === 'HSMA' ? 'badge-hsma'
+    : 'badge-rrhh';
+  return `<span class="badge ${cls}">${tipo}</span>`;
+}
+
+function renderTablaComun() {
+  const tbody = document.getElementById('tbodyComun');
+  if (!comunData.length) {
+    tbody.innerHTML = `<tr><td colspan="19" class="empty-state">No hay comunicaciones registradas para ${anioActual}.</td></tr>`;
+    return;
+  }
+  let html = '';
+  let lastTipo = null;
+  const sorted = [...comunData].sort((a,b) => {
+    const ia = TIPO_ORDER.indexOf(a.tipo); const ib = TIPO_ORDER.indexOf(b.tipo);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+  for (const c of sorted) {
+    if (c.tipo !== lastTipo) {
+      html += `<tr class="group-row"><td colspan="20">${c.tipo || 'Sin categoría'}</td></tr>`;
+      lastTipo = c.tipo;
+    }
+    const meses = c.meses || {};
+    const mCells = MESES.map(m => {
+      // Estado: null/false → vacío, true/"programado" → programado (amarillo), "realizado" → realizado (verde)
+      const val = meses[m] ?? meses['m'+m];
+      const estado = val === 'realizado' ? 'realizado' : (val && val !== false) ? 'programado' : '';
+      const cls = estado === 'realizado' ? 'm-done' : estado === 'programado' ? 'm-prog' : 'm-empty';
+      const title = estado === 'realizado' ? 'Realizado' : estado === 'programado' ? 'Programado — clic para marcar realizado' : 'Sin programar — clic para programar';
+      return `<td class="month-cell"><div class="m-dot ${cls}" onclick="toggleMes(${c.id},'${m}')" title="${title}"></div></td>`;
+    }).join('');
+    html += `<tr>
+      <td>${badgeTipo(c.tipo||'')}</td>
+      <td>${c.contenido||'—'}</td>
+      <td>${c.emisor||'—'}</td>
+      <td>${c.frecuencia||'—'}</td>
+      <td>${c.medio||'—'}</td>
+      <td>${c.destinatarios||'—'}</td>
+      ${mCells}
+      <td class="month-cell"><button class="btn-ev" onclick="abrirEvidencias(${c.id})" title="Ver / subir evidencias" id="ev-btn-${c.id}">📎</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-secondary btn-sm" onclick="editarComun(${c.id})">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarComun(${c.id})">Eliminar</button>
+      </td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+async function toggleMes(id, m) {
+  const c = comunData.find(x => x.id === id);
+  if (!c) return;
+  const meses = { ...(c.meses || {}) };
+  const val = meses[m];
+  // Ciclo: vacío → programado → realizado → vacío
+  if (!val || val === false) meses[m] = 'programado';
+  else if (val === 'programado' || val === true) meses[m] = 'realizado';
+  else delete meses[m];
+
+  c.meses = meses;
+  renderTablaComun(); // actualiza UI inmediatamente
+
+  await fetch(`/api/pc/comunicaciones/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anio: c.anio, tipo: c.tipo, contenido: c.contenido, emisor: c.emisor, frecuencia: c.frecuencia, medio: c.medio, destinatarios: c.destinatarios, por_que: c.por_que, meses })
+  });
+}
+
+// --- Render tabla feedback ---
+function fmtFecha(d) {
+  if (!d) return '—';
+  const s = d.includes('T') ? d.split('T')[0] : d;
+  return new Date(s + 'T12:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+function renderTablaFb() {
+  const tbody = document.getElementById('tbodyFb');
+  if (!fbData.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No hay aportes registrados para ${anioActual}.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = fbData.map(f => `<tr>
+    <td>${fmtFecha(f.fecha)}</td>
+    <td>${f.autor||'—'}</td>
+    <td>${f.aporte||'—'}</td>
+    <td>${f.genero_ajuste ? '<span class="ajuste-tag">Sí</span>' : '<span style="color:#8A97AA">No</span>'}</td>
+    <td>${f.ajuste_descripcion||'—'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-secondary btn-sm" onclick="editarFb(${f.id})">Editar</button>
+      <button class="btn btn-danger btn-sm" onclick="eliminarFb(${f.id})">Eliminar</button>
+    </td>
+  </tr>`).join('');
+}
+
+// --- Modal comunicación ---
+function abrirModalComun(id) {
+  document.getElementById('modalComunTitle').textContent = id ? 'Editar comunicación' : 'Nueva comunicación';
+  document.getElementById('cId').value = id || '';
+  if (!id) {
+    document.getElementById('cTipo').value = 'Institucional';
+    document.getElementById('cContenido').value = '';
+    document.getElementById('cEmisor').value = '';
+    document.getElementById('cFrecuencia').value = '';
+    document.getElementById('cMedio').value = '';
+    document.getElementById('cDestinatarios').value = '';
+    document.getElementById('cPorQue').value = '';
+    MESES.forEach(m => document.getElementById('m'+m).checked = false);
+  } else {
+    const c = comunData.find(x => x.id === id);
+    document.getElementById('cTipo').value = c.tipo||'Institucional';
+    document.getElementById('cContenido').value = c.contenido||'';
+    document.getElementById('cEmisor').value = c.emisor||'';
+    document.getElementById('cFrecuencia').value = c.frecuencia||'';
+    document.getElementById('cMedio').value = c.medio||'';
+    document.getElementById('cDestinatarios').value = c.destinatarios||'';
+    document.getElementById('cPorQue').value = c.por_que||'';
+    const meses = c.meses||{};
+    MESES.forEach(m => {
+      const val = meses[m] ?? meses['m'+m];
+      document.getElementById('m'+m).value = val === 'realizado' ? 'realizado' : (val && val !== false) ? 'programado' : '';
+    });
+  }
+  document.getElementById('modalComun').classList.add('open');
+}
+
+function editarComun(id) { abrirModalComun(id); }
+
+async function guardarComun() {
+  const id = document.getElementById('cId').value;
+  const meses = {};
+  MESES.forEach(m => { const v = document.getElementById('m'+m).value; if (v) meses[m] = v; });
+  const body = {
+    anio: anioActual,
+    tipo: document.getElementById('cTipo').value,
+    contenido: document.getElementById('cContenido').value,
+    emisor: document.getElementById('cEmisor').value,
+    frecuencia: document.getElementById('cFrecuencia').value,
+    medio: document.getElementById('cMedio').value,
+    destinatarios: document.getElementById('cDestinatarios').value,
+    por_que: document.getElementById('cPorQue').value,
+    meses
+  };
+  const url = id ? `/api/pc/comunicaciones/${id}` : '/api/pc/comunicaciones';
+  const method = id ? 'PUT' : 'POST';
+  await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  cerrarModal('modalComun');
+  cargarComun();
+}
+
+async function eliminarComun(id) {
+  if (!confirm('¿Eliminar esta comunicación?')) return;
+  await fetch(`/api/pc/comunicaciones/${id}`, { method: 'DELETE' });
+  cargarComun();
+}
+
+// --- Modal feedback ---
+function abrirModalFb(id) {
+  document.getElementById('modalFbTitle').textContent = id ? 'Editar aporte' : 'Nuevo aporte';
+  document.getElementById('fId').value = id || '';
+  if (!id) {
+    document.getElementById('fFecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('fAutor').value = '';
+    document.getElementById('fAporte').value = '';
+    document.getElementById('fGeneroAjuste').checked = false;
+    document.getElementById('fAjusteDesc').value = '';
+    document.getElementById('ajusteRow').style.display = 'none';
+  } else {
+    const f = fbData.find(x => x.id === id);
+    document.getElementById('fFecha').value = f.fecha ? f.fecha.split('T')[0] : '';
+    document.getElementById('fAutor').value = f.autor||'';
+    document.getElementById('fAporte').value = f.aporte||'';
+    document.getElementById('fGeneroAjuste').checked = !!f.genero_ajuste;
+    document.getElementById('fAjusteDesc').value = f.ajuste_descripcion||'';
+    document.getElementById('ajusteRow').style.display = f.genero_ajuste ? 'grid' : 'none';
+  }
+  document.getElementById('modalFb').classList.add('open');
+}
+
+function editarFb(id) { abrirModalFb(id); }
+
+function toggleAjuste() {
+  document.getElementById('ajusteRow').style.display =
+    document.getElementById('fGeneroAjuste').checked ? 'grid' : 'none';
+}
+
+async function guardarFb() {
+  const id = document.getElementById('fId').value;
+  const body = {
+    anio: anioActual,
+    fecha: document.getElementById('fFecha').value || null,
+    autor: document.getElementById('fAutor').value,
+    aporte: document.getElementById('fAporte').value,
+    genero_ajuste: document.getElementById('fGeneroAjuste').checked,
+    ajuste_descripcion: document.getElementById('fAjusteDesc').value
+  };
+  const url = id ? `/api/pc/feedback/${id}` : '/api/pc/feedback';
+  const method = id ? 'PUT' : 'POST';
+  await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  cerrarModal('modalFb');
+  cargarFb();
+}
+
+async function eliminarFb(id) {
+  if (!confirm('¿Eliminar este aporte?')) return;
+  await fetch(`/api/pc/feedback/${id}`, { method: 'DELETE' });
+  cargarFb();
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// --- Evidencias ---
+const MESES_NOMBRES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+async function abrirEvidencias(comunId) {
+  const c = comunData.find(x => x.id === comunId);
+  document.getElementById('modalEvTitle').textContent = `Evidencias — ${c?.contenido || ''}`;
+  document.getElementById('evComunId').value = comunId;
+  document.getElementById('evMes').value = '';
+  document.getElementById('evFile').value = '';
+  document.getElementById('evFileLabel').textContent = 'Clic para seleccionar imagen';
+  document.getElementById('btnSubir').disabled = true;
+  document.getElementById('modalEv').classList.add('open');
+  await cargarEvidencias(comunId);
+}
+
+async function cargarEvidencias(comunId) {
+  const r = await fetch(`/api/pc/evidencias?comunicacion_id=${comunId}`);
+  const evs = await r.json();
+  const grid = document.getElementById('evGrid');
+  if (!evs.length) {
+    grid.innerHTML = '<p style="color:#8A97AA;font-size:12px">Sin evidencias aún.</p>';
+    return;
+  }
+  grid.innerHTML = evs.map(e => `
+    <div class="ev-thumb">
+      ${e.mes ? `<div class="ev-thumb-mes">${MESES_NOMBRES[e.mes]}</div>` : ''}
+      <img src="/api/pc/evidencias/${e.id}/imagen" alt="${e.nombre}" onclick="abrirLightbox('/api/pc/evidencias/${e.id}/imagen')">
+      <div class="ev-thumb-footer">
+        <span class="ev-thumb-name" title="${e.nombre}">${e.nombre}</span>
+        <button class="ev-thumb-del" onclick="eliminarEvidencia(${e.id},${comunId})" title="Eliminar">×</button>
+      </div>
+    </div>`).join('');
+
+  // Actualizar badge del botón en la tabla
+  const btn = document.getElementById(`ev-btn-${comunId}`);
+  if (btn) {
+    if (evs.length) { btn.classList.add('has-ev'); btn.setAttribute('data-count', evs.length); }
+    else { btn.classList.remove('has-ev'); btn.removeAttribute('data-count'); }
+  }
+}
+
+function previewUpload(input) {
+  if (input.files[0]) {
+    document.getElementById('evFileLabel').textContent = input.files[0].name;
+    document.getElementById('btnSubir').disabled = false;
+  }
+}
+
+async function subirEvidencia() {
+  const comunId = document.getElementById('evComunId').value;
+  const mes = document.getElementById('evMes').value;
+  const file = document.getElementById('evFile').files[0];
+  if (!file) return;
+
+  const btn = document.getElementById('btnSubir');
+  btn.disabled = true;
+  btn.textContent = 'Subiendo...';
+
+  const fd = new FormData();
+  fd.append('comunicacion_id', comunId);
+  if (mes) fd.append('mes', mes);
+  fd.append('imagen', file);
+
+  await fetch('/api/pc/evidencias', { method: 'POST', body: fd });
+
+  // Si subió con mes, refrescar los datos para reflejar el mes como realizado
+  if (mes) await cargarComun();
+
+  document.getElementById('evFile').value = '';
+  document.getElementById('evFileLabel').textContent = 'Clic para seleccionar imagen';
+  btn.textContent = 'Subir evidencia';
+  await cargarEvidencias(Number(comunId));
+}
+
+async function eliminarEvidencia(id, comunId) {
+  if (!confirm('¿Eliminar esta evidencia?')) return;
+  await fetch(`/api/pc/evidencias/${id}`, { method: 'DELETE' });
+  await cargarEvidencias(comunId);
+}
+
+function abrirLightbox(src) {
+  document.getElementById('evLightboxImg').src = src;
+  document.getElementById('evLightbox').classList.add('open');
+}
+
+function cerrarLightbox() {
+  document.getElementById('evLightbox').classList.remove('open');
+  document.getElementById('evLightboxImg').src = '';
+}
+
+// Cargar badges de evidencias al cargar el plan
+async function cargarBadgesEvidencias() {
+  for (const c of comunData) {
+    const r = await fetch(`/api/pc/evidencias?comunicacion_id=${c.id}`);
+    const evs = await r.json();
+    const btn = document.getElementById(`ev-btn-${c.id}`);
+    if (btn && evs.length) {
+      btn.classList.add('has-ev');
+      btn.setAttribute('data-count', evs.length);
+    }
+  }
+}
+
+// --- Init ---
+renderYearBar();
+cargarTodo();
+</script>
+</body>
+</html>

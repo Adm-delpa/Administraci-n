@@ -1,0 +1,7 @@
+name = "mis-cuentas"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "DATA"
+id = "9c4ab6533c8a49d0acbd125dcf7c5366"

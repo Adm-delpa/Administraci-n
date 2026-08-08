@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ingresos y Movimientos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+/* Header */
+.top-bar{background:#1B3F72;padding:12px 24px;display:flex;align-items:center;gap:14px}
+.back-btn{background:none;border:none;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:5px}
+.back-btn:hover{color:#fff}
+.top-title{font-size:15px;font-weight:800;color:#fff}
+
+.page{max-width:1100px;margin:0 auto;padding:24px 20px}
+
+/* Page header */
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:800;color:#1B3F72}
+.page-sub{font-size:12px;color:#8A97AA;margin-top:3px}
+.btn-nuevo{padding:9px 18px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-nuevo:hover{background:#16336080}
+
+/* Filtros */
+.filters{display:flex;gap:10px;margin-bottom:18px;align-items:center;flex-wrap:wrap}
+.filter-sel{padding:7px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;color:#18243A;background:#fff;cursor:pointer}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.kpi.navy .kpi-val{color:#1B3F72}
+.kpi.purple .kpi-val{color:#8B5CF6}
+.kpi.teal .kpi-val{color:#0891B2}
+.kpi-sub{font-size:10.5px;color:#6B7A94;margin-top:3px}
+
+/* Tabla */
+.table-wrap{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
+.table-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #EEF0F6}
+.table-count{font-size:12px;font-weight:700;color:#18243A}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:620px}
+thead th{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em;padding:10px 14px;text-align:left;border-bottom:1px solid #EEF0F6;white-space:nowrap}
+tbody tr{border-bottom:1px solid #F5F6FA}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#FAFBFD}
+td{padding:11px 14px;font-size:12.5px;color:#18243A;vertical-align:middle}
+.td-fecha{color:#5A6880;font-size:11.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.td-nombre{font-weight:700}
+.td-pos{font-size:11.5px;color:#5A6880;max-width:200px}
+.td-arrow{color:#C0C8D4;font-size:14px;padding:11px 2px;text-align:center}
+.td-actions{display:flex;gap:6px;opacity:0;transition:opacity .15s}
+tr:hover .td-actions{opacity:1}
+.btn-xs{padding:4px 10px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;border:1px solid #D8DEE8;background:#fff;color:#5A6880;white-space:nowrap}
+.btn-xs:hover{background:#F5F6FA}
+.btn-xs.danger{border-color:#FCA5A5;color:#DC2626}
+.btn-xs.danger:hover{background:#FEF2F2}
+.empty-row td{text-align:center;color:#8A97AA;font-size:13px;padding:40px 0}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,30,60,.4);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.2);overflow:hidden;margin:16px}
+.modal-hdr{background:#1B3F72;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:800;color:#fff}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;line-height:1}
+.modal-close:hover{color:#fff}
+.modal-body{padding:20px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.one{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{padding:8px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;background:#fff;outline:none}
+.form-input:focus,.form-select:focus{border-color:#1B3F72}
+.form-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #EEF0F6}
+.btn-cancel{padding:7px 14px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#5A6880;cursor:pointer}
+.btn-save{padding:7px 18px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:#1B3F72;color:#fff;cursor:pointer}
+.btn-save:hover{background:#163360}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="back-btn" onclick="window.location.href='/reclu-hub'">← Volver</button>
+  <span class="top-title">Ingresos y Movimientos</span>
+</div>
+
+<div class="page">
+  <div class="page-hdr">
+    <div>
+      <div class="page-title">Transferencias internas</div>
+      <div class="page-sub">Registro de movimientos de personal</div>
+    </div>
+    <button class="btn-nuevo" onclick="abrirModal()">+ Transferencia interna</button>
+  </div>
+
+  <div class="filters">
+    <select class="filter-sel" id="sel-anio" onchange="cargar()">
+      <option value="">Todos los años</option>
+    </select>
+    <select class="filter-sel" id="sel-mes" onchange="cargar()">
+      <option value="">Todos los meses</option>
+      <option>Enero</option><option>Febrero</option><option>Marzo</option>
+      <option>Abril</option><option>Mayo</option><option>Junio</option>
+      <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+      <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+    </select>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi navy"><div class="kpi-label">Total</div><div class="kpi-val" id="kpi-total">—</div><div class="kpi-sub">movimientos</div></div>
+    <div class="kpi purple"><div class="kpi-label">Este mes</div><div class="kpi-val" id="kpi-mes">—</div><div class="kpi-sub">transferencias</div></div>
+    <div class="kpi teal"><div class="kpi-label">Este año</div><div class="kpi-val" id="kpi-anio">—</div><div class="kpi-sub">transferencias</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-bar">
+      <span class="table-count" id="table-count">—</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Apellido y Nombre</th>
+            <th>Posición anterior</th>
+            <th></th>
+            <th>Posición nueva</th>
+            <th>Mes / Año</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal-bg" onclick="cerrarModal(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modal-title">Nueva transferencia interna</span>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha del movimiento</label>
+          <input class="form-input" type="date" id="m-fecha">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mes</label>
+          <select class="form-select" id="m-mes">
+            <option>Enero</option><option>Febrero</option><option>Marzo</option>
+            <option>Abril</option><option>Mayo</option><option>Junio</option>
+            <option>Julio</option><option>Agosto</option><option>Septiembre</option>
+            <option>Octubre</option><option>Noviembre</option><option>Diciembre</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label class="form-label">Año</label>
+          <input class="form-input" type="number" id="m-anio" min="2020" max="2099">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label class="form-label">Apellido y Nombre</label>
+          <input class="form-input" type="text" id="m-nombre" placeholder="APELLIDO, Nombre">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label class="form-label">Posición anterior</label>
+          <input class="form-input" type="text" id="m-pos-anterior" placeholder="Puesto / Sector / Sede anterior">
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group">
+          <label class="form-label">Posición nueva</label>
+          <input class="form-input" type="text" id="m-pos-nueva" placeholder="Puesto / Sector / Sede nuevo">
+        </div>
+      </div>
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-save" onclick="guardar()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let MOVIMIENTOS = [];
+let EDIT_ID = null;
+
+// ── INIT ──
+(async () => {
+  const anioSel = document.getElementById('sel-anio');
+  const anioActual = new Date().getFullYear();
+  for (let a = anioActual; a >= 2023; a--) {
+    const o = document.createElement('option');
+    o.value = a; o.textContent = a;
+    if (a === anioActual) o.selected = true;
+    anioSel.appendChild(o);
+  }
+  // Sin filtro de mes → muestra todo el año
+  await cargar();
+})();
+
+async function cargar() {
+  const anio = document.getElementById('sel-anio').value;
+  const mes  = document.getElementById('sel-mes').value;
+  const p = new URLSearchParams();
+  if (anio) p.set('anio', anio);
+  if (mes)  p.set('mes', mes);
+  try {
+    MOVIMIENTOS = await fetch('/api/movimientos?' + p).then(r => r.json());
+    renderTabla();
+    renderKPIs();
+  } catch(e) {}
+}
+
+function renderKPIs() {
+  const anioActual = new Date().getFullYear();
+  const mesActual  = MESES[new Date().getMonth()];
+  // Para KPIs siempre traemos todos — simplificamos con los que tenemos cargados
+  // Total = todos los registros traídos
+  document.getElementById('kpi-total').textContent = MOVIMIENTOS.length;
+  document.getElementById('kpi-mes').textContent  = MOVIMIENTOS.filter(m => m.mes === mesActual && m.anio == anioActual).length;
+  document.getElementById('kpi-anio').textContent = MOVIMIENTOS.filter(m => m.anio == anioActual).length;
+}
+
+const fmtDate = f => {
+  if (!f) return '—';
+  const p = String(f).slice(0,10).split('-');
+  return `${p[2]}/${p[1]}/${p[0]}`;
+};
+
+function renderTabla() {
+  const total = MOVIMIENTOS.length;
+  document.getElementById('table-count').textContent = `${total} movimiento${total !== 1 ? 's' : ''}`;
+  const tbody = document.getElementById('tabla-body');
+  if (!total) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay movimientos registrados.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = MOVIMIENTOS.map(m => `
+    <tr>
+      <td class="td-fecha">${fmtDate(m.fecha)}</td>
+      <td class="td-nombre">${m.apellido_nombre||'—'}</td>
+      <td class="td-pos">${m.posicion_anterior||'—'}</td>
+      <td class="td-arrow">→</td>
+      <td class="td-pos">${m.posicion_nueva||'—'}</td>
+      <td class="td-fecha">${m.mes||''} ${m.anio||''}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn-xs" onclick="editar(${m.id})">Editar</button>
+          <button class="btn-xs danger" onclick="eliminar(${m.id})">Eliminar</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ── MODAL ──
+function abrirModal(m) {
+  EDIT_ID = m ? m.id : null;
+  document.getElementById('modal-title').textContent = m ? 'Editar movimiento' : 'Nueva transferencia interna';
+  const hoy = new Date();
+  document.getElementById('m-fecha').value      = m ? (m.fecha ? m.fecha.slice(0,10) : '') : hoy.toISOString().slice(0,10);
+  document.getElementById('m-mes').value        = m ? (m.mes || MESES[hoy.getMonth()]) : MESES[hoy.getMonth()];
+  document.getElementById('m-anio').value       = m ? (m.anio || hoy.getFullYear()) : hoy.getFullYear();
+  document.getElementById('m-nombre').value     = m ? (m.apellido_nombre || '') : '';
+  document.getElementById('m-pos-anterior').value = m ? (m.posicion_anterior || '') : '';
+  document.getElementById('m-pos-nueva').value  = m ? (m.posicion_nueva || '') : '';
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function cerrarModal(e) {
+  if (e && e.target !== document.getElementById('modal-bg')) return;
+  document.getElementById('modal-bg').classList.remove('open');
+}
+
+async function guardar() {
+  const body = {
+    fecha:             document.getElementById('m-fecha').value || null,
+    mes:               document.getElementById('m-mes').value,
+    anio:              parseInt(document.getElementById('m-anio').value) || null,
+    apellido_nombre:   document.getElementById('m-nombre').value.trim(),
+    posicion_anterior: document.getElementById('m-pos-anterior').value.trim(),
+    posicion_nueva:    document.getElementById('m-pos-nueva').value.trim(),
+  };
+  if (!body.apellido_nombre) { alert('Ingresá el nombre del empleado.'); return; }
+  try {
+    const url    = EDIT_ID ? `/api/movimientos/${EDIT_ID}` : '/api/movimientos';
+    const method = EDIT_ID ? 'PUT' : 'POST';
+    await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    cerrarModal();
+    await cargar();
+  } catch(e) {}
+}
+
+async function editar(id) {
+  const m = MOVIMIENTOS.find(x => x.id === id);
+  if (m) abrirModal(m);
+}
+
+async function eliminar(id) {
+  if (!confirm('¿Eliminár este movimiento?')) return;
+  try {
+    await fetch(`/api/movimientos/${id}`, { method: 'DELETE' });
+    await cargar();
+  } catch(e) {}
+}
+</script>
+</body>
+</html>

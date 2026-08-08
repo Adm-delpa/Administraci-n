@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visor de documento</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.65rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:500;color:#5A6880}
+.topbar-title strong{color:#18243A;font-weight:700}
+.page-header{background:#1B3F72;padding:18px 24px}
+.page-header h1{font-size:17px;font-weight:700;color:#fff}
+.page-header p{font-size:11.5px;color:rgba(255,255,255,.5);margin-top:3px}
+.wrap{max-width:900px;margin:0 auto;padding:24px 20px}
+.doc-card{background:#fff;border:1px solid #D8DEE8;border-radius:8px;overflow:hidden;margin-bottom:20px}
+.doc-card-header{background:#F7F8FB;border-bottom:1px solid #D8DEE8;padding:12px 18px;display:flex;align-items:center;gap:10px}
+.doc-icon{font-size:18px}
+.doc-name{font-size:13px;font-weight:700;color:#18243A}
+.doc-type{font-size:11px;color:#8A97AA;margin-top:2px}
+.doc-body{padding:24px 28px;line-height:1.7;font-size:14px;color:#2C3A4A}
+.doc-body h1,.doc-body h2,.doc-body h3{color:#1B3F72;margin:1.2em 0 .5em;font-size:1em;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.doc-body p{margin-bottom:.8em}
+.doc-body ul,.doc-body ol{margin:.5em 0 .8em 1.5em}
+.doc-body li{margin-bottom:.3em}
+.doc-body table{width:100%;border-collapse:collapse;margin:1em 0;font-size:13px}
+.doc-body td,.doc-body th{border:1px solid #D8DEE8;padding:7px 10px;text-align:left}
+.doc-body th{background:#F7F8FB;font-weight:700;color:#1B3F72}
+.pdf-embed{width:100%;height:75vh;border:none;display:block}
+.loading{text-align:center;padding:40px;color:#8A97AA;font-size:13px}
+.section-sep{height:1px;background:#EEF0F6;margin:24px 0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title" id="topbar-title">Cargando…</span>
+</div>
+
+<div class="page-header" id="page-header">
+  <h1 id="page-h1">Documento</h1>
+  <p id="page-sub"></p>
+</div>
+
+<div class="wrap" id="wrap">
+  <div class="loading">Cargando documento…</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const titulo = params.get('titulo') || 'Documento';
+const seccion = params.get('seccion') || 'Reclutamiento y Selección';
+document.getElementById('page-h1').textContent = titulo;
+document.getElementById('page-sub').textContent = seccion + ' · DPO Gente 2026';
+document.getElementById('topbar-title').innerHTML = seccion + ' · <strong>' + titulo + '</strong>';
+document.title = titulo + ' — DPO Gente';
+
+const docs = (params.get('docs') || '').split(',').filter(Boolean);
+const wrap = document.getElementById('wrap');
+
+async function renderDoc(file) {
+  const ext = file.split('.').pop().toLowerCase();
+  const label = decodeURIComponent(file.replace(/-/g,' ').replace(/\.(docx?|pdf)$/i,''));
+  const icon = ext === 'pdf' ? '📄' : '📝';
+  const card = document.createElement('div');
+  card.className = 'doc-card';
+
+  if (ext === 'pdf') {
+    card.innerHTML = `
+      <div class="doc-card-header"><span class="doc-icon">${icon}</span>
+        <div><div class="doc-name">${label}</div><div class="doc-type">PDF</div></div>
+      </div>
+      <embed class="pdf-embed" src="/docs/${file}" type="application/pdf">`;
+  } else {
+    card.innerHTML = `
+      <div class="doc-card-header"><span class="doc-icon">${icon}</span>
+        <div><div class="doc-name">${label}</div><div class="doc-type">Documento Word</div></div>
+      </div>
+      <div class="doc-body loading" id="body-${file}">Cargando…</div>`;
+    wrap.appendChild(card);
+    try {
+      const r = await fetch(`/api/docs/${file}/html`);
+      const d = await r.json();
+      document.getElementById('body-' + file).className = 'doc-body';
+      document.getElementById('body-' + file).innerHTML = d.html || '<em>Sin contenido</em>';
+    } catch(e) {
+      document.getElementById('body-' + file).textContent = 'No se pudo cargar el documento.';
+    }
+    return;
+  }
+  wrap.appendChild(card);
+}
+
+async function init() {
+  wrap.innerHTML = '';
+  for (let i = 0; i < docs.length; i++) {
+    if (i > 0) { const sep = document.createElement('div'); sep.className = 'section-sep'; wrap.appendChild(sep); }
+    await renderDoc(docs[i]);
+  }
+  if (!docs.length) wrap.innerHTML = '<div class="loading">No se especificaron documentos.</div>';
+}
+
+init();
+</script>
+</body>
+</html>

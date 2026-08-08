@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entorno Laboral — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:20px 24px 22px}
+.page-header h1{font-size:18px;font-weight:800;color:#fff}
+.page-header p{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
+
+.wrap{max-width:1200px;margin:0 auto;padding:20px 20px 60px}
+
+/* KPIs */
+.kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.kpi-card{background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:14px;flex:1;min-width:160px}
+.kpi-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.kpi-num{font-size:26px;font-weight:800;line-height:1}
+.kpi-lbl{font-size:11px;color:#64748B;margin-top:2px}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.btn{border:none;border-radius:7px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-primary{background:#2563A8;color:#fff}.btn-primary:hover{background:#1B4F8A}
+.btn-ghost{background:#fff;color:#18243A;border:1px solid #D8DEE8}.btn-ghost:hover{background:#F2F4F8}
+.btn-danger{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}.btn-danger:hover{background:#FEE2E2}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+
+select.flt{border:1px solid #D8DEE8;border-radius:6px;padding:6px 10px;font-size:12.5px;font-family:inherit;background:#fff;color:#18243A;cursor:pointer}
+.spacer{flex:1}
+.result-count{font-size:12px;color:#94A3B8}
+
+/* Tabla */
+.table-wrap{background:#fff;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{background:#F8FAFC;font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.04em;padding:10px 14px;text-align:left;border-bottom:1px solid #E2E8F0;white-space:nowrap}
+tbody tr{border-bottom:1px solid #F1F5F9;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#FAFBFD}
+tbody td{padding:11px 14px;font-size:13px;vertical-align:middle}
+
+/* Estado badges */
+.estado{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.estado-Pendiente{background:#FEF3C7;color:#92400E}
+.estado-En.proceso{background:#DBEAFE;color:#1D4ED8}
+.estado-Resuelto{background:#D1FAE5;color:#065F46}
+.estado-No.aplica{background:#F1F5F9;color:#64748B}
+
+/* Categoría badge */
+.cat{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#EDE9FE;color:#6D28D9}
+
+/* Botón editar inline */
+.edit-estado{background:none;border:1px solid #E2E8F0;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:600;cursor:pointer;color:#2563A8;margin-left:6px}
+.edit-estado:hover{background:#EBF2FA}
+.origen-forms{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#6D28D9;background:#EDE9FE;padding:2px 6px;border-radius:10px;margin-left:4px}
+
+/* Foto thumbnail */
+.foto-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;cursor:pointer}
+.foto-placeholder{width:36px;height:36px;border-radius:6px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;font-size:14px;color:#CBD5E1}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#fff;border-radius:14px;padding:24px;width:520px;max-width:100%;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:18px;color:#18243A}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid #D8DEE8;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;color:#18243A}
+.form-group textarea{resize:vertical;min-height:70px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.modal-sep{border:none;border-top:1px solid #E2E8F0;margin:16px 0}
+
+/* Foto ampliada */
+.foto-modal img{max-width:100%;border-radius:10px}
+/* Modal gestión (solo estado/responsable) */
+.modal-readonly .form-group input,.modal-readonly .form-group textarea,.modal-readonly .form-group select{background:#F8FAFC;color:#64748B;cursor:not-allowed}
+.reporte-original{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12.5px;line-height:1.7;color:#374151}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;background:#1E293B;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Revisión mensual */
+.revision-panel{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px;margin-top:24px}
+.revision-panel h3{font-size:13px;font-weight:700;color:#18243A;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.revision-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.revision-item label{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px}
+.revision-item textarea{width:100%;border:1px solid #D8DEE8;border-radius:7px;padding:8px 10px;font-size:12.5px;font-family:inherit;resize:vertical;min-height:90px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Entorno Laboral — Servicios Generales</span>
+</div>
+
+<div class="wrap">
+
+  <!-- Header SSGG -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:15px;font-weight:800;color:#18243A">🏢 Servicios Generales</div>
+      <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">Seguimiento de reportes del entorno laboral · DPO Gente</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <a href="https://forms.gle/Ads1tVa32ryk7oHZ6" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6D28D9;background:#EDE9FE;border:1px solid #DDD6FE;border-radius:6px;padding:5px 10px;text-decoration:none">📋 Abrir formulario</a>
+      <button class="btn btn-primary btn-sm" onclick="abrirNuevo()">+ Nuevo</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi-card"><div class="kpi-icon" style="background:#EDE9FE">📥</div><div><div class="kpi-num" id="kpiTotal">—</div><div class="kpi-lbl">Recibidas</div></div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#FEF3C7">⏳</div><div><div class="kpi-num" id="kpiPend" style="color:#92400E">—</div><div class="kpi-lbl">Pendientes</div></div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#D1FAE5">✅</div><div><div class="kpi-num" id="kpiRes" style="color:#065F46">—</div><div class="kpi-lbl">Resueltas</div></div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="background:#DBEAFE">⏱</div><div><div class="kpi-num" id="kpiTiempo" style="color:#1D4ED8">—</div><div class="kpi-lbl">Días prom. resolución</div></div></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <select class="flt" id="fltEstado" onchange="aplicarFiltros()">
+      <option value="">Todos los estados</option>
+      <option>Pendiente</option>
+      <option>En proceso</option>
+      <option>Resuelto</option>
+      <option>No aplica</option>
+    </select>
+    <select class="flt" id="fltCategoria" onchange="aplicarFiltros()">
+      <option value="">Todas las categorías</option>
+      <option>Instalaciones</option><option>Limpieza</option><option>Mantenimiento</option>
+      <option>Seguridad</option><option>Herramientas</option><option>EPP</option>
+      <option>Servicios Generales</option><option>Otro</option>
+    </select>
+    <select class="flt" id="fltSucursal" onchange="aplicarFiltros()">
+      <option value="">Todas las sucursales</option>
+    </select>
+    <span class="spacer"></span>
+    <span class="result-count" id="resultCount"></span>
+  </div>
+
+  <!-- Tabla SSGG -->
+  <div class="table-wrap">
+    <table id="tablaReportes">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Sucursal</th>
+          <th>Categoría</th>
+          <th>Descripción</th>
+          <th>Responsable</th>
+          <th>Estado</th>
+          <th>Cierre</th>
+          <th>Días</th>
+          <th>Foto</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyReportes">
+        <tr><td colspan="9" style="text-align:center;padding:40px;color:#94A3B8">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- ── CONFLICTOS LABORALES ── -->
+  <div style="margin-top:32px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#18243A">⚠️ Conflictos Laborales</div>
+        <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">Canal confidencial · solo visible para el equipo de Gente</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a href="https://forms.gle/cNBMYpKkQQtxQsYX7" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:5px 10px;text-decoration:none">📋 Abrir formulario</a>
+        <button class="btn btn-primary btn-sm" onclick="abrirNuevoConflicto()" style="background:#DC2626">+ Nuevo</button>
+      </div>
+    </div>
+
+    <!-- KPIs conflictos -->
+    <div class="kpi-row" style="margin-bottom:16px">
+      <div class="kpi-card"><div class="kpi-icon" style="background:#FEE2E2">📥</div><div><div class="kpi-num" id="clTotal">—</div><div class="kpi-lbl">Recibidos</div></div></div>
+      <div class="kpi-card"><div class="kpi-icon" style="background:#FEF3C7">⏳</div><div><div class="kpi-num" id="clPend" style="color:#92400E">—</div><div class="kpi-lbl">En curso</div></div></div>
+      <div class="kpi-card"><div class="kpi-icon" style="background:#D1FAE5">✅</div><div><div class="kpi-num" id="clRes" style="color:#065F46">—</div><div class="kpi-lbl">Resueltos</div></div></div>
+      <div class="kpi-card"><div class="kpi-icon" style="background:#DBEAFE">⏱</div><div><div class="kpi-num" id="clTiempo" style="color:#1D4ED8">—</div><div class="kpi-lbl">Días prom.</div></div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="tablaConflictos">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Nombre</th>
+            <th>Contacto</th>
+            <th>Problema</th>
+            <th>Responsable</th>
+            <th>Estado</th>
+            <th>Cierre</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyConflictos">
+          <tr><td colspan="8" style="text-align:center;padding:40px;color:#94A3B8">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── EVIDENCIAS DE INCLUSIVIDAD ── -->
+  <div style="margin-top:32px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#18243A">📁 Evidencias de Inclusividad</div>
+        <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">Comprobantes de compra, pagos y acciones de inclusividad</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNuevaEvidencia()" style="background:#0369A1">+ Subir archivo</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Archivo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyEvidencias">
+          <tr><td colspan="4" style="text-align:center;padding:40px;color:#94A3B8">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- Modal nueva evidencia -->
+<div class="modal-overlay" id="modalEvidencia" style="display:none" onclick="if(event.target===this)cerrarEvidencia()">
+  <div class="modal" style="width:460px">
+    <h3>Subir evidencia</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="evFecha">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <input type="text" id="evDescripcion" placeholder="Ej: Compra de ropa inclusiva — junio 2026">
+    </div>
+    <div class="form-group">
+      <label>Archivo (PDF o imagen)</label>
+      <input type="file" id="evArchivo" accept=".pdf,image/*" style="width:100%;padding:8px;border:1px solid #E2E8F0;border-radius:6px">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarEvidencia()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEvidencia()" style="background:#0369A1">Subir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal nuevo / editar reporte -->
+<div class="modal-overlay" id="modalReporte" style="display:none" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <h3 id="modalTitulo">Nuevo reporte</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="inpFecha">
+      </div>
+      <div class="form-group">
+        <label>Sucursal</label>
+        <select id="inpSucursal"><option value="">— Seleccionar —</option><option>Central</option><option>Dolores</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="inpCategoria">
+          <option value="">— Seleccionar —</option>
+          <option>Instalaciones</option><option>Limpieza</option><option>Mantenimiento</option>
+          <option>Seguridad</option><option>Herramientas</option><option>EPP</option>
+          <option>Servicios Generales</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Nombre (opcional)</label>
+        <input type="text" id="inpNombre" placeholder="Quien reporta">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <textarea id="inpDescripcion" placeholder="¿Qué necesita informar?"></textarea>
+    </div>
+    <hr class="modal-sep">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="inpEstado">
+          <option>Pendiente</option>
+          <option>En proceso</option>
+          <option>Resuelto</option>
+          <option>No aplica</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Responsable</label>
+        <input type="text" id="inpResponsable" placeholder="Quien lo gestiona">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha de cierre</label>
+        <input type="date" id="inpFechaCierre">
+      </div>
+      <div class="form-group">
+        <label>URL foto (opcional)</label>
+        <input type="text" id="inpFoto" placeholder="https://...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Resolución</label>
+      <textarea id="inpNotas" placeholder='Ej: "Se reemplazó el dispenser de agua."'></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+      <button id="btnGuardar" class="btn btn-primary" onclick="guardarReporte()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal gestionar reporte de forms -->
+<div class="modal-overlay" id="modalGestionar" style="display:none" onclick="if(event.target===this)cerrarGestionar()">
+  <div class="modal" style="width:480px">
+    <h3 id="gTitulo">Gestionar reporte</h3>
+    <div class="reporte-original" id="gOriginal"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="gEstado">
+          <option>Pendiente</option>
+          <option>En proceso</option>
+          <option>Resuelto</option>
+          <option>No aplica</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Responsable</label>
+        <input type="text" id="gResponsable" placeholder="Quien lo gestiona">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha de cierre</label>
+        <input type="date" id="gFechaCierre">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Resolución</label>
+        <textarea id="gNotas" placeholder='Ej: "Se reemplazó el dispenser."'></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarGestionar()">Cancelar</button>
+      <button id="btnGestionar" class="btn btn-primary" onclick="guardarGestion()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal nuevo/editar conflicto -->
+<div class="modal-overlay" id="modalConflicto" style="display:none" onclick="if(event.target===this)cerrarConflicto()">
+  <div class="modal" style="width:500px">
+    <h3 id="cTitulo">Nuevo conflicto</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="cFecha">
+      </div>
+      <div class="form-group">
+        <label>Nombre</label>
+        <input type="text" id="cNombre" placeholder="Nombre completo">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Contacto</label>
+      <input type="text" id="cContacto" placeholder="Teléfono o email">
+    </div>
+    <div class="form-group">
+      <label>Problema</label>
+      <textarea id="cProblema" placeholder="Descripción del conflicto..."></textarea>
+    </div>
+    <hr class="modal-sep">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="cEstado">
+          <option>Pendiente</option>
+          <option>En seguimiento</option>
+          <option>Resuelto</option>
+          <option>Derivado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Responsable</label>
+        <input type="text" id="cResponsable" placeholder="Quien lo gestiona">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha de cierre</label>
+        <input type="date" id="cFechaCierre">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Resolución</label>
+        <textarea id="cNotas" placeholder='Ej: "Se realizó mediación, acuerdo firmado."'></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarConflicto()">Cancelar</button>
+      <button id="btnConflicto" class="btn btn-primary" onclick="guardarConflicto()" style="background:#DC2626">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal gestionar conflicto de forms -->
+<div class="modal-overlay" id="modalGestionarConflicto" style="display:none" onclick="if(event.target===this)cerrarGestionarConflicto()">
+  <div class="modal" style="width:480px">
+    <h3>Gestionar conflicto</h3>
+    <div class="reporte-original" id="gcOriginal"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="gcEstado">
+          <option>Pendiente</option>
+          <option>En seguimiento</option>
+          <option>Resuelto</option>
+          <option>Derivado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Responsable</label>
+        <input type="text" id="gcResponsable" placeholder="Quien lo gestiona">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha de cierre</label>
+        <input type="date" id="gcFechaCierre">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Resolución</label>
+        <textarea id="gcNotas" placeholder='Ej: "Se realizó mediación."'></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarGestionarConflicto()">Cancelar</button>
+      <button id="btnGestionarConflicto" class="btn btn-primary" onclick="guardarGestionConflicto()" style="background:#DC2626">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal foto ampliada -->
+<div class="modal-overlay foto-modal" id="modalFoto" style="display:none" onclick="this.style.display='none'">
+  <div style="max-width:700px;width:100%">
+    <img id="fotoAmpliada" src="" alt="foto" style="max-width:100%;border-radius:10px">
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const el = id => document.getElementById(id);
+let reportes = [], editandoId = null;
+
+const ESTADOS = ['Pendiente','En proceso','Resuelto','No aplica'];
+const ESTADO_CSS = {
+  'Pendiente': 'estado-Pendiente',
+  'En proceso': 'estado-En.proceso',
+  'Resuelto':   'estado-Resuelto',
+  'No aplica':  'estado-No.aplica',
+};
+
+function showToast(msg) {
+  const t = el('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function fmtFecha(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  if (isNaN(d)) return str;
+  return d.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+}
+
+async function cargar() {
+  reportes = await fetch('/api/el/reportes').then(r=>r.json()).catch(()=>[]);
+  poblarSucursales();
+  aplicarFiltros();
+  cargarRevision();
+}
+
+function poblarSucursales() {
+  const sectores = [...new Set(reportes.map(r=>r.sucursal).filter(Boolean).sort())];
+  const sel = el('fltSucursal');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas las sucursales</option>';
+  sectores.forEach(s => { const o=document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+  if (sectores.includes(cur)) sel.value = cur;
+}
+
+function aplicarFiltros() {
+  const fE = el('fltEstado').value;
+  const fC = el('fltCategoria').value;
+  const fS = el('fltSucursal').value;
+  const lista = reportes.filter(r =>
+    (!fE || r.estado === fE) &&
+    (!fC || r.categoria === fC) &&
+    (!fS || r.sucursal === fS)
+  );
+  renderKPIs(lista);
+  renderTabla(lista);
+  el('resultCount').textContent = lista.length === reportes.length
+    ? `${reportes.length} reportes` : `${lista.length} de ${reportes.length}`;
+}
+
+function renderKPIs(lista) {
+  el('kpiTotal').textContent = lista.length;
+  el('kpiPend').textContent = lista.filter(r=>r.estado==='Pendiente'||r.estado==='En proceso').length;
+  el('kpiRes').textContent  = lista.filter(r=>r.estado==='Resuelto').length;
+  const resueltos = lista.filter(r=>r.estado==='Resuelto'&&r.fecha&&r.fecha_cierre);
+  if (resueltos.length) {
+    const prom = resueltos.reduce((s,r) => {
+      const d = (new Date(r.fecha_cierre) - new Date(r.fecha)) / 86400000;
+      return s + (d > 0 ? d : 0);
+    }, 0) / resueltos.length;
+    el('kpiTiempo').textContent = Math.round(prom);
+  } else {
+    el('kpiTiempo').textContent = '—';
+  }
+}
+
+
+function diasRespuesta(fechaInicio, fechaCierre) {
+  if (!fechaInicio || !fechaCierre) return '<span style="color:#94A3B8">—</span>';
+  const d1 = new Date(fechaInicio), d2 = new Date(fechaCierre);
+  const dias = Math.round((d2 - d1) / (1000*60*60*24));
+  if (dias < 0) return '<span style="color:#94A3B8">—</span>';
+  const color = dias <= 3 ? '#065F46' : dias <= 7 ? '#92400E' : '#991B1B';
+  const bg = dias <= 3 ? '#D1FAE5' : dias <= 7 ? '#FEF3C7' : '#FEE2E2';
+  return `<span style="background:${bg};color:${color};padding:2px 8px;border-radius:20px;font-weight:600;font-size:11.5px">${dias}d</span>`;
+}
+
+
+function renderTabla(lista) {
+  if (!lista.length) {
+    el('tbodyReportes').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:#94A3B8">Sin reportes para los filtros seleccionados.</td></tr>`;
+    return;
+  }
+  el('tbodyReportes').innerHTML = lista.map(r => {
+    const estadoCss = ESTADO_CSS[r.estado] || '';
+    const fotoHTML = r.foto_url
+      ? `<a href="${r.foto_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:#2563A8;background:#EBF2FA;border:1px solid #BFDBFE;border-radius:6px;padding:4px 8px;white-space:nowrap;text-decoration:none">📷 Ver foto</a>`
+      : `<div class="foto-placeholder">📷</div>`;
+    const esForm = r.origen === 'forms';
+    const btnHTML = esForm
+      ? `<button class="btn btn-ghost btn-sm" style="color:#6D28D9;border-color:#DDD6FE" onclick="abrirGestionar(${r.id})">Gestionar</button>`
+      : `<button class="btn btn-ghost btn-sm" onclick="abrirEditar(${r.id})">Editar</button>`;
+    return `<tr>
+      <td style="white-space:nowrap;color:#64748B;font-size:12px">${fmtFecha(r.fecha)}</td>
+      <td style="font-size:12px">${r.sucursal||'—'}</td>
+      <td><span class="cat">${r.categoria||'—'}</span></td>
+      <td style="max-width:260px">
+        <div style="font-size:12.5px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${r.descripcion||'—'}</div>
+        <div style="margin-top:3px;display:flex;align-items:center;gap:4px">
+          ${r.nombre ? `<span style="font-size:11px;color:#94A3B8">Por: ${r.nombre}</span>` : ''}
+          ${esForm ? `<span class="origen-forms">📋 forms</span>` : ''}
+        </div>
+      </td>
+      <td style="font-size:12px;color:#64748B">${r.responsable||'—'}</td>
+      <td><span class="estado ${estadoCss}">${r.estado||'—'}</span></td>
+      <td style="font-size:12px;color:#64748B;white-space:nowrap">${fmtFecha(r.fecha_cierre)}</td>
+      <td style="font-size:12px;white-space:nowrap">${diasRespuesta(r.fecha, r.fecha_cierre)}</td>
+      <td>${fotoHTML}</td>
+      <td>${btnHTML}</td>
+    </tr>`;
+  }).join('');
+}
+
+function driveImgUrl(url) {
+  if (!url) return url;
+  // drive.google.com/open?id=ID  or  /file/d/ID/view
+  let id = null;
+  const m1 = url.match(/[?&]id=([^&]+)/);
+  const m2 = url.match(/\/d\/([^\/\?]+)/);
+  if (m1) id = m1[1];
+  else if (m2) id = m2[1];
+  if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+  return url;
+}
+
+function verFoto(url) {
+  el('fotoAmpliada').src = driveImgUrl(url);
+  el('modalFoto').style.display = 'flex';
+}
+
+let gestionandoId = null;
+function abrirGestionar(id) {
+  const r = reportes.find(x => x.id === id);
+  if (!r) return;
+  gestionandoId = id;
+  el('gOriginal').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:#6D28D9;margin-bottom:6px">📋 REPORTE ORIGINAL (solo lectura)</div>
+    <b>${r.sucursal||'—'}</b> · <span style="color:#6D28D9">${r.categoria||'—'}</span><br>
+    ${r.descripcion||'—'}<br>
+    ${r.nombre ? `<span style="color:#94A3B8;font-size:11px">Por: ${r.nombre}</span>` : ''}
+    ${r.foto_url ? `<br><a href="${r.foto_url}" target="_blank" style="font-size:11px;color:#2563A8">Ver foto →</a>` : ''}
+  `;
+  el('gEstado').value = r.estado || 'Pendiente';
+  el('gResponsable').value = r.responsable || '';
+  el('gFechaCierre').value = r.fecha_cierre ? r.fecha_cierre.split('T')[0] : '';
+  el('gNotas').value = r.notas_cierre || '';
+  el('modalGestionar').style.display = 'flex';
+}
+function cerrarGestionar() { el('modalGestionar').style.display = 'none'; }
+
+async function guardarGestion() {
+  const r = reportes.find(x => x.id === gestionandoId);
+  if (!r) return;
+  const btn = el('btnGestionar');
+  btn.textContent = 'Guardando…'; btn.disabled = true;
+  try {
+    const body = {
+      fecha: r.fecha ? r.fecha.split('T')[0] : null,
+      sucursal: r.sucursal, categoria: r.categoria,
+      nombre: r.nombre, descripcion: r.descripcion,
+      foto_url: r.foto_url,
+      estado: el('gEstado').value,
+      responsable: el('gResponsable').value.trim(),
+      fecha_cierre: el('gFechaCierre').value || null,
+      notas_cierre: el('gNotas').value.trim(),
+    };
+    const res = await fetch(`/api/el/reportes/${gestionandoId}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    }).then(r=>r.json());
+    if (res.error) { alert('Error: ' + res.error); return; }
+    cerrarGestionar();
+    showToast('✓ Gestión guardada');
+    await cargar();
+  } finally { btn.textContent = 'Guardar'; btn.disabled = false; }
+}
+
+function abrirNuevo() {
+  editandoId = null;
+  el('modalTitulo').textContent = 'Nuevo reporte';
+  el('inpFecha').value = new Date().toISOString().split('T')[0];
+  el('inpSucursal').value = '';
+  el('inpCategoria').value = '';
+  el('inpNombre').value = '';
+  el('inpDescripcion').value = '';
+  el('inpEstado').value = 'Pendiente';
+  el('inpResponsable').value = '';
+  el('inpFechaCierre').value = '';
+  el('inpFoto').value = '';
+  el('inpNotas').value = '';
+  el('modalReporte').style.display = 'flex';
+}
+
+function abrirEditar(id) {
+  const r = reportes.find(x => x.id === id);
+  if (!r) return;
+  editandoId = id;
+  el('modalTitulo').textContent = 'Editar reporte';
+  el('inpFecha').value = r.fecha ? r.fecha.split('T')[0] : '';
+  el('inpSucursal').value = r.sucursal || '';
+  el('inpCategoria').value = r.categoria || '';
+  el('inpNombre').value = r.nombre || '';
+  el('inpDescripcion').value = r.descripcion || '';
+  el('inpEstado').value = r.estado || 'Pendiente';
+  el('inpResponsable').value = r.responsable || '';
+  el('inpFechaCierre').value = r.fecha_cierre ? r.fecha_cierre.split('T')[0] : '';
+  el('inpFoto').value = r.foto_url || '';
+  el('inpNotas').value = r.notas_cierre || '';
+  el('modalReporte').style.display = 'flex';
+}
+
+function cerrarModal() { el('modalReporte').style.display = 'none'; }
+
+async function guardarReporte() {
+  const body = {
+    fecha:        el('inpFecha').value,
+    sucursal:     el('inpSucursal').value,
+    categoria:    el('inpCategoria').value,
+    nombre:       el('inpNombre').value.trim(),
+    descripcion:  el('inpDescripcion').value.trim(),
+    estado:       el('inpEstado').value,
+    responsable:  el('inpResponsable').value.trim(),
+    fecha_cierre: el('inpFechaCierre').value || null,
+    foto_url:     el('inpFoto').value.trim() || null,
+    notas_cierre: el('inpNotas').value.trim(),
+  };
+  if (!body.descripcion) { alert('Ingresá una descripción'); return; }
+
+  const btn = el('btnGuardar');
+  btn.textContent = 'Guardando…'; btn.disabled = true;
+  try {
+    const url = editandoId ? `/api/el/reportes/${editandoId}` : '/api/el/reportes';
+    const method = editandoId ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }).then(r=>r.json());
+    if (r.error) { alert('Error: ' + r.error); return; }
+    cerrarModal();
+    showToast(editandoId ? '✓ Reporte actualizado' : '✓ Reporte creado');
+    await cargar();
+  } finally {
+    btn.textContent = 'Guardar'; btn.disabled = false;
+  }
+}
+
+async function cargarRevision() {
+  try {
+    const r = await fetch('/api/el/revision').then(r=>r.json());
+    if (r && r.pendiente !== undefined) {
+      el('revPendiente').value = r.pendiente || '';
+      el('revResuelto').value  = r.resuelto  || '';
+      el('revInversion').value = r.inversion || '';
+      if (r.updated_at) el('revFecha').textContent = 'Última actualización: ' + fmtFecha(r.updated_at);
+    }
+  } catch {}
+}
+
+async function guardarRevision() {
+  const body = {
+    pendiente: el('revPendiente').value.trim(),
+    resuelto:  el('revResuelto').value.trim(),
+    inversion: el('revInversion').value.trim(),
+  };
+  await fetch('/api/el/revision', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  showToast('✓ Acta guardada');
+  el('revFecha').textContent = 'Última actualización: hoy';
+}
+
+// ── CONFLICTOS ──
+let conflictos = [], editandoConflictoId = null, gestionandoConflictoId = null;
+
+const ESTADOS_CL = ['Pendiente','En seguimiento','Resuelto','Derivado'];
+const ESTADO_CSS_CL = {
+  'Pendiente':      'estado-Pendiente',
+  'En seguimiento': 'estado-En.proceso',
+  'Resuelto':       'estado-Resuelto',
+  'Derivado':       'estado-No.aplica',
+};
+
+async function cargarConflictos() {
+  conflictos = await fetch('/api/cl/conflictos').then(r=>r.json()).catch(()=>[]);
+  renderKPIsConflictos();
+  renderTablaConflictos();
+}
+
+function renderKPIsConflictos() {
+  el('clTotal').textContent = conflictos.length;
+  el('clPend').textContent  = conflictos.filter(c=>c.estado==='Pendiente'||c.estado==='En seguimiento').length;
+  el('clRes').textContent   = conflictos.filter(c=>c.estado==='Resuelto').length;
+  const res = conflictos.filter(c=>c.estado==='Resuelto'&&c.fecha&&c.fecha_cierre);
+  if (res.length) {
+    const prom = res.reduce((s,c)=>{const d=(new Date(c.fecha_cierre)-new Date(c.fecha))/86400000;return s+(d>0?d:0);},0)/res.length;
+    el('clTiempo').textContent = Math.round(prom);
+  } else el('clTiempo').textContent = '—';
+}
+
+function renderTablaConflictos() {
+  if (!conflictos.length) {
+    el('tbodyConflictos').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:#94A3B8">Sin conflictos registrados.</td></tr>`;
+    return;
+  }
+  el('tbodyConflictos').innerHTML = conflictos.map(c => {
+    const css = ESTADO_CSS_CL[c.estado] || '';
+    const esForm = c.origen === 'forms';
+    const btnHTML = esForm
+      ? `<button class="btn btn-ghost btn-sm" style="color:#DC2626;border-color:#FECACA" onclick="abrirGestionarConflicto(${c.id})">Gestionar</button>`
+      : `<button class="btn btn-ghost btn-sm" onclick="abrirEditarConflicto(${c.id})">Editar</button>`;
+    return `<tr>
+      <td style="white-space:nowrap;color:#64748B;font-size:12px">${fmtFecha(c.fecha)}</td>
+      <td style="font-size:12.5px;font-weight:600">${c.nombre||'—'}</td>
+      <td style="font-size:12px;color:#64748B">${c.contacto||'—'}</td>
+      <td style="max-width:280px">
+        <div style="font-size:12.5px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${c.problema||'—'}</div>
+        ${esForm ? `<span class="origen-forms">📋 forms</span>` : ''}
+      </td>
+      <td style="font-size:12px;color:#64748B">${c.responsable||'—'}</td>
+      <td><span class="estado ${css}">${c.estado||'—'}</span></td>
+      <td style="font-size:12px;color:#64748B;white-space:nowrap">${fmtFecha(c.fecha_cierre)}</td>
+      <td>${btnHTML}</td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirNuevoConflicto() {
+  editandoConflictoId = null;
+  el('cTitulo').textContent = 'Nuevo conflicto';
+  el('cFecha').value = new Date().toISOString().split('T')[0];
+  el('cNombre').value = ''; el('cContacto').value = ''; el('cProblema').value = '';
+  el('cEstado').value = 'Pendiente'; el('cResponsable').value = '';
+  el('cFechaCierre').value = ''; el('cNotas').value = '';
+  el('modalConflicto').style.display = 'flex';
+}
+
+function abrirEditarConflicto(id) {
+  const c = conflictos.find(x=>x.id===id); if(!c) return;
+  editandoConflictoId = id;
+  el('cTitulo').textContent = 'Editar conflicto';
+  el('cFecha').value = c.fecha ? c.fecha.split('T')[0] : '';
+  el('cNombre').value = c.nombre||''; el('cContacto').value = c.contacto||'';
+  el('cProblema').value = c.problema||''; el('cEstado').value = c.estado||'Pendiente';
+  el('cResponsable').value = c.responsable||'';
+  el('cFechaCierre').value = c.fecha_cierre ? c.fecha_cierre.split('T')[0] : '';
+  el('cNotas').value = c.notas_cierre||'';
+  el('modalConflicto').style.display = 'flex';
+}
+
+function cerrarConflicto() { el('modalConflicto').style.display = 'none'; }
+
+async function guardarConflicto() {
+  const body = {
+    fecha: el('cFecha').value, nombre: el('cNombre').value.trim(),
+    contacto: el('cContacto').value.trim(), problema: el('cProblema').value.trim(),
+    estado: el('cEstado').value, responsable: el('cResponsable').value.trim(),
+    fecha_cierre: el('cFechaCierre').value||null, notas_cierre: el('cNotas').value.trim(),
+  };
+  const btn = el('btnConflicto'); btn.textContent='Guardando…'; btn.disabled=true;
+  try {
+    const url = editandoConflictoId ? `/api/cl/conflictos/${editandoConflictoId}` : '/api/cl/conflictos';
+    const method = editandoConflictoId ? 'PUT' : 'POST';
+    const r = await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+    if (r.error){alert('Error: '+r.error);return;}
+    cerrarConflicto(); showToast(editandoConflictoId?'✓ Conflicto actualizado':'✓ Conflicto registrado');
+    await cargarConflictos();
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+function abrirGestionarConflicto(id) {
+  const c = conflictos.find(x=>x.id===id); if(!c) return;
+  gestionandoConflictoId = id;
+  el('gcOriginal').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:#DC2626;margin-bottom:6px">⚠️ REPORTE ORIGINAL (solo lectura)</div>
+    <b>${c.nombre||'—'}</b> · <span style="color:#64748B;font-size:12px">${c.contacto||'—'}</span><br>
+    ${c.problema||'—'}
+  `;
+  el('gcEstado').value = c.estado||'Pendiente';
+  el('gcResponsable').value = c.responsable||'';
+  el('gcFechaCierre').value = c.fecha_cierre ? c.fecha_cierre.split('T')[0] : '';
+  el('gcNotas').value = c.notas_cierre||'';
+  el('modalGestionarConflicto').style.display = 'flex';
+}
+function cerrarGestionarConflicto() { el('modalGestionarConflicto').style.display='none'; }
+
+async function guardarGestionConflicto() {
+  const c = conflictos.find(x=>x.id===gestionandoConflictoId); if(!c) return;
+  const btn = el('btnGestionarConflicto'); btn.textContent='Guardando…'; btn.disabled=true;
+  try {
+    const body = {
+      fecha: c.fecha?c.fecha.split('T')[0]:null, nombre:c.nombre, contacto:c.contacto, problema:c.problema,
+      estado: el('gcEstado').value, responsable: el('gcResponsable').value.trim(),
+      fecha_cierre: el('gcFechaCierre').value||null, notas_cierre: el('gcNotas').value.trim(),
+    };
+    const r = await fetch(`/api/cl/conflictos/${gestionandoConflictoId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+    if(r.error){alert('Error: '+r.error);return;}
+    cerrarGestionarConflicto(); showToast('✓ Gestión guardada');
+    await cargarConflictos();
+  } finally { btn.textContent='Guardar'; btn.disabled=false; }
+}
+
+// ── EVIDENCIAS ──
+let evidencias = [];
+
+async function cargarEvidencias() {
+  try {
+    evidencias = await fetch('/api/el/evidencias').then(r=>r.json());
+    renderTablaEvidencias();
+  } catch(e) { console.error(e); }
+}
+
+function renderTablaEvidencias() {
+  const tbody = el('tbodyEvidencias');
+  if (!evidencias.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:#94A3B8">Sin evidencias cargadas</td></tr>';
+    return;
+  }
+  tbody.innerHTML = evidencias.map(e => {
+    const fecha = e.fecha ? e.fecha.split('T')[0].split('-').reverse().join('/') : '—';
+    const esImg = e.archivo_tipo && e.archivo_tipo.startsWith('image/');
+    const icono = esImg ? '🖼️' : '📄';
+    return `<tr>
+      <td>${fecha}</td>
+      <td>${e.descripcion||'—'}</td>
+      <td><a href="/api/el/evidencias/${e.id}/archivo" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:#0369A1;text-decoration:none;font-weight:600">${icono} ${e.archivo_nombre}</a></td>
+      <td><button class="btn btn-ghost btn-sm" style="color:#DC2626" onclick="eliminarEvidencia(${e.id})">Eliminar</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirNuevaEvidencia() {
+  el('evFecha').value = new Date().toISOString().split('T')[0];
+  el('evDescripcion').value = '';
+  el('evArchivo').value = '';
+  el('modalEvidencia').style.display = 'flex';
+}
+function cerrarEvidencia() { el('modalEvidencia').style.display = 'none'; }
+
+async function guardarEvidencia() {
+  const archivo = el('evArchivo').files[0];
+  if (!archivo) { alert('Seleccioná un archivo'); return; }
+  const btn = document.querySelector('#modalEvidencia .btn-primary');
+  btn.textContent = 'Subiendo…'; btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('fecha', el('evFecha').value);
+    fd.append('descripcion', el('evDescripcion').value.trim());
+    fd.append('archivo', archivo);
+    const r = await fetch('/api/el/evidencias', { method: 'POST', body: fd }).then(r=>r.json());
+    if (r.error) { alert('Error: '+r.error); return; }
+    cerrarEvidencia();
+    showToast('✓ Evidencia guardada');
+    await cargarEvidencias();
+  } finally { btn.textContent = 'Subir'; btn.disabled = false; }
+}
+
+async function eliminarEvidencia(id) {
+  if (!confirm('¿Eliminar esta evidencia?')) return;
+  await fetch(`/api/el/evidencias/${id}`, { method: 'DELETE' });
+  showToast('Evidencia eliminada');
+  await cargarEvidencias();
+}
+
+Promise.all([cargar(), cargarConflictos(), cargarEvidencias()]);
+</script>
+</body>
+</html>

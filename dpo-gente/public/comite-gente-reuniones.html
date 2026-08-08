@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reuniones — Comité de Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:18px 24px}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.wrap{max-width:960px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:18px}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.year-select{background:#fff;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit}
+.year-select:focus{outline:none;border-color:#2563A8}
+.btn-primary{background:#2563A8;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{background:#1B3F72}
+.btn-secondary{background:#fff;color:#18243A;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-secondary:hover{background:#F2F4F8}
+.ml-auto{margin-left:auto}
+
+/* Lista de reuniones */
+.reunion-list{display:flex;flex-direction:column;gap:10px}
+.reunion-card{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.reunion-card:hover{border-color:#2563A8;box-shadow:0 3px 12px rgba(37,99,168,.09)}
+.reunion-fecha-box{background:#1B3F72;border-radius:8px;padding:8px 12px;text-align:center;flex-shrink:0;min-width:54px}
+.reunion-fecha-dia{font-size:20px;font-weight:800;color:#fff;line-height:1}
+.reunion-fecha-mes{font-size:9px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.reunion-info{flex:1;min-width:0}
+.reunion-tipo{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em}
+.reunion-lugar{font-size:13px;font-weight:600;color:#18243A;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reunion-tor{font-size:11.5px;color:#5E6E89;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.reunion-stats{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
+.stat-chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.chip-pres{background:#DCFCE7;color:#166534}
+.chip-acc{background:#FEF3C7;color:#92400E}
+.empty{text-align:center;padding:40px 20px;color:#8A97AA;font-size:13px}
+
+/* Modal overlay */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:720px;display:flex;flex-direction:column;overflow:hidden;margin:auto}
+.modal-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-size:14px;font-weight:700;color:#fff}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer;line-height:1}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;max-height:80vh}
+
+/* Tabs del modal */
+.modal-tabs{display:flex;gap:4px;border-bottom:2px solid #EEF0F6;padding-bottom:-1px;margin-bottom:2px}
+.modal-tab{background:none;border:none;padding:8px 14px;font-size:12px;font-weight:600;color:#8A97AA;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;font-family:inherit}
+.modal-tab.active{color:#2563A8;border-bottom-color:#2563A8}
+
+/* Form fields */
+.field-group{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.full{grid-column:1/-1}
+label{font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.05em}
+input,textarea,select{font-family:inherit;font-size:13px;border:1.5px solid #D8DEE8;border-radius:8px;padding:8px 11px;color:#18243A;background:#fff;width:100%}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#2563A8}
+textarea{resize:vertical;min-height:70px}
+
+/* Asistencia */
+.asist-grid{display:flex;flex-direction:column;gap:6px}
+.asist-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid #EEF0F6;border-radius:8px;background:#FAFBFD}
+.asist-nombre{flex:1;font-size:13px;font-weight:600;color:#18243A}
+.asist-empresa{font-size:11px;color:#8A97AA}
+.asist-toggle{display:flex;gap:6px;flex-shrink:0}
+.toggle-btn{border:1.5px solid #D8DEE8;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;background:#fff;font-family:inherit;transition:all .12s}
+.toggle-btn.active-P{background:#DCFCE7;border-color:#86EFAC;color:#166534}
+.toggle-btn.active-A{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B}
+.toggle-btn.active-J{background:#FEF3C7;border-color:#FDE68A;color:#92400E}
+
+/* Acciones */
+.acciones-list{display:flex;flex-direction:column;gap:8px}
+.accion-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid #EEF0F6;border-radius:8px;background:#FAFBFD}
+.accion-texto{flex:1;font-size:13px;color:#18243A;line-height:1.4}
+.accion-meta{font-size:11px;color:#8A97AA;margin-top:3px}
+.estado-sel{font-size:11px;border:1px solid #D8DEE8;border-radius:5px;padding:3px 7px;cursor:pointer;font-family:inherit;background:#fff}
+.accion-del{background:none;border:none;color:#CBD2DC;cursor:pointer;font-size:15px;padding:2px}
+.accion-del:hover{color:#EF4444}
+.add-accion-row{display:flex;gap:8px;align-items:flex-start;margin-top:4px}
+.add-accion-row textarea{min-height:40px;font-size:12px}
+
+/* Modal miembros */
+.miembros-table{width:100%;border-collapse:collapse;font-size:12px}
+.miembros-table th{background:#F5F7FB;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#5E6E89;font-weight:700;border-bottom:1px solid #E8ECF3}
+.miembros-table td{padding:8px 10px;border-bottom:1px solid #F2F4F8;vertical-align:middle}
+.miembros-table tr:hover td{background:#FAFBFD}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/comite-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Reuniones y Asistencia</span>
+</div>
+
+<div class="page-header">
+  <h1>Reuniones del Comité</h1>
+  <p>Registro de reuniones, asistencia y acciones · Comité de Gente Logístico</p>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <select id="yearSel" class="year-select" onchange="cargarReuniones()"></select>
+    <button class="btn-primary" onclick="abrirNuevaReunion()">+ Nueva reunión</button>
+    <button class="btn-secondary ml-auto" onclick="abrirModalMiembros()">👥 Miembros</button>
+  </div>
+
+  <div id="reunionList" class="reunion-list">
+    <div class="empty">Cargando...</div>
+  </div>
+</div>
+
+<!-- Modal reunión -->
+<div id="modalReunion" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nueva Reunión</h2>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchTab('datos')" id="tabDatos">Datos</button>
+        <button class="modal-tab" onclick="switchTab('asistencia')" id="tabAsist">Asistencia</button>
+        <button class="modal-tab" onclick="switchTab('acciones')" id="tabAcciones">Acciones</button>
+      </div>
+
+      <!-- TAB: Datos -->
+      <div id="panelDatos">
+        <div class="field-group">
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" id="fFecha">
+          </div>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="fTipo">
+              <option value="mensual">Mensual</option>
+              <option value="extraordinaria">Extraordinaria</option>
+              <option value="seguimiento">Seguimiento</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Lugar</label>
+            <input type="text" id="fLugar" placeholder="Ej: Sala de reuniones Logística">
+          </div>
+          <div class="field full">
+            <label>Temario (TOR)</label>
+            <textarea id="fTor" rows="3" placeholder="Puntos del orden del día..."></textarea>
+          </div>
+          <div class="field full">
+            <label>Notas / Observaciones</label>
+            <textarea id="fNotas" rows="2" placeholder="Aclaraciones, observaciones..."></textarea>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+          <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+          <button class="btn-primary" onclick="guardarReunion()">Guardar</button>
+        </div>
+        <div id="btnEliminarWrap" style="display:none;margin-top:10px;text-align:center">
+          <button onclick="eliminarReunion()" style="background:none;border:none;color:#B91C1C;font-size:12px;cursor:pointer;font-family:inherit">Eliminar esta reunión</button>
+        </div>
+      </div>
+
+      <!-- TAB: Asistencia -->
+      <div id="panelAsistencia" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:12px;color:#5E6E89">P = Presente · A = Ausente · J = Justificado</span>
+          <span id="asistResumen" style="font-size:12px;font-weight:700;color:#1B3F72"></span>
+        </div>
+        <div id="asistGrid" class="asist-grid"></div>
+      </div>
+
+      <!-- TAB: Acciones -->
+      <div id="panelAcciones" style="display:none">
+        <div id="accionesList" class="acciones-list"></div>
+        <div class="add-accion-row" style="margin-top:10px">
+          <textarea id="nuevaAccionDesc" placeholder="Descripción de la acción..." style="flex:1;min-height:38px"></textarea>
+          <input type="text" id="nuevaAccionResp" placeholder="Responsable" style="width:160px">
+          <input type="date" id="nuevaAccionFecha" style="width:140px">
+          <button class="btn-primary" onclick="agregarAccion()" style="padding:8px 12px;white-space:nowrap">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal miembros -->
+<div id="modalMiembros" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Miembros del Comité</h2>
+      <button class="modal-close" onclick="cerrarModalMiembros()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group" id="formMiembro">
+        <div class="field"><label>Nombre</label><input type="text" id="mNombre" placeholder="Nombre y apellido"></div>
+        <div class="field"><label>Empresa</label><input type="text" id="mEmpresa" placeholder="CRA / CMQ / ..."></div>
+        <div class="field"><label>Función</label><input type="text" id="mFuncion" placeholder="Ej: Jefe de Logística"></div>
+        <div class="field"><label>Puesto</label><input type="text" id="mPuesto" placeholder="Descripción del puesto"></div>
+        <div class="field"><label>GOP Responsable</label><input type="text" id="mGop" placeholder="Ej: GOP Almacén"></div>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <button class="btn-primary" onclick="agregarMiembro()" style="width:100%">+ Agregar</button>
+        </div>
+      </div>
+      <table class="miembros-table">
+        <thead><tr><th>Nombre</th><th>Empresa</th><th>Función</th><th>GOP</th><th></th></tr></thead>
+        <tbody id="miembrosBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const anioActual = new Date().getFullYear();
+let _reunionId = null;
+let _tabActual = 'datos';
+
+function initYears() {
+  const sel = document.getElementById('yearSel');
+  for (let y = anioActual; y >= anioActual - 3; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
+  }
+  sel.value = anioActual;
+  cargarReuniones();
+}
+
+function fmtFecha(iso) {
+  const d = new Date(String(iso).split('T')[0] + 'T12:00:00');
+  return { dia: d.getDate(), mes: d.toLocaleDateString('es-AR', { month:'short' }).replace('.',''), full: d.toLocaleDateString('es-AR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) };
+}
+
+async function cargarReuniones() {
+  const anio = document.getElementById('yearSel').value;
+  const list = document.getElementById('reunionList');
+  list.innerHTML = '<div class="empty">Cargando...</div>';
+  try {
+    const r = await fetch('/api/comite/reuniones?anio=' + anio);
+    const data = await r.json();
+    if (!data.length) { list.innerHTML = `<div class="empty">No hay reuniones registradas en ${anio}.</div>`; return; }
+    list.innerHTML = data.map(r => {
+      const f = fmtFecha(r.fecha);
+      const presentes = Number(r.presentes||0), total = Number(r.total_asistencia||0);
+      const acciones = Number(r.total_acciones||0);
+      return `
+        <div class="reunion-card" onclick="abrirReunion(${r.id})">
+          <div class="reunion-fecha-box">
+            <div class="reunion-fecha-dia">${f.dia}</div>
+            <div class="reunion-fecha-mes">${f.mes}</div>
+          </div>
+          <div class="reunion-info">
+            <div class="reunion-tipo">${r.tipo||'mensual'}</div>
+            <div class="reunion-lugar">${r.lugar||'Sin lugar definido'}</div>
+            ${r.tor ? `<div class="reunion-tor">${r.tor}</div>` : ''}
+          </div>
+          <div class="reunion-stats">
+            ${total ? `<span class="stat-chip chip-pres">👥 ${presentes}/${total} presentes</span>` : ''}
+            ${acciones ? `<span class="stat-chip chip-acc">⚡ ${acciones} acciones</span>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML = '<div class="empty">Error al cargar.</div>'; }
+}
+
+function switchTab(tab) {
+  _tabActual = tab;
+  ['datos','asistencia','acciones'].forEach(t => {
+    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'asistencia' && _reunionId) cargarAsistencia();
+  if (tab === 'acciones' && _reunionId) cargarAcciones();
+}
+
+function abrirNuevaReunion() {
+  _reunionId = null;
+  document.getElementById('modalTitle').textContent = 'Nueva Reunión';
+  document.getElementById('fFecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fTipo').value = 'mensual';
+  document.getElementById('fLugar').value = '';
+  document.getElementById('fTor').value = '';
+  document.getElementById('fNotas').value = '';
+  document.getElementById('btnEliminarWrap').style.display = 'none';
+  switchTab('datos');
+  document.getElementById('modalReunion').classList.add('open');
+}
+
+async function abrirReunion(id) {
+  _reunionId = id;
+  document.getElementById('modalTitle').textContent = 'Editar Reunión';
+  document.getElementById('btnEliminarWrap').style.display = 'block';
+  switchTab('datos');
+  document.getElementById('modalReunion').classList.add('open');
+  try {
+    const r = await fetch('/api/comite/reuniones/' + id);
+    const d = await r.json();
+    document.getElementById('fFecha').value = d.fecha?.split('T')[0] || '';
+    document.getElementById('fTipo').value = d.tipo || 'mensual';
+    document.getElementById('fLugar').value = d.lugar || '';
+    document.getElementById('fTor').value = d.tor || '';
+    document.getElementById('fNotas').value = d.notas || '';
+  } catch(e) {}
+}
+
+async function guardarReunion() {
+  const body = {
+    fecha: document.getElementById('fFecha').value,
+    tipo: document.getElementById('fTipo').value,
+    lugar: document.getElementById('fLugar').value,
+    tor: document.getElementById('fTor').value,
+    notas: document.getElementById('fNotas').value
+  };
+  if (!body.fecha) { alert('Ingresá la fecha.'); return; }
+  try {
+    if (_reunionId) {
+      await fetch('/api/comite/reuniones/' + _reunionId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    } else {
+      const r = await fetch('/api/comite/reuniones', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const d = await r.json();
+      _reunionId = d.id;
+    }
+    cargarReuniones();
+    if (!_reunionId) { cerrarModal(); } else {
+      document.getElementById('btnEliminarWrap').style.display = 'block';
+    }
+  } catch(e) { alert('Error al guardar.'); }
+}
+
+async function eliminarReunion() {
+  if (!confirm('¿Eliminar esta reunión? Se perderán la asistencia y acciones registradas.')) return;
+  await fetch('/api/comite/reuniones/' + _reunionId, { method:'DELETE' });
+  cargarReuniones();
+  cerrarModal();
+}
+
+function cerrarModal() {
+  document.getElementById('modalReunion').classList.remove('open');
+  _reunionId = null;
+}
+
+// ---- Asistencia ----
+async function cargarAsistencia() {
+  const grid = document.getElementById('asistGrid');
+  grid.innerHTML = '<div style="text-align:center;padding:20px;color:#8A97AA;font-size:13px">Cargando...</div>';
+  try {
+    const r = await fetch('/api/comite/reuniones/' + _reunionId);
+    const d = await r.json();
+    const lista = d.asistencia || [];
+    if (!lista.length) { grid.innerHTML = '<div style="text-align:center;padding:20px;color:#8A97AA;font-size:13px">No hay miembros en el comité. Agregá miembros primero.</div>'; return; }
+    grid.innerHTML = lista.map(a => `
+      <div class="asist-item" id="asist_${a.id}">
+        <div style="flex:1">
+          <div class="asist-nombre">${a.nombre}</div>
+          <div class="asist-empresa">${[a.empresa, a.funcion].filter(Boolean).join(' · ')}</div>
+        </div>
+        <div class="asist-toggle">
+          <button class="toggle-btn ${a.estado==='P'?'active-P':''}" onclick="toggleAsist(${a.id},'P')">P</button>
+          <button class="toggle-btn ${a.estado==='A'?'active-A':''}" onclick="toggleAsist(${a.id},'A')">A</button>
+          <button class="toggle-btn ${a.estado==='J'?'active-J':''}" onclick="toggleAsist(${a.id},'J')">J</button>
+        </div>
+      </div>`).join('');
+    actualizarResumenAsist(lista);
+  } catch(e) { grid.innerHTML = '<div style="color:#B91C1C;padding:12px">Error al cargar.</div>'; }
+}
+
+function actualizarResumenAsist(lista) {
+  const P = lista.filter(a=>a.estado==='P').length;
+  const total = lista.length;
+  document.getElementById('asistResumen').textContent = `${P} / ${total} presentes`;
+}
+
+async function toggleAsist(id, estado) {
+  await fetch('/api/comite/asistencia/' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ estado }) });
+  cargarAsistencia();
+}
+
+// ---- Acciones ----
+async function cargarAcciones() {
+  const list = document.getElementById('accionesList');
+  list.innerHTML = '';
+  try {
+    const r = await fetch('/api/comite/reuniones/' + _reunionId);
+    const d = await r.json();
+    const acciones = d.acciones || [];
+    if (!acciones.length) { list.innerHTML = '<div style="text-align:center;padding:12px;color:#8A97AA;font-size:13px">Sin acciones registradas.</div>'; return; }
+    list.innerHTML = acciones.map(a => `
+      <div class="accion-item" id="acc_${a.id}">
+        <div style="flex:1">
+          <div class="accion-texto">${a.descripcion}</div>
+          <div class="accion-meta">${[a.responsable, a.fecha_compromiso ? fmtCompromiso(a.fecha_compromiso) : ''].filter(Boolean).join(' · ')}</div>
+        </div>
+        <select class="estado-sel" onchange="cambiarEstadoAccion(${a.id}, this.value)">
+          <option value="pendiente" ${a.estado==='pendiente'?'selected':''}>Pendiente</option>
+          <option value="en_curso" ${a.estado==='en_curso'?'selected':''}>En curso</option>
+          <option value="completada" ${a.estado==='completada'?'selected':''}>Completada</option>
+          <option value="cancelada" ${a.estado==='cancelada'?'selected':''}>Cancelada</option>
+        </select>
+        <button class="accion-del" onclick="eliminarAccion(${a.id})">🗑</button>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function fmtCompromiso(iso) {
+  return new Date(String(iso).split('T')[0] + 'T12:00:00').toLocaleDateString('es-AR', { day:'2-digit', month:'short' });
+}
+
+async function agregarAccion() {
+  const desc = document.getElementById('nuevaAccionDesc').value.trim();
+  if (!desc) return;
+  const body = {
+    reunion_id: _reunionId,
+    descripcion: desc,
+    responsable: document.getElementById('nuevaAccionResp').value.trim(),
+    fecha_compromiso: document.getElementById('nuevaAccionFecha').value || null,
+    estado: 'pendiente'
+  };
+  await fetch('/api/comite/acciones', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  document.getElementById('nuevaAccionDesc').value = '';
+  document.getElementById('nuevaAccionResp').value = '';
+  document.getElementById('nuevaAccionFecha').value = '';
+  cargarAcciones();
+}
+
+async function cambiarEstadoAccion(id, estado) {
+  const item = document.getElementById('acc_' + id);
+  const desc = item.querySelector('.accion-texto').textContent;
+  await fetch('/api/comite/acciones/' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ descripcion: desc, estado }) });
+}
+
+async function eliminarAccion(id) {
+  if (!confirm('¿Eliminar esta acción?')) return;
+  await fetch('/api/comite/acciones/' + id, { method:'DELETE' });
+  cargarAcciones();
+}
+
+// ---- Miembros ----
+async function abrirModalMiembros() {
+  document.getElementById('modalMiembros').classList.add('open');
+  cargarMiembros();
+}
+function cerrarModalMiembros() { document.getElementById('modalMiembros').classList.remove('open'); }
+
+async function cargarMiembros() {
+  const body = document.getElementById('miembrosBody');
+  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:12px;color:#8A97AA;font-size:12px">Cargando...</td></tr>';
+  try {
+    const r = await fetch('/api/comite/miembros');
+    const data = await r.json();
+    if (!data.length) { body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:12px;color:#8A97AA;font-size:12px">No hay miembros aún.</td></tr>'; return; }
+    body.innerHTML = data.map(m => `
+      <tr>
+        <td style="font-weight:600">${m.nombre}</td>
+        <td>${m.empresa||''}</td>
+        <td>${m.funcion||''}</td>
+        <td>${m.gop_responsable||''}</td>
+        <td><button onclick="eliminarMiembro(${m.id})" style="background:none;border:none;color:#CBD2DC;cursor:pointer;font-size:14px" title="Eliminar">🗑</button></td>
+      </tr>`).join('');
+  } catch(e) { body.innerHTML = '<tr><td colspan="5" style="color:#B91C1C;padding:12px">Error.</td></tr>'; }
+}
+
+async function agregarMiembro() {
+  const nombre = document.getElementById('mNombre').value.trim();
+  if (!nombre) { alert('Ingresá el nombre.'); return; }
+  await fetch('/api/comite/miembros', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      nombre,
+      empresa: document.getElementById('mEmpresa').value.trim(),
+      funcion: document.getElementById('mFuncion').value.trim(),
+      puesto: document.getElementById('mPuesto').value.trim(),
+      gop_responsable: document.getElementById('mGop').value.trim()
+    })
+  });
+  ['mNombre','mEmpresa','mFuncion','mPuesto','mGop'].forEach(id => document.getElementById(id).value = '');
+  cargarMiembros();
+}
+
+async function eliminarMiembro(id) {
+  if (!confirm('¿Eliminar este miembro?')) return;
+  await fetch('/api/comite/miembros/' + id, { method:'DELETE' });
+  cargarMiembros();
+}
+
+initYears();
+</script>
+</body>
+</html>

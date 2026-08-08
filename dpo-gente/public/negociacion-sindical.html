@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Negociación Sindical</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px;font-family:inherit}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 20px 60px;display:flex;flex-direction:column;gap:20px}
+
+/* Año */
+.year-bar{background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:11px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.year-bar-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em}
+.year-btn{border:1px solid #D8DEE8;background:#fff;color:#374151;font-size:12.5px;font-weight:600;padding:4px 14px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit}
+.year-btn:hover{border-color:#2563A8;color:#2563A8}
+.year-btn.active{background:#18243A;border-color:#18243A;color:#fff}
+.year-add{border:1px dashed #CBD5E1;background:none;color:#94A3B8;font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer;font-family:inherit}
+.year-add:hover{border-color:#2563A8;color:#2563A8}
+
+/* Grid sindicatos */
+.grid-sind{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:860px){.grid-sind{grid-template-columns:1fr}}
+
+/* Secciones */
+.section{background:#fff;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden}
+.section-head{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F1F5F9;flex-wrap:wrap;gap:8px}
+.section-title{font-size:13px;font-weight:700;color:#18243A}
+.section-sub{font-size:11px;color:#94A3B8;margin-top:2px}
+.sind-tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;vertical-align:middle}
+.sind-cam{background:#DBEAFE;color:#1D4ED8}
+.sind-sut{background:#EDE9FE;color:#5B21B6}
+
+/* Tabla */
+table{width:100%;border-collapse:collapse}
+thead th{background:#F8FAFC;font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;text-align:left;border-bottom:1px solid #E2E8F0;white-space:nowrap}
+tbody tr{border-bottom:1px solid #F1F5F9;transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#FAFBFD}
+tbody td{padding:10px 12px;font-size:12.5px;vertical-align:middle}
+.td-actions{display:flex;gap:4px;align-items:center}
+.overflow-x{overflow-x:auto}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-en_curso{background:#DBEAFE;color:#1D4ED8}
+.badge-cerrada{background:#D1FAE5;color:#065F46}
+.badge-vencida{background:#FEE2E2;color:#991B1B}
+.badge-cat{background:#F1F5F9;color:#374151}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;padding:7px 14px;transition:background .15s;font-family:inherit}
+.btn-primary{background:#2563A8;color:#fff}.btn-primary:hover{background:#1B4F8A}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+.btn-ghost{background:#fff;color:#18243A;border:1px solid #D8DEE8}.btn-ghost:hover{background:#F2F4F8}
+.btn-icon{background:none;border:none;color:#94A3B8;padding:4px 6px;border-radius:5px;cursor:pointer;font-size:13px;font-family:inherit}.btn-icon:hover{background:#F1F5F9;color:#18243A}
+.btn-danger-icon{background:none;border:none;color:#CBD5E1;padding:4px 6px;border-radius:5px;cursor:pointer;font-size:13px;font-family:inherit}.btn-danger-icon:hover{color:#DC2626;background:#FEF2F2}
+
+/* Empty */
+.empty{padding:36px;text-align:center;color:#B0BAC9;font-size:12.5px}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.15)}
+.modal-head{padding:16px 20px 12px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:700;color:#18243A}
+.modal-body{padding:18px 20px}
+.modal-foot{padding:12px 20px;border-top:1px solid #F1F5F9;display:flex;justify-content:flex-end;gap:8px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+label{font-size:11.5px;font-weight:600;color:#374151}
+input,select,textarea{border:1px solid #D8DEE8;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;color:#18243A;outline:none;transition:border .15s;background:#fff}
+input:focus,select:focus,textarea:focus{border-color:#2563A8;box-shadow:0 0 0 3px rgba(37,99,168,.08)}
+textarea{resize:vertical;min-height:72px}
+
+/* Viewer modal */
+.viewer-modal{max-width:900px;width:100%;height:85vh;display:flex;flex-direction:column}
+.viewer-frame{flex:1;border:none;width:100%;border-radius:0 0 12px 12px}
+
+/* Calendario */
+.cal-row{display:grid;grid-template-columns:1fr 140px 100px 100px 120px auto;gap:0;border-bottom:1px solid #F1F5F9;align-items:center}
+.cal-row:last-child{border-bottom:none}
+.cal-row:hover{background:#FAFBFD}
+.cal-cell{padding:10px 12px;font-size:12.5px}
+.cal-head .cal-cell{font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.04em;background:#F8FAFC;padding:9px 12px}
+
+/* PDAs */
+.pda-item{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;margin-top:8px;display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.pda-accion{font-size:12.5px;color:#18243A;font-weight:500}
+.pda-meta{font-size:11px;color:#94A3B8;margin-top:2px}
+.pda-add-row{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Negociación Sindical</span>
+</div>
+
+<div class="wrap">
+
+  <!-- Selector de año -->
+  <div class="year-bar">
+    <span class="year-bar-label">Año</span>
+    <div id="yearBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <button class="year-add" onclick="agregarAnio()">+ Año</button>
+  </div>
+
+  <!-- Camioneros + SUTIAGA en grid -->
+  <div class="grid-sind">
+
+    <!-- Camioneros -->
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <span class="section-title">Camioneros</span>
+          <span class="sind-tag sind-cam">Conv. 40/89</span>
+          <div class="section-sub" style="margin-top:4px">Reuniones y acuerdos · Marcos Comas</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('Camioneros')">+ Nueva</button>
+      </div>
+      <div class="overflow-x">
+        <table>
+          <thead><tr>
+            <th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th></th>
+          </tr></thead>
+          <tbody id="tbCam"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUTIAGA -->
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <span class="section-title">SUTIAGA</span>
+          <span class="sind-tag sind-sut">Ventas</span>
+          <div class="section-sub" style="margin-top:4px">Reuniones y acuerdos · Silvio Marchessi</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('SUTIAGA')">+ Nueva</button>
+      </div>
+      <div class="overflow-x">
+        <table>
+          <thead><tr>
+            <th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th></th>
+          </tr></thead>
+          <tbody id="tbSut"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Calendario Gremial -->
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">Calendario Gremial</div>
+        <div class="section-sub">Seguimiento de compromisos anuales con Camioneros · R5.5.2</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirCal()">+ Agregar</button>
+    </div>
+    <div class="overflow-x">
+      <div class="cal-head cal-row">
+        <div class="cal-cell">Acción</div>
+        <div class="cal-cell">Responsable</div>
+        <div class="cal-cell">Inicio</div>
+        <div class="cal-cell">Vencimiento</div>
+        <div class="cal-cell">Estado</div>
+        <div class="cal-cell"></div>
+      </div>
+      <div id="listCal"><div class="empty">Cargando…</div></div>
+    </div>
+  </div>
+
+  <!-- Documentos -->
+  <div class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">Documentos</div>
+        <div class="section-sub">SOPs, TORs, estrategias y evidencias · R5.5.1 · R5.5.3</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirDoc()">+ Subir</button>
+    </div>
+    <div class="overflow-x">
+      <table>
+        <thead><tr>
+          <th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Archivo</th><th></th>
+        </tr></thead>
+        <tbody id="tbDoc"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal negociación/reunión -->
+<div class="modal-bg" id="modalNeg">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="titleNeg">Nueva entrada</span>
+      <button class="btn-icon" onclick="cerrarModal('modalNeg')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="nId">
+      <input type="hidden" id="nSind">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="nFecha">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="nTipo">
+            <option value="Reunión">Reunión</option>
+            <option value="Acuerdo salarial">Acuerdo salarial</option>
+            <option value="Acuerdo jornada">Acuerdo jornada</option>
+            <option value="Acuerdo beneficios">Acuerdo beneficios</option>
+            <option value="Acuerdo temporada">Acuerdo temporada</option>
+            <option value="Comunicación">Comunicación</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Descripción / acción</label>
+          <textarea id="nDesc" placeholder="Tema tratado, acuerdo alcanzado…"></textarea>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Responsable / observaciones</label>
+          <input type="text" id="nResultado" placeholder="Ej: Mario · Reunion con Marcos Comas">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="nEstado">
+            <option value="cerrada">Cerrada</option>
+            <option value="en_curso">En curso</option>
+            <option value="vencida">Vencida</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalNeg')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarNeg()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal PDAs -->
+<div class="modal-bg" id="modalPDAs">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-head">
+      <span class="modal-title" id="titlePDAs">Plan de Acción</span>
+      <button class="btn-icon" onclick="cerrarModal('modalPDAs')">✕</button>
+    </div>
+    <div class="modal-body" id="bodyPDAs">
+      <div id="listPDAs"></div>
+      <div class="pda-add-row" style="margin-top:14px">
+        <input type="text" id="pdaAccion" placeholder="Nueva acción…" style="flex:1;min-width:160px">
+        <input type="text" id="pdaResp" placeholder="Responsable" style="width:130px">
+        <input type="date" id="pdaFecha" style="width:140px">
+        <button class="btn btn-primary btn-sm" onclick="agregarPDA()">+ Agregar</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" onclick="cerrarModal('modalPDAs')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Visor de archivos -->
+<div class="modal-bg" id="modalViewer">
+  <div class="modal viewer-modal">
+    <div class="modal-head">
+      <span class="modal-title" id="viewerTitle">Documento</span>
+      <div style="display:flex;gap:8px">
+        <a id="viewerDownload" href="#" target="_blank" class="btn btn-ghost btn-sm">Descargar</a>
+        <button class="btn-icon" onclick="cerrarModal('modalViewer');document.getElementById('viewerFrame').src=''">✕</button>
+      </div>
+    </div>
+    <iframe id="viewerFrame" class="viewer-frame"></iframe>
+  </div>
+</div>
+
+<!-- Modal Calendario -->
+<div class="modal-bg" id="modalCal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="titleCal">Nueva acción</span>
+      <button class="btn-icon" onclick="cerrarModal('modalCal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="calId">
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Acción / compromiso</label>
+          <input type="text" id="calAccion" placeholder="Ej: Pedido de indumentaria invierno">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Responsable</label>
+          <input type="text" id="calResp" placeholder="Ej: Roman Marin">
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="calEstado">
+            <option value="pendiente">Pendiente</option>
+            <option value="completado">Completado</option>
+            <option value="vencida">Vencido</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha inicio</label>
+          <input type="date" id="calInicio">
+        </div>
+        <div class="form-group">
+          <label>Fecha vencimiento</label>
+          <input type="date" id="calFin">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalCal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Documento -->
+<div class="modal-bg" id="modalDoc">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Subir documento</span>
+      <button class="btn-icon" onclick="cerrarModal('modalDoc')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="dFecha">
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="dCategoria">
+            <option value="SOP">SOP</option>
+            <option value="TOR">TOR</option>
+            <option value="Estrategia">Estrategia</option>
+            <option value="Acta / Minuta">Acta / Minuta</option>
+            <option value="Organigrama">Organigrama</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" id="dDesc" placeholder="Ej: SOP Negociación con Sindicatos">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Archivo</label>
+          <input type="file" id="dArchivo" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalDoc')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarDoc()">Subir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const ANIO_ACTUAL = new Date().getFullYear();
+let anioActivo = ANIO_ACTUAL;
+let anios = [ANIO_ACTUAL - 1, ANIO_ACTUAL];
+let pdaNegId = null;
+let pdas = [];
+
+// ── Años ─────────────────────────────────────────────
+function initAnios() {
+  renderAnios();
+  cargarTodo();
+}
+
+function renderAnios() {
+  document.getElementById('yearBtns').innerHTML = anios.map(a =>
+    `<button class="year-btn${a === anioActivo ? ' active' : ''}" onclick="selAnio(${a})">${a}</button>`
+  ).join('');
+}
+
+function selAnio(a) { anioActivo = a; renderAnios(); cargarTodo(); }
+
+function agregarAnio() {
+  const n = parseInt(prompt('Agregar año:', ANIO_ACTUAL + 1));
+  if (n && !isNaN(n) && !anios.includes(n)) {
+    anios.push(n); anios.sort(); anioActivo = n;
+    renderAnios(); cargarTodo();
+  }
+}
+
+function cargarTodo() { cargarNeg('Camioneros'); cargarNeg('SUTIAGA'); cargarDocumentos(); cargarCal(); }
+
+// ── Utils ─────────────────────────────────────────────
+function fmtFecha(d) {
+  if (!d) return '—';
+  const s = d.includes('T') ? d.split('T')[0] : d;
+  return new Date(s + 'T12:00:00').toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+const BADGE_NEG = {
+  en_curso: {cls:'badge-en_curso', label:'En curso'},
+  cerrada:  {cls:'badge-cerrada',  label:'Cerrada'},
+  vencida:  {cls:'badge-vencida',  label:'Vencida'}
+};
+
+function badge(val, map) {
+  const c = map[val] || {cls:'badge-cat', label: val || '—'};
+  return `<span class="badge ${c.cls}">${c.label}</span>`;
+}
+
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Negociaciones ─────────────────────────────────────
+let negData = { Camioneros: [], SUTIAGA: [] };
+
+async function cargarNeg(sind) {
+  const r = await fetch(`/api/ns/negociaciones?anio=${anioActivo}&sindicato=${encodeURIComponent(sind)}`);
+  negData[sind] = await r.json();
+  renderNeg(sind);
+}
+
+function renderNeg(sind) {
+  const tbId = sind === 'Camioneros' ? 'tbCam' : 'tbSut';
+  const tb = document.getElementById(tbId);
+  const rows = negData[sind];
+  if (!rows.length) {
+    tb.innerHTML = `<tr><td colspan="5" class="empty">Sin registros en ${anioActivo}</td></tr>`;
+    return;
+  }
+  tb.innerHTML = rows.map(n => `
+    <tr>
+      <td style="white-space:nowrap;color:#64748B">${fmtFecha(n.fecha)}</td>
+      <td><span class="badge badge-cat">${n.tipo || '—'}</span></td>
+      <td style="max-width:220px;font-size:12px;color:#374151;line-height:1.4">${n.descripcion || '—'}</td>
+      <td>${badge(n.estado, BADGE_NEG)}</td>
+      <td><div class="td-actions">
+        <button class="btn-icon" title="PDAs" onclick="abrirPDAs(${n.id}, '${(n.descripcion||'').substring(0,30).replace(/'/g,"\\'")}')">≡</button>
+        <button class="btn-icon" title="Editar" onclick="editarNeg(${n.id},'${sind}')">✏</button>
+        <button class="btn-danger-icon" title="Eliminar" onclick="eliminarNeg(${n.id},'${sind}')">✕</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function abrirModal(sind, id) {
+  const todos = [...negData.Camioneros, ...negData.SUTIAGA];
+  const n = id ? todos.find(x => x.id === id) : null;
+  document.getElementById('nId').value = n ? n.id : '';
+  document.getElementById('nSind').value = sind;
+  document.getElementById('titleNeg').textContent = `${n ? 'Editar' : 'Nueva entrada'} — ${sind}`;
+  document.getElementById('nFecha').value = n?.fecha?.split('T')[0] || '';
+  document.getElementById('nTipo').value = n?.tipo || 'Reunión';
+  document.getElementById('nDesc').value = n?.descripcion || '';
+  document.getElementById('nResultado').value = n?.resultado || '';
+  document.getElementById('nEstado').value = n?.estado || 'cerrada';
+  document.getElementById('modalNeg').classList.add('open');
+}
+
+function editarNeg(id, sind) { abrirModal(sind, id); }
+
+async function guardarNeg() {
+  const id = document.getElementById('nId').value;
+  const sind = document.getElementById('nSind').value;
+  const body = {
+    anio: anioActivo,
+    fecha: document.getElementById('nFecha').value || null,
+    tipo: document.getElementById('nTipo').value,
+    sindicato: sind,
+    descripcion: document.getElementById('nDesc').value,
+    estado: document.getElementById('nEstado').value,
+    resultado: document.getElementById('nResultado').value
+  };
+  const url = id ? `/api/ns/negociaciones/${id}` : '/api/ns/negociaciones';
+  await fetch(url, { method: id ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  cerrarModal('modalNeg');
+  cargarNeg(sind);
+}
+
+async function eliminarNeg(id, sind) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  await fetch(`/api/ns/negociaciones/${id}`, { method: 'DELETE' });
+  cargarNeg(sind);
+}
+
+// ── PDAs ──────────────────────────────────────────────
+async function abrirPDAs(negId, titulo) {
+  pdaNegId = negId;
+  document.getElementById('titlePDAs').textContent = `PDAs — ${titulo}…`;
+  document.getElementById('pdaAccion').value = '';
+  document.getElementById('pdaResp').value = '';
+  document.getElementById('pdaFecha').value = '';
+  await cargarPDAs();
+  document.getElementById('modalPDAs').classList.add('open');
+}
+
+async function cargarPDAs() {
+  const r = await fetch(`/api/ns/pdas/${pdaNegId}`);
+  pdas = await r.json();
+  renderPDAs();
+}
+
+function renderPDAs() {
+  const c = document.getElementById('listPDAs');
+  if (!pdas.length) { c.innerHTML = '<p style="font-size:12.5px;color:#94A3B8">Sin acciones registradas.</p>'; return; }
+  const BPDA = { pendiente:{cls:'badge-en_curso',label:'Pendiente'}, completado:{cls:'badge-cerrada',label:'Completado'}, vencido:{cls:'badge-vencida',label:'Vencido'} };
+  c.innerHTML = pdas.map(p => `
+    <div class="pda-item">
+      <div>
+        <div class="pda-accion">${p.accion}</div>
+        <div class="pda-meta">${p.responsable || ''}${p.fecha_limite ? (p.responsable ? ' · ' : '') + fmtFecha(p.fecha_limite) : ''}</div>
+      </div>
+      <select onchange="cambiarEstadoPDA(${p.id},this.value)" style="font-size:11.5px;padding:3px 6px;border-radius:6px;border:1px solid #D8DEE8;font-family:inherit">
+        <option value="pendiente"${p.estado==='pendiente'?' selected':''}>Pendiente</option>
+        <option value="completado"${p.estado==='completado'?' selected':''}>Completado</option>
+        <option value="vencido"${p.estado==='vencido'?' selected':''}>Vencido</option>
+      </select>
+      <button class="btn-danger-icon" onclick="eliminarPDA(${p.id})">✕</button>
+    </div>`).join('');
+}
+
+async function agregarPDA() {
+  const accion = document.getElementById('pdaAccion').value.trim();
+  if (!accion) return;
+  await fetch('/api/ns/pdas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ negociacion_id: pdaNegId, accion, responsable: document.getElementById('pdaResp').value, fecha_limite: document.getElementById('pdaFecha').value || null, estado:'pendiente' }) });
+  document.getElementById('pdaAccion').value = '';
+  document.getElementById('pdaResp').value = '';
+  document.getElementById('pdaFecha').value = '';
+  await cargarPDAs();
+}
+
+async function cambiarEstadoPDA(id, estado) {
+  const p = pdas.find(x => x.id === id);
+  if (!p) return;
+  await fetch(`/api/ns/pdas/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({accion:p.accion, responsable:p.responsable, fecha_limite:p.fecha_limite, estado}) });
+  await cargarPDAs();
+}
+
+async function eliminarPDA(id) {
+  if (!confirm('¿Eliminar?')) return;
+  await fetch(`/api/ns/pdas/${id}`, { method:'DELETE' });
+  await cargarPDAs();
+}
+
+// ── Visor de archivos ─────────────────────────────────
+function verArchivo(id, nombre, tipo) {
+  const url = `/api/ns/documentos/${id}/archivo`;
+  document.getElementById('viewerTitle').textContent = nombre;
+  document.getElementById('viewerDownload').href = url;
+  let src;
+  if (tipo && (tipo.includes('pdf') || tipo.startsWith('image/'))) {
+    src = url;
+  } else {
+    // Office files via Google Docs viewer
+    const full = `https://dpo-gente-production.up.railway.app${url}`;
+    src = `https://docs.google.com/viewer?url=${encodeURIComponent(full)}&embedded=true`;
+  }
+  document.getElementById('viewerFrame').src = src;
+  document.getElementById('modalViewer').classList.add('open');
+}
+
+// ── Documentos ───────────────────────────────────────
+let docsData = [];
+
+async function cargarDocumentos() {
+  const r = await fetch(`/api/ns/documentos?anio=${anioActivo}`);
+  docsData = await r.json();
+  const tb = document.getElementById('tbDoc');
+  if (!docsData.length) { tb.innerHTML = `<tr><td colspan="5" class="empty">Sin documentos en ${anioActivo}</td></tr>`; return; }
+  tb.innerHTML = docsData.map(d => `
+    <tr>
+      <td style="white-space:nowrap;color:#64748B">${fmtFecha(d.fecha)}</td>
+      <td><span class="badge badge-cat">${d.categoria || '—'}</span></td>
+      <td style="font-size:12.5px">${d.descripcion || '—'}</td>
+      <td><button class="btn-ghost btn btn-sm" onclick="verArchivo(${d.id},'${(d.archivo_nombre||'').replace(/'/g,"\\'")}','${d.archivo_tipo||''}')" style="font-size:12px;padding:3px 10px">${d.archivo_nombre}</button></td>
+      <td><button class="btn-danger-icon" onclick="eliminarDoc(${d.id})">✕</button></td>
+    </tr>`).join('');
+}
+
+function abrirDoc() {
+  document.getElementById('dFecha').value = '';
+  document.getElementById('dCategoria').value = 'SOP';
+  document.getElementById('dDesc').value = '';
+  document.getElementById('dArchivo').value = '';
+  document.getElementById('modalDoc').classList.add('open');
+}
+
+async function guardarDoc() {
+  const file = document.getElementById('dArchivo').files[0];
+  if (!file) { alert('Seleccioná un archivo'); return; }
+  const fd = new FormData();
+  fd.append('anio', anioActivo);
+  fd.append('fecha', document.getElementById('dFecha').value);
+  fd.append('categoria', document.getElementById('dCategoria').value);
+  fd.append('descripcion', document.getElementById('dDesc').value);
+  fd.append('archivo', file);
+  await fetch('/api/ns/documentos', { method:'POST', body: fd });
+  cerrarModal('modalDoc');
+  cargarDocumentos();
+}
+
+async function eliminarDoc(id) {
+  if (!confirm('¿Eliminar?')) return;
+  await fetch(`/api/ns/documentos/${id}`, { method:'DELETE' });
+  cargarDocumentos();
+}
+
+// ── Calendario Gremial ────────────────────────────────
+let calData = [];
+
+async function cargarCal() {
+  const r = await fetch(`/api/ns/calendario?anio=${anioActivo}`);
+  calData = await r.json();
+  renderCal();
+}
+
+const BADGE_CAL = {
+  pendiente:  { cls:'badge-en_curso', label:'Pendiente' },
+  completado: { cls:'badge-cerrada',  label:'Completado' },
+  vencida:    { cls:'badge-vencida',  label:'Vencido' }
+};
+
+function renderCal() {
+  const c = document.getElementById('listCal');
+  if (!calData.length) { c.innerHTML = `<div class="empty">Sin compromisos en ${anioActivo}</div>`; return; }
+  c.innerHTML = calData.map(item => `
+    <div class="cal-row">
+      <div class="cal-cell" style="font-weight:500;color:#18243A">${item.accion || '—'}</div>
+      <div class="cal-cell" style="color:#64748B">${item.responsable || '—'}</div>
+      <div class="cal-cell" style="color:#64748B;white-space:nowrap">${fmtFecha(item.fecha_inicio)}</div>
+      <div class="cal-cell" style="color:#64748B;white-space:nowrap">${fmtFecha(item.fecha_fin)}</div>
+      <div class="cal-cell">
+        <select onchange="cambiarEstadoCal(${item.id},this.value)" style="font-size:11.5px;padding:3px 6px;border-radius:6px;border:1px solid #D8DEE8;font-family:inherit;background:#fff">
+          <option value="pendiente"${item.estado==='pendiente'?' selected':''}>Pendiente</option>
+          <option value="completado"${item.estado==='completado'?' selected':''}>Completado</option>
+          <option value="vencida"${item.estado==='vencida'?' selected':''}>Vencido</option>
+        </select>
+      </div>
+      <div class="cal-cell"><div class="td-actions">
+        <button class="btn-icon" onclick="editarCal(${item.id})">✏</button>
+        <button class="btn-danger-icon" onclick="eliminarCal(${item.id})">✕</button>
+      </div></div>
+    </div>`).join('');
+}
+
+function abrirCal(id) {
+  const item = id ? calData.find(x => x.id === id) : null;
+  document.getElementById('calId').value = item ? item.id : '';
+  document.getElementById('titleCal').textContent = item ? 'Editar acción' : 'Nueva acción';
+  document.getElementById('calAccion').value = item?.accion || '';
+  document.getElementById('calResp').value = item?.responsable || '';
+  document.getElementById('calInicio').value = item?.fecha_inicio?.split('T')[0] || '';
+  document.getElementById('calFin').value = item?.fecha_fin?.split('T')[0] || '';
+  document.getElementById('calEstado').value = item?.estado || 'pendiente';
+  document.getElementById('modalCal').classList.add('open');
+}
+
+function editarCal(id) { abrirCal(id); }
+
+async function guardarCal() {
+  const id = document.getElementById('calId').value;
+  const body = {
+    anio: anioActivo,
+    accion: document.getElementById('calAccion').value,
+    responsable: document.getElementById('calResp').value,
+    fecha_inicio: document.getElementById('calInicio').value || null,
+    fecha_fin: document.getElementById('calFin').value || null,
+    estado: document.getElementById('calEstado').value
+  };
+  const url = id ? `/api/ns/calendario/${id}` : '/api/ns/calendario';
+  await fetch(url, { method: id ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  cerrarModal('modalCal');
+  cargarCal();
+}
+
+async function cambiarEstadoCal(id, estado) {
+  const item = calData.find(x => x.id === id);
+  if (!item) return;
+  await fetch(`/api/ns/calendario/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ anio: item.anio, accion: item.accion, responsable: item.responsable, fecha_inicio: item.fecha_inicio?.split('T')[0]||null, fecha_fin: item.fecha_fin?.split('T')[0]||null, estado }) });
+  await cargarCal();
+}
+
+async function eliminarCal(id) {
+  if (!confirm('¿Eliminar?')) return;
+  await fetch(`/api/ns/calendario/${id}`, { method:'DELETE' });
+  cargarCal();
+}
+
+initAnios();
+</script>
+</body>
+</html>

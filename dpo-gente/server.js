@@ -1,11 +1,11 @@
-console.log('SERVER.JS LOADING - v' + Date.now());
+﻿console.log('SERVER.JS LOADING - v' + Date.now());
 const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const xlsx = require('xlsx');
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 // Almacenamiento en disco para archivos adjuntos (no satura Postgres)
 const UPLOADS_DIR = process.env.UPLOADS_DIR || '/tmp/uploads';
@@ -616,7 +616,7 @@ async function initDB() {
 }
 
 // ── AUTH (contraseña única, sin usuarios individuales) ──
-const MODULOS_DISPONIBLES = ['ausentismo','pac','reclutamiento','aprendizaje','engagement','talento'];
+const MODULOS_DISPONIBLES = ['ausentismo','pac','reclutamiento','aprendizaje','engagement','talento','comite-gente','kpi-ausentismo'];
 
 app.post('/api/login', async (req, res) => {
   const { password, nombre } = req.body || {};
@@ -781,6 +781,15 @@ app.put('/api/paginas/:id', async (req, res) => {
     res.json({ ok: true });
   } catch(e) { await client.query('ROLLBACK'); res.status(500).json({ error: 'Error al guardar' }); }
   finally { client.release(); }
+});
+
+app.patch('/api/paginas/:id/orden', async (req, res) => {
+  const { orden } = req.body;
+  if (orden == null) return res.status(400).json({ error: 'Falta orden' });
+  try {
+    await pool.query('UPDATE dpo_paginas SET orden=$1 WHERE id=$2', [orden, req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error' }); }
 });
 
 app.delete('/api/paginas/:id', async (req, res) => {
@@ -1115,6 +1124,9 @@ app.get('/ambiente-hub', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.get('/ausentismo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ausentismo.html')));
 app.get('/engagement', (req, res) => res.sendFile(path.join(__dirname, 'public', 'engagement-hub.html')));
 app.get('/encuesta-clima', (req, res) => res.sendFile(path.join(__dirname, 'public', 'engagement.html')));
+app.get('/entrevista-permanencia', (req, res) => res.sendFile(path.join(__dirname, 'public', 'entrevista-permanencia.html')));
+app.get('/comite-gente', (req, res) => res.sendFile(path.join(__dirname, 'public', 'comite-gente-hub.html')));
+app.get('/comite-gente/reuniones', (req, res) => res.sendFile(path.join(__dirname, 'public', 'comite-gente-reuniones.html')));
 app.get('/opr', (req, res) => res.sendFile(path.join(__dirname, 'public', 'opr.html')));
 app.get('/entorno-laboral', (req, res) => res.sendFile(path.join(__dirname, 'public', 'entorno-laboral.html')));
 app.get('/negociacion-sindical', (req, res) => res.sendFile(path.join(__dirname, 'public', 'negociacion-sindical.html')));
@@ -1122,15 +1134,555 @@ app.get('/plan-comunicaciones', (req, res) => res.sendFile(path.join(__dirname, 
 app.get('/talento-hub', (req, res) => res.sendFile(path.join(__dirname, 'public', 'talento-hub.html')));
 app.get('/ciclo-gente-hub', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ciclo-gente-hub.html')));
 
-// ── CICLO DE GENTE - ARCHIVOS (multi, disco) ──
+// ===================== COMITÉ DE GENTE =====================
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_comite_miembros (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(200) NOT NULL,
+  empresa VARCHAR(100),
+  funcion VARCHAR(150),
+  puesto VARCHAR(200),
+  gop_responsable VARCHAR(100),
+  activo BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_comite_reuniones (
+  id SERIAL PRIMARY KEY,
+  fecha DATE NOT NULL,
+  anio INT,
+  mes INT,
+  tipo VARCHAR(80) DEFAULT 'mensual',
+  lugar VARCHAR(200),
+  tor TEXT,
+  notas TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_comite_asistencia (
+  id SERIAL PRIMARY KEY,
+  reunion_id INT REFERENCES dpo_comite_reuniones(id) ON DELETE CASCADE,
+  miembro_id INT REFERENCES dpo_comite_miembros(id) ON DELETE CASCADE,
+  estado CHAR(1) DEFAULT 'P',
+  UNIQUE(reunion_id, miembro_id)
+)`).catch(()=>{});
+
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_comite_acciones (
+  id SERIAL PRIMARY KEY,
+  reunion_id INT REFERENCES dpo_comite_reuniones(id) ON DELETE CASCADE,
+  descripcion TEXT NOT NULL,
+  responsable VARCHAR(200),
+  fecha_compromiso DATE,
+  estado VARCHAR(30) DEFAULT 'pendiente',
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+
+// Miembros
+app.get('/api/comite/miembros', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM dpo_comite_miembros ORDER BY nombre');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/comite/miembros', async (req, res) => {
+  try {
+    const { nombre, empresa, funcion, puesto, gop_responsable } = req.body;
+    const r = await pool.query(
+      'INSERT INTO dpo_comite_miembros (nombre, empresa, funcion, puesto, gop_responsable) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [nombre, empresa, funcion, puesto, gop_responsable]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/comite/miembros/:id', async (req, res) => {
+  try {
+    const { nombre, empresa, funcion, puesto, gop_responsable, activo } = req.body;
+    const r = await pool.query(
+      'UPDATE dpo_comite_miembros SET nombre=$1, empresa=$2, funcion=$3, puesto=$4, gop_responsable=$5, activo=$6 WHERE id=$7 RETURNING *',
+      [nombre, empresa, funcion, puesto, gop_responsable, activo, req.params.id]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/comite/miembros/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_comite_miembros WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Reuniones
+app.get('/api/comite/reuniones', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    let q = `SELECT r.*,
+      (SELECT COUNT(*) FROM dpo_comite_asistencia a WHERE a.reunion_id=r.id AND a.estado='P') AS presentes,
+      (SELECT COUNT(*) FROM dpo_comite_asistencia a WHERE a.reunion_id=r.id) AS total_asistencia,
+      (SELECT COUNT(*) FROM dpo_comite_acciones ac WHERE ac.reunion_id=r.id) AS total_acciones
+      FROM dpo_comite_reuniones r`;
+    const params = [];
+    if (anio) { q += ' WHERE r.anio=$1'; params.push(anio); }
+    q += ' ORDER BY r.fecha DESC';
+    const r = await pool.query(q, params);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/comite/reuniones/:id', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM dpo_comite_reuniones WHERE id=$1', [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'No encontrada' });
+    const asistencia = await pool.query(
+      `SELECT a.*, m.nombre, m.empresa, m.funcion, m.gop_responsable
+       FROM dpo_comite_asistencia a
+       JOIN dpo_comite_miembros m ON m.id=a.miembro_id
+       WHERE a.reunion_id=$1 ORDER BY m.nombre`, [req.params.id]
+    );
+    const acciones = await pool.query(
+      'SELECT * FROM dpo_comite_acciones WHERE reunion_id=$1 ORDER BY created_at', [req.params.id]
+    );
+    res.json({ ...r.rows[0], asistencia: asistencia.rows, acciones: acciones.rows });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/comite/reuniones', async (req, res) => {
+  try {
+    const { fecha, tipo, lugar, tor, notas } = req.body;
+    const d = new Date(fecha);
+    const anio = d.getFullYear();
+    const mes = d.getMonth() + 1;
+    const r = await pool.query(
+      'INSERT INTO dpo_comite_reuniones (fecha, anio, mes, tipo, lugar, tor, notas) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+      [fecha, anio, mes, tipo||'mensual', lugar, tor, notas]
+    );
+    const reunion = r.rows[0];
+    // auto-populate asistencia with all active miembros
+    const miembros = await pool.query('SELECT id FROM dpo_comite_miembros WHERE activo=true');
+    for (const m of miembros.rows) {
+      await pool.query(
+        'INSERT INTO dpo_comite_asistencia (reunion_id, miembro_id, estado) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+        [reunion.id, m.id, 'A']
+      ).catch(()=>{});
+    }
+    res.json(reunion);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/comite/reuniones/:id', async (req, res) => {
+  try {
+    const { fecha, tipo, lugar, tor, notas } = req.body;
+    const d = new Date(fecha);
+    const r = await pool.query(
+      'UPDATE dpo_comite_reuniones SET fecha=$1, anio=$2, mes=$3, tipo=$4, lugar=$5, tor=$6, notas=$7 WHERE id=$8 RETURNING *',
+      [fecha, d.getFullYear(), d.getMonth()+1, tipo||'mensual', lugar, tor, notas, req.params.id]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/comite/reuniones/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_comite_reuniones WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Asistencia
+app.put('/api/comite/asistencia/:id', async (req, res) => {
+  try {
+    const { estado } = req.body;
+    await pool.query('UPDATE dpo_comite_asistencia SET estado=$1 WHERE id=$2', [estado, req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Acciones
+app.post('/api/comite/acciones', async (req, res) => {
+  try {
+    const { reunion_id, descripcion, responsable, fecha_compromiso, estado } = req.body;
+    const r = await pool.query(
+      'INSERT INTO dpo_comite_acciones (reunion_id, descripcion, responsable, fecha_compromiso, estado) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+      [reunion_id, descripcion, responsable, fecha_compromiso||null, estado||'pendiente']
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/comite/acciones/:id', async (req, res) => {
+  try {
+    const { descripcion, responsable, fecha_compromiso, estado } = req.body;
+    const r = await pool.query(
+      'UPDATE dpo_comite_acciones SET descripcion=$1, responsable=$2, fecha_compromiso=$3, estado=$4 WHERE id=$5 RETURNING *',
+      [descripcion, responsable, fecha_compromiso||null, estado, req.params.id]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/comite/acciones/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_comite_acciones WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Resumen para hub
+app.get('/api/comite/resumen', async (req, res) => {
+  try {
+    const anioActual = new Date().getFullYear();
+    const [reuniones, acciones, prox] = await Promise.all([
+      pool.query('SELECT COUNT(*) AS total FROM dpo_comite_reuniones WHERE anio=$1 AND fecha <= CURRENT_DATE', [anioActual]),
+      pool.query("SELECT COUNT(*) AS total FROM dpo_comite_acciones WHERE estado='pendiente'"),
+      pool.query('SELECT fecha FROM dpo_comite_reuniones WHERE fecha >= CURRENT_DATE ORDER BY fecha LIMIT 1')
+    ]);
+    res.json({
+      reuniones_anio: Number(reuniones.rows[0].total),
+      acciones_pendientes: Number(acciones.rows[0].total),
+      proxima_reunion: prox.rows[0]?.fecha || null
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ===================== GOPs =====================
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_comite_gops (
+  id SERIAL PRIMARY KEY,
+  gop VARCHAR(80) NOT NULL,
+  bloque VARCHAR(200) NOT NULL,
+  pregunta TEXT NOT NULL,
+  orden INT DEFAULT 0
+)`).catch(()=>{});
+
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_comite_gop_respuestas (
+  id SERIAL PRIMARY KEY,
+  gop_pregunta_id INT REFERENCES dpo_comite_gops(id) ON DELETE CASCADE,
+  anio INT NOT NULL,
+  mes INT NOT NULL,
+  valor VARCHAR(10) DEFAULT '',
+  UNIQUE(gop_pregunta_id, anio, mes)
+)`).catch(()=>{});
+
+const GOP_SEED = [
+  { gop:'D&I', bloques:[
+    { bloque:'D&I', preguntas:[
+      '¿El CD cuenta con un shape / análisis en % de D&I de su nómina actual?',
+      '¿Cuenta con Metas / Plan de acción anual para mejorar el D&I en su dotación? (Mujeres en la Lideranza, Mujeres en la operación, Personas con discapacidad)',
+      '¿El CD cuenta con convenios con ONG / Consultoras, con el fin de fomentar la inclusión en su operación?',
+      'Si tienen personas de licencia, ¿El equipo de liderazgo del CD mantiene Feedback frecuente con las personas que se encuentran de licencia? (Al menos una vez cada 15 días)',
+      '¿El CD cuenta con los EPPs adecuados para todas las personas? (talles de ropa, guantes, lentes adaptados)',
+    ]},
+    { bloque:'Comunicación', preguntas:[
+      'Dentro del Calendario de Comunicaciones, ¿se encuentran aquellas fechas relacionadas a D&I?',
+      '¿El CD cuenta con un mecanismo confidencial para levantar problemas relacionados a Seguridad Psicológica?',
+    ]},
+    { bloque:'Estructura', preguntas:[
+      '¿El ingreso al CD es accesible para una persona con movilidad reducida?',
+      'Las áreas operativas, ¿Cuentan con estructura adecuada para las distintas necesidades del personal? (Baños mixtos / para personas con movilidad reducida, entre otros)',
+      '¿El CD cuenta con lactario, Espacios adecuado o políticas de adaptación?',
+      'El CD cuenta con un plan de acción para que sus instalaciones sean más inclusivas a largo plazo.',
+    ]},
+    { bloque:'R&S', preguntas:[
+      '¿Las Vacantes abiertas se publican a través de los medios de comunicación del CD? ¿Las publicaciones son inclusivas?',
+      '¿Todas las personas que participan en el proceso de reclutamiento y selección realizaron el entrenamiento de Sesgos Inconscientes?',
+    ]},
+    { bloque:'Aprendizaje & Desarrollo', preguntas:[
+      '¿El CD cuenta con agenda de actividades de D&I anual? (8M, Semana D&I, espacios de diálogo con la operación)',
+      '¿Los líderes del CD participaron de entrenamientos de D&I?',
+      '¿El Equipo Operativo del CD participó de entrenamientos de D&I?',
+      '¿Todos los miembros del CD participaron de la capacitación de Seguridad Psicológica?',
+    ]},
+  ]},
+  { gop:'Reconocimiento', bloques:[
+    { bloque:'Programa de Reconocimiento', preguntas:[
+      '¿Recibieron las áreas capacitación anual sobre las métricas del Programa de reconocimiento local?',
+      '¿Existe un programa de reconocimiento que sea accesible para todos los empleados operativos en el almacén?',
+      '¿Existe un programa de reconocimiento accesible a todos los colaboradores del transporte operativo?',
+      '¿Existe un seguimiento de las personas reconocidas por mes?',
+      '¿Existe un programa de reconocimiento que sea accesible para todos los empleados del sector administrativo?',
+      '¿El programa de reconocimiento se verifica y es comunicado mensualmente en todos los turnos?',
+    ]},
+    { bloque:'Premiaciones', preguntas:[
+      '¿Tiene la unidad un presupuesto definido de eventos / reconocimientos?',
+      '¿La unidad realiza una encuesta anual para escuchar la opinión de los empleados sobre los premios seleccionados?',
+    ]},
+    { bloque:'Definición de Metas', preguntas:[
+      '¿Los criterios definidos para el programa de Reconocimiento están alineados con el sueño del Distribuidor y las 3R?',
+      '¿Los empleados operativos conocen los objetivos directamente relacionados con 3R?',
+      '¿El Distribuidor garantiza la comunicación mensual de metas de 3R?',
+    ]},
+    { bloque:'Liderazgo', preguntas:[
+      '¿El liderazgo participa en la comunicación de resultados mensualmente?',
+      '¿El liderazgo reconoce semanalmente los aspectos más destacados durante las reuniones del equipo?',
+    ]},
+  ]},
+  { gop:'Jornada', bloques:[
+    { bloque:'Gestión de la Jornada', preguntas:[
+      '¿El área de personas realiza un seguimiento del saldo de horas (positivo y negativo) de todos los empleados una vez por semana y comunica el saldo a los empleados?',
+      '¿El equipo recibe capacitación sobre reglas de jornada laboral?',
+      'El CD prioriza a los empleados con el mayor número de horas positivas para la compensación de horas.',
+      'Planear mensualmente el horario de trabajo del equipo para los fin de semana.',
+      'Se aplican medidas disciplinarias cuando no se cumple la jornada.',
+      'El CD planifica y comunica mensualmente el cronograma de trabajo del equipo para los fines de semana del 100% de la operación.',
+      '¿El CD comunica el plan de compensación con una semana de anticipación?',
+      'Los desvíos de Jornada están justificados y evidenciados.',
+      'En caso de ausentismo e interjornada ¿el liderazgo toma una decisión de reubicación?',
+    ]},
+    { bloque:'Gestión de Vacaciones', preguntas:[
+      '¿Se realiza la planificación de vacaciones anuales para todo el equipo?',
+      'Divulgar el calendario de vacaciones a todo el equipo mensualmente después de la validación en una reunión del comité.',
+    ]},
+  ]},
+  { gop:'Estructura', bloques:[
+    { bloque:'Estructura', preguntas:[
+      '¿Están todos los acondicionadores de aire activos en la unidad?',
+      '¿Funcionan perfectamente los portones de acceso?',
+    ]},
+    { bloque:'Limpieza', preguntas:[
+      '¿El horario de limpieza del área está disponible en un lugar visible para los empleados y se actualiza diariamente?',
+      '¿Están las cafeteras en buenas condiciones?',
+      '¿Funcionan los baños / vestuarios? ¿Las duchas tienen agua caliente?',
+      '¿Todas las personas (incluidos los temporales) tienen casilleros en los baños?',
+    ]},
+    { bloque:'Higiene y Materiales Desechables', preguntas:[
+      '¿El Distribuidor garantiza la limpieza y reposición de materiales en los baños y vestuarios a la entrada y salida de cada turno?',
+      '¿El Distribuidor garantiza un stock de material de limpieza en la unidad?',
+    ]},
+    { bloque:'Herramientas de Trabajo', preguntas:[
+      '¿Se mantienen en buenas condiciones los equipos electrónicos (tabletas, teléfonos celulares, computadoras)?',
+      '¿Se conservan en buenas condiciones el equipo de trabajo (zorras, montacargas, camiones)?',
+      '¿Se conservan en buenas condiciones los muebles de los sectores (mesa, sillas y armarios)?',
+    ]},
+    { bloque:'Comunicación', preguntas:[
+      '¿Se comunican al equipo las acciones correctivas y las mejoras relacionadas a SSGG?',
+    ]},
+    { bloque:'Uniformes & EPPs', preguntas:[
+      '¿La unidad sigue los lineamientos del Procedimiento Operativo Estándar y realiza una sola entrega con la cantidad y artículos establecidos?',
+      '¿El CD mantiene la revisión y actualización del Stock de EPPs?',
+    ]},
+  ]},
+  { gop:'Remuneración', bloques:[
+    { bloque:'Gestión de Remuneración', preguntas:[
+      '¿El Equipo recibe capacitación sobre el Paquete de Compensación TOTAL anualmente?',
+      '¿El CD aplica el control de retención a los empleados después de la capacitación del Paquete de compensación?',
+      '¿El Recibo de Sueldo es entregado en tiempo y forma al empleado?',
+      '¿En caso de haber errores de pago, se corrigen dentro del mes de ocurrencia?',
+      '¿Se notifica al empleado con anticipación cuando van a tener descuentos?',
+      '¿Están los empleados del sector administrativo y los líderes dentro del porcentaje del 80% de la Tabla Salarial?',
+      '¿El Distribuidor realiza una encuesta anual de satisfacción con los beneficios?',
+      '¿Tiene la unidad convenios con instituciones con red de descuento para empleados?',
+    ]},
+    { bloque:'Comunicación', preguntas:[
+      '¿El Distribuidor comunica adecuadamente los Nuevos descuentos / Beneficios a todos sus empleados?',
+    ]},
+  ]},
+  { gop:'Turnover', bloques:[
+    { bloque:'L&D - Inducción', preguntas:[
+      '¿El gerente de área tiene reuniones semanales con un empleado nuevo para verificar el progreso de la inducción dentro de los primeros 30 días?',
+      '¿El programa de mentores se realiza en el CD?',
+      '¿Los nuevos ingresos evalúan la calidad de su inducción y capacitación al final del período?',
+      '¿Existe un programa de inducción y capacitación gradual para toda la operación?',
+    ]},
+    { bloque:'Recruitment & Selection', preguntas:[
+      '¿El jefe del Distribuidor tiene una entrevista de seguimiento con los nuevos empleados 3 meses después de la fecha de contratación?',
+      '¿Estamos atrayendo los talentos adecuados? ¿Es efectiva nuestra Estrategia de Atracción de Talento?',
+    ]},
+    { bloque:'Work Environment & Engagement', preguntas:[
+      '¿La adherencia a la Encuesta de Clima supera el 85% de tasa de respuesta?',
+      'Plan de acción de la encuesta de engagement en ejecución y con comunicación mensual al equipo.',
+    ]},
+    { bloque:'Talent & Growth', preguntas:[
+      '¿Has revisado las entrevistas de salida? ¿Existe algún patrón/causa raíz?',
+    ]},
+  ]},
+  { gop:'Ausentismo', bloques:[
+    { bloque:'Ausentismo', preguntas:[
+      '¿El 100% de los empleados vive en la ciudad o cerca del CD? Si no, ¿hay alguna otra alternativa?',
+      '¿Hay un control diario de la visibilidad del ausentismo por tipo de ausencias del día anterior para cada empleado?',
+      '¿Hay una entrevista de ausentismo al día siguiente realizada por el coordinador/supervisor del área?',
+      '¿Se discuten las causas de ausentismo y exceso de horas de trabajo en las reuniones semanales?',
+      'Cuando un KPI no alcanza el objetivo, ¿se analiza el ausentismo y existe un plan de acción para mejorar?',
+      'El ausentismo por motivos médicos, ¿es analizado y existe un plan de acción junto con el equipo médico?',
+      '¿Los empleados comunican las ausencias con al menos 24 horas de anticipación?',
+      'En caso de ausencia injustificada, ¿existe un plan de acción para atacar el problema?',
+    ]},
+  ]},
+];
+
+(async function seedGops() {
+  try {
+    // wait for tables to be ready
+    for (let i = 0; i < 10; i++) {
+      try { await pool.query('SELECT 1 FROM dpo_comite_gops LIMIT 1'); break; }
+      catch(_) { await new Promise(r => setTimeout(r, 500)); }
+    }
+    const existing = await pool.query('SELECT COUNT(*) AS c FROM dpo_comite_gops');
+    if (Number(existing.rows[0].c) > 0) return;
+    let orden = 0;
+    for (const g of GOP_SEED) {
+      for (const b of g.bloques) {
+        for (const p of b.preguntas) {
+          await pool.query('INSERT INTO dpo_comite_gops (gop, bloque, pregunta, orden) VALUES ($1,$2,$3,$4)',
+            [g.gop, b.bloque, p, orden++]);
+        }
+      }
+    }
+    console.log('GOP seed: ' + orden + ' preguntas insertadas');
+  } catch(e) { console.error('GOP seed error:', e.message); }
+})();
+
+app.get('/api/comite/gops/preguntas', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM dpo_comite_gops ORDER BY orden');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/comite/gops/respuestas', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query(
+      'SELECT gop_pregunta_id, mes, valor FROM dpo_comite_gop_respuestas WHERE anio=$1',
+      [anio || new Date().getFullYear()]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/comite/gops/respuestas', async (req, res) => {
+  try {
+    const { gop_pregunta_id, anio, mes, valor } = req.body;
+    await pool.query(
+      `INSERT INTO dpo_comite_gop_respuestas (gop_pregunta_id, anio, mes, valor)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT (gop_pregunta_id, anio, mes) DO UPDATE SET valor = $4`,
+      [gop_pregunta_id, anio, mes, valor]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/comite-gente/gops', (req, res) => res.sendFile(path.join(__dirname, 'public', 'comite-gente-gops.html')));
+
+// ===================== PDA (Plan de Acción) =====================
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_comite_pda (
+  id SERIAL PRIMARY KEY,
+  accion TEXT NOT NULL,
+  gop VARCHAR(80),
+  bloque VARCHAR(200),
+  responsable VARCHAR(200),
+  fecha_compromiso DATE,
+  estado VARCHAR(30) DEFAULT 'pendiente',
+  prioridad VARCHAR(20) DEFAULT 'media',
+  evidencia TEXT,
+  anio INT,
+  mes_origen INT,
+  created_at TIMESTAMP DEFAULT NOW()
+)`).catch(()=>{});
+
+app.get('/api/comite/pda', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    let q = 'SELECT * FROM dpo_comite_pda';
+    const params = [];
+    if (anio) { q += ' WHERE anio=$1'; params.push(anio); }
+    q += ' ORDER BY created_at DESC';
+    const r = await pool.query(q, params);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/comite/pda', async (req, res) => {
+  try {
+    const { accion, gop, bloque, responsable, fecha_compromiso, estado, prioridad, evidencia, anio, mes_origen } = req.body;
+    const r = await pool.query(
+      `INSERT INTO dpo_comite_pda (accion, gop, bloque, responsable, fecha_compromiso, estado, prioridad, evidencia, anio, mes_origen)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [accion, gop||null, bloque||null, responsable||null, fecha_compromiso||null, estado||'pendiente', prioridad||'media', evidencia||null, anio||new Date().getFullYear(), mes_origen||null]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/comite/pda/:id', async (req, res) => {
+  try {
+    const { accion, gop, bloque, responsable, fecha_compromiso, estado, prioridad, evidencia } = req.body;
+    const r = await pool.query(
+      `UPDATE dpo_comite_pda SET accion=$1, gop=$2, bloque=$3, responsable=$4, fecha_compromiso=$5, estado=$6, prioridad=$7, evidencia=$8 WHERE id=$9 RETURNING *`,
+      [accion, gop||null, bloque||null, responsable||null, fecha_compromiso||null, estado, prioridad, evidencia||null, req.params.id]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/comite/pda/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM dpo_comite_pda WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/comite/pda/resumen', async (req, res) => {
+  try {
+    const anio = req.query.anio || new Date().getFullYear();
+    const r = await pool.query(
+      `SELECT estado, COUNT(*) AS total FROM dpo_comite_pda WHERE anio=$1 GROUP BY estado`, [anio]
+    );
+    const map = {};
+    r.rows.forEach(row => { map[row.estado] = Number(row.total); });
+    const total = Object.values(map).reduce((a, b) => a + b, 0);
+    const completadas = map['completada'] || 0;
+    res.json({ total, completadas, pct: total ? Math.round(completadas / total * 100) : 0, por_estado: map });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/comite-gente/pda', (req, res) => res.sendFile(path.join(__dirname, 'public', 'comite-gente-pda.html')));
+
+// ===================== STORAGE GUARD =====================
+const STORAGE_LIMIT_MB = 400;
+const TABLAS_ARCHIVOS = [
+  'dpo_ciclogente_archivos','dpo_desempeno_archivos','dpo_distrib_archivos',
+  'dpo_opr_archivos','dpo_turnover_archivos','dpo_ns_documentos'
+];
+
+async function getStorageMB() {
+  try {
+    const queries = TABLAS_ARCHIVOS.map(t =>
+      `SELECT pg_total_relation_size('${t}') AS s`
+    );
+    let total = 0;
+    for (const q of queries) {
+      try { const r = await pool.query(q); total += Number(r.rows[0].s) || 0; } catch(_){}
+    }
+    return Math.round(total / 1024 / 1024 * 10) / 10;
+  } catch(_) { return 0; }
+}
+
+async function checkStorageLimit(res) {
+  const used = await getStorageMB();
+  if (used >= STORAGE_LIMIT_MB) {
+    res.status(507).json({ error: `Almacenamiento lleno: ${used}MB de ${STORAGE_LIMIT_MB}MB usados. Eliminá archivos antes de subir nuevos.` });
+    return false;
+  }
+  return true;
+}
+
+app.get('/api/storage', async (req, res) => {
+  try {
+    const used = await getStorageMB();
+    res.json({ used_mb: used, limit_mb: STORAGE_LIMIT_MB, pct: Math.round(used / STORAGE_LIMIT_MB * 100) });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── CICLO DE GENTE - ARCHIVOS ──
 pool.query(`CREATE TABLE IF NOT EXISTS dpo_ciclogente_archivos (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(300),
   tipo VARCHAR(100),
-  ruta VARCHAR(500),
+  contenido BYTEA,
   created_at TIMESTAMP DEFAULT NOW()
 )`).catch(()=>{});
-pool.query(`ALTER TABLE dpo_ciclogente_archivos ADD COLUMN IF NOT EXISTS ruta VARCHAR(500)`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_ciclogente_archivos ADD COLUMN IF NOT EXISTS contenido BYTEA`).catch(()=>{});
 
 app.get('/api/ciclogente/archivos', async (req, res) => {
   try {
@@ -1141,21 +1693,22 @@ app.get('/api/ciclogente/archivos', async (req, res) => {
 
 app.get('/api/ciclogente/archivos/:id/file', async (req, res) => {
   try {
-    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_ciclogente_archivos WHERE id=$1', [req.params.id]);
-    if (!r.rows.length) return res.status(404).end();
-    const { nombre, tipo, ruta } = r.rows[0];
+    const r = await pool.query('SELECT nombre, tipo, contenido FROM dpo_ciclogente_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].contenido) return res.status(404).json({ error: 'Archivo no encontrado' });
+    const { nombre, tipo, contenido } = r.rows[0];
     res.setHeader('Content-Type', tipo || 'application/octet-stream');
-    res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
-    res.sendFile(ruta);
+    res.setHeader('Content-Disposition', `inline; filename=”${nombre}”`);
+    res.send(contenido);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/ciclogente/archivos', uploadDisk.single('archivo'), async (req, res) => {
+app.post('/api/ciclogente/archivos', upload.single('archivo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    if (!await checkStorageLimit(res)) return;
     const r = await pool.query(
-      'INSERT INTO dpo_ciclogente_archivos (nombre, tipo, ruta) VALUES ($1,$2,$3) RETURNING id',
-      [req.file.originalname, req.file.mimetype, req.file.path]
+      'INSERT INTO dpo_ciclogente_archivos (nombre, tipo, contenido) VALUES ($1,$2,$3) RETURNING id',
+      [req.file.originalname, req.file.mimetype, req.file.buffer]
     );
     res.json({ ok: true, id: r.rows[0].id });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -1163,8 +1716,6 @@ app.post('/api/ciclogente/archivos', uploadDisk.single('archivo'), async (req, r
 
 app.delete('/api/ciclogente/archivos/:id', async (req, res) => {
   try {
-    const r = await pool.query('SELECT ruta FROM dpo_ciclogente_archivos WHERE id=$1', [req.params.id]);
-    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
     await pool.query('DELETE FROM dpo_ciclogente_archivos WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -1894,7 +2445,7 @@ app.post('/api/ausentismo/upload', upload.fields([
       empleados.forEach(e => { empByLegajo[e.legajo] = e; empByDni[e.dni] = e; });
 
       // Parsear marcas CSV
-      const csv = req.files['marcas'][0].buffer.toString('utf8').replace(/^﻿/, '');
+      const csv = req.files['marcas'][0].buffer.toString('utf8').replace(/^ï»¿/, '');
       const csvLines = csv.split('\n').filter(Boolean);
       const hdr = ausParseCSVRow(csvLines[0]);
       const [iDni,iEmp,iFec,iHor,iAcc] = ['dni','empleado','fecha','hora','accion'].map(c => hdr.indexOf(c));
@@ -3340,9 +3891,10 @@ pool.query(`CREATE TABLE IF NOT EXISTS dpo_desempeno_archivos (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(300),
   tipo VARCHAR(100),
-  ruta VARCHAR(500),
+  contenido BYTEA,
   created_at TIMESTAMP DEFAULT NOW()
 )`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_desempeno_archivos ADD COLUMN IF NOT EXISTS contenido BYTEA`).catch(()=>{});
 
 app.get('/api/desempeno/archivos', async (req, res) => {
   try {
@@ -3353,21 +3905,22 @@ app.get('/api/desempeno/archivos', async (req, res) => {
 
 app.get('/api/desempeno/archivos/:id/file', async (req, res) => {
   try {
-    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_desempeno_archivos WHERE id=$1', [req.params.id]);
-    if (!r.rows.length) return res.status(404).end();
-    const { nombre, tipo, ruta } = r.rows[0];
+    const r = await pool.query('SELECT nombre, tipo, contenido FROM dpo_desempeno_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].contenido) return res.status(404).json({ error: 'Archivo no encontrado' });
+    const { nombre, tipo, contenido } = r.rows[0];
     res.setHeader('Content-Type', tipo || 'application/octet-stream');
     res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
-    res.sendFile(ruta);
+    res.send(contenido);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/desempeno/archivos', uploadDisk.single('archivo'), async (req, res) => {
+app.post('/api/desempeno/archivos', upload.single('archivo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    if (!await checkStorageLimit(res)) return;
     const r = await pool.query(
-      'INSERT INTO dpo_desempeno_archivos (nombre, tipo, ruta) VALUES ($1,$2,$3) RETURNING id',
-      [req.file.originalname, req.file.mimetype, req.file.path]
+      'INSERT INTO dpo_desempeno_archivos (nombre, tipo, contenido) VALUES ($1,$2,$3) RETURNING id',
+      [req.file.originalname, req.file.mimetype, req.file.buffer]
     );
     res.json({ ok: true, id: r.rows[0].id });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3375,8 +3928,6 @@ app.post('/api/desempeno/archivos', uploadDisk.single('archivo'), async (req, re
 
 app.delete('/api/desempeno/archivos/:id', async (req, res) => {
   try {
-    const r = await pool.query('SELECT ruta FROM dpo_desempeno_archivos WHERE id=$1', [req.params.id]);
-    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
     await pool.query('DELETE FROM dpo_desempeno_archivos WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3407,22 +3958,23 @@ app.get('/api/distrib/archivos', async (req, res) => {
 
 app.get('/api/distrib/archivos/:id/file', async (req, res) => {
   try {
-    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_distrib_archivos WHERE id=$1', [req.params.id]);
-    if (!r.rows.length) return res.status(404).end();
-    const { nombre, tipo, ruta } = r.rows[0];
+    const r = await pool.query('SELECT nombre, tipo, contenido FROM dpo_distrib_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].contenido) return res.status(404).json({ error: 'Archivo no encontrado' });
+    const { nombre, tipo, contenido } = r.rows[0];
     res.setHeader('Content-Type', tipo || 'application/octet-stream');
     res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
-    res.sendFile(ruta);
+    res.send(contenido);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/distrib/archivos', uploadDisk.single('archivo'), async (req, res) => {
+app.post('/api/distrib/archivos', upload.single('archivo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    if (!await checkStorageLimit(res)) return;
     const { anio } = req.body;
     const r = await pool.query(
-      'INSERT INTO dpo_distrib_archivos (anio, nombre, tipo, ruta) VALUES ($1,$2,$3,$4) RETURNING id',
-      [anio, req.file.originalname, req.file.mimetype, req.file.path]
+      'INSERT INTO dpo_distrib_archivos (anio, nombre, tipo, contenido) VALUES ($1,$2,$3,$4) RETURNING id',
+      [anio, req.file.originalname, req.file.mimetype, req.file.buffer]
     );
     res.json({ ok: true, id: r.rows[0].id });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3430,8 +3982,6 @@ app.post('/api/distrib/archivos', uploadDisk.single('archivo'), async (req, res)
 
 app.delete('/api/distrib/archivos/:id', async (req, res) => {
   try {
-    const r = await pool.query('SELECT ruta FROM dpo_distrib_archivos WHERE id=$1', [req.params.id]);
-    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
     await pool.query('DELETE FROM dpo_distrib_archivos WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3447,10 +3997,10 @@ pool.query(`CREATE TABLE IF NOT EXISTS dpo_opr_archivos (
   periodo_id INTEGER REFERENCES dpo_opr_periodos(id) ON DELETE CASCADE,
   nombre VARCHAR(300),
   tipo VARCHAR(100),
-  ruta VARCHAR(500),
+  contenido BYTEA,
   created_at TIMESTAMP DEFAULT NOW()
 )`).catch(()=>{});
-pool.query(`ALTER TABLE dpo_opr_archivos ADD COLUMN IF NOT EXISTS ruta VARCHAR(500)`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_opr_archivos ADD COLUMN IF NOT EXISTS contenido BYTEA`).catch(()=>{});
 
 app.get('/api/opr/archivos', async (req, res) => {
   try {
@@ -3462,22 +4012,23 @@ app.get('/api/opr/archivos', async (req, res) => {
 
 app.get('/api/opr/archivos/:id/file', async (req, res) => {
   try {
-    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_opr_archivos WHERE id=$1', [req.params.id]);
-    if (!r.rows.length) return res.status(404).end();
-    const { nombre, tipo, ruta } = r.rows[0];
+    const r = await pool.query('SELECT nombre, tipo, contenido FROM dpo_opr_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].contenido) return res.status(404).json({ error: 'Archivo no encontrado' });
+    const { nombre, tipo, contenido } = r.rows[0];
     res.setHeader('Content-Type', tipo || 'application/octet-stream');
     res.setHeader('Content-Disposition', `inline; filename="${nombre}"`);
-    res.sendFile(ruta);
+    res.send(contenido);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/opr/archivos', uploadDisk.single('archivo'), async (req, res) => {
+app.post('/api/opr/archivos', upload.single('archivo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    if (!await checkStorageLimit(res)) return;
     const { periodo_id } = req.body;
     const r = await pool.query(
-      'INSERT INTO dpo_opr_archivos (periodo_id, nombre, tipo, ruta) VALUES ($1,$2,$3,$4) RETURNING id',
-      [periodo_id, req.file.originalname, req.file.mimetype, req.file.path]
+      'INSERT INTO dpo_opr_archivos (periodo_id, nombre, tipo, contenido) VALUES ($1,$2,$3,$4) RETURNING id',
+      [periodo_id, req.file.originalname, req.file.mimetype, req.file.buffer]
     );
     res.json({ ok: true, id: r.rows[0].id });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3485,8 +4036,6 @@ app.post('/api/opr/archivos', uploadDisk.single('archivo'), async (req, res) => 
 
 app.delete('/api/opr/archivos/:id', async (req, res) => {
   try {
-    const r = await pool.query('SELECT ruta FROM dpo_opr_archivos WHERE id=$1', [req.params.id]);
-    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
     await pool.query('DELETE FROM dpo_opr_archivos WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3635,9 +4184,10 @@ pool.query(`CREATE TABLE IF NOT EXISTS dpo_turnover_archivos (
   id SERIAL PRIMARY KEY,
   nombre VARCHAR(300),
   tipo VARCHAR(200),
-  ruta VARCHAR(500),
+  contenido BYTEA,
   created_at TIMESTAMPTZ DEFAULT NOW()
 )`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_turnover_archivos ADD COLUMN IF NOT EXISTS contenido BYTEA`).catch(()=>{});
 
 app.get('/api/turnover/archivos', async (req, res) => {
   try {
@@ -3648,22 +4198,22 @@ app.get('/api/turnover/archivos', async (req, res) => {
 
 app.get('/api/turnover/archivos/:id/file', async (req, res) => {
   try {
-    const r = await pool.query('SELECT nombre, tipo, ruta FROM dpo_turnover_archivos WHERE id=$1', [req.params.id]);
-    if (!r.rows.length) return res.status(404).end();
-    const { nombre, tipo, ruta } = r.rows[0];
-    if (!ruta || !fs.existsSync(ruta)) return res.status(404).json({ error: 'Archivo no encontrado en disco' });
+    const r = await pool.query('SELECT nombre, tipo, contenido FROM dpo_turnover_archivos WHERE id=$1', [req.params.id]);
+    if (!r.rows.length || !r.rows[0].contenido) return res.status(404).json({ error: 'Archivo no encontrado' });
+    const { nombre, tipo, contenido } = r.rows[0];
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(nombre)}"`);
     if (tipo) res.setHeader('Content-Type', tipo);
-    res.sendFile(ruta);
+    res.send(contenido);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/turnover/archivos', uploadDisk.single('archivo'), async (req, res) => {
+app.post('/api/turnover/archivos', upload.single('archivo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    if (!await checkStorageLimit(res)) return;
     const r = await pool.query(
-      'INSERT INTO dpo_turnover_archivos (nombre, tipo, ruta) VALUES ($1,$2,$3) RETURNING id',
-      [req.file.originalname, req.file.mimetype, req.file.path]
+      'INSERT INTO dpo_turnover_archivos (nombre, tipo, contenido) VALUES ($1,$2,$3) RETURNING id',
+      [req.file.originalname, req.file.mimetype, req.file.buffer]
     );
     res.json({ ok: true, id: r.rows[0].id });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3671,8 +4221,6 @@ app.post('/api/turnover/archivos', uploadDisk.single('archivo'), async (req, res
 
 app.delete('/api/turnover/archivos/:id', async (req, res) => {
   try {
-    const r = await pool.query('SELECT ruta FROM dpo_turnover_archivos WHERE id=$1', [req.params.id]);
-    if (r.rows.length && r.rows[0].ruta) fs.unlink(r.rows[0].ruta, ()=>{});
     await pool.query('DELETE FROM dpo_turnover_archivos WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -3690,15 +4238,21 @@ pool.query(`CREATE TABLE IF NOT EXISTS dpo_turnover_dotacion (
   apellido VARCHAR(200),
   genero VARCHAR(50),
   sector VARCHAR(100),
+  sucursal VARCHAR(200),
   posicion VARCHAR(200),
   tipo_contrato VARCHAR(50),
   fecha_nacimiento DATE,
   fecha_ingreso DATE,
+  fecha_salida DATE,
   ftes VARCHAR(10),
   tipo_salida VARCHAR(200),
   requiere_reemplazo BOOLEAN DEFAULT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 )`).catch(()=>{});
+
+pool.query(`ALTER TABLE dpo_turnover_dotacion ADD COLUMN IF NOT EXISTS sucursal VARCHAR(200)`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_turnover_dotacion ADD COLUMN IF NOT EXISTS fecha_salida DATE`).catch(()=>{});
+pool.query(`ALTER TABLE dpo_turnover_dotacion ADD COLUMN IF NOT EXISTS es_lider BOOLEAN`).catch(()=>{});
 
 pool.query(`CREATE TABLE IF NOT EXISTS dpo_turnover_config (
   anio INTEGER PRIMARY KEY,
@@ -3738,71 +4292,307 @@ app.post('/api/turnover/importar', uploadDisk.single('archivo'), async (req, res
     const mes  = parseInt(req.body.mes);
     if (!anio || !mes) return res.status(400).json({ error: 'Falta anio o mes' });
 
-    const wb = xlsx.readFile(req.file.path, { cellDates: true, raw: false });
+    const wb = xlsx.readFile(req.file.path, { cellDates: true, raw: true });
     fs.unlink(req.file.path, ()=>{});
 
-    // Detectar formato: legajos mensual (hoja DOTACIÓN) o dashboard (hoja 📅 MesNombre)
-    const sheetDot = wb.SheetNames.find(n => n.toUpperCase().includes('DOTACI'));
-    const sheetDash = `📅 ${MESES_SHEET[mes-1]}`;
-    const useLegajos = !!sheetDot;
-    const ws = useLegajos ? wb.Sheets[sheetDot] : wb.Sheets[sheetDash];
-    if (!ws) return res.status(400).json({ error: `No se encontró una hoja de dotación en el archivo. Se esperaba "${sheetDash}" o "DOTACIÓN".` });
+    // Detectar formato por hojas presentes
+    const tieneActiva  = wb.SheetNames.some(n => n.toUpperCase().includes('DOTACI') && n.toUpperCase().includes('ACTIVA'));
+    const tieneDotSola = !tieneActiva && wb.SheetNames.some(n => n.toUpperCase() === 'DOTACIÓN' || n.toUpperCase() === 'DOTACION');
+    const tieneBajas   = wb.SheetNames.some(n => n.toUpperCase().includes('BAJAS'));
 
-    // Headers en fila 1 (legajos) o fila 2 (dashboard), datos desde siguiente fila
-    const rows = xlsx.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
-    const dataStart = useLegajos ? 2 : 2; // ambos tienen headers en fila 2 (índice 1), datos desde índice 2
+    function colIdx(hdr, ...names) {
+      for (const name of names) {
+        const i = hdr.findIndex(h => h && h.toString().toUpperCase().includes(name.toUpperCase()));
+        if (i >= 0) return i;
+      }
+      return -1;
+    }
 
-    // Mapeo de columnas según formato (0-based)
-    // Legajos: DNI=7, NOMBRE=8, APELLIDO=9, GÉNERO=11, F_NAC=12, SECTOR=13, POSICIÓN=14, TIPO_CONTRATO=17, F_INGRESO=18, F_SALIDA=25, TIPO_SALIDA=26
-    // Dashboard: DNI=6, NOMBRE=3, APELLIDO=4, GÉNERO=7, F_NAC=8, SECTOR=9, POSICIÓN=10, TIPO_CONTRATO=12, F_INGRESO=13, FTES=28, TIPO_SALIDA=17
-    const col = useLegajos
-      ? { dni:7, nom:8, ape:9, gen:11, fnac:12, sec:13, pos:14, cont:17, fing:18, fsal:25, tsal:26, ftes:-1 }
-      : { dni:6, nom:3, ape:4, gen:7, fnac:8, sec:9, pos:10, cont:12, fing:13, fsal:-1, tsal:17, ftes:28 };
+    function cellDate(val) {
+      if (!val) return null;
+      if (val instanceof Date) {
+        const y = val.getFullYear(), mo = String(val.getMonth()+1).padStart(2,'0'), d = String(val.getDate()).padStart(2,'0');
+        return `${y}-${mo}-${d}`;
+      }
+      const s = val.toString().trim();
+      const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (m) { const y = m[3].length===2?'20'+m[3]:m[3]; return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; }
+      return s || null;
+    }
+
+    // Guardar requiere_reemplazo ya confirmados antes de borrar
+    const prevConf = await pool.query(
+      `SELECT dni, nombre, apellido, fecha_salida::text, requiere_reemplazo
+       FROM dpo_turnover_dotacion
+       WHERE anio=$1 AND mes=$2 AND requiere_reemplazo IS NOT NULL`, [anio, mes]
+    );
+    const confMap = new Map();
+    for (const row of prevConf.rows) {
+      const key = row.dni ? String(row.dni) : `${row.apellido}|${row.nombre}`;
+      confMap.set(key, row.requiere_reemplazo);
+    }
 
     await pool.query('DELETE FROM dpo_turnover_dotacion WHERE anio=$1 AND mes=$2', [anio, mes]);
-
     const bajas = [];
-    for (let i = dataStart; i < rows.length; i++) {
-      const r = rows[i];
-      const nombre = (r[col.nom] || '').trim();
-      if (!nombre) continue;
 
-      const tipo_contrato = (r[col.cont] || '').toString().trim().toUpperCase();
-      const tipo_salida   = (r[col.tsal] || '').toString().trim() || null;
-
-      let ftes;
-      if (col.ftes >= 0) {
-        ftes = (r[col.ftes] || '').toString().toLowerCase().trim();
-      } else {
-        // Formato legajos: baja si tiene fecha de salida
-        ftes = (r[col.fsal] || '').toString().trim() ? 'no' : 'si';
-      }
-
+    async function insertarRegistro(campos) {
+      const { dni, nombre, apellido, genero, sucursal, sector, posicion, tipo_contrato,
+              fecha_nacimiento, fecha_ingreso, fecha_salida, ftes, tipo_salida } = campos;
       const ins = await pool.query(
         `INSERT INTO dpo_turnover_dotacion
-           (anio,mes,dni,nombre,apellido,genero,sector,posicion,tipo_contrato,fecha_nacimiento,fecha_ingreso,ftes,tipo_salida)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
-        [
-          anio, mes,
-          r[col.dni] ? parseInt(r[col.dni]) : null,
-          nombre, (r[col.ape]||'').trim(),
-          (r[col.gen]||'').trim().toUpperCase(),
-          (r[col.sec]||'').trim().toUpperCase(),
-          (r[col.pos]||'').trim().toUpperCase(),
-          tipo_contrato,
-          parseDate(r[col.fnac]),
-          parseDate(r[col.fing]),
-          ftes,
-          tipo_salida
-        ]
+           (anio,mes,dni,nombre,apellido,genero,sector,sucursal,posicion,tipo_contrato,
+            fecha_nacimiento,fecha_ingreso,fecha_salida,ftes,tipo_salida,es_lider)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+        [anio, mes, dni||null, nombre, apellido, genero, sector, sucursal||null, posicion,
+         tipo_contrato, fecha_nacimiento, fecha_ingreso, fecha_salida||null, ftes, tipo_salida||null, false]
       );
+      // Restaurar requiere_reemplazo si ya estaba confirmado
+      const key = dni ? String(dni) : `${apellido}|${nombre}`;
+      if (confMap.has(key)) {
+        await pool.query('UPDATE dpo_turnover_dotacion SET requiere_reemplazo=$1 WHERE id=$2',
+          [confMap.get(key), ins.rows[0].id]);
+      } else if (ftes==='no' && tipo_contrato==='INDETERMINADO' && fecha_salida) {
+        bajas.push({ id: ins.rows[0].id, nombre: `${nombre} ${apellido}`, tipo_salida: tipo_salida||'—', sector, posicion });
+      }
+    }
 
-      if (ftes === 'no' && tipo_contrato === 'INDETERMINADO') {
-        bajas.push({ id: ins.rows[0].id, nombre: `${nombre} ${(r[col.ape]||'').trim()}`, tipo_salida: tipo_salida||'—', sector: r[col.sec]||'', posicion: r[col.pos]||'' });
+    if (tieneActiva) {
+      // ── Formato LEGAJOS (del Palacio MM-YYYY.xlsx) ──
+      // DOTACIÓN ACTIVA: todos los activos, filtrar por código de distribuidor
+      const wsDot  = wb.Sheets[wb.SheetNames.find(n => n.toUpperCase().includes('DOTACI') && n.toUpperCase().includes('ACTIVA'))];
+      const wsBaj  = tieneBajas ? wb.Sheets[wb.SheetNames.find(n => n.toUpperCase().includes('BAJAS'))] : null;
+
+      function parseLegajosSheet(ws, esBaja) {
+        const rows = xlsx.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
+        const hdr  = rows[0].map(v => v ? v.toString() : '');
+        const C = {
+          cod:  colIdx(hdr, 'CÓDIGO DE DISTRI', 'CODIGO'),
+          suc:  colIdx(hdr, 'SEDES', 'SUCURSAL'),
+          nom:  colIdx(hdr, 'NOMBRE'),
+          ape:  colIdx(hdr, 'Apellido', 'APELLIDO'),
+          dni:  colIdx(hdr, 'DNI'),
+          gen:  colIdx(hdr, 'GÉNERO', 'GENERO'),
+          fnac: colIdx(hdr, 'FECHA DE NACIMIENTO', 'NACIMIENTO'),
+          sec:  colIdx(hdr, 'SECTOR'),
+          pos:  colIdx(hdr, 'POSICIÓN', 'POSICION'),
+          cont: colIdx(hdr, 'TIPO DE CONTRATO'),
+          fing: colIdx(hdr, 'Fecha de ingreso a la posicion', 'INGRESO A LA POSICION'),
+          fsal: esBaja ? colIdx(hdr, 'Fecha de salida', 'SALIDA') : -1,
+          tsal: esBaja ? colIdx(hdr, 'TIPO DE SALIDA') : -1,
+        };
+        const result = [];
+        for (let i=1; i<rows.length; i++) {
+          const r = rows[i];
+          // Filtrar solo Del Palacio (código 136928)
+          const cod = r[C.cod] ? r[C.cod].toString().trim() : '';
+          if (cod !== '136928') continue;
+          const nombre = r[C.nom] ? r[C.nom].toString().trim() : '';
+          if (!nombre) continue;
+          result.push(r);
+          r._C = C;
+        }
+        return result;
+      }
+
+      const activos = parseLegajosSheet(wsDot, false);
+      for (const r of activos) {
+        const C = r._C;
+        await insertarRegistro({
+          dni:              r[C.dni] ? parseInt(r[C.dni]) : null,
+          nombre:           r[C.nom].toString().trim(),
+          apellido:         (r[C.ape]||'').toString().trim(),
+          genero:           (r[C.gen]||'').toString().trim().toUpperCase(),
+          sucursal:         (r[C.suc]||'').toString().trim().toUpperCase() || null,
+          sector:           (r[C.sec]||'').toString().trim().toUpperCase(),
+          posicion:         (r[C.pos]||'').toString().trim().toUpperCase(),
+          tipo_contrato:    (r[C.cont]||'').toString().trim().toUpperCase(),
+          fecha_nacimiento: cellDate(r[C.fnac]),
+          fecha_ingreso:    cellDate(r[C.fing]),
+          fecha_salida:     null,
+          ftes:             'si',
+          tipo_salida:      null,
+        });
+      }
+
+      if (wsBaj) {
+        const bajasRows = parseLegajosSheet(wsBaj, true);
+        for (const r of bajasRows) {
+          const C = r._C;
+          const fecha_salida = cellDate(r[C.fsal]);
+          if (!fecha_salida) continue;
+          const [fy, fm] = fecha_salida.split('-').map(Number);
+          if (fy !== anio || fm !== mes) continue; // solo bajas de este mes
+          await insertarRegistro({
+            dni:              r[C.dni] ? parseInt(r[C.dni]) : null,
+            nombre:           r[C.nom].toString().trim(),
+            apellido:         (r[C.ape]||'').toString().trim(),
+            genero:           (r[C.gen]||'').toString().trim().toUpperCase(),
+            sucursal:         (r[C.suc]||'').toString().trim().toUpperCase() || null,
+            sector:           (r[C.sec]||'').toString().trim().toUpperCase(),
+            posicion:         (r[C.pos]||'').toString().trim().toUpperCase(),
+            tipo_contrato:    (r[C.cont]||'').toString().trim().toUpperCase(),
+            fecha_nacimiento: cellDate(r[C.fnac]),
+            fecha_ingreso:    cellDate(r[C.fing]),
+            fecha_salida,
+            ftes:             'no',
+            tipo_salida:      (r[C.tsal]||'').toString().trim() || null,
+          });
+        }
+      }
+
+    } else if (tieneDotSola) {
+      // ── Formato LEGAJOS v2 (una sola hoja DOTACIÓN con activos y bajas mezclados) ──
+      const ws = wb.Sheets[wb.SheetNames.find(n => n.toUpperCase() === 'DOTACIÓN' || n.toUpperCase() === 'DOTACION')];
+      const rows = xlsx.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
+      // Detectar fila de encabezados: buscar la primera fila que contenga "NOMBRE" o "DNI"
+      let hdrIdx = 0;
+      for (let i=0; i<Math.min(5, rows.length); i++) {
+        if (rows[i].some(v => v && /^(NOMBRE|DNI|CÓDIGO)$/i.test(v.toString().trim()))) { hdrIdx = i; break; }
+      }
+      const hdr  = rows[hdrIdx].map(v => v ? v.toString() : '');
+      const C = {
+        cod:  colIdx(hdr, 'CÓDIGO DE DISTRI', 'CODIGO DE DISTRI'),
+        suc:  colIdx(hdr, 'SEDES', 'SUCURSAL'),
+        nom:  colIdx(hdr, 'NOMBRE'),
+        ape:  colIdx(hdr, 'APELLIDO', 'Apellido'),
+        dni:  colIdx(hdr, 'DNI'),
+        gen:  colIdx(hdr, 'GÉNERO', 'GENERO'),
+        fnac: colIdx(hdr, 'FECHA DE NACIMIENTO', 'NACIMIENTO'),
+        sec:  colIdx(hdr, 'SECTOR'),
+        pos:  colIdx(hdr, 'POSICIÓN', 'POSICION'),
+        cont: colIdx(hdr, 'TIPO DE CONTRATO'),
+        fing: colIdx(hdr, 'FECHA DE INGRESO A LA POSICIÓN', 'Fecha de ingreso a la posicion', 'INGRESO A LA POSICION'),
+        fsal: colIdx(hdr, 'FECHA DE SALIDA', 'Fecha de salida'),
+        tsal: colIdx(hdr, 'TIPO DE SALIDA'),
+      };
+      for (let i=hdrIdx+1; i<rows.length; i++) {
+        const r = rows[i];
+        const cod = r[C.cod] ? r[C.cod].toString().trim() : '';
+        if (cod !== '136928') continue;
+        const nombre = r[C.nom] ? r[C.nom].toString().trim() : '';
+        if (!nombre) continue;
+        const fecha_salida = C.fsal >= 0 ? cellDate(r[C.fsal]) : null;
+        const ftes = fecha_salida ? 'no' : 'si';
+        if (ftes === 'no') {
+          const [fy,fm] = fecha_salida.split('-').map(Number);
+          if (fy !== anio || fm !== mes) continue;
+        }
+        await insertarRegistro({
+          dni:              r[C.dni] ? parseInt(r[C.dni]) : null,
+          nombre,
+          apellido:         (r[C.ape]||'').toString().trim(),
+          genero:           (r[C.gen]||'').toString().trim().toUpperCase(),
+          sucursal:         C.suc >= 0 ? (r[C.suc]||'').toString().trim().toUpperCase() || null : null,
+          sector:           (r[C.sec]||'').toString().trim().toUpperCase(),
+          posicion:         (r[C.pos]||'').toString().trim().toUpperCase(),
+          tipo_contrato:    (r[C.cont]||'').toString().trim().toUpperCase(),
+          fecha_nacimiento: cellDate(r[C.fnac]),
+          fecha_ingreso:    cellDate(r[C.fing]),
+          fecha_salida,
+          ftes,
+          tipo_salida:      C.tsal >= 0 ? (r[C.tsal]||'').toString().trim() || null : null,
+        });
+      }
+
+    } else {
+      // ── Formato DASHBOARD (TURNOVER_DASHBOARD_YYYY.xlsx, hoja 📅 MesNombre) ──
+      const sheetDash = `📅 ${MESES_SHEET[mes-1]}`;
+      const ws = wb.Sheets[sheetDash];
+      if (!ws) return res.status(400).json({ error: `No se encontró la hoja “${sheetDash}”, “DOTACIÓN ACTIVA” ni “DOTACIÓN” en el archivo.` });
+
+      const rows = xlsx.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
+      // Auto-detectar layout (STD: nom=3 texto, ALT: nom=3 número)
+      let C;
+      for (let i=2; i<rows.length; i++) {
+        const v = rows[i][3];
+        if (v==null||v==='') continue;
+        C = (typeof v==='number'||/^\d{6,}$/.test(v.toString().trim()))
+          ? { suc:2, nom:4, ape:5, dni:3, gen:7, fnac:8, sec:9, pos:10, cont:12, fing:13, fsal:16, tsal:17, ftes:28, lid:38 }
+          : { suc:2, nom:3, ape:4, dni:6, gen:7, fnac:8, sec:9, pos:10, cont:12, fing:13, fsal:16, tsal:17, ftes:28, lid:38 };
+        break;
+      }
+      if (!C) return res.status(400).json({ error: 'No se encontraron datos en la hoja.' });
+
+      for (let i=2; i<rows.length; i++) {
+        const r = rows[i];
+        const nombre = (r[C.nom]!=null ? r[C.nom].toString() : '').trim();
+        if (!nombre) continue;
+        const fecha_salida = cellDate(r[C.fsal]);
+        const ftes = (r[C.ftes]||'').toString().toLowerCase().trim() || (fecha_salida ? 'no' : 'si');
+        if (ftes==='no') {
+          if (!fecha_salida) continue;
+          const [fy,fm] = fecha_salida.split('-').map(Number);
+          if (fy!==anio||fm!==mes) continue;
+        }
+        await insertarRegistro({
+          dni:              r[C.dni] ? parseInt(r[C.dni]) : null,
+          nombre,
+          apellido:         (r[C.ape]||'').toString().trim(),
+          genero:           (r[C.gen]||'').toString().trim().toUpperCase(),
+          sucursal:         (r[C.suc]||'').toString().trim().toUpperCase() || null,
+          sector:           (r[C.sec]||'').toString().trim().toUpperCase(),
+          posicion:         (r[C.pos]||'').toString().trim().toUpperCase(),
+          tipo_contrato:    (r[C.cont]||'').toString().trim().toUpperCase(),
+          fecha_nacimiento: cellDate(r[C.fnac]),
+          fecha_ingreso:    cellDate(r[C.fing]),
+          fecha_salida,
+          ftes,
+          tipo_salida:      (r[C.tsal]||'').toString().trim() || null,
+        });
       }
     }
 
     res.json({ ok: true, mes, bajas_indeterminadas: bajas });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/turnover/dotacion/:mes', async (req, res) => {
+  try {
+    const mes  = parseInt(req.params.mes);
+    const anio = parseInt(req.query.anio) || new Date().getFullYear();
+    if (!mes || mes < 1 || mes > 12) return res.status(400).json({ error: 'Mes inválido' });
+    const r = await pool.query('DELETE FROM dpo_turnover_dotacion WHERE anio=$1 AND mes=$2', [anio, mes]);
+    res.json({ ok: true, eliminados: r.rowCount });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/turnover/importar-json', express.json({limit:'10mb'}), async (req, res) => {
+  try {
+    const { anio, mes, registros } = req.body;
+    if (!anio || !mes || !registros) return res.status(400).json({ error: 'Falta anio, mes o registros' });
+
+    const prevConf = await pool.query(
+      `SELECT dni, nombre, apellido, requiere_reemplazo
+       FROM dpo_turnover_dotacion
+       WHERE anio=$1 AND mes=$2 AND requiere_reemplazo IS NOT NULL`, [anio, mes]
+    );
+    const confMap = new Map();
+    for (const row of prevConf.rows) {
+      const key = row.dni ? String(row.dni) : `${row.apellido}|${row.nombre}`;
+      confMap.set(key, row.requiere_reemplazo);
+    }
+
+    await pool.query('DELETE FROM dpo_turnover_dotacion WHERE anio=$1 AND mes=$2', [anio, mes]);
+
+    const bajas = [];
+    for (const r of registros) {
+      const esbajaAnio = r.ftes === 'no' && (!r.fecha_salida || r.fecha_salida.startsWith(String(anio)));
+      const ins = await pool.query(
+        `INSERT INTO dpo_turnover_dotacion
+           (anio,mes,dni,nombre,apellido,genero,sector,sucursal,posicion,tipo_contrato,fecha_nacimiento,fecha_ingreso,fecha_salida,ftes,tipo_salida,es_lider)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+        [anio, mes, r.dni, r.nombre, r.apellido, r.genero, r.sector, r.sucursal||null,
+         r.posicion, r.tipo_contrato, r.fecha_nacimiento, r.fecha_ingreso, r.fecha_salida||null, r.ftes, r.tipo_salida, r.es_lider||false]
+      );
+      const key = r.dni ? String(r.dni) : `${r.apellido}|${r.nombre}`;
+      if (confMap.has(key)) {
+        await pool.query('UPDATE dpo_turnover_dotacion SET requiere_reemplazo=$1 WHERE id=$2',
+          [confMap.get(key), ins.rows[0].id]);
+      } else if (esbajaAnio && r.tipo_contrato === 'INDETERMINADO') {
+        bajas.push({ id: ins.rows[0].id, nombre: `${r.nombre} ${r.apellido}`, tipo_salida: r.tipo_salida||'—', sector: r.sector||'', posicion: r.posicion||'' });
+      }
+    }
+    res.json({ ok: true, mes, insertados: registros.length, bajas_indeterminadas: bajas });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -3823,53 +4613,126 @@ app.get('/api/turnover/pendientes', async (req, res) => {
       `SELECT id, mes, nombre, apellido, tipo_salida, sector, posicion
        FROM dpo_turnover_dotacion
        WHERE anio=$1 AND ftes='no' AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo IS NULL
-       ORDER BY mes, apellido`, [anio]
+         AND fecha_salida IS NOT NULL
+         AND EXTRACT(MONTH FROM fecha_salida) = mes
+         AND EXTRACT(YEAR FROM fecha_salida) = anio
+       ORDER BY mes, id`, [anio]
     );
     res.json(r.rows);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-app.get('/api/turnover/dashboard', async (req, res) => {
+app.get('/api/turnover/bajas-indet', async (req, res) => {
   try {
     const anio = parseInt(req.query.anio) || new Date().getFullYear();
+    const r = await pool.query(
+      `SELECT id, nombre, apellido, sector, posicion, tipo_salida, fecha_salida, requiere_reemplazo
+       FROM dpo_turnover_dotacion
+       WHERE anio=$1 AND ftes='no' AND tipo_contrato='INDETERMINADO'
+         AND fecha_salida IS NOT NULL
+         AND EXTRACT(MONTH FROM fecha_salida) = mes
+         AND EXTRACT(YEAR FROM fecha_salida) = anio
+       ORDER BY fecha_salida, apellido`, [anio]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
 
-    const LID = `(posicion ILIKE '%DIRECTOR%' OR posicion ILIKE '%GERENTE%' OR posicion ILIKE '%JEFE%' OR posicion ILIKE '%DUEÑO%' OR posicion ILIKE '%DUENO%' OR posicion ILIKE '%ENCARGADO%' OR posicion ILIKE '%RESPONSABLE%')`;
+app.patch('/api/turnover/bajas-indet/:id', express.json(), async (req, res) => {
+  try {
+    const { requiere_reemplazo } = req.body; // true, false, o null
+    await pool.query('UPDATE dpo_turnover_dotacion SET requiere_reemplazo=$1 WHERE id=$2', [requiere_reemplazo, req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/turnover/dotacion', async (req, res) => {
+  try {
+    const anio     = parseInt(req.query.anio) || new Date().getFullYear();
+    const mes      = parseInt(req.query.mes)  || null;
+    const sector   = req.query.sector   || null;
+    const sucursal = req.query.sucursal || null;
+    const ftes     = req.query.ftes     || null;
+    let q = `SELECT nombre, apellido, dni, sector, posicion, sucursal, tipo_contrato, ftes, fecha_salida, tipo_salida
+             FROM dpo_turnover_dotacion WHERE anio=$1`;
+    const params = [anio];
+    if (mes)      { params.push(mes);      q += ` AND mes=$${params.length}`; }
+    if (sector)   { params.push(sector);   q += ` AND UPPER(sector)=UPPER($${params.length})`; }
+    if (sucursal) { params.push(sucursal); q += ` AND UPPER(sucursal)=UPPER($${params.length})`; }
+    if (ftes)     { params.push(ftes);     q += ` AND ftes=$${params.length}`; }
+    q += ' ORDER BY apellido, nombre';
+    const r = await pool.query(q, params);
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/turnover/filtros', async (req, res) => {
+  try {
+    const anio = parseInt(req.query.anio) || new Date().getFullYear();
+    const [sec, suc] = await Promise.all([
+      pool.query(`SELECT DISTINCT sector FROM dpo_turnover_dotacion WHERE anio=$1 AND sector IS NOT NULL AND sector<>'' ORDER BY sector`, [anio]),
+      pool.query(`SELECT DISTINCT sucursal FROM dpo_turnover_dotacion WHERE anio=$1 AND sucursal IS NOT NULL AND sucursal<>'' ORDER BY sucursal`, [anio])
+    ]);
+    res.json({ sectores: sec.rows.map(r=>r.sector), sucursales: suc.rows.map(r=>r.sucursal) });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/turnover/dashboard', async (req, res) => {
+  try {
+    const anio    = parseInt(req.query.anio) || new Date().getFullYear();
+    const sector  = req.query.sector  || null;
+    const sucursal = req.query.sucursal || null;
+    const posiciones = req.query.posiciones ? req.query.posiciones.split(',').map(p=>p.trim()).filter(Boolean) : null;
+
+    const LID = `es_lider = true`;
+    // Baja cuenta solo en el mes exacto de su fecha_salida
+    const BAJA_MES = `(fecha_salida IS NOT NULL AND EXTRACT(MONTH FROM fecha_salida)=mes AND EXTRACT(YEAR FROM fecha_salida)=anio)`;
+
+    const posWhere = posiciones && posiciones.length
+      ? ` AND UPPER(posicion) IN (${posiciones.map(p=>`UPPER('${p.replace(/'/g,"''")}')`).join(',')})`
+      : '';
+    const extraWhere = (sector ? ` AND UPPER(sector)=UPPER('${sector.replace(/'/g,"''")}')` : '')
+                    + (sucursal ? ` AND UPPER(sucursal)=UPPER('${sucursal.replace(/'/g,"''")}')` : '')
+                    + posWhere;
 
     const q = (a) => pool.query(`
       SELECT
         mes,
-        COUNT(*) FILTER (WHERE ftes='si') AS dot_total,
-        COUNT(*) FILTER (WHERE ftes='si' AND tipo_contrato='INDETERMINADO') AS dot_indet,
-        COUNT(*) FILTER (WHERE ftes='si' AND tipo_contrato='TEMPORADA') AS dot_temp,
-        COUNT(*) FILTER (WHERE ftes='si' AND genero='FEMENINO') AS dot_muj,
-        COUNT(*) FILTER (WHERE ftes='si' AND genero='MASCULINO') AS dot_hom,
-        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%VENT%') AS sec_ventas,
-        COUNT(*) FILTER (WHERE ftes='si' AND (sector ILIKE '%LOG%' OR sector ILIKE '%DEP%')) AS sec_log,
-        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%ADM%') AS sec_adm,
-        COUNT(*) FILTER (WHERE ftes='si' AND NOT (sector ILIKE '%VENT%' OR sector ILIKE '%LOG%' OR sector ILIKE '%DEP%' OR sector ILIKE '%ADM%')) AS sec_otros,
+        COUNT(*) FILTER (WHERE ftes='si' OR (ftes='no' AND ${BAJA_MES})) AS dot_total,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND tipo_contrato='INDETERMINADO') AS dot_indet,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND tipo_contrato ILIKE '%TEMPORADA%') AS dot_temp,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND genero='FEMENINO') AS dot_muj,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND genero='MASCULINO') AS dot_hom,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND sector ILIKE '%VENT%') AS sec_ventas,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND (sector ILIKE '%LOG%' OR sector ILIKE '%DEP%')) AS sec_log,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND sector ILIKE '%ADM%') AS sec_adm,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND NOT (sector ILIKE '%VENT%' OR sector ILIKE '%LOG%' OR sector ILIKE '%DEP%' OR sector ILIKE '%ADM%')) AS sec_otros,
         COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio) AS ing_total,
         COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND tipo_contrato='INDETERMINADO') AS ing_indet,
-        COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND tipo_contrato='TEMPORADA') AS ing_temp,
+        COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND tipo_contrato ILIKE '%TEMPORADA%') AS ing_temp,
         COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND genero='FEMENINO') AS ing_muj,
         COUNT(*) FILTER (WHERE fecha_ingreso IS NOT NULL AND EXTRACT(MONTH FROM fecha_ingreso)=mes AND EXTRACT(YEAR FROM fecha_ingreso)=anio AND genero='MASCULINO') AS ing_hom,
-        COUNT(*) FILTER (WHERE ftes='no') AS tto_total,
-        COUNT(*) FILTER (WHERE ftes='no' AND tipo_contrato='TEMPORADA') AS tto_temp,
-        COUNT(*) FILTER (WHERE ftes='no' AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo=true) AS tto_indet,
-        COUNT(*) FILTER (WHERE ftes='no' AND (tipo_salida ILIKE '%RENUNCIA%')) AS tto_vol,
-        COUNT(*) FILTER (WHERE ftes='no' AND (tipo_salida ILIKE '%DESPIDO%' OR tipo_salida ILIKE '%CAUSA%')) AS tto_invol,
-        COUNT(*) FILTER (WHERE ftes='no' AND genero='FEMENINO') AS tto_muj,
-        COUNT(*) FILTER (WHERE ftes='no' AND genero='MASCULINO') AS tto_hom,
-        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%VENT%' AND genero='FEMENINO') AS ven_muj,
-        COUNT(*) FILTER (WHERE ftes='si' AND (sector ILIKE '%LOG%' OR sector ILIKE '%DEP%') AND genero='FEMENINO') AS log_muj,
-        COUNT(*) FILTER (WHERE ftes='si' AND sector ILIKE '%ADM%' AND genero='FEMENINO') AS adm_muj,
-        COUNT(*) FILTER (WHERE ftes='si' AND ${LID}) AS lid_total,
-        COUNT(*) FILTER (WHERE ftes='si' AND genero='FEMENINO' AND ${LID}) AS lid_muj,
-        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1945 AND 1964) AS gen_boomer,
-        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1965 AND 1981) AS gen_x,
-        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1982 AND 1994) AS gen_y,
-        COUNT(*) FILTER (WHERE ftes='si' AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1995 AND 2009) AS gen_z
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES}) AS tto_total,
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES} AND tipo_contrato ILIKE '%TEMPORADA%') AS tto_temp,
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES} AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo=true) AS tto_indet,
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES} AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo=true AND UPPER(posicion) IN ('CHOFER','AYUDANTE','OPERARIO/A')) AS tto_indet_op,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND UPPER(posicion) IN ('CHOFER','AYUDANTE','OPERARIO/A')) AS dot_op,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND tipo_contrato='INDETERMINADO' AND UPPER(posicion) IN ('CHOFER','AYUDANTE','OPERARIO/A')) AS dot_op_indet,
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES} AND (tipo_salida ILIKE '%RENUNCIA%')) AS tto_vol,
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES} AND (tipo_salida ILIKE '%DESPIDO%' OR tipo_salida ILIKE '%CAUSA%')) AS tto_invol,
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES} AND genero='FEMENINO') AS tto_muj,
+        COUNT(*) FILTER (WHERE ftes='no' AND ${BAJA_MES} AND genero='MASCULINO') AS tto_hom,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND sector ILIKE '%VENT%' AND genero='FEMENINO') AS ven_muj,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND (sector ILIKE '%LOG%' OR sector ILIKE '%DEP%') AND genero='FEMENINO') AS log_muj,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND sector ILIKE '%ADM%' AND genero='FEMENINO') AS adm_muj,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND ${LID}) AS lid_total,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND genero='FEMENINO' AND ${LID}) AS lid_muj,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1945 AND 1964) AS gen_boomer,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1965 AND 1981) AS gen_x,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1982 AND 1994) AS gen_y,
+        COUNT(*) FILTER (WHERE (ftes='si' OR (ftes='no' AND ${BAJA_MES})) AND EXTRACT(YEAR FROM fecha_nacimiento) BETWEEN 1995 AND 2009) AS gen_z
       FROM dpo_turnover_dotacion
-      WHERE anio=$1
+      WHERE anio=$1${extraWhere}
       GROUP BY mes ORDER BY mes
     `, [a]);
 
@@ -3877,7 +4740,7 @@ app.get('/api/turnover/dashboard', async (req, res) => {
       q(anio),
       q(anio - 1),
       pool.query('SELECT * FROM dpo_turnover_config WHERE anio=$1', [anio]),
-      pool.query(`SELECT COUNT(*)::int AS c FROM dpo_turnover_dotacion WHERE anio=$1 AND ftes='no' AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo IS NULL`, [anio])
+      pool.query(`SELECT COUNT(*)::int AS c FROM dpo_turnover_dotacion WHERE anio=$1 AND ftes='no' AND tipo_contrato='INDETERMINADO' AND requiere_reemplazo IS NULL AND fecha_salida IS NOT NULL AND EXTRACT(MONTH FROM fecha_salida)=mes AND EXTRACT(YEAR FROM fecha_salida)=anio`, [anio])
     ]);
 
     const toN = v => parseInt(v) || 0;
@@ -3896,7 +4759,9 @@ app.get('/api/turnover/dashboard', async (req, res) => {
         tto_total: toN(row.tto_total), tto_temp: toN(row.tto_temp),
         tto_indet: toN(row.tto_indet), tto_vol: toN(row.tto_vol),
         tto_invol: toN(row.tto_invol), tto_muj: toN(row.tto_muj), tto_hom: toN(row.tto_hom),
-        pct_tto_indet: pct(toN(row.tto_indet), d),
+        pct_tto_indet: pct(toN(row.tto_indet), toN(row.dot_indet)),
+        tto_indet_op: toN(row.tto_indet_op), dot_op: toN(row.dot_op),
+        pct_tto_indet_op: pct(toN(row.tto_indet_op), toN(row.dot_op_indet)),
         ven_muj: toN(row.ven_muj), log_muj: toN(row.log_muj), adm_muj: toN(row.adm_muj),
         lid_total: toN(row.lid_total), lid_muj: toN(row.lid_muj),
         pct_ven_muj: pct(toN(row.ven_muj), toN(row.sec_ventas)),
@@ -3944,6 +4809,351 @@ app.put('/api/turnover/config', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ===================== KPI AUSENTISMO — GRILLA MANUAL =====================
+
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_auskpi_empleados (
+  id SERIAL PRIMARY KEY,
+  legajo VARCHAR(20) NOT NULL,
+  sucursal VARCHAR(100),
+  sector VARCHAR(100),
+  nombre VARCHAR(200),
+  apellido VARCHAR(200),
+  activo BOOLEAN DEFAULT true,
+  UNIQUE(legajo)
+)`).catch(()=>{});
+
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_auskpi_marcas (
+  id SERIAL PRIMARY KEY,
+  legajo VARCHAR(20) NOT NULL,
+  anio INT NOT NULL,
+  mes INT NOT NULL,
+  dia INT NOT NULL,
+  valor VARCHAR(80) NOT NULL,
+  UNIQUE(legajo, anio, mes, dia)
+)`).catch(()=>{});
+
+const AUSKPI_AUSENCIAS = [
+  'Lic.Enfermedad (menor a 20 dias)','Rechazo de ART','In Itineres',
+  'Lic. Pedida con menos de 48hs','Dias de duelo','Faltas no programadas'
+];
+const AUSKPI_JUSTIFICADAS = [
+  'Vacaciones','Lic. Anses','Lic.Enfermedad (mayor a 20 dias)',
+  'Dias gremiales','Dias compensatorios','Tramites','Suspensión',
+  'Falta con aviso (mayor a 48hs)','Lic. Por Accidente'
+];
+
+app.get('/kpi-ausentismo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'kpi-ausentismo.html')));
+
+// Importar empleados desde Excel (hoja Info)
+app.post('/api/auskpi/importar', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+    const wb = xlsx.read(req.file.buffer);
+    const ws = wb.Sheets['Info'];
+    if (!ws) return res.status(400).json({ error: 'No se encontró la hoja "Info"' });
+    const rows = xlsx.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    const hIdx = rows.findIndex(r => r && String(r[0]||r[1]||r[2]||'').toLowerCase().includes('legajo'));
+    if (hIdx < 0) return res.status(400).json({ error: 'No se encontró encabezado con Legajo' });
+    const hdr = rows[hIdx].map(h => String(h||'').toLowerCase().trim());
+    const iLeg = hdr.findIndex(h => h.includes('legajo'));
+    const iSuc = hdr.findIndex(h => h.includes('sucursal'));
+    const iSec = hdr.findIndex(h => h.includes('sector'));
+    const iNom = hdr.findIndex(h => h.includes('nombre'));
+    const iApe = hdr.findIndex(h => h.includes('apellido'));
+
+    const seen = new Set();
+    let cnt = 0;
+    for (let i = hIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      const leg = String(r[iLeg]||'').trim();
+      if (!leg || seen.has(leg)) continue;
+      seen.add(leg);
+      await pool.query(
+        `INSERT INTO dpo_auskpi_empleados (legajo, sucursal, sector, nombre, apellido)
+         VALUES ($1,$2,$3,$4,$5) ON CONFLICT (legajo) DO UPDATE
+         SET sucursal=$2, sector=$3, nombre=$4, apellido=$5`,
+        [leg, String(r[iSuc]||'').trim(), String(r[iSec]||'').trim(),
+         String(r[iNom]||'').trim(), String(r[iApe]||'').trim()]
+      );
+      cnt++;
+    }
+
+    // Importar marcas de la hoja Info también
+    let marcasCnt = 0;
+    const mesesMap = {'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,
+      'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12};
+    for (let i = hIdx + 1; i < rows.length; i++) {
+      const r = rows[i];
+      const leg = String(r[iLeg]||'').trim();
+      const mesStr = String(r[hdr.findIndex(h => h === 'mes')]||'').trim().toLowerCase();
+      const anio = parseInt(r[hdr.findIndex(h => h.includes('año') || h.includes('ano'))]);
+      const mes = mesesMap[mesStr];
+      if (!leg || !mes || !anio) continue;
+      for (let d = 1; d <= 31; d++) {
+        const colIdx = hdr.findIndex(h => h === String(d));
+        if (colIdx < 0) continue;
+        const val = String(r[colIdx]||'').trim();
+        if (!val) continue;
+        await pool.query(
+          `INSERT INTO dpo_auskpi_marcas (legajo, anio, mes, dia, valor)
+           VALUES ($1,$2,$3,$4,$5) ON CONFLICT (legajo, anio, mes, dia) DO UPDATE SET valor=$5`,
+          [leg, anio, mes, d, val]
+        );
+        marcasCnt++;
+      }
+    }
+
+    res.json({ ok: true, empleados: cnt, marcas: marcasCnt });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Listar empleados
+app.get('/api/auskpi/empleados', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM dpo_auskpi_empleados WHERE activo=true ORDER BY sector, apellido, nombre');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Obtener marcas de un mes
+app.get('/api/auskpi/marcas', async (req, res) => {
+  try {
+    const { anio, mes } = req.query;
+    const r = await pool.query(
+      'SELECT legajo, dia, valor FROM dpo_auskpi_marcas WHERE anio=$1 AND mes=$2',
+      [anio, mes]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Guardar marca individual
+app.put('/api/auskpi/marcas', async (req, res) => {
+  try {
+    const { legajo, anio, mes, dia, valor } = req.body;
+    if (!valor) {
+      await pool.query('DELETE FROM dpo_auskpi_marcas WHERE legajo=$1 AND anio=$2 AND mes=$3 AND dia=$4',
+        [legajo, anio, mes, dia]);
+    } else {
+      await pool.query(
+        `INSERT INTO dpo_auskpi_marcas (legajo, anio, mes, dia, valor)
+         VALUES ($1,$2,$3,$4,$5) ON CONFLICT (legajo, anio, mes, dia) DO UPDATE SET valor=$5`,
+        [legajo, anio, mes, dia, valor]
+      );
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Días hábiles por mes (carga manual)
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_auskpi_dias_habiles (
+  id SERIAL PRIMARY KEY,
+  anio INT NOT NULL,
+  mes INT NOT NULL,
+  dias INT NOT NULL,
+  UNIQUE(anio, mes)
+)`).catch(()=>{});
+
+app.get('/api/auskpi/dias-habiles', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const r = await pool.query('SELECT mes, dias FROM dpo_auskpi_dias_habiles WHERE anio=$1', [anio]);
+    const result = {};
+    r.rows.forEach(row => { result[row.mes] = row.dias; });
+    res.json(result);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/auskpi/dias-habiles', async (req, res) => {
+  try {
+    const { anio, mes, dias } = req.body;
+    await pool.query(
+      `INSERT INTO dpo_auskpi_dias_habiles (anio, mes, dias) VALUES ($1,$2,$3)
+       ON CONFLICT (anio, mes) DO UPDATE SET dias=$3`,
+      [anio, mes, dias]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// KPI mensual (hoja Calculo)
+app.get('/api/auskpi/calculo', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const empR = await pool.query('SELECT COUNT(*) AS c FROM dpo_auskpi_empleados WHERE activo=true');
+    const cantEmp = parseInt(empR.rows[0].c);
+    const marcasR = await pool.query('SELECT mes, valor, COUNT(*)::int AS c FROM dpo_auskpi_marcas WHERE anio=$1 GROUP BY mes, valor', [anio]);
+    const dhR = await pool.query('SELECT mes, dias FROM dpo_auskpi_dias_habiles WHERE anio=$1', [anio]);
+    const dhByMes = {};
+    dhR.rows.forEach(r => { dhByMes[r.mes] = r.dias; });
+
+    const meses = {};
+    for (let m = 1; m <= 12; m++) meses[m] = { presente: 0, ausencia: 0, justificada: 0 };
+    marcasR.rows.forEach(r => {
+      const m = r.mes;
+      if (r.valor === 'Presente') meses[m].presente += r.c;
+      else if (AUSKPI_AUSENCIAS.includes(r.valor)) meses[m].ausencia += r.c;
+      else if (AUSKPI_JUSTIFICADAS.includes(r.valor)) meses[m].justificada += r.c;
+    });
+
+    const result = [];
+    for (let m = 1; m <= 12; m++) {
+      const diasLab = dhByMes[m] || 0;
+      const pct = (cantEmp > 0 && diasLab > 0) ? meses[m].ausencia / (diasLab * cantEmp) : null;
+      result.push({
+        mes: m, presente: meses[m].presente, ausencia: meses[m].ausencia,
+        justificada: meses[m].justificada, dias_laborales: diasLab,
+        empleados: cantEmp, pct
+      });
+    }
+    res.json(result);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Ausencias por persona por mes (hoja Ausencias x persona)
+app.get('/api/auskpi/por-persona', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const empR = await pool.query('SELECT legajo, sector, nombre, apellido FROM dpo_auskpi_empleados WHERE activo=true ORDER BY sector, apellido');
+    const marcasR = await pool.query(
+      `SELECT legajo, mes, valor, COUNT(*)::int AS c FROM dpo_auskpi_marcas
+       WHERE anio=$1 AND valor = ANY($2) GROUP BY legajo, mes, valor`,
+      [anio, AUSKPI_AUSENCIAS]
+    );
+    const dhR = await pool.query('SELECT mes, dias FROM dpo_auskpi_dias_habiles WHERE anio=$1', [anio]);
+    const dhByMes = {};
+    dhR.rows.forEach(r => { dhByMes[r.mes] = r.dias; });
+
+    const ausMap = {};
+    marcasR.rows.forEach(r => {
+      const key = r.legajo + '_' + r.mes;
+      ausMap[key] = (ausMap[key] || 0) + r.c;
+    });
+
+    const personas = empR.rows.map(e => {
+      const meses = {};
+      for (let m = 1; m <= 12; m++) {
+        const diasLab = dhByMes[m] || 0;
+        const aus = ausMap[e.legajo + '_' + m] || 0;
+        meses[m] = diasLab > 0 ? aus / diasLab : null;
+      }
+      return { legajo: e.legajo, sector: e.sector, nombre: e.nombre, apellido: e.apellido, meses };
+    });
+    res.json(personas);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Detalle ausencias — tabla para guardar enfermedad/motivo por bloque
+pool.query(`CREATE TABLE IF NOT EXISTS dpo_auskpi_detalle (
+  id SERIAL PRIMARY KEY,
+  legajo VARCHAR(20) NOT NULL,
+  anio INT NOT NULL,
+  mes INT NOT NULL,
+  dia_desde INT NOT NULL,
+  dia_hasta INT NOT NULL,
+  categoria VARCHAR(80),
+  enfermedad VARCHAR(300),
+  motivo VARCHAR(300),
+  UNIQUE(legajo, anio, mes, dia_desde)
+)`).catch(()=>{});
+
+// Generar bloques de ausencia agrupando días consecutivos con misma categoría
+app.get('/api/auskpi/detalle', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const marcasR = await pool.query(
+      `SELECT m.legajo, m.mes, m.dia, m.valor, e.nombre, e.apellido, e.sector
+       FROM dpo_auskpi_marcas m
+       JOIN dpo_auskpi_empleados e ON e.legajo = m.legajo
+       WHERE m.anio=$1 AND m.valor IN ('Lic.Enfermedad (menor a 20 dias)','Rechazo de ART','In Itineres','Lic. Pedida con menos de 48hs','Dias de duelo','Faltas no programadas')
+       ORDER BY m.legajo, m.mes, m.dia`,
+      [anio]
+    );
+
+    // Agrupar días consecutivos del mismo empleado/mes/categoría
+    const bloques = [];
+    let current = null;
+    marcasR.rows.forEach(r => {
+      if (current && current.legajo === r.legajo && current.mes === r.mes
+          && current.valor === r.valor && r.dia === current.dia_hasta + 1) {
+        current.dia_hasta = r.dia;
+        current.dias++;
+      } else {
+        if (current) bloques.push(current);
+        current = {
+          legajo: r.legajo, nombre: r.nombre, apellido: r.apellido, sector: r.sector,
+          mes: r.mes, dia_desde: r.dia, dia_hasta: r.dia, valor: r.valor, dias: 1
+        };
+      }
+    });
+    if (current) bloques.push(current);
+
+    // Enriquecer con detalle guardado (enfermedad/motivo)
+    const detR = await pool.query('SELECT * FROM dpo_auskpi_detalle WHERE anio=$1', [anio]);
+    const detMap = {};
+    detR.rows.forEach(d => { detMap[d.legajo + '_' + d.mes + '_' + d.dia_desde] = d; });
+
+    const result = bloques.map(b => {
+      const det = detMap[b.legajo + '_' + b.mes + '_' + b.dia_desde];
+      return {
+        legajo: b.legajo, nombre: b.nombre, apellido: b.apellido, sector: b.sector,
+        mes: b.mes, dia_desde: b.dia_desde, dia_hasta: b.dia_hasta,
+        dias: b.dias, categoria: b.valor,
+        enfermedad: det ? det.enfermedad : '',
+        motivo: det ? det.motivo : ''
+      };
+    });
+
+    res.json(result);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Guardar detalle (enfermedad/motivo) de un bloque
+app.put('/api/auskpi/detalle', async (req, res) => {
+  try {
+    const { legajo, anio, mes, dia_desde, dia_hasta, categoria, enfermedad, motivo } = req.body;
+    await pool.query(
+      `INSERT INTO dpo_auskpi_detalle (legajo, anio, mes, dia_desde, dia_hasta, categoria, enfermedad, motivo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (legajo, anio, mes, dia_desde) DO UPDATE
+       SET dia_hasta=$5, categoria=$6, enfermedad=$7, motivo=$8`,
+      [legajo, anio, mes, dia_desde, dia_hasta, categoria, enfermedad || '', motivo || '']
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Análisis: días perdidos por sector / motivo / enfermedad
+app.get('/api/auskpi/analisis', async (req, res) => {
+  try {
+    const { anio } = req.query;
+    const marcasR = await pool.query(
+      `SELECT m.valor, e.sector, COUNT(*)::int AS dias
+       FROM dpo_auskpi_marcas m
+       JOIN dpo_auskpi_empleados e ON e.legajo = m.legajo
+       WHERE m.anio=$1 AND m.valor IN ('Lic.Enfermedad (menor a 20 dias)','Rechazo de ART','In Itineres','Lic. Pedida con menos de 48hs','Dias de duelo','Faltas no programadas')
+       GROUP BY m.valor, e.sector`,
+      [anio]
+    );
+
+    const porSector = {}, porMotivo = {};
+    marcasR.rows.forEach(r => {
+      porSector[r.sector] = (porSector[r.sector] || 0) + r.dias;
+      porMotivo[r.valor] = (porMotivo[r.valor] || 0) + r.dias;
+    });
+
+    const detR = await pool.query(
+      `SELECT enfermedad, SUM(dia_hasta - dia_desde + 1)::int AS dias
+       FROM dpo_auskpi_detalle WHERE anio=$1 AND enfermedad != '' GROUP BY enfermedad`,
+      [anio]
+    );
+    const porEnfermedad = {};
+    detR.rows.forEach(r => { porEnfermedad[r.enfermedad] = r.dias; });
+
+    res.json({ porSector, porMotivo, porEnfermedad });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`DPO Gente corriendo en puerto ${PORT}`);
@@ -3953,3 +5163,5 @@ app.listen(PORT, async () => {
     console.error('Error al inicializar DB:', err.message);
   }
 });
+
+

@@ -1,0 +1,374 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reclutamiento y Selección</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.suc-btns{display:flex;gap:4px}
+.suc-btn{padding:4px 12px;border-radius:20px;border:1px solid #D8DEE8;background:#fff;font-size:11px;font-weight:600;color:#5A6880;cursor:pointer}
+.suc-btn.on{background:#1B3F72;color:#fff;border-color:#1B3F72}
+
+.page-header{background:#1B3F72;padding:18px 24px}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+
+.wrap{max-width:960px;margin:0 auto;padding:24px 20px}
+
+/* MODAL OVERLAY */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:min(680px,95vw);max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-titulo{font-size:14px;font-weight:700;color:#18243A}
+.modal-close{background:none;border:none;font-size:18px;color:#8A97AA;cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#18243A}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1}
+
+/* DOC LIST */
+.doc-list{display:flex;flex-direction:column;gap:8px}
+.doc-item{display:flex;align-items:center;gap:11px;padding:11px 14px;border:1px solid #EEF0F6;border-radius:7px;text-decoration:none}
+.doc-item:hover{background:#F7F8FB}
+.doc-item-icon{font-size:18px;flex-shrink:0}
+.doc-item-name{font-size:12.5px;font-weight:600;color:#18243A}
+.doc-item-type{font-size:10.5px;color:#8A97AA;margin-top:1px}
+.doc-item-arr{margin-left:auto;font-size:11px;color:#2563A8;font-weight:600;white-space:nowrap}
+
+/* CANDIDATOS */
+.cand-table{width:100%;border-collapse:collapse;font-size:12px}
+.cand-table th{text-align:left;padding:7px 10px;border-bottom:1px solid #EEF0F6;font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em}
+.cand-table td{padding:8px 10px;border-bottom:1px solid #F5F6FA;vertical-align:middle}
+.cand-table tr:last-child td{border-bottom:none}
+.av{width:26px;height:26px;border-radius:50%;background:#EBF2FA;color:#1B3F72;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.pill-cv{background:#EFF6FF;color:#1D4ED8}
+.pill-ent{background:#FEF3C7;color:#92400E}
+.pill-off{background:#D1FAE5;color:#065F46}
+.pill-sin{background:#F5F6FA;color:#5A6880}
+.modal-link{display:inline-block;margin-top:14px;font-size:12px;color:#2563A8;font-weight:600;text-decoration:none}
+
+/* PLAN KPIs */
+.kpi-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.kpi-m{border-radius:7px;padding:11px 14px;border:1px solid}
+.kpi-m.red{background:#FFF5F5;border-color:#FECACA}
+.kpi-m.green{background:#F0FDF4;border-color:#BBF7D0}
+.kpi-m.blue{background:#EFF6FF;border-color:#BFDBFE}
+.kpi-m-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.kpi-m-val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.kpi-m.red .kpi-m-val{color:#DC2626}
+.kpi-m.green .kpi-m-val{color:#16A34A}
+.kpi-m.blue .kpi-m-val{color:#1B3F72}
+.kpi-m-sub{font-size:10px;color:#8A97AA;margin-top:2px}
+.dsv-mini{width:100%;border-collapse:collapse;font-size:12px}
+.dsv-mini th{text-align:left;padding:6px 8px;border-bottom:1px solid #EEF0F6;font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em}
+.dsv-mini td{padding:7px 8px;border-bottom:1px solid #F5F6FA}
+.dsv-mini tr:last-child td{border-bottom:none}
+.db{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700}
+.db-n{background:#FEE2E2;color:#B91C1C}
+.db-p{background:#D1FAE5;color:#065F46}
+.ts{font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px}
+.ts-s{background:#FEE2E2;color:#991B1B}
+.ts-p{background:#EFF6FF;color:#1E40AF}
+.ts-r{background:#FEF3C7;color:#92400E}
+
+.empty{color:#8A97AA;font-size:12px;padding:6px 0}
+.loading{color:#8A97AA;font-size:12px;padding:6px 0}
+
+/* MÓDULOS GRILLA */
+.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mod-card{background:#fff;border:1px solid #D8DEE8;border-radius:10px;padding:20px 18px;cursor:pointer;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;transition:box-shadow .15s,border-color .15s;text-align:left}
+.mod-card:hover{border-color:#2563A8;box-shadow:0 2px 14px rgba(37,99,168,.12)}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#2563A8)}
+.mod-icon{font-size:28px;line-height:1}
+.mod-title{font-size:13px;font-weight:700;color:#18243A}
+.mod-desc{font-size:11.5px;color:#8A97AA;line-height:1.5;flex:1}
+.mod-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.mod-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.mod-arr{font-size:11px;color:#2563A8;font-weight:600}
+.badge-navy{background:#EBF2FA;color:#1B3F72}
+.badge-purple{background:#EDE9FE;color:#5B21B6}
+.badge-teal{background:#CCFBF1;color:#0F766E}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-red{background:#FEE2E2;color:#B91C1C}
+.badge-gray{background:#F1F5F9;color:#64748B}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Reclutamiento y Selección</span>
+</div>
+
+<div class="page-header">
+  <h1 id="hdr-titulo">Reclutamiento y Selección</h1>
+  <p id="hdr-sub">DPO Gente 2026</p>
+</div>
+
+<div class="wrap">
+  <div class="mod-grid" id="mod-grid">
+    <div class="loading" style="grid-column:1/-1">Cargando…</div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="cerrarModal(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modal-titulo">—</span>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const HOY = new Date();
+const HOY_ANIO = HOY.getFullYear();
+const HOY_MES  = HOY.getMonth() + 1;
+const ANIO = HOY_ANIO;
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+let SUCURSAL = new URLSearchParams(location.search).get('sucursal') || 'dolores';
+
+function mesCerrado(m){ return ANIO < HOY_ANIO || (ANIO === HOY_ANIO && m < HOY_MES); }
+
+function setSucursal(s){
+  SUCURSAL = s;
+  history.replaceState(null,'','/reclu-hub?sucursal='+s);
+  actualizarUI();
+}
+
+function actualizarUI(){
+  const SUC = SUCURSAL === 'dolores' ? 'Dolores' : 'Central';
+  document.getElementById('hdr-titulo').textContent = 'Reclutamiento y Selección';
+  document.getElementById('hdr-sub').textContent = 'DPO Gente ' + ANIO;
+  document.title = 'Reclutamiento y Selección — DPO Gente';
+}
+
+// ── MODAL ──
+function abrirModal(titulo, html){
+  document.getElementById('modal-titulo').textContent = titulo;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('open');
+}
+function cerrarModal(e){
+  if(!e || e.target===document.getElementById('modal-bg'))
+    document.getElementById('modal-bg').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') cerrarModal(); });
+
+// ── MODAL: DOCS ──
+function abrirDocs(titulo, bloques){
+  const embeds = (bloques||[]).filter(b=>b.tipo==='embed');
+  if(!embeds.length){ abrirModal(titulo,'<div class="empty">Sin documentos cargados.</div>'); return; }
+  const html = '<div class="doc-list">' + embeds.map(b=>{
+    const url = b.data.url||'';
+    const nombre = b.data.titulo || 'Documento';
+    const isPdf = url.includes('drive.google.com');
+    const icon = isPdf ? '📄' : '📝';
+    const tipo = isPdf ? 'Google Drive' : 'Google Docs';
+    const openUrl = url.replace('/preview','').replace('/edit','/view');
+    return `<a class="doc-item" href="${openUrl}" target="_blank" rel="noopener">
+      <span class="doc-item-icon">${icon}</span>
+      <div><div class="doc-item-name">${nombre}</div><div class="doc-item-type">${tipo}</div></div>
+      <span class="doc-item-arr">Abrir →</span>
+    </a>`;
+  }).join('') + '</div>';
+  abrirModal(titulo, html);
+}
+
+// ── MODAL: CANDIDATOS ──
+async function abrirCandidatos(){
+  abrirModal('Base de Candidatos','<div class="loading">Cargando…</div>');
+  try{
+    const lista = await fetch('/api/candidatos').then(r=>r.json());
+    if(!lista.length){ document.getElementById('modal-body').innerHTML='<div class="empty">No hay candidatos.</div>'; return; }
+    const PILL = {'Sin entrevista':'pill-sin','En proceso':'pill-ent','Oferta enviada':'pill-off','Incorporado':'pill-off','Descartado':'pill-sin'};
+    let html = '<table class="cand-table"><thead><tr><th></th><th>Nombre</th><th>Puesto</th><th>Estado</th><th>Ingreso</th></tr></thead><tbody>';
+    lista.slice(0,8).forEach(c=>{
+      const ini = ((c.nombre||'')[0]||'')+((c.apellido||'')[0]||'');
+      const pc = PILL[c.estado]||'pill-sin';
+      const fecha = c.fecha_alta ? new Date(c.fecha_alta).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+      html += `<tr><td><div class="av">${ini.toUpperCase()}</div></td><td>${c.nombre||''} ${c.apellido||''}</td><td>${c.area||'—'}</td><td><span class="pill ${pc}">${c.estado||'—'}</span></td><td style="color:#8A97AA;font-size:11px">${fecha}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    html += `<a class="modal-link" href="/base-candidatos">Ver base completa →</a>`;
+    document.getElementById('modal-body').innerHTML = html;
+  }catch(e){ document.getElementById('modal-body').innerHTML='<div class="empty">No se pudo cargar.</div>'; }
+}
+
+// ── MODAL: PLAN ──
+const GRUPOS = [
+  'Distribucion - Chofer - Fijo','Distribucion - Chofer - Temporada',
+  'Distribucion - Ayudante - Fijo','Distribucion - Ayudante - Temporada',
+  'Deposito - Operario - Fijo','Deposito - Operario - Temporada',
+  'Administrativos - Administrativo - Fijo'
+];
+async function abrirPlan(){
+  abrirModal('Plan de Demanda','<div class="loading">Cargando…</div>');
+  try{
+    const [rp, rc] = await Promise.all([
+      fetch(`/api/plan-demanda/${SUCURSAL}/${ANIO}`).then(r=>r.json()),
+      fetch(`/api/plan-comentarios/${SUCURSAL}/${ANIO}`).then(r=>r.json())
+    ]);
+    const COMMENTS={};
+    (rc||[]).forEach(row=>{ if(!COMMENTS[row.grupo]) COMMENTS[row.grupo]={}; COMMENTS[row.grupo][row.mes]={estado:row.estado||'sin_justificar'}; });
+    let sinJ=0,just=0,ok=0; const desvios=[];
+    GRUPOS.forEach(g=>{
+      const gd=rp[g]||{};
+      for(let m=1;m<=12;m++){
+        if(!mesCerrado(m)) continue;
+        const presup=(gd[m]||{}).presupuestado||0, real=(gd[m]||{}).real||0, d=real-presup;
+        const est=(COMMENTS[g]&&COMMENTS[g][m])?COMMENTS[g][m].estado:'sin_justificar';
+        if(d===0){ok++;continue;}
+        if(est==='justificado_puntual'||est==='justificado_permanente') just++; else sinJ++;
+        desvios.push({g,m,d,est,presup,real});
+      }
+    });
+    let html = `<div class="kpi-mini">
+      <div class="kpi-m red"><div class="kpi-m-label">Sin justificar</div><div class="kpi-m-val">${sinJ}</div><div class="kpi-m-sub">desvíos activos</div></div>
+      <div class="kpi-m blue"><div class="kpi-m-label">Justificados</div><div class="kpi-m-val">${just}</div><div class="kpi-m-sub">puntual + permanente</div></div>
+      <div class="kpi-m green"><div class="kpi-m-label">Sin desvío</div><div class="kpi-m-val">${ok}</div><div class="kpi-m-sub">meses cerrados</div></div>
+    </div>`;
+    if(desvios.length){
+      html += '<table class="dsv-mini"><thead><tr><th>Grupo</th><th>Mes</th><th>Presup.</th><th>Real</th><th>Desvío</th><th>Estado</th></tr></thead><tbody>';
+      desvios.slice(0,6).forEach(({g,m,d,est,presup,real})=>{
+        const grpLabel=g.split(' - ').slice(1).join(' · ');
+        const dbCls=d<0?'db-n':'db-p', dbTxt=(d>0?'+':'')+d;
+        const estCls=est==='justificado_puntual'?'ts-r':est==='justificado_permanente'?'ts-p':'ts-s';
+        const estTxt=est==='justificado_puntual'?'Puntual':est==='justificado_permanente'?'Permanente':'Sin justificar';
+        html+=`<tr><td>${grpLabel}</td><td>${MESES[m-1]}</td><td>${presup}</td><td>${real}</td><td><span class="db ${dbCls}">${dbTxt}</span></td><td><span class="ts ${estCls}">${estTxt}</span></td></tr>`;
+      });
+      html+='</tbody></table>';
+    } else { html+='<div class="empty">Sin desvíos en meses cerrados.</div>'; }
+    html += `<a class="modal-link" href="/plan-demanda?sucursal=${SUCURSAL}">Ver plan completo →</a>`;
+    document.getElementById('modal-body').innerHTML = html;
+  }catch(e){ document.getElementById('modal-body').innerHTML='<div class="empty">No se pudo cargar.</div>'; }
+}
+
+// ── BADGE INFO ──
+async function getBadges(paginas, recluId){
+  const badges = {};
+  const hijos = paginas.filter(p=>p.parent_id===recluId);
+  // candidatos count
+  try{ const l=await fetch('/api/candidatos').then(r=>r.json()); badges['cand']=l.length; }catch(e){ badges['cand']=0; }
+  // plan desvíos
+  try{
+    const [rp,rc]=await Promise.all([
+      fetch(`/api/plan-demanda/${SUCURSAL}/${ANIO}`).then(r=>r.json()),
+      fetch(`/api/plan-comentarios/${SUCURSAL}/${ANIO}`).then(r=>r.json())
+    ]);
+    const COM={};
+    (rc||[]).forEach(row=>{ if(!COM[row.grupo]) COM[row.grupo]={}; COM[row.grupo][row.mes]={estado:row.estado||'sin_justificar'}; });
+    let sinJ=0;
+    GRUPOS.forEach(g=>{ const gd=rp[g]||{}; for(let m=1;m<=12;m++){ if(!mesCerrado(m)) continue; const d=(gd[m]||{}).real||0-(gd[m]||{}).presupuestado||0; const est=(COM[g]&&COM[g][m])?COM[g][m].estado:'sin_justificar'; if(Math.abs(d)>0&&est==='sin_justificar') sinJ++; } });
+    badges['plan_sinj']=sinJ;
+  }catch(e){ badges['plan_sinj']=0; }
+  return badges;
+}
+
+function iconFor(t){ const tl=t.toLowerCase(); if(tl.includes('sop')) return '📋'; if(tl.includes('sesgo')||tl.includes('dei')) return '🧠'; if(tl.includes('descripcion')||tl.includes('puesto')) return '📁'; if(tl.includes('candidato')||tl.includes('base')) return '👥'; if(tl.includes('plan')||tl.includes('demanda')) return '📊'; return '📄'; }
+function accentFor(t){ const tl=t.toLowerCase(); if(tl.includes('sop')) return '#1B3F72'; if(tl.includes('sesgo')) return '#7C3AED'; if(tl.includes('descripcion')||tl.includes('puesto')) return '#0891B2'; if(tl.includes('candidato')||tl.includes('base')) return '#059669'; if(tl.includes('plan')) return '#DC2626'; return '#2563A8'; }
+function descFor(t){ const tl=t.toLowerCase(); if(tl.includes('sop')) return 'Procedimientos operativos de reclutamiento y selección de personal.'; if(tl.includes('sesgo')) return 'Política global DEI, compliance y capacitación en diversidad e inclusión.'; if(tl.includes('descripcion')||tl.includes('puesto')) return 'Organigrama y perfiles de cada puesto por sucursal.'; if(tl.includes('candidato')||tl.includes('base')) return 'Registro de candidatos activos con estado y seguimiento del proceso.'; if(tl.includes('plan')) return 'Nómina mensual, presupuesto vs. real y seguimiento de vacaciones.'; return ''; }
+
+async function init(){
+  actualizarUI();
+  const grid = document.getElementById('mod-grid');
+  try{
+    const paginas = await fetch('/api/paginas').then(r=>r.json());
+    const reclu = paginas.find(p=>!p.parent_id && p.titulo.toLowerCase().includes('reclutamiento'));
+    if(!reclu){ grid.innerHTML='<div class="empty">No se encontró la sección.</div>'; return; }
+    const hijos = paginas.filter(p=>p.parent_id===reclu.id).sort((a,b)=>a.orden-b.orden);
+    const badges = await getBadges(paginas, reclu.id);
+
+    grid.innerHTML = '';
+
+    // Primero las páginas del CMS
+    hijos.forEach(hijo=>{
+      const tl = hijo.titulo.toLowerCase();
+      const isCand = tl.includes('candidato')||tl.includes('base');
+      const isPlan = tl.includes('plan')||tl.includes('demanda');
+      const icon = iconFor(hijo.titulo);
+      const accent = accentFor(hijo.titulo);
+      const desc = descFor(hijo.titulo);
+
+      let badgeHtml = '';
+      let onclick = '';
+      let destino = '';
+      if(isCand){
+        const n = badges['cand']||0;
+        badgeHtml = `<span class="mod-badge badge-green">${n} candidato${n!==1?'s':''}</span>`;
+        destino = '/base-candidatos';
+      } else if(isPlan){
+        const sinj = badges['plan_sinj']||0;
+        badgeHtml = sinj>0
+          ? `<span class="mod-badge badge-red">${sinj} desvío${sinj!==1?'s':''} sin justificar</span>`
+          : `<span class="mod-badge badge-green">Sin desvíos pendientes</span>`;
+        destino = `/plan-demanda?sucursal=${SUCURSAL}`;
+      } else {
+        const n = (hijo.bloques||[]).filter(b=>b.tipo==='embed').length;
+        badgeHtml = n>0
+          ? `<span class="mod-badge badge-navy">${n} documento${n!==1?'s':''}</span>`
+          : `<span class="mod-badge badge-gray">Sin contenido</span>`;
+        destino = `/pilar-gente?vista=${hijo.id}`;
+      }
+
+      const card = document.createElement('button');
+      card.className = 'mod-card';
+      card.style.setProperty('--accent', accent);
+      card.onclick = () => window.location.href = destino;
+
+      card.innerHTML = `
+        <div class="mod-icon">${icon}</div>
+        <div class="mod-title">${hijo.titulo}${isPlan ? ' — ' + (SUCURSAL==='dolores'?'Dolores':'Central') : ''}</div>
+        <div class="mod-desc">${desc}</div>
+        <div class="mod-footer">${badgeHtml}<span class="mod-arr">Abrir →</span></div>`;
+      grid.appendChild(card);
+    });
+
+    // Tendencias al final (anteúltimo)
+    const cardTend = document.createElement('button');
+    cardTend.className = 'mod-card';
+    cardTend.style.setProperty('--accent','#7C3AED');
+    cardTend.onclick = () => window.location.href = '/tendencias';
+    cardTend.innerHTML = `
+      <div class="mod-icon">📈</div>
+      <div class="mod-title">Análisis de Tendencias de la Fuerza Laboral</div>
+      <div class="mod-desc">Monitoreo de dotación, incorporaciones, desvinculaciones, antigüedad y tendencias históricas.</div>
+      <div class="mod-footer"><span class="mod-badge badge-purple">Análisis</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardTend);
+
+    // Vacancy Fulfillment último
+    const cardVac = document.createElement('button');
+    cardVac.className = 'mod-card';
+    cardVac.style.setProperty('--accent','#0891B2');
+    cardVac.onclick = () => window.location.href = '/vacantes';
+    cardVac.innerHTML = `
+      <div class="mod-icon">🎯</div>
+      <div class="mod-title">Vacancy Fulfillment</div>
+      <div class="mod-desc">Gestión de búsquedas, seguimiento de candidatos y control del tiempo de cobertura.</div>
+      <div class="mod-footer"><span class="mod-badge badge-purple">Selección</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardVac);
+
+  }catch(e){
+    grid.innerHTML='<div class="empty">No se pudo cargar.</div>';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

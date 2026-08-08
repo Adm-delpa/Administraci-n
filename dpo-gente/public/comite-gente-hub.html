@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comité de Gente Logístico — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:22px 24px}
+.page-header h1{font-size:18px;font-weight:800;color:#fff}
+.page-header p{font-size:11.5px;color:rgba(255,255,255,.55);margin-top:4px}
+.wrap{max-width:900px;margin:0 auto;padding:28px 20px;display:flex;flex-direction:column;gap:22px}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.kpi{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:16px 18px}
+.kpi-label{font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;color:#18243A;line-height:1}
+.kpi-sub{font-size:11px;color:#8A97AA;margin-top:4px}
+.kpi-orange .kpi-val{color:#E85D04}
+
+/* Cards de navegación */
+.nav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.nav-card{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:20px;cursor:pointer;transition:border-color .15s,box-shadow .15s;text-decoration:none;display:flex;flex-direction:column;gap:8px}
+.nav-card:hover{border-color:#2563A8;box-shadow:0 4px 16px rgba(37,99,168,.10)}
+.nav-card-icon{font-size:28px;line-height:1}
+.nav-card-title{font-size:14px;font-weight:700;color:#18243A}
+.nav-card-desc{font-size:12px;color:#5E6E89;line-height:1.5}
+.nav-card-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:4px;width:fit-content}
+.badge-pronto{background:#FEF3C7;color:#92400E}
+.badge-ok{background:#DCFCE7;color:#166534}
+
+/* Sección */
+.section-title{font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Comité de Gente Logístico</span>
+</div>
+
+<div class="page-header">
+  <h1>Comité de Gente Logístico</h1>
+  <p>Equipos Autónomos · GOPs · Reuniones · Seguimiento de Acciones</p>
+</div>
+
+<div class="wrap">
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Reuniones <span id="kpiAnio"></span></div>
+      <div class="kpi-val" id="kpiReuniones">—</div>
+      <div class="kpi-sub">realizadas este año</div>
+    </div>
+    <div class="kpi kpi-orange">
+      <div class="kpi-label">Acciones pendientes</div>
+      <div class="kpi-val" id="kpiAcciones">—</div>
+      <div class="kpi-sub">en seguimiento</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Próxima reunión</div>
+      <div class="kpi-val" id="kpiProxima" style="font-size:17px;padding-top:4px">—</div>
+      <div class="kpi-sub" id="kpiProximaSub"></div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="section-title">Módulos</div>
+  <div class="nav-grid">
+    <a class="nav-card" href="/comite-gente/reuniones">
+      <div class="nav-card-icon">📅</div>
+      <div class="nav-card-title">Reuniones y Asistencia</div>
+      <div class="nav-card-desc">Registrá cada reunión del comité, tomá asistencia y volcá el temario y las acciones emergentes.</div>
+      <span class="nav-card-badge badge-ok">Disponible</span>
+    </a>
+    <a class="nav-card" href="/comite-gente/gops">
+      <div class="nav-card-icon">⚙️</div>
+      <div class="nav-card-title">GOPs — Grupos Operativos</div>
+      <div class="nav-card-desc">7 checklists de áreas operativas con estado de avance mensual. Meta ≥ 80%.</div>
+      <span class="nav-card-badge badge-ok">Disponible</span>
+    </a>
+    <a class="nav-card" href="/comite-gente/pda">
+      <div class="nav-card-icon">🎯</div>
+      <div class="nav-card-title">PDA — Plan de Acción</div>
+      <div class="nav-card-desc">Seguimiento del plan de acción anual del comité con responsables y fechas.</div>
+      <span class="nav-card-badge badge-ok">Disponible</span>
+    </a>
+  </div>
+
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+document.getElementById('kpiAnio').textContent = new Date().getFullYear();
+
+async function cargarResumen() {
+  try {
+    const r = await fetch('/api/comite/resumen');
+    const d = await r.json();
+    document.getElementById('kpiReuniones').textContent = d.reuniones_anio ?? '0';
+    document.getElementById('kpiAcciones').textContent = d.acciones_pendientes ?? '0';
+    if (d.proxima_reunion) {
+      const f = new Date(String(d.proxima_reunion).split('T')[0] + 'T12:00:00');
+      document.getElementById('kpiProxima').textContent = f.toLocaleDateString('es-AR', { day:'2-digit', month:'short' });
+      document.getElementById('kpiProximaSub').textContent = f.toLocaleDateString('es-AR', { weekday:'long' });
+    } else {
+      document.getElementById('kpiProxima').textContent = 'Sin agendar';
+    }
+  } catch(e) {}
+}
+
+cargarResumen();
+</script>
+</body>
+</html>

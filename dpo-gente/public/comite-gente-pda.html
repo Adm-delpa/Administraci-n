@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDA — Plan de Acción</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:18px 24px}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:18px}
+
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.year-select,.filter-select{background:#fff;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit}
+.btn-primary{background:#2563A8;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-primary:hover{background:#1B3F72}
+.ml-auto{margin-left:auto}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{background:#fff;border:1px solid #D8DEE8;border-radius:10px;padding:14px 16px;text-align:center}
+.kpi-label{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.kpi-val{font-size:24px;font-weight:800;line-height:1}
+
+/* Tabla */
+.pda-table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #D8DEE8}
+.pda-table th{background:#1B3F72;color:#fff;padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.pda-table td{padding:10px 12px;border-bottom:1px solid #F2F4F8;vertical-align:top}
+.pda-table tr:hover td{background:#FAFBFD}
+.pda-table .accion-col{max-width:300px}
+.gop-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;background:#EBF2FA;color:#1B3F72}
+.estado-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap}
+.estado-pendiente{background:#FEF3C7;color:#92400E}
+.estado-en_curso{background:#DBEAFE;color:#1E40AF}
+.estado-completada{background:#DCFCE7;color:#166534}
+.estado-cancelada{background:#F3F4F6;color:#6B7280;text-decoration:line-through}
+.prioridad-alta{color:#DC2626;font-weight:700}
+.prioridad-media{color:#D97706;font-weight:600}
+.prioridad-baja{color:#8A97AA;font-weight:500}
+.acciones-btns{display:flex;gap:4px}
+.btn-edit,.btn-del{background:none;border:none;cursor:pointer;font-size:14px;padding:2px}
+.btn-del:hover{color:#EF4444}
+.empty{text-align:center;padding:40px 20px;color:#8A97AA;font-size:13px}
+.evidencia-text{font-size:11px;color:#5E6E89;margin-top:4px;font-style:italic}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:580px;display:flex;flex-direction:column;overflow:hidden;margin:auto}
+.modal-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-size:14px;font-weight:700;color:#fff}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer;line-height:1}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.05em}
+input,textarea,select{font-family:inherit;font-size:13px;border:1.5px solid #D8DEE8;border-radius:8px;padding:8px 11px;color:#18243A;background:#fff;width:100%}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#2563A8}
+textarea{resize:vertical;min-height:60px}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.btn-secondary{background:#fff;color:#18243A;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/comite-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">PDA — Plan de Acción</span>
+</div>
+
+<div class="page-header">
+  <h1>Plan de Acción</h1>
+  <p>Seguimiento de acciones del Comité de Gente Logístico</p>
+</div>
+
+<div class="wrap">
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Total acciones</div><div class="kpi-val" id="kpiTotal">—</div></div>
+    <div class="kpi"><div class="kpi-label">Completadas</div><div class="kpi-val" id="kpiCompletadas" style="color:#16A34A">—</div></div>
+    <div class="kpi"><div class="kpi-label">Pendientes / En curso</div><div class="kpi-val" id="kpiPendientes" style="color:#D97706">—</div></div>
+    <div class="kpi"><div class="kpi-label">% Avance</div><div class="kpi-val" id="kpiPct" style="color:#1B3F72">—</div></div>
+  </div>
+
+  <div class="toolbar">
+    <select id="yearSel" class="year-select" onchange="cargar()"></select>
+    <select id="filtroGop" class="filter-select" onchange="renderTabla()">
+      <option value="">Todos los GOPs</option>
+      <option value="D&I">D&I</option>
+      <option value="Reconocimiento">Reconocimiento</option>
+      <option value="Jornada">Jornada</option>
+      <option value="Estructura">Estructura</option>
+      <option value="Remuneración">Remuneración</option>
+      <option value="Turnover">Turnover</option>
+      <option value="Ausentismo">Ausentismo</option>
+      <option value="Otro">Otro</option>
+    </select>
+    <select id="filtroEstado" class="filter-select" onchange="renderTabla()">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="en_curso">En curso</option>
+      <option value="completada">Completada</option>
+      <option value="cancelada">Cancelada</option>
+    </select>
+    <button class="btn-primary ml-auto" onclick="abrirNueva()">+ Nueva acción</button>
+  </div>
+
+  <div id="tablaWrap"></div>
+</div>
+
+<!-- Modal -->
+<div id="modalPda" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nueva Acción</h2>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Acción / Iniciativa</label>
+        <textarea id="fAccion" rows="2" placeholder="Descripción de la acción..."></textarea>
+      </div>
+      <div class="field row2">
+        <div class="field">
+          <label>GOP vinculado</label>
+          <select id="fGop">
+            <option value="">— Ninguno —</option>
+            <option value="D&I">D&I</option>
+            <option value="Reconocimiento">Reconocimiento</option>
+            <option value="Jornada">Jornada</option>
+            <option value="Estructura">Estructura</option>
+            <option value="Remuneración">Remuneración</option>
+            <option value="Turnover">Turnover</option>
+            <option value="Ausentismo">Ausentismo</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Bloque</label>
+          <input type="text" id="fBloque" placeholder="Ej: Limpieza">
+        </div>
+      </div>
+      <div class="field row2">
+        <div class="field">
+          <label>Responsable</label>
+          <input type="text" id="fResponsable" placeholder="Nombre">
+        </div>
+        <div class="field">
+          <label>Fecha compromiso</label>
+          <input type="date" id="fFecha">
+        </div>
+      </div>
+      <div class="field row2">
+        <div class="field">
+          <label>Estado</label>
+          <select id="fEstado">
+            <option value="pendiente">Pendiente</option>
+            <option value="en_curso">En curso</option>
+            <option value="completada">Completada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Prioridad</label>
+          <select id="fPrioridad">
+            <option value="alta">Alta</option>
+            <option value="media" selected>Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Evidencia / Comentario de avance</label>
+        <textarea id="fEvidencia" rows="2" placeholder="Qué se hizo, adjuntar evidencia..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-primary" onclick="guardar()">Guardar</button>
+      </div>
+      <div id="btnEliminarWrap" style="display:none;text-align:center;margin-top:4px">
+        <button onclick="eliminar()" style="background:none;border:none;color:#B91C1C;font-size:12px;cursor:pointer;font-family:inherit">Eliminar esta acción</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const MESES_NOMBRE = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const anioActual = new Date().getFullYear();
+let DATA = [];
+let _editId = null;
+
+function initYears() {
+  const sel = document.getElementById('yearSel');
+  for (let y = anioActual; y >= anioActual - 3; y--) {
+    const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o);
+  }
+  sel.value = anioActual;
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('nuevo') === '1') {
+    cargar().then(() => abrirNueva(params.get('gop') || '', params.get('bloque') || ''));
+  } else {
+    cargar();
+  }
+}
+
+async function cargar() {
+  const anio = document.getElementById('yearSel').value;
+  try {
+    const [r, res] = await Promise.all([
+      fetch('/api/comite/pda?anio=' + anio),
+      fetch('/api/comite/pda/resumen?anio=' + anio)
+    ]);
+    DATA = await r.json();
+    const resumen = await res.json();
+    document.getElementById('kpiTotal').textContent = resumen.total;
+    document.getElementById('kpiCompletadas').textContent = resumen.completadas;
+    document.getElementById('kpiPendientes').textContent = (resumen.por_estado?.pendiente || 0) + (resumen.por_estado?.en_curso || 0);
+    document.getElementById('kpiPct').textContent = resumen.total ? resumen.pct + '%' : '—';
+    renderTabla();
+  } catch(e) {}
+}
+
+function renderTabla() {
+  const wrap = document.getElementById('tablaWrap');
+  const filtroGop = document.getElementById('filtroGop').value;
+  const filtroEstado = document.getElementById('filtroEstado').value;
+  let filtered = DATA;
+  if (filtroGop) filtered = filtered.filter(a => (a.gop || 'Otro') === filtroGop);
+  if (filtroEstado) filtered = filtered.filter(a => a.estado === filtroEstado);
+
+  if (!filtered.length) { wrap.innerHTML = '<div class="empty">No hay acciones para mostrar.</div>'; return; }
+
+  wrap.innerHTML = `<table class="pda-table">
+    <thead><tr>
+      <th>Acción</th><th>GOP</th><th>Responsable</th><th>Fecha</th><th>Prioridad</th><th>Estado</th><th></th>
+    </tr></thead>
+    <tbody>${filtered.map(a => {
+      const fecha = a.fecha_compromiso ? new Date(String(a.fecha_compromiso).split('T')[0] + 'T12:00:00').toLocaleDateString('es-AR', { day:'2-digit', month:'short' }) : '—';
+      const vencida = a.fecha_compromiso && a.estado !== 'completada' && a.estado !== 'cancelada' && new Date(a.fecha_compromiso) < new Date();
+      return `<tr>
+        <td class="accion-col">
+          <div style="font-weight:600">${a.accion}</div>
+          ${a.bloque ? `<div style="font-size:10px;color:#8A97AA;margin-top:2px">${a.bloque}</div>` : ''}
+          ${a.evidencia ? `<div class="evidencia-text">${a.evidencia}</div>` : ''}
+        </td>
+        <td>${a.gop ? `<span class="gop-tag">${a.gop}</span>` : '—'}</td>
+        <td style="font-weight:600">${a.responsable || '—'}</td>
+        <td style="${vencida ? 'color:#DC2626;font-weight:700' : ''}">${fecha}</td>
+        <td><span class="prioridad-${a.prioridad}">${a.prioridad}</span></td>
+        <td><span class="estado-badge estado-${a.estado}">${a.estado.replace('_',' ')}</span></td>
+        <td>
+          <div class="acciones-btns">
+            <button class="btn-edit" onclick="abrirEditar(${a.id})" title="Editar">✏️</button>
+            <button class="btn-del" onclick="eliminarDirecto(${a.id})" title="Eliminar">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function abrirNueva(gop, bloque) {
+  _editId = null;
+  document.getElementById('modalTitle').textContent = 'Nueva Acción';
+  document.getElementById('fAccion').value = '';
+  document.getElementById('fGop').value = gop || '';
+  document.getElementById('fBloque').value = bloque || '';
+  document.getElementById('fResponsable').value = '';
+  document.getElementById('fFecha').value = '';
+  document.getElementById('fEstado').value = 'pendiente';
+  document.getElementById('fPrioridad').value = 'media';
+  document.getElementById('fEvidencia').value = '';
+  document.getElementById('btnEliminarWrap').style.display = 'none';
+  document.getElementById('modalPda').classList.add('open');
+}
+
+function abrirEditar(id) {
+  const a = DATA.find(x => x.id === id);
+  if (!a) return;
+  _editId = id;
+  document.getElementById('modalTitle').textContent = 'Editar Acción';
+  document.getElementById('fAccion').value = a.accion;
+  document.getElementById('fGop').value = a.gop || '';
+  document.getElementById('fBloque').value = a.bloque || '';
+  document.getElementById('fResponsable').value = a.responsable || '';
+  document.getElementById('fFecha').value = a.fecha_compromiso ? String(a.fecha_compromiso).split('T')[0] : '';
+  document.getElementById('fEstado').value = a.estado;
+  document.getElementById('fPrioridad').value = a.prioridad;
+  document.getElementById('fEvidencia').value = a.evidencia || '';
+  document.getElementById('btnEliminarWrap').style.display = 'block';
+  document.getElementById('modalPda').classList.add('open');
+}
+
+async function guardar() {
+  const accion = document.getElementById('fAccion').value.trim();
+  if (!accion) { alert('Ingresá la acción.'); return; }
+  const body = {
+    accion,
+    gop: document.getElementById('fGop').value,
+    bloque: document.getElementById('fBloque').value.trim(),
+    responsable: document.getElementById('fResponsable').value.trim(),
+    fecha_compromiso: document.getElementById('fFecha').value || null,
+    estado: document.getElementById('fEstado').value,
+    prioridad: document.getElementById('fPrioridad').value,
+    evidencia: document.getElementById('fEvidencia').value.trim(),
+    anio: Number(document.getElementById('yearSel').value),
+    mes_origen: new Date().getMonth() + 1
+  };
+  if (_editId) {
+    await fetch('/api/comite/pda/' + _editId, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  } else {
+    await fetch('/api/comite/pda', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  }
+  cerrarModal();
+  cargar();
+}
+
+async function eliminar() {
+  if (!confirm('¿Eliminar esta acción?')) return;
+  await fetch('/api/comite/pda/' + _editId, { method:'DELETE' });
+  cerrarModal();
+  cargar();
+}
+
+async function eliminarDirecto(id) {
+  if (!confirm('¿Eliminar esta acción?')) return;
+  await fetch('/api/comite/pda/' + id, { method:'DELETE' });
+  cargar();
+}
+
+function cerrarModal() {
+  document.getElementById('modalPda').classList.remove('open');
+  _editId = null;
+}
+
+initYears();
+</script>
+</body>
+</html>

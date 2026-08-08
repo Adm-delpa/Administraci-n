@@ -1,0 +1,827 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan de Demanda — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#18243A;font-size:13px;min-height:100vh}
+
+/* Topbar */
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.65rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-crumb{font-size:12.5px;color:#5A6880}
+.topbar-crumb strong{color:#18243A;font-weight:700}
+
+/* Header */
+.page-header{background:#1B3F72;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.year-ctrl{display:flex;align-items:center;gap:8px}
+.year-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:6px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.year-btn:hover{background:rgba(255,255,255,.28)}
+.year-label{font-size:16px;font-weight:800;color:#fff;min-width:48px;text-align:center}
+
+/* Tabs */
+.tabs-bar{background:#fff;border-bottom:2px solid #E2E8F0;padding:0 24px;display:flex;gap:0}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:12px 20px;font-family:inherit;font-size:13px;font-weight:600;color:#8A97AA;cursor:pointer;transition:color .12s,border-color .12s}
+.tab-btn:hover{color:#1B3F72}
+.tab-btn.active{color:#1B3F72;border-bottom-color:#1B3F72}
+
+/* Panels */
+.tab-panel{display:none;padding:20px 24px}
+.tab-panel.active{display:block}
+
+/* Common table styles */
+.tbl-wrap{background:#fff;border:1px solid #D8DEE8;border-radius:8px;overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.thead-dark th{background:#1B3F72;color:#fff;padding:8px 10px;text-align:center}
+.thead-dark th:first-child{text-align:left;min-width:180px}
+.thead-sub th{background:#F0F4F9;color:#5A6880;padding:6px 10px;border-bottom:2px solid #D8DEE8;text-align:center}
+.thead-sub th:first-child{text-align:left}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi-card{background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:14px 16px;border-left:4px solid #E2E8F0}
+.kpi-card.kpi-red{border-left-color:#EF4444}
+.kpi-card.kpi-yellow{border-left-color:#F59E0B}
+.kpi-card.kpi-blue{border-left-color:#3B82F6}
+.kpi-card.kpi-green{border-left-color:#10B981}
+.kpi-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8A97AA;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;color:#18243A;font-variant-numeric:tabular-nums;line-height:1}
+.kpi-sub{font-size:11px;color:#8A97AA;margin-top:4px}
+
+/* Plan de Demanda */
+.grupo-hdr td{background:#F7F9FC;font-size:11.5px;font-weight:700;color:#1B3F72;padding:7px 12px;border-top:2px solid #E2E8F0}
+.fila-pd td{border-bottom:1px solid #F0F2F6;padding:0}
+.fila-pd td:first-child{padding:5px 12px 5px 22px;font-size:11px;color:#5A6880;font-weight:600;white-space:nowrap;background:#fff;width:160px}
+.fila-presup td:first-child{color:#1B3F72}
+.fila-desv td:first-child{color:#374151;font-style:italic}
+.cell-presup{background:#F0F6FF}
+.cell-real{background:#fff;font-size:12px;font-weight:700;color:#065F46;text-align:center}
+/* Heatmap desvío — sin justificar */
+.dsv-zero{background:#fff;color:#166534;font-weight:600}
+.dsv-futuro{background:#F7F8FB;color:#C0C8D4;font-size:11px;text-align:center}
+.dsv-p1{background:#FEE2E2;color:#B91C1C;font-weight:700;cursor:pointer}
+.dsv-p2{background:#FECACA;color:#991B1B;font-weight:700;cursor:pointer}
+.dsv-p3{background:#FCA5A5;color:#7F1D1D;font-weight:700;cursor:pointer}
+.dsv-n1{background:#FEF3C7;color:#B45309;font-weight:700;cursor:pointer}
+.dsv-n2{background:#FDE68A;color:#92400E;font-weight:700;cursor:pointer}
+.dsv-n3{background:#FCD34D;color:#78350F;font-weight:700;cursor:pointer}
+/* Estado justificado puntual */
+.dsv-puntual{background:#FFF7ED;color:#C2410C;font-weight:700;cursor:pointer;border:1px solid #FED7AA}
+/* Estado justificado permanente */
+.dsv-permanente{background:#EFF6FF;color:#1D4ED8;font-weight:700;cursor:pointer;border:1px solid #BFDBFE}
+
+td.num{text-align:center;padding:3px 2px}
+input.n{width:46px;border:none;background:transparent;text-align:center;font-family:inherit;font-size:12px;color:#18243A;padding:4px 2px;font-variant-numeric:tabular-nums;outline:none}
+input.n:focus{background:#EBF5FF;border-radius:3px}
+input.n.presup{color:#1B3F72;font-weight:600}
+.dsv-inner{display:flex;align-items:center;justify-content:center;gap:3px;min-width:46px;padding:4px 2px;font-size:12px;font-variant-numeric:tabular-nums}
+.dsv-icon{font-size:10px;line-height:1}
+
+/* Popover comentario + estado */
+.comment-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.15)}
+.comment-overlay.open{display:block}
+.comment-box{position:fixed;z-index:201;background:#fff;border:1px solid #D8DEE8;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.15);padding:16px;width:300px}
+.comment-box-title{font-size:11.5px;font-weight:700;color:#1B3F72;margin-bottom:10px}
+.estado-opts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.estado-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:#374151;transition:border-color .1s,background .1s}
+.estado-opt:hover{background:#F8FAFC}
+.estado-opt.sel-sin{border-color:#EF4444;background:#FEF2F2;color:#991B1B}
+.estado-opt.sel-puntual{border-color:#F59E0B;background:#FFFBEB;color:#92400E}
+.estado-opt.sel-permanente{border-color:#3B82F6;background:#EFF6FF;color:#1D4ED8}
+.estado-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.comment-label{font-size:11px;font-weight:700;color:#5A6880;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+.comment-box textarea{width:100%;border:1.5px solid #E2E8F0;border-radius:6px;font-family:inherit;font-size:12.5px;color:#18243A;padding:7px 9px;resize:vertical;min-height:64px;outline:none}
+.comment-box textarea:focus{border-color:#2563A8}
+.comment-box-actions{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
+.btn-comment-save{background:#2563A8;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.btn-comment-cancel{background:none;border:1px solid #D8DEE8;color:#5A6880;border-radius:6px;padding:6px 12px;font-family:inherit;font-size:12px;cursor:pointer}
+td.num{text-align:center;padding:0}
+input.n{width:100%;border:none;background:transparent;text-align:center;font-family:inherit;font-size:12px;color:#18243A;padding:5px 4px;font-variant-numeric:tabular-nums;outline:none;display:block;box-sizing:border-box}
+input.n:focus{background:#EBF5FF;border-radius:3px}
+input.n.presup{color:#1B3F72;font-weight:600}
+.cv{display:block;width:100%;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;padding:5px 4px;box-sizing:border-box}
+
+/* Nómina */
+.nom-grupo-hdr td{background:#E8EEF8;font-size:11px;font-weight:700;color:#1B3F72;padding:6px 12px;border-top:2px solid #C5D3E8;letter-spacing:.02em}
+.nom-fila td{border-bottom:1px solid #EEF0F6;padding:3px 4px}
+.nom-fila td.nom-nombre{padding:3px 12px;width:220px}
+.nom-nombre input{width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;color:#18243A;padding:3px 4px;outline:none;border-radius:3px}
+.nom-nombre input:focus{background:#EBF5FF}
+.nom-fila td.mes-cell{text-align:center;padding:2px}
+select.mes-sel{width:46px;border:1px solid #D8DEE8;border-radius:4px;font-family:inherit;font-size:11.5px;color:#18243A;padding:2px 1px;text-align:center;background:#fff;outline:none;cursor:pointer}
+select.mes-sel:focus{border-color:#2563A8}
+select.mes-sel.val-x{background:#D1FAE5;color:#065F46;font-weight:700;border-color:#6EE7B7}
+select.mes-sel.val-dash{background:#FEE2E2;color:#991B1B;border-color:#FCA5A5}
+.btn-add-persona{background:none;border:1px dashed #C5D3E8;color:#5A6880;font-family:inherit;font-size:11.5px;padding:5px 12px;border-radius:5px;cursor:pointer;margin:6px 12px}
+.btn-add-persona:hover{background:#EBF5FF;color:#1B3F72;border-color:#93C5FD}
+.btn-del-row{background:none;border:none;color:#CBD5E0;font-size:13px;cursor:pointer;padding:2px 4px;border-radius:3px}
+.btn-del-row:hover{color:#EF4444;background:#FEE2E2}
+
+/* Vacaciones */
+.vac-rol-hdr td{background:#E8EEF8;font-size:11.5px;font-weight:700;color:#1B3F72;padding:7px 12px;border-top:2px solid #C5D3E8}
+.vac-fila td{border-bottom:1px solid #EEF0F6;padding:4px 6px;vertical-align:middle}
+.vac-fila td.vmes{font-size:11.5px;font-weight:600;color:#374151;white-space:nowrap;width:50px;text-align:center}
+.vac-fila td.vcalc{font-size:12px;font-variant-numeric:tabular-nums;text-align:center;color:#5A6880}
+.vac-fila td.vcalc.vdph{color:#18243A;font-weight:600}
+.vac-fila td.vdesv-ok{background:#D1FAE5;color:#065F46;font-weight:700;text-align:center;font-size:12px}
+.vac-fila td.vdesv-pos{background:#FEF3C7;color:#92400E;font-weight:700;text-align:center;font-size:12px}
+.vac-fila td.vdesv-neg{background:#FEE2E2;color:#991B1B;font-weight:700;text-align:center;font-size:12px}
+input.vt{width:100%;border:1px solid #E2E8F0;border-radius:4px;font-family:inherit;font-size:11.5px;color:#18243A;padding:3px 6px;outline:none}
+input.vt:focus{border-color:#2563A8}
+input.vd{width:52px;border:1px solid #E2E8F0;border-radius:4px;font-family:inherit;font-size:12px;color:#18243A;padding:3px 4px;text-align:center;outline:none;font-variant-numeric:tabular-nums}
+input.vd:focus{border-color:#2563A8}
+
+/* Días hábiles */
+.dh-panel{background:#fff;border:1px solid #D8DEE8;border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.dh-title{font-size:11.5px;font-weight:700;color:#1B3F72;margin-bottom:10px}
+.dh-grid{display:grid;grid-template-columns:repeat(6,auto);gap:6px 12px;align-items:center}
+.dh-label{font-size:11px;font-weight:600;color:#5A6880;text-align:right}
+input.dh-inp{width:44px;border:1px solid #D8DEE8;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;padding:3px 4px;outline:none;font-variant-numeric:tabular-nums}
+input.dh-inp:focus{border-color:#2563A8}
+
+/* Leyenda */
+.leyenda{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.ley-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#5A6880}
+.ley-box{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+
+/* Footer */
+.footer-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;flex-wrap:wrap;gap:10px}
+.btn-guardar{background:#2563A8;color:#fff;border:none;border-radius:7px;padding:9px 24px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.btn-guardar:hover{background:#1B3F72}
+.btn-guardar:disabled{background:#9BB3D0;cursor:not-allowed}
+.save-st{font-size:12px;color:#5A6880}
+.save-st.ok{color:#065F46}
+.save-st.err{color:#991B1B}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#18243A;color:#fff;padding:10px 22px;border-radius:7px;font-size:13px;font-weight:600;z-index:100;display:none;pointer-events:none}
+.vac-thead th{background:#1B3F72;color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:7px 8px;text-align:center;white-space:nowrap}
+.vac-thead th:first-child{width:48px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-crumb">Reclutamiento y Selección · Plan de Demanda · <strong id="topbar-suc">—</strong></span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1 id="hdr-titulo">Plan de Demanda</h1>
+    <p id="hdr-sub">Nómina Mensual · Plan de Demanda · Vacaciones</p>
+  </div>
+  <div class="year-ctrl">
+    <button class="year-btn" onclick="cambiarAnio(-1)">‹</button>
+    <span class="year-label" id="lbl-anio">2026</span>
+    <button class="year-btn" onclick="cambiarAnio(1)">›</button>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab-btn" onclick="showTab('nomina',this)">Nómina Mensual</button>
+  <button class="tab-btn active" onclick="showTab('plan',this)">Plan de Demanda</button>
+  <button class="tab-btn" onclick="showTab('vac',this)">Vacaciones</button>
+</div>
+
+<!-- TAB: NÓMINA -->
+<div class="tab-panel" id="panel-nomina">
+  <div class="leyenda">
+    <div class="ley-item"><div class="ley-box" style="background:#D1FAE5;border:1px solid #6EE7B7"></div>X = trabaja</div>
+    <div class="ley-item"><div class="ley-box" style="background:#FEE2E2;border:1px solid #FCA5A5"></div>- = baja/licencia</div>
+    <div class="ley-item"><div class="ley-box" style="background:#fff;border:1px solid #D8DEE8"></div>vacío = no trabaja</div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr class="thead-dark">
+          <th style="text-align:left">Nombre y Apellido</th>
+          <th>Ene</th><th>Feb</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th>
+          <th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody-nom"></tbody>
+    </table>
+  </div>
+  <div class="footer-bar">
+    <span class="save-st" id="st-nom"></span>
+    <button class="btn-guardar" onclick="guardarNomina()">Guardar nómina</button>
+  </div>
+</div>
+
+<!-- TAB: PLAN DE DEMANDA -->
+<div class="tab-panel active" id="panel-plan">
+  <div class="kpi-row">
+    <div class="kpi-card kpi-red"><div class="kpi-label">Sin justificar</div><div class="kpi-val" id="kpi-sin">—</div><div class="kpi-sub">desvíos activos</div></div>
+    <div class="kpi-card kpi-yellow"><div class="kpi-label">Justificado puntual</div><div class="kpi-val" id="kpi-punt">—</div><div class="kpi-sub">se corregirán</div></div>
+    <div class="kpi-card kpi-blue"><div class="kpi-label">Justificado permanente</div><div class="kpi-val" id="kpi-perm">—</div><div class="kpi-sub">estructurales</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-label">Mayor desvío</div><div class="kpi-val" id="kpi-max">—</div><div class="kpi-sub" id="kpi-max-sub">este año</div></div>
+  </div>
+  <div class="leyenda">
+    <div class="ley-item"><div class="ley-box" style="background:#FEE2E2;border:1px solid #FCA5A5"></div>Sin justificar (más rojo = mayor magnitud)</div>
+    <div class="ley-item"><div class="ley-box" style="background:#FFF7ED;border:1px solid #FED7AA"></div>Justificado puntual</div>
+    <div class="ley-item"><div class="ley-box" style="background:#EFF6FF;border:1px solid #BFDBFE"></div>Justificado permanente</div>
+    <div class="ley-item"><div class="ley-box" style="background:#F0FDF4;border:1px solid #BBF7D0"></div>Sin desvío · Hacé clic en cualquier celda de desvío para justificarlo</div>
+  </div>
+  <div class="tbl-wrap">
+    <table style="table-layout:fixed;width:100%">
+      <colgroup>
+        <col style="width:200px">
+        <col span="12" style="width:62px">
+      </colgroup>
+      <thead>
+        <tr class="thead-dark">
+          <th style="text-align:left">Grupo</th>
+          <th>Ene</th><th>Feb</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th>
+          <th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-plan"></tbody>
+    </table>
+  </div>
+  <div class="footer-bar">
+    <span class="save-st" id="st-plan"></span>
+    <button class="btn-guardar" onclick="guardarPlan()">Guardar presupuestado</button>
+  </div>
+</div>
+
+<!-- TAB: VACACIONES -->
+<div class="tab-panel" id="panel-vac">
+  <div class="dh-panel">
+    <div>
+      <div class="dh-title">Días hábiles por mes</div>
+      <div class="dh-grid" id="dh-grid"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:6px">
+      <button class="btn-guardar" style="font-size:12px;padding:7px 14px" onclick="guardarDiasHabiles()">Guardar días hábiles</button>
+      <span class="save-st" id="st-dh" style="font-size:11px"></span>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead class="vac-thead">
+        <tr>
+          <th>Mes</th>
+          <th>Dot. Presup.</th><th>Dot. Real</th><th>Días Háb.</th><th>Días Presup.</th>
+          <th>Quién planea tomarse</th><th>Días plan.</th>
+          <th>Quién efectivamente se tomó</th><th>Días real</th>
+          <th>Desvío</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-vac"></tbody>
+    </table>
+  </div>
+  <div class="footer-bar">
+    <span class="save-st" id="st-vac"></span>
+    <button class="btn-guardar" onclick="guardarVac()">Guardar vacaciones</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="comment-overlay" id="comment-overlay" onclick="cerrarComment()"></div>
+<div class="comment-box" id="comment-box" style="display:none">
+  <div class="comment-box-title" id="comment-box-title">Justificar desvío</div>
+  <div class="estado-opts">
+    <div class="estado-opt" id="opt-sin" onclick="selEstado('sin_justificar')">
+      <div class="estado-dot" style="background:#EF4444"></div>Sin justificar
+    </div>
+    <div class="estado-opt" id="opt-puntual" onclick="selEstado('justificado_puntual')">
+      <div class="estado-dot" style="background:#F59E0B"></div>Justificado puntual — se va a corregir
+    </div>
+    <div class="estado-opt" id="opt-permanente" onclick="selEstado('justificado_permanente')">
+      <div class="estado-dot" style="background:#3B82F6"></div>Justificado permanente — es estructural
+    </div>
+  </div>
+  <div class="comment-label">Aclaración</div>
+  <textarea id="comment-textarea" placeholder="Explicá el motivo del desvío…"></textarea>
+  <div class="comment-box-actions">
+    <button class="btn-comment-cancel" onclick="cerrarComment()">Cancelar</button>
+    <button class="btn-comment-save" onclick="guardarComment()">Guardar</button>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user')||'null');
+if(!USER) window.location.href='/';
+
+const params = new URLSearchParams(location.search);
+const SUCURSAL = params.get('sucursal')||'dolores';
+const SUC = SUCURSAL==='dolores'?'Dolores':'Central';
+let ANIO = parseInt(params.get('anio')||new Date().getFullYear());
+const HOY = new Date();
+const HOY_ANIO = HOY.getFullYear();
+const HOY_MES = HOY.getMonth()+1; // mes actual (no vencido todavía)
+
+document.getElementById('topbar-suc').textContent = SUC;
+document.getElementById('hdr-titulo').textContent = 'Plan de Demanda — ' + SUC;
+document.title = 'Plan de Demanda '+SUC+' — DPO Gente';
+
+const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const ROLES=[
+  {rol:'Chofer',tipo:'Fijo'},{rol:'Chofer',tipo:'Temporada'},
+  {rol:'Ayudante',tipo:'Fijo'},{rol:'Ayudante',tipo:'Temporada'},
+  {rol:'Operario',tipo:'Fijo'},{rol:'Operario',tipo:'Temporada'},
+  {rol:'Administrativo',tipo:'Fijo'}
+];
+const GRUPOS=[
+  'Distribucion - Chofer - Fijo','Distribucion - Chofer - Temporada',
+  'Distribucion - Ayudante - Fijo','Distribucion - Ayudante - Temporada',
+  'Deposito - Operario - Fijo','Deposito - Operario - Temporada',
+  'Administrativos - Administrativo - Fijo'
+];
+const VAC_ROLES=['Chofer','Ayudante','Operario','Administrativo'];
+const ROL_TO_GRUPOS={
+  'Chofer':['Distribucion - Chofer - Fijo','Distribucion - Chofer - Temporada'],
+  'Ayudante':['Distribucion - Ayudante - Fijo','Distribucion - Ayudante - Temporada'],
+  'Operario':['Deposito - Operario - Fijo','Deposito - Operario - Temporada'],
+  'Administrativo':['Administrativos - Administrativo - Fijo']
+};
+
+let NOM_DATA=[], PLAN_DATA={}, VAC_DATA={}, DH_DATA={}, COMMENTS={};
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(toast._h);toast._h=setTimeout(()=>t.style.display='none',2800);}
+function cambiarAnio(d){ANIO+=d;document.getElementById('lbl-anio').textContent=ANIO;cargarTodo();}
+function showTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── NÓMINA ──
+function selColor(sel){
+  sel.className='mes-sel';
+  if(sel.value==='X') sel.classList.add('val-x');
+  else if(sel.value==='-') sel.classList.add('val-dash');
+}
+function renderNomina(){
+  document.getElementById('lbl-anio').textContent=ANIO;
+  const tb=document.getElementById('tbody-nom');
+  let html='';
+  ROLES.forEach(({rol,tipo})=>{
+    html+=`<tr class="nom-grupo-hdr"><td colspan="14">${rol} · ${tipo}</td></tr>`;
+    const personas=NOM_DATA.filter(p=>p.rol===rol&&p.tipo===tipo);
+    personas.forEach((p,pi)=>{
+      const key=`${rol}|${tipo}|${pi}`;
+      html+=`<tr class="nom-fila" data-key="${key}">`;
+      html+=`<td class="nom-nombre"><input type="text" value="${esc(p.nombre)}" placeholder="Nombre y Apellido" data-k="${key}" data-f="nombre"></td>`;
+      for(let m=1;m<=12;m++){
+        const v=(p.meses&&p.meses[m])||'';
+        const cls=v==='X'?'val-x':v==='-'?'val-dash':'';
+        html+=`<td class="mes-cell"><select class="mes-sel ${cls}" data-k="${key}" data-m="${m}" onchange="selColor(this);markDirtyNom()">
+          <option value=""></option><option value="X"${v==='X'?' selected':''}>X</option><option value="-"${v==='-'?' selected':''}>-</option>
+        </select></td>`;
+      }
+      html+=`<td><button class="btn-del-row" onclick="eliminarPersona('${key}')">✕</button></td>`;
+      html+='</tr>';
+    });
+    html+=`<tr><td colspan="14"><button class="btn-add-persona" onclick="agregarPersona('${rol}','${tipo}')">+ Agregar persona</button></td></tr>`;
+  });
+  tb.innerHTML=html;
+}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+
+function getNominaFromDOM(){
+  const personas=[];
+  ROLES.forEach(({rol,tipo})=>{
+    const lista=NOM_DATA.filter(p=>p.rol===rol&&p.tipo===tipo);
+    lista.forEach((p,pi)=>{
+      const key=`${rol}|${tipo}|${pi}`;
+      const row=document.querySelector(`tr[data-key="${key}"]`);
+      if(!row)return;
+      const nombre=row.querySelector('input[data-f="nombre"]')?.value||'';
+      const meses={};
+      row.querySelectorAll('select[data-m]').forEach(s=>{ meses[parseInt(s.dataset.m)]=s.value; });
+      personas.push({rol,tipo,nombre,meses});
+    });
+  });
+  return personas;
+}
+
+function markDirtyNom(){document.getElementById('st-nom').textContent='Cambios sin guardar.';document.getElementById('st-nom').className='save-st';}
+
+function agregarPersona(rol,tipo){
+  const p=getNominaFromDOM();
+  const meses={};for(let m=1;m<=12;m++)meses[m]='';
+  p.push({rol,tipo,nombre:'',meses});
+  NOM_DATA=p;
+  renderNomina();
+  markDirtyNom();
+}
+
+function eliminarPersona(key){
+  const [rol,tipo,pi]=key.split('|');
+  const p=getNominaFromDOM();
+  const idx=p.filter((x,i)=>x.rol===rol&&x.tipo===tipo).findIndex((_,i)=>String(i)===pi);
+  const abs=[];let ci=0;
+  p.forEach((x,i)=>{if(x.rol===rol&&x.tipo===tipo){if(ci!==parseInt(pi))abs.push(i);ci++;}else abs.push(i);});
+  NOM_DATA=p.filter((_,i)=>abs.includes(i));
+  renderNomina();markDirtyNom();
+}
+
+async function guardarNomina(){
+  const btn=event.target;btn.disabled=true;btn.textContent='Guardando…';
+  NOM_DATA=getNominaFromDOM();
+  try{
+    const r=await fetch(`/api/nomina/${SUCURSAL}/${ANIO}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({personas:NOM_DATA})});
+    if(!r.ok)throw new Error();
+    document.getElementById('st-nom').textContent='✓ Guardado.';document.getElementById('st-nom').className='save-st ok';
+    await cargarPlan();
+    toast('Nómina guardada');
+  }catch(e){document.getElementById('st-nom').textContent='Error al guardar.';document.getElementById('st-nom').className='save-st err';}
+  finally{btn.disabled=false;btn.textContent='Guardar nómina';}
+}
+
+// ── PLAN DE DEMANDA ──
+function dsvLabel(d){return d===0?'0':d>0?'+'+d:String(d);}
+
+function dsvCellClass(d, estado){
+  if(d===0) return 'dsv-zero';
+  if(estado==='justificado_permanente') return 'dsv-permanente';
+  if(estado==='justificado_puntual') return 'dsv-puntual';
+  // heatmap sin justificar: intensidad por magnitud
+  const abs=Math.abs(d);
+  if(d>0) return abs>=3?'dsv-p3':abs===2?'dsv-p2':'dsv-p1';
+  return abs>=3?'dsv-n3':abs===2?'dsv-n2':'dsv-n1';
+}
+
+function getComment(g,m){ return (COMMENTS[g]&&COMMENTS[g][m])||{comentario:'',estado:'sin_justificar'}; }
+
+// ── COMENTARIOS ──
+let COMMENT_TARGET=null, COMMENT_ESTADO='sin_justificar';
+
+function selEstado(e){
+  COMMENT_ESTADO=e;
+  ['sin','puntual','permanente'].forEach(k=>document.getElementById('opt-'+k).className='estado-opt');
+  const map={sin_justificar:'sin',justificado_puntual:'puntual',justificado_permanente:'permanente'};
+  const sel={sin_justificar:'sel-sin',justificado_puntual:'sel-puntual',justificado_permanente:'sel-permanente'};
+  document.getElementById('opt-'+map[e]).className='estado-opt '+sel[e];
+}
+
+function abrirComment(g,m,cellEl){
+  COMMENT_TARGET={g,m};
+  const box=document.getElementById('comment-box');
+  const overlay=document.getElementById('comment-overlay');
+  const presup=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].presupuestado||0:0;
+  const real=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].real||0:0;
+  const d=real-presup;
+  const partes=g.split(' - ');
+  document.getElementById('comment-box-title').textContent=`Desvío ${dsvLabel(d)} — ${partes[partes.length-1]} · ${MESES[m-1]}`;
+  const prev=getComment(g,m);
+  document.getElementById('comment-textarea').value=prev.comentario||'';
+  selEstado(prev.estado||'sin_justificar');
+  const rect=cellEl.getBoundingClientRect();
+  const top=Math.min(rect.bottom+6, window.innerHeight-320);
+  const left=Math.min(rect.left, window.innerWidth-310);
+  box.style.top=top+'px'; box.style.left=Math.max(8,left)+'px';
+  box.style.display='block'; overlay.classList.add('open');
+  setTimeout(()=>document.getElementById('comment-textarea').focus(),50);
+}
+
+function cerrarComment(){
+  document.getElementById('comment-box').style.display='none';
+  document.getElementById('comment-overlay').classList.remove('open');
+  COMMENT_TARGET=null;
+}
+
+function guardarComment(){
+  if(!COMMENT_TARGET)return;
+  const {g,m}=COMMENT_TARGET;
+  const txt=document.getElementById('comment-textarea').value.trim();
+  if(!COMMENTS[g])COMMENTS[g]={};
+  COMMENTS[g][m]={comentario:txt,estado:COMMENT_ESTADO};
+  actualizarCeldaDsv(g,m);
+  actualizarKPIs();
+  cerrarComment();
+  guardarComments();
+}
+
+function actualizarCeldaDsv(g,m){
+  const cell=document.getElementById('dsv-'+encodeURIComponent(g)+'-'+m);
+  if(!cell)return;
+  const presup=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].presupuestado||0:0;
+  const real=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].real||0:0;
+  const d=real-presup;
+  const {comentario,estado}=getComment(g,m);
+  cell.className='num '+dsvCellClass(d,d===0?'sin_justificar':estado);
+  cell.innerHTML=`<div class="dsv-inner">${dsvLabel(d)}${comentario?'<span class="dsv-icon">💬</span>':''}</div>`;
+}
+
+async function guardarComments(){
+  await fetch(`/api/plan-comentarios/${SUCURSAL}/${ANIO}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({comments:COMMENTS})}).catch(()=>{});
+}
+
+async function cargarComments(){
+  try{
+    const r=await fetch(`/api/plan-comentarios/${SUCURSAL}/${ANIO}`);
+    const raw=await r.json();
+    // normalize: may be {grupo:{mes:string}} (old) or {grupo:{mes:{comentario,estado}}} (new)
+    COMMENTS={};
+    Object.keys(raw).forEach(g=>{
+      COMMENTS[g]={};
+      Object.keys(raw[g]).forEach(m=>{
+        const v=raw[g][m];
+        COMMENTS[g][parseInt(m)]=typeof v==='string'?{comentario:v,estado:'sin_justificar'}:v;
+      });
+    });
+  }catch(e){COMMENTS={};}
+}
+
+// ── KPIs ──
+// true si el mes ya venció (medido a mes cerrado)
+function mesCerrado(m){ return ANIO < HOY_ANIO || (ANIO === HOY_ANIO && m < HOY_MES); }
+
+function actualizarKPIs(){
+  let sinJ=0, punt=0, perm=0, maxD=0, maxDSigned=0, maxLabel='—';
+  GRUPOS.forEach(g=>{
+    for(let m=1;m<=12;m++){
+      if(!mesCerrado(m)) continue;
+      const presup=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].presupuestado||0:0;
+      const real=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].real||0:0;
+      const d=Math.abs(real-presup);
+      if(d===0)continue;
+      const {estado}=getComment(g,m);
+      if(estado==='justificado_puntual') punt++;
+      else if(estado==='justificado_permanente') perm++;
+      else sinJ++;
+      if(d>maxD){maxD=d;maxDSigned=real-presup;const partes=g.split(' - ');maxLabel=`${partes[partes.length-1]} · ${MESES[m-1]}`;}
+    }
+  });
+  document.getElementById('kpi-sin').textContent=sinJ;
+  document.getElementById('kpi-punt').textContent=punt;
+  document.getElementById('kpi-perm').textContent=perm;
+  document.getElementById('kpi-max').textContent=maxD===0?'0':(maxDSigned>0?'+':'')+String(maxD);
+  document.getElementById('kpi-max-sub').textContent=maxD>0?maxLabel:'Sin desvíos';
+}
+
+function renderPlan(){
+  const tb=document.getElementById('tbody-plan');
+  let html='';
+  GRUPOS.forEach(g=>{
+    const gd=PLAN_DATA[g]||{};
+    html+=`<tr class="grupo-hdr"><td colspan="13">${g}</td></tr>`;
+    // Presupuestado
+    html+=`<tr class="fila-pd fila-presup"><td>  Presupuestado</td>`;
+    for(let m=1;m<=12;m++){
+      const v=(gd[m]||{}).presupuestado||0;
+      html+=`<td class="num cell-presup"><input class="n presup" type="number" min="0" data-g="${encodeURIComponent(g)}" data-m="${m}" value="${v}" oninput="recalcPlan()"></td>`;
+    }
+    html+='</tr>';
+    // Real
+    html+=`<tr class="fila-pd fila-real"><td>  Real (nómina)</td>`;
+    for(let m=1;m<=12;m++){
+      const v=(gd[m]||{}).real||0;
+      html+=`<td class="num cell-real" id="real-${encodeURIComponent(g)}-${m}">${v}</td>`;
+    }
+    html+='</tr>';
+    // Desvío
+    html+=`<tr class="fila-pd fila-desv"><td>  Desvío</td>`;
+    for(let m=1;m<=12;m++){
+      const presup=(gd[m]||{}).presupuestado||0;
+      const real=(gd[m]||{}).real||0;
+      const d=real-presup;
+      if(!mesCerrado(m)){
+        html+=`<td class="num dsv-futuro" id="dsv-${encodeURIComponent(g)}-${m}">—</td>`;
+      } else {
+        const {comentario,estado}=getComment(g,m);
+        const cls='num '+dsvCellClass(d,d===0?'sin_justificar':estado);
+        html+=`<td class="${cls}" id="dsv-${encodeURIComponent(g)}-${m}" onclick="abrirComment('${g.replace(/'/g,"\\'")}',${m},this)">`;
+        html+=`<div class="dsv-inner">${dsvLabel(d)}${comentario?'<span class="dsv-icon">💬</span>':''}</div></td>`;
+      }
+    }
+    html+='</tr>';
+  });
+  tb.innerHTML=html;
+  tb.querySelectorAll('input.n').forEach(i=>i.addEventListener('input',()=>{
+    const g=decodeURIComponent(i.dataset.g),m=parseInt(i.dataset.m);
+    if(!PLAN_DATA[g])PLAN_DATA[g]={};
+    if(!PLAN_DATA[g][m])PLAN_DATA[g][m]={presupuestado:0,real:0};
+    PLAN_DATA[g][m].presupuestado=parseInt(i.value)||0;
+    recalcPlan();
+    document.getElementById('st-plan').textContent='Cambios sin guardar.';document.getElementById('st-plan').className='save-st';
+  }));
+  actualizarKPIs();
+}
+
+function recalcPlan(){
+  GRUPOS.forEach(g=>{
+    const ge=encodeURIComponent(g);
+    for(let m=1;m<=12;m++){
+      const presup=parseInt(document.querySelector(`input.n[data-g="${ge}"][data-m="${m}"]`)?.value)||0;
+      const real=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].real||0:0;
+      const d=real-presup;
+      if(PLAN_DATA[g]&&PLAN_DATA[g][m]) PLAN_DATA[g][m].presupuestado=presup;
+      const cell=document.getElementById('dsv-'+ge+'-'+m);
+      if(cell){
+        if(!mesCerrado(m)){
+          cell.className='num dsv-futuro';
+          cell.innerHTML='—';
+          cell.onclick=null;
+        } else {
+          const {comentario,estado}=getComment(g,m);
+          cell.className='num '+dsvCellClass(d,d===0?'sin_justificar':estado);
+          cell.innerHTML=`<div class="dsv-inner">${dsvLabel(d)}${comentario?'<span class="dsv-icon">💬</span>':''}</div>`;
+          cell.onclick=()=>abrirComment(g,m,cell);
+        }
+      }
+    }
+  });
+  actualizarKPIs();
+}
+
+async function guardarPlan(){
+  const btn=event.target;btn.disabled=true;btn.textContent='Guardando…';
+  const data={};
+  document.querySelectorAll('input.n.presup').forEach(i=>{
+    const g=decodeURIComponent(i.dataset.g),m=parseInt(i.dataset.m);
+    if(!data[g])data[g]={};
+    if(!data[g][m])data[g][m]={presupuestado:0,real:0};
+    data[g][m].presupuestado=parseInt(i.value)||0;
+    data[g][m].real=(PLAN_DATA[g]&&PLAN_DATA[g][m])?PLAN_DATA[g][m].real||0:0;
+  });
+  try{
+    await fetch(`/api/plan-demanda/${SUCURSAL}/${ANIO}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data})});
+    document.getElementById('st-plan').textContent='✓ Guardado.';document.getElementById('st-plan').className='save-st ok';
+    toast('Plan de demanda guardado');
+  }catch(e){document.getElementById('st-plan').textContent='Error al guardar.';document.getElementById('st-plan').className='save-st err';}
+  finally{btn.disabled=false;btn.textContent='Guardar presupuestado';}
+}
+
+// ── DÍAS HÁBILES ──
+const DH_DEFAULT={1:27,2:24,3:26,4:25,5:26,6:27,7:27,8:27,9:26,10:27,11:25,12:27};
+function renderDiasHabiles(){
+  const grid=document.getElementById('dh-grid');
+  let html='';
+  for(let m=1;m<=12;m++){
+    const v=DH_DATA[m]!=null?DH_DATA[m]:DH_DEFAULT[m];
+    html+=`<span class="dh-label">${MESES[m-1]}</span><input class="dh-inp" type="number" min="0" max="31" data-m="${m}" value="${v}" oninput="actualizarDH()">`;
+  }
+  grid.innerHTML=html;
+}
+
+function actualizarDH(){
+  document.querySelectorAll('input.dh-inp').forEach(i=>{ DH_DATA[parseInt(i.dataset.m)]=parseInt(i.value)||0; });
+  renderVac();
+}
+
+async function guardarDiasHabiles(){
+  const dias={};
+  document.querySelectorAll('input.dh-inp').forEach(i=>{ dias[parseInt(i.dataset.m)]=parseInt(i.value)||0; });
+  DH_DATA=dias;
+  try{
+    await fetch(`/api/dias-habiles/${SUCURSAL}/${ANIO}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({dias})});
+    document.getElementById('st-dh').textContent='✓ Guardado.';document.getElementById('st-dh').className='save-st ok';
+    toast('Días hábiles guardados');
+  }catch(e){document.getElementById('st-dh').textContent='Error.';document.getElementById('st-dh').className='save-st err';}
+}
+
+// ── VACACIONES ──
+function getDotacion(rol,mes,tipo){
+  const grupos=ROL_TO_GRUPOS[rol]||[];
+  let sum=0;
+  grupos.forEach(g=>{ sum+=((PLAN_DATA[g]&&PLAN_DATA[g][mes])?PLAN_DATA[g][mes][tipo]||0:0); });
+  return sum;
+}
+
+function getVacFromDOM(){
+  const data={};
+  VAC_ROLES.forEach(rol=>{
+    data[rol]={};
+    for(let m=1;m<=12;m++){
+      data[rol][m]={
+        quien_planea: document.getElementById(`vqp-${rol}-${m}`)?.value||'',
+        dias_planeados: parseInt(document.getElementById(`vdp-${rol}-${m}`)?.value)||0,
+        quien_real: document.getElementById(`vqr-${rol}-${m}`)?.value||'',
+        dias_real: parseInt(document.getElementById(`vdr-${rol}-${m}`)?.value)||0
+      };
+    }
+  });
+  return data;
+}
+
+function renderVac(){
+  // Sync from DOM before re-render
+  if(document.getElementById('vqp-Chofer-1')) VAC_DATA=getVacFromDOM();
+  const tb=document.getElementById('tbody-vac');
+  let html='';
+  VAC_ROLES.forEach(rol=>{
+    html+=`<tr class="vac-rol-hdr"><td colspan="10">${rol}</td></tr>`;
+    for(let m=1;m<=12;m++){
+      const dp=getDotacion(rol,m,'presupuestado');
+      const dr=getDotacion(rol,m,'real');
+      const dh=DH_DATA[m]!=null?DH_DATA[m]:DH_DEFAULT[m];
+      const diasPresup=dp*dh;
+      const vd=VAC_DATA[rol]&&VAC_DATA[rol][m]?VAC_DATA[rol][m]:{};
+      const qp=vd.quien_planea||'', dp2=vd.dias_planeados||0;
+      const qr=vd.quien_real||'', dr2=vd.dias_real||0;
+      const desv=dp2-dr2;
+      const dsvCls=desv===0?'vdesv-ok':desv>0?'vdesv-pos':'vdesv-neg';
+      html+=`<tr class="vac-fila">
+        <td class="vmes">${MESES[m-1]}</td>
+        <td class="vcalc">${dp}</td>
+        <td class="vcalc">${dr}</td>
+        <td class="vcalc vdph">${dh}</td>
+        <td class="vcalc vdph">${diasPresup}</td>
+        <td><input class="vt" id="vqp-${rol}-${m}" type="text" value="${esc(qp)}" placeholder="Quién planea…" oninput="markDirtyVac()"></td>
+        <td><input class="vd" id="vdp-${rol}-${m}" type="number" min="0" value="${dp2}" oninput="recalcVacRow('${rol}',${m})"></td>
+        <td><input class="vt" id="vqr-${rol}-${m}" type="text" value="${esc(qr)}" placeholder="Quién tomó…" oninput="markDirtyVac()"></td>
+        <td><input class="vd" id="vdr-${rol}-${m}" type="number" min="0" value="${dr2}" oninput="recalcVacRow('${rol}',${m})"></td>
+        <td class="${dsvCls}" id="vdsv-${rol}-${m}">${desv===0?'0':desv>0?'+'+desv:desv}</td>
+      </tr>`;
+    }
+  });
+  tb.innerHTML=html;
+}
+
+function recalcVacRow(rol,m){
+  markDirtyVac();
+  const dp=parseInt(document.getElementById(`vdp-${rol}-${m}`)?.value)||0;
+  const dr=parseInt(document.getElementById(`vdr-${rol}-${m}`)?.value)||0;
+  const desv=dp-dr;
+  const cell=document.getElementById(`vdsv-${rol}-${m}`);
+  if(cell){cell.className=desv===0?'vdesv-ok':desv>0?'vdesv-pos':'vdesv-neg';cell.textContent=desv===0?'0':desv>0?'+'+desv:desv;}
+}
+
+function markDirtyVac(){document.getElementById('st-vac').textContent='Cambios sin guardar.';document.getElementById('st-vac').className='save-st';}
+
+async function guardarVac(){
+  const btn=event.target;btn.disabled=true;btn.textContent='Guardando…';
+  VAC_DATA=getVacFromDOM();
+  try{
+    await fetch(`/api/vacaciones/${SUCURSAL}/${ANIO}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:VAC_DATA})});
+    document.getElementById('st-vac').textContent='✓ Guardado.';document.getElementById('st-vac').className='save-st ok';
+    toast('Vacaciones guardadas');
+  }catch(e){document.getElementById('st-vac').textContent='Error al guardar.';document.getElementById('st-vac').className='save-st err';}
+  finally{btn.disabled=false;btn.textContent='Guardar vacaciones';}
+}
+
+// ── CARGA ──
+async function cargarNomina(){
+  const r=await fetch(`/api/nomina/${SUCURSAL}/${ANIO}`);
+  const rows=await r.json();
+  // Ensure all rol/tipo groups exist
+  const normalized=[];
+  ROLES.forEach(({rol,tipo})=>{
+    const personas=rows.filter(p=>p.rol===rol&&p.tipo===tipo);
+    if(personas.length===0){
+      const meses={};for(let m=1;m<=12;m++)meses[m]='';
+      normalized.push({rol,tipo,nombre:'',meses});
+    } else {
+      personas.forEach(p=>normalized.push({rol,tipo,nombre:p.nombre,meses:p.meses||{}}));
+    }
+  });
+  NOM_DATA=normalized;
+  renderNomina();
+}
+
+async function cargarPlan(){
+  const r=await fetch(`/api/plan-demanda/${SUCURSAL}/${ANIO}`);
+  PLAN_DATA=await r.json();
+  const d2={};
+  Object.keys(PLAN_DATA).forEach(g=>{d2[g]={};Object.keys(PLAN_DATA[g]).forEach(m=>{d2[g][parseInt(m)]=PLAN_DATA[g][m];});});
+  PLAN_DATA=d2;
+  renderPlan();
+}
+
+async function cargarDiasHabiles(){
+  const r=await fetch(`/api/dias-habiles/${SUCURSAL}/${ANIO}`);
+  const raw=await r.json();
+  DH_DATA={};
+  Object.keys(raw).forEach(m=>{DH_DATA[parseInt(m)]=raw[m]||DH_DEFAULT[parseInt(m)];});
+  renderDiasHabiles();
+}
+
+async function cargarVac(){
+  const r=await fetch(`/api/vacaciones/${SUCURSAL}/${ANIO}`);
+  const raw=await r.json();
+  VAC_DATA={};
+  VAC_ROLES.forEach(rol=>{
+    VAC_DATA[rol]={};
+    for(let m=1;m<=12;m++){
+      VAC_DATA[rol][m]=(raw[rol]&&raw[rol][m])||{quien_planea:'',dias_planeados:0,quien_real:'',dias_real:0};
+    }
+  });
+}
+
+async function cargarTodo(){
+  document.getElementById('lbl-anio').textContent=ANIO;
+  await cargarNomina();
+  await Promise.all([cargarPlan(),cargarDiasHabiles(),cargarComments()]);
+  renderPlan();
+  await cargarVac();
+  renderVac();
+}
+
+cargarTodo();
+</script>
+</body>
+</html>

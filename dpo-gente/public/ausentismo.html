@@ -1,0 +1,936 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ausentismo</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.btn-upload-top{background:#2563A8;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-upload-top:hover{background:#1B4F8A}
+.page-header{background:#1B3F72;padding:16px 24px 18px}
+.page-header h1{font-size:15px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.wrap{max-width:1200px;margin:0 auto;padding:20px}
+.month-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.month-nav{background:#fff;border:1px solid #D8DEE8;border-radius:7px;padding:6px 11px;cursor:pointer;font-size:13px;color:#2563A8;font-weight:700}
+.month-nav:hover{background:#EBF2FA}
+.month-label{font-size:15px;font-weight:700;color:#18243A;min-width:140px;text-align:center}
+.month-bar select{border:1px solid #D8DEE8;border-radius:7px;padding:6px 10px;font-size:13px;font-family:inherit;color:#18243A;background:#fff;cursor:pointer}
+.tabs{display:flex;gap:4px;border-bottom:2px solid #D8DEE8;margin-bottom:20px}
+.tab{padding:8px 18px;border:none;background:none;font-size:13px;font-weight:600;color:#8A97AA;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab.active{color:#2563A8;border-bottom-color:#2563A8}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:16px 18px}
+.kpi-label{font-size:11px;font-weight:600;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.kpi-val{font-size:28px;font-weight:800;color:#18243A}
+.kpi-val.red{color:#DC2626}.kpi-val.orange{color:#D97706}.kpi-val.blue{color:#2563A8}
+.kpi-sub{font-size:11px;color:#8A97AA;margin-top:3px}
+.kpi-diff{font-size:12px;font-weight:600;margin-top:4px}
+.kpi-diff.up{color:#DC2626}.kpi-diff.down{color:#16A34A}
+.cal-wrap{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:16px;margin-bottom:20px}
+.cal-title{font-size:12px;font-weight:700;color:#18243A;margin-bottom:10px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:340px}
+.cal-dow{font-size:10px;font-weight:700;color:#8A97AA;text-align:center;padding:2px 0}
+.cal-day{font-size:11px;text-align:center;padding:5px 3px;border-radius:5px;cursor:pointer;border:1px solid transparent;font-weight:500}
+.cal-day:hover{background:#EBF2FA}
+.cal-day.sunday,.cal-day.empty{cursor:default;color:#D8DEE8}
+.cal-day.sunday:hover,.cal-day.empty:hover{background:transparent}
+.cal-day.no-lab{background:#FEF2F2;color:#DC2626;border-color:#FECACA}
+.cal-legend{font-size:11px;color:#8A97AA;margin-top:8px;display:flex;align-items:center;gap:6px}
+.cal-legend-dot{width:10px;height:10px;border-radius:3px;background:#FEF2F2;border:1px solid #FECACA;display:inline-block}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #EEF0F6}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:12.5px}
+th{background:#F8F9FB;font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;text-align:left;border-bottom:1px solid #EEF0F6;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #F4F5F8;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFBFC}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-red{background:#FEF2F2;color:#DC2626}
+.badge-orange{background:#FFFBEB;color:#D97706}
+.badge-green{background:#F0FDF4;color:#16A34A}
+.badge-blue{background:#EFF6FF;color:#2563A8}
+.badge-gray{background:#F3F4F6;color:#6B7280}
+select.cat-sel{border:1px solid #D8DEE8;border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;color:#18243A;background:#fff;cursor:pointer;max-width:230px}
+input.enf-inp{border:1px solid #D8DEE8;border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;color:#18243A;width:150px}
+input.enf-inp:focus,select.cat-sel:focus{outline:none;border-color:#2563A8}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-card{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:16px}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:12px;font-weight:700;color:#18243A;margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em}
+.chart-empty{font-size:13px;color:#8A97AA;text-align:center;padding:40px 0}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-bg.hidden{display:none}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between}
+.modal-header h3{font-size:14px;font-weight:700;color:#18243A}
+.modal-close{background:none;border:none;font-size:18px;color:#8A97AA;cursor:pointer;line-height:1;padding:0}
+.modal-body{padding:20px 22px}
+.modal-footer{padding:14px 22px;border-top:1px solid #EEF0F6;display:flex;gap:10px;justify-content:flex-end}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:#18243A;margin-bottom:6px;display:block}
+.file-input-wrap{border:2px dashed #D8DEE8;border-radius:8px;padding:14px;cursor:pointer;text-align:center;transition:border-color .2s}
+.file-input-wrap:hover{border-color:#2563A8}
+.file-input-wrap input{display:none}
+.file-status{font-size:12px;color:#8A97AA;margin-top:4px}
+.file-status.ok{color:#16A34A;font-weight:600}
+.btn{padding:8px 18px;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer}
+.btn-primary{background:#2563A8;color:#fff}.btn-primary:hover{background:#1B4F8A}
+.btn-primary:disabled{background:#A0B4CC;cursor:not-allowed}
+.btn-ghost{background:#F2F4F8;color:#18243A}.btn-ghost:hover{background:#E8EBF0}
+.alert{padding:10px 14px;border-radius:7px;font-size:12.5px;margin-bottom:14px}
+.alert-info{background:#EFF6FF;color:#2563A8;border:1px solid #BFDBFE}
+.alert-err{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
+.setup-card{background:#fff;border:1px solid #EEF0F6;border-radius:12px;padding:40px 32px;text-align:center;max-width:480px;margin:60px auto}
+.setup-icon{font-size:40px;margin-bottom:12px}
+.setup-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.setup-desc{font-size:13px;color:#8A97AA;margin-bottom:24px;line-height:1.5}
+.filter-bar{display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.filter-bar select,.filter-bar input{border:1px solid #D8DEE8;border-radius:7px;padding:6px 10px;font-size:12.5px;font-family:inherit;color:#18243A;background:#fff;cursor:pointer}
+.filter-bar input{width:200px;cursor:text}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:#2563A8}
+.no-data{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:48px 24px;text-align:center;color:#8A97AA;font-size:13px}
+td.nombre{font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.pct{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.suc-btn{border:1px solid #D8DEE8;background:#fff;border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;color:#8A97AA;cursor:pointer;transition:.15s}
+.suc-btn:hover{background:#EBF2FA;border-color:#2563A8;color:#2563A8}
+.suc-btn.active{background:#2563A8;border-color:#2563A8;color:#fff}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Ausentismo — DPO Gente 2026</span>
+  <button class="btn-upload-top" id="btnSyncFicha" onclick="syncFichaYa()" style="display:none;background:#0B7A4B">⟳ Sincronizar FichaYa</button>
+  <button class="btn-upload-top" id="btnUploadTop" onclick="abrirModalUpload()" style="display:none">↑ Actualizar datos</button>
+  <button class="btn-upload-top" id="btnReEmp" onclick="abrirModalEmpleados()" style="display:none;background:#F2F4F8;color:#18243A;border:1px solid #D8DEE8">👥 Empleados</button>
+  <button class="btn-upload-top" id="btnSuc" onclick="abrirModalSuc()" style="display:none;background:#F2F4F8;color:#18243A;border:1px solid #D8DEE8">🏢 Sucursales</button>
+  <button class="btn-upload-top" id="btnExcl" onclick="abrirModalExcl()" style="display:none;background:#F2F4F8;color:#18243A;border:1px solid #D8DEE8">⚙ Exclusiones</button>
+</div>
+<div class="page-header">
+  <h1>Ausentismo</h1>
+  <p>Ambiente de Trabajo y Compromiso · DPO Gente 2026</p>
+</div>
+
+<div class="wrap">
+  <div id="setupView">
+    <div class="setup-card">
+      <div class="setup-icon">📋</div>
+      <div class="setup-title">Configuración inicial</div>
+      <div class="setup-desc">Para comenzar, cargá el listado de empleados activos exportado desde Ficha. Solo necesitás hacerlo una vez; después actualizás los datos de asistencia cada mes.</div>
+      <button class="btn btn-primary" onclick="abrirModalEmpleados()">Cargar empleados</button>
+    </div>
+  </div>
+
+  <div id="mainView" style="display:none">
+    <div class="month-bar">
+      <button class="month-nav" onclick="navMes(-1)">‹</button>
+      <span class="month-label" id="monthLabel">—</span>
+      <button class="month-nav" onclick="navMes(1)">›</button>
+      <select id="mesSel" onchange="seleccionarMes(this.value)"></select>
+      <div id="sucBtns" style="display:flex;gap:6px;margin-left:8px"></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('resumen',this)">Resumen</button>
+      <button class="tab" onclick="switchTab('ausencias',this)">Ausencias</button>
+      <button class="tab" onclick="switchTab('analisis',this)">Análisis</button>
+      <button class="tab" onclick="switchTab('jornada',this)">Jornada</button>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="tab-panel active" id="panel-resumen">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-label">Índice de Ausentismo</div>
+          <div class="kpi-val red" id="kpiIndice">—</div>
+          <div class="kpi-sub">comp / (empleados × días lab)</div>
+          <div class="kpi-diff" id="kpiDiff"></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Ausencias computables</div>
+          <div class="kpi-val orange" id="kpiComp">—</div>
+          <div class="kpi-sub" id="kpiCompSub"></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Ausencias justificadas</div>
+          <div class="kpi-val blue" id="kpiJust">—</div>
+          <div class="kpi-sub">Excluidas del índice</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Días laborables</div>
+          <div class="kpi-val" id="kpiDias">—</div>
+          <div class="kpi-sub" id="kpiEmp"></div>
+        </div>
+      </div>
+
+      <div class="cal-wrap">
+        <div class="cal-title">📅 Días no laborables del mes <span style="font-size:11px;color:#8A97AA;font-weight:400">— Hacé click en un día para marcarlo o desmarcarlo</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend"><span class="cal-legend-dot"></span> Día marcado como no laborable</div>
+      </div>
+
+      <div id="resumenTabla"></div>
+    </div>
+
+    <!-- AUSENCIAS -->
+    <div class="tab-panel" id="panel-ausencias">
+      <div class="filter-bar">
+        <select id="filtSector" onchange="renderAusencias()"><option value="">Todos los sectores</option></select>
+        <input type="text" id="filtNombre" placeholder="Buscar persona…" oninput="renderAusencias()">
+        <select id="filtFuente" onchange="renderAusencias()">
+          <option value="">Todas las fuentes</option>
+          <option value="sin_registro">Sin registro</option>
+          <option value="justificacion">Con justificación</option>
+          <option value="vacaciones">Vacaciones</option>
+        </select>
+      </div>
+      <div id="ausenciasTabla"></div>
+    </div>
+
+    <!-- ANÁLISIS -->
+    <div class="tab-panel" id="panel-analisis">
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Días perdidos por sector</div>
+          <div id="wrapSector"><canvas id="chartSector" height="220"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Días perdidos por motivo</div>
+          <div id="wrapMotivo"><canvas id="chartMotivo" height="220"></canvas></div>
+        </div>
+        <div class="chart-card full">
+          <div class="chart-title">Días perdidos por enfermedad / afección</div>
+          <div id="wrapEnf"><canvas id="chartEnf" height="120"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JORNADA -->
+    <div class="tab-panel" id="panel-jornada">
+      <div class="kpis" style="grid-template-columns:repeat(3,1fr);max-width:600px;margin-bottom:16px">
+        <div class="kpi"><div class="kpi-label">Jornadas &gt; 12 hs</div><div class="kpi-val red" id="kpiExt">—</div></div>
+        <div class="kpi"><div class="kpi-label">Sin egreso registrado</div><div class="kpi-val orange" id="kpiInc">—</div></div>
+        <div class="kpi"><div class="kpi-label">Registros del mes</div><div class="kpi-val" id="kpiTotJor">—</div></div>
+      </div>
+      <div class="filter-bar">
+        <select id="filtJorSector" onchange="renderJornada()"><option value="">Todos los sectores</option></select>
+        <input type="text" id="filtJorNombre" placeholder="Buscar persona…" oninput="renderJornada()">
+        <select id="filtJorFil" onchange="renderJornada()">
+          <option value="">Todos</option>
+          <option value="extendida">Solo &gt; 12 hs</option>
+          <option value="incompleta">Sin egreso</option>
+        </select>
+      </div>
+      <div id="jornadaTabla"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal empleados -->
+<div class="modal-bg hidden" id="modalEmp">
+  <div class="modal">
+    <div class="modal-header"><h3>Cargar empleados</h3><button class="modal-close" onclick="cerrarModal('modalEmp')">×</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info">Subí el archivo <strong>empleados_YYYYMMDD.xlsx</strong> exportado desde Ficha. Necesitás rehacerlo cuando cambie la nómina.</div>
+      <div class="form-group">
+        <label class="form-label">Archivo de empleados (.xlsx)</label>
+        <div class="file-input-wrap" onclick="document.getElementById('fileEmp').click()">
+          <div>📂 Hacé click para seleccionar</div>
+          <div class="file-status" id="fileEmpSt">Ningún archivo seleccionado</div>
+          <input type="file" id="fileEmp" accept=".xlsx" onchange="onFile(this,'fileEmpSt')">
+        </div>
+      </div>
+      <div id="empErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalEmp')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSubEmp" onclick="subirEmpleados()">Cargar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal upload datos -->
+<div class="modal-bg hidden" id="modalUpload">
+  <div class="modal">
+    <div class="modal-header"><h3>Actualizar datos de Ficha</h3><button class="modal-close" onclick="cerrarModal('modalUpload')">×</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info">Exportá desde Ficha: <strong>Asistencia › Historial de marcas</strong> (CSV), <strong>› Justificaciones</strong> (XLSX) y <strong>› Vacaciones</strong> (XLSX).</div>
+      <div class="form-group">
+        <label class="form-label">Historial de marcas (.csv)</label>
+        <div class="file-input-wrap" onclick="document.getElementById('fileMarcas').click()">
+          <div>📂 Hacé click para seleccionar</div>
+          <div class="file-status" id="fileMarcasSt">Ningún archivo seleccionado</div>
+          <input type="file" id="fileMarcas" accept=".csv" onchange="onFile(this,'fileMarcasSt')">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Justificaciones (.xlsx)</label>
+        <div class="file-input-wrap" onclick="document.getElementById('fileJustif').click()">
+          <div>📂 Hacé click para seleccionar</div>
+          <div class="file-status" id="fileJustifSt">Ningún archivo seleccionado</div>
+          <input type="file" id="fileJustif" accept=".xlsx" onchange="onFile(this,'fileJustifSt')">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vacaciones (.xlsx)</label>
+        <div class="file-input-wrap" onclick="document.getElementById('fileVac').click()">
+          <div>📂 Hacé click para seleccionar</div>
+          <div class="file-status" id="fileVacSt">Ningún archivo seleccionado</div>
+          <input type="file" id="fileVac" accept=".xlsx" onchange="onFile(this,'fileVacSt')">
+        </div>
+      </div>
+      <div id="uploadErr"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModal('modalUpload')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSubDatos" onclick="subirDatos()">Procesar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal sucursales -->
+<div class="modal-bg hidden" id="modalSuc">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header"><h3>Asignar sucursal por empleado</h3><button class="modal-close" onclick="cerrarModal('modalSuc')">×</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:14px">Asigná la sucursal de cada empleado. Los cambios se aplican inmediatamente a todos sus registros del mes.</div>
+      <input type="text" id="filtSucEmp" placeholder="Buscar empleado…" oninput="renderSucEmpLista()" style="width:100%;border:1px solid #D8DEE8;border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;margin-bottom:12px">
+      <div id="sucEmpLista" style="max-height:400px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalSuc')">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- Modal exclusiones -->
+<div class="modal-bg hidden" id="modalExcl">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header"><h3>Exclusiones del módulo</h3><button class="modal-close" onclick="cerrarModal('modalExcl')">×</button></div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:14px">Las personas marcadas no se incluyen en ningún cálculo ni KPI. Las exclusiones persisten aunque re-subas el archivo de empleados.</div>
+      <input type="text" id="filtExcl" placeholder="Buscar…" oninput="renderExclLista()" style="width:100%;border:1px solid #D8DEE8;border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;margin-bottom:12px">
+      <div id="exclLista" style="max-height:380px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalExcl')">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- Modal detalle ausencias -->
+<div class="modal-bg hidden" id="modalDetAus">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h3 id="detAusTitulo">Ausencias</h3>
+      <button class="modal-close" onclick="cerrarModal('modalDetAus')">×</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="detAusContenido"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalDetAus')">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- Modal detalle jornada -->
+<div class="modal-bg hidden" id="modalDetJor">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 id="detJorTitulo">Detalle de jornada</h3>
+      <button class="modal-close" onclick="cerrarModal('modalDetJor')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="detJorContenido"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="cerrarModal('modalDetJor')">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- Modal día no laborable -->
+<div class="modal-bg hidden" id="modalNoLab">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3 id="noLabTitle">Marcar día</h3><button class="modal-close" onclick="cerrarModal('modalNoLab')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Sucursal</label>
+        <select id="noLabSuc" style="width:100%;border:1px solid #D8DEE8;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;background:#fff">
+          <option value="TODAS">Todas las sucursales</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción (opcional)</label>
+        <input type="text" id="noLabDesc" placeholder="Ej: Feriado nacional, Cierre operativo…"
+          style="width:100%;border:1px solid #D8DEE8;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit">
+      </div>
+      <div id="noLabMarcasExist" style="margin-top:10px;font-size:12px;color:#8A97AA"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnQuitarNL" onclick="quitarNoLab()" style="display:none">Quitar marca</button>
+      <button class="btn btn-primary" onclick="guardarNoLab()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const CATS_COMP = ['Lic. Enfermedad (menor a 20 dias)','Rechazo de ART','In Itineres','Lic. Pedida con menos de 48hs','Dias de duelo','Faltas no programadas'];
+const CATS_JUST = ['Vacaciones','Lic. Anses','Lic. Enfermedad (mayor a 20 dias)','Dias gremiales','Dias compensatorios','Tramites','Suspensión','Falta con aviso (mayor a 48hs)','Lic. Por Accidente'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const PALETTE = ['#2563A8','#DC2626','#16A34A','#D97706','#7C3AED','#0891B2','#BE185D','#059669','#EA580C','#4F46E5','#B45309','#0369A1'];
+
+let mesActual = null, mesesDisp = [], resumenData = null, ausData = [], jorData = null, diasNL = [], pendNL = null;
+let cSector = null, cMotivo = null, cEnf = null;
+let sucursalActual = 'total', sucursalesDisp = [];
+
+async function init() {
+  const r = await fetch('/api/ausentismo/empleados/count').then(r=>r.json());
+  if (!r.count) { show('setupView'); hide('mainView'); return; }
+  hide('setupView'); show('mainView');
+  document.getElementById('btnSyncFicha').style.display = '';
+  document.getElementById('btnUploadTop').style.display = '';
+  document.getElementById('btnReEmp').style.display = '';
+  document.getElementById('btnSuc').style.display = '';
+  document.getElementById('btnExcl').style.display = '';
+  await Promise.all([cargarMeses(), cargarSucursales()]);
+}
+
+async function cargarSucursales() {
+  sucursalesDisp = await fetch('/api/ausentismo/sucursales').then(r=>r.json()).catch(()=>[]);
+  renderSucBtns();
+}
+
+function renderSucBtns() {
+  const btns = [{ val: 'total', label: 'Total distribuidor' }, ...sucursalesDisp.map(s => ({ val: s, label: s }))];
+  el('sucBtns').innerHTML = btns.map(b =>
+    `<button class="suc-btn${sucursalActual===b.val?' active':''}" onclick="setSucursal('${b.val}')">${b.label}</button>`
+  ).join('');
+}
+
+function setSucursal(val) {
+  sucursalActual = val;
+  renderSucBtns();
+  cargarMesActual();
+}
+
+async function cargarMeses() {
+  mesesDisp = await fetch('/api/ausentismo/meses').then(r=>r.json());
+  const sel = document.getElementById('mesSel');
+  sel.innerHTML = mesesDisp.length
+    ? mesesDisp.map(m => { const [y,mo]=m.split('-'); return `<option value="${m}">${MESES[+mo-1]} ${y}</option>`; }).join('')
+    : '<option value="">Sin datos</option>';
+  if (mesesDisp.length) { mesActual = mesesDisp[0]; sel.value = mesActual; await cargarMesActual(); }
+  else { document.getElementById('monthLabel').textContent = 'Sin datos'; abrirModalUpload(); }
+}
+
+async function cargarMesActual() {
+  if (!mesActual) return;
+  const [y,m] = mesActual.split('-');
+  document.getElementById('monthLabel').textContent = `${MESES[+m-1]} ${y}`;
+  await Promise.all([cargarResumen(), cargarAusencias(), cargarJornada()]);
+  renderCalendario();
+  poblarSectores();
+  const activeTab = document.querySelector('.tab-panel.active');
+  if (activeTab) renderTabActual(activeTab.id.replace('panel-',''));
+}
+
+function seleccionarMes(v) { if (v) { mesActual = v; cargarMesActual(); } }
+function navMes(dir) {
+  if (!mesActual || !mesesDisp.length) return;
+  const idx = mesesDisp.indexOf(mesActual), ni = idx - dir;
+  if (ni >= 0 && ni < mesesDisp.length) { mesActual = mesesDisp[ni]; document.getElementById('mesSel').value = mesActual; cargarMesActual(); }
+}
+
+function sucParam() { return sucursalActual !== 'total' ? `&sucursal=${encodeURIComponent(sucursalActual)}` : ''; }
+
+async function cargarResumen() {
+  const [y,m] = mesActual.split('-');
+  const [rd, nl] = await Promise.all([
+    fetch(`/api/ausentismo/resumen?anio=${y}&mes=${m}${sucParam()}`).then(r=>r.json()),
+    fetch(`/api/ausentismo/dias-no-lab/${y}/${m}`).then(r=>r.json())
+  ]);
+  resumenData = rd; diasNL = nl;
+  const pd = new Date(Date.UTC(+y,+m-2,1));
+  let prevIdx = null;
+  try { const pr = await fetch(`/api/ausentismo/resumen?anio=${pd.getUTCFullYear()}&mes=${pd.getUTCMonth()+1}${sucParam()}`).then(r=>r.json()); prevIdx = pr.indice; } catch(e) {}
+  renderResumen(prevIdx);
+}
+
+async function cargarAusencias() {
+  const [y,m] = mesActual.split('-');
+  ausData = await fetch(`/api/ausentismo/ausencias?anio=${y}&mes=${m}${sucParam()}`).then(r=>r.json());
+}
+
+async function cargarJornada() {
+  const [y,m] = mesActual.split('-');
+  jorData = await fetch(`/api/ausentismo/jornada?anio=${y}&mes=${m}${sucParam()}`).then(r=>r.json());
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  renderTabActual(name);
+}
+
+function renderTabActual(name) {
+  if (name==='resumen') renderResumen();
+  else if (name==='ausencias') renderAusencias();
+  else if (name==='analisis') cargarAnalisis();
+  else if (name==='jornada') renderJornada();
+}
+
+// ── DETALLE AUSENCIAS ──
+function verDetalle(dni, nombre, tipo) {
+  const dias = ausData.filter(a => a.dni === dni && (
+    tipo === 'comp' ? CATS_COMP.includes(a.categoria) : CATS_JUST.includes(a.categoria)
+  ));
+  el('detAusTitulo').textContent = `${nombre} — ${tipo === 'comp' ? 'Ausencias computables' : 'Ausencias justificadas'}`;
+  if (!dias.length) {
+    el('detAusContenido').innerHTML = '<div style="padding:24px;text-align:center;color:#8A97AA;font-size:13px">Sin días en esta categoría</div>';
+  } else {
+    const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    el('detAusContenido').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr>
+        <th style="background:#F8F9FB;padding:9px 16px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Fecha</th>
+        <th style="background:#F8F9FB;padding:9px 16px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Categoría</th>
+        <th style="background:#F8F9FB;padding:9px 16px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Motivo / Enf.</th>
+      </tr></thead>
+      <tbody>${dias.map(a => {
+        const [y,m,d] = a.fecha.split('-');
+        const dow = new Date(a.fecha+'T00:00:00Z').getUTCDay();
+        const dias_es = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+        const detalle = a.enfermedad_afeccion || a.motivo_original || '—';
+        return `<tr style="border-bottom:1px solid #F4F5F8">
+          <td style="padding:9px 16px;font-weight:600;white-space:nowrap">${dias_es[dow]} ${+d} ${MESES_CORTO[+m-1]}</td>
+          <td style="padding:9px 16px"><span class="badge ${tipo==='comp'?'badge-red':'badge-blue'}">${a.categoria}</span></td>
+          <td style="padding:9px 16px;color:#8A97AA;font-size:11.5px">${detalle}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+  el('modalDetAus').classList.remove('hidden');
+}
+
+// ── RESUMEN ──
+function renderResumen(prevIdx) {
+  if (!resumenData) return;
+  const d = resumenData;
+  el('kpiIndice').textContent = d.indice + '%';
+  el('kpiComp').textContent = d.computable;
+  el('kpiCompSub').textContent = `de ${d.nEmp * d.diasLab} días posibles`;
+  el('kpiJust').textContent = d.justificada;
+  el('kpiDias').textContent = d.diasLab;
+  el('kpiEmp').textContent = `${d.nEmp} empleados activos`;
+  if (prevIdx !== null && prevIdx !== undefined) {
+    const diff = +(d.indice - prevIdx).toFixed(2);
+    const e = el('kpiDiff');
+    e.textContent = diff > 0 ? `▲ +${diff}% vs mes anterior` : diff < 0 ? `▼ ${diff}% vs mes anterior` : '— igual al mes anterior';
+    e.className = 'kpi-diff ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : '');
+  }
+  el('resumenTabla').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Empleado</th><th>Sector</th>
+        <th style="text-align:right">Días lab.</th>
+        <th style="text-align:right">Presentes</th>
+        <th style="text-align:right">Aus. comp.</th>
+        <th style="text-align:right">Aus. just.</th>
+        <th style="text-align:right">% ausentismo</th>
+      </tr></thead>
+      <tbody>${d.tabla.map(e=>`<tr>
+        <td class="nombre">${e.nombre}</td>
+        <td>${e.sector||'—'}</td>
+        <td class="num">${e.dias_lab}</td>
+        <td class="num">${e.presentes}</td>
+        <td class="num">${e.computable>0?`<span class="badge badge-red" style="cursor:pointer" onclick="verDetalle('${e.dni}','${e.nombre.replace(/'/g,"\\'")}','comp')">${e.computable}</span>`:'—'}</td>
+        <td class="num">${e.justificada>0?`<span class="badge badge-blue" style="cursor:pointer" onclick="verDetalle('${e.dni}','${e.nombre.replace(/'/g,"\\'")}','just')">${e.justificada}</span>`:'—'}</td>
+        <td class="pct" style="color:${e.pct>5?'#DC2626':e.pct>0?'#D97706':'#16A34A'}">${e.pct}%</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+// ── CALENDARIO ──
+function renderCalendario() {
+  if (!mesActual) return;
+  const [y,m] = mesActual.split('-');
+  // A day is non-working if there's a TODAS entry OR an entry for the current sucursal
+  const nlSet = new Set(diasNL.filter(d =>
+    d.sucursal_nombre === 'TODAS' ||
+    (sucursalActual !== 'total' && d.sucursal_nombre.toUpperCase() === sucursalActual.toUpperCase())
+  ).map(d=>d.fecha));
+  const firstDow = new Date(Date.UTC(+y,+m-1,1)).getUTCDay();
+  const lastDay = new Date(Date.UTC(+y,+m,0)).getUTCDate();
+  let html = DIAS_ES.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for (let i=0;i<firstDow;i++) html+=`<div class="cal-day empty"></div>`;
+  for (let d=1;d<=lastDay;d++) {
+    const iso = `${y}-${m}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(iso+'T00:00:00Z').getUTCDay();
+    const isSun = dow===0, isNL = nlSet.has(iso);
+    const marcas = diasNL.filter(x=>x.fecha===iso);
+    const sucLabels = marcas.map(x=>x.sucursal_nombre).join(', ');
+    const desc = isNL
+      ? ((marcas[0]?.descripcion||'No laborable') + (sucLabels ? ` (${sucLabels})` : ''))
+      : 'Marcar como no laborable';
+    html += `<div class="cal-day${isSun?' sunday':isNL?' no-lab':''}" title="${desc}"${!isSun?` onclick="clickDia('${iso}','${isNL}')"`:''}>${d}${isNL&&marcas.length>1?`<span style="font-size:8px;display:block;color:#666;line-height:1">${marcas.length} suc</span>`:''}</div>`;
+  }
+  el('calGrid').innerHTML = html;
+}
+
+function clickDia(fecha, esNL) {
+  pendNL = fecha;
+  const [,m,d] = fecha.split('-');
+  el('noLabTitle').textContent = `Día ${+d} de ${MESES[+m-1]}`;
+  // Populate sucursal selector
+  const sucSel = el('noLabSuc');
+  sucSel.innerHTML = '<option value="TODAS">Todas las sucursales</option>' +
+    sucursalesDisp.map(s=>`<option value="${s}">${s}</option>`).join('');
+  // Show existing marks for this date
+  const marcas = diasNL.filter(x=>x.fecha===fecha);
+  if (marcas.length) {
+    el('noLabMarcasExist').innerHTML = '<b style="color:#4A5568">Ya marcado para:</b> ' +
+      marcas.map(x=>`<span style="background:#E8F4FF;color:#1A6BC4;border-radius:4px;padding:2px 6px;margin:2px;display:inline-block;font-size:11px">${x.sucursal_nombre}</span>`).join('');
+    el('noLabDesc').value = marcas[0].descripcion || '';
+    el('btnQuitarNL').style.display = '';
+    if (sucursalActual !== 'total') sucSel.value = sucursalActual;
+  } else {
+    el('noLabMarcasExist').innerHTML = '';
+    el('noLabDesc').value = '';
+    el('btnQuitarNL').style.display = 'none';
+    if (sucursalActual !== 'total') sucSel.value = sucursalActual;
+  }
+  el('modalNoLab').classList.remove('hidden');
+}
+
+async function guardarNoLab() {
+  const suc = el('noLabSuc').value || 'TODAS';
+  await fetch('/api/ausentismo/dias-no-lab',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fecha:pendNL,descripcion:el('noLabDesc').value,sucursal_nombre:suc})});
+  cerrarModal('modalNoLab');
+  await cargarResumen(); renderCalendario();
+}
+
+async function quitarNoLab() {
+  const suc = el('noLabSuc').value || 'TODAS';
+  await fetch('/api/ausentismo/dias-no-lab',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fecha:pendNL,accion:'eliminar',sucursal_nombre:suc})});
+  cerrarModal('modalNoLab');
+  await cargarResumen(); renderCalendario();
+}
+
+// ── AUSENCIAS ──
+function poblarSectores() {
+  const secs = [...new Set([...ausData.map(a=>a.sector_nombre),...(jorData?.jornadas||[]).map(j=>j.sector_nombre)].filter(Boolean))].sort();
+  const opts = '<option value="">Todos los sectores</option>' + secs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  el('filtSector').innerHTML = opts; el('filtJorSector').innerHTML = opts;
+}
+
+function renderAusencias() {
+  let data = [...ausData];
+  const sec = el('filtSector').value, nom = el('filtNombre').value.toLowerCase(), fue = el('filtFuente').value;
+  if (sec) data = data.filter(a=>a.sector_nombre===sec);
+  if (nom) data = data.filter(a=>a.empleado_nombre.toLowerCase().includes(nom));
+  if (fue) data = data.filter(a=>a.fuente===fue);
+  if (!data.length) { el('ausenciasTabla').innerHTML='<div class="no-data">Sin ausencias para los filtros seleccionados.</div>'; return; }
+  const compOpts = CATS_COMP.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const justOpts = CATS_JUST.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const fBadge = {sin_registro:'badge-red',justificacion:'badge-orange',vacaciones:'badge-blue'};
+  const fLabel = {sin_registro:'Sin registro',justificacion:'Justif. aprobada',vacaciones:'Vacaciones'};
+  el('ausenciasTabla').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Empleado</th><th>Sector</th><th>Fuente</th><th>Categoría</th><th>Enf./Afección</th><th>Motivo original</th></tr></thead>
+      <tbody>${data.map(a=>`<tr>
+        <td style="white-space:nowrap">${a.fecha}</td>
+        <td class="nombre">${a.empleado_nombre}</td>
+        <td>${a.sector_nombre||'—'}</td>
+        <td><span class="badge ${fBadge[a.fuente]||'badge-gray'}">${fLabel[a.fuente]||a.fuente}</span></td>
+        <td><select class="cat-sel" data-id="${a.id}" onchange="updCat(this)">
+          <optgroup label="── Computables ──">${CATS_COMP.map(c=>`<option value="${c}"${a.categoria===c?' selected':''}>${c}</option>`).join('')}</optgroup>
+          <optgroup label="── Justificadas ──">${CATS_JUST.map(c=>`<option value="${c}"${a.categoria===c?' selected':''}>${c}</option>`).join('')}</optgroup>
+        </select></td>
+        <td><input type="text" class="enf-inp" data-id="${a.id}" value="${a.enfermedad_afeccion||''}" placeholder="Ej: Gripe…" onblur="updEnf(this)"></td>
+        <td style="color:#8A97AA;font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.motivo_original||''}">${a.motivo_original||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+async function updCat(sel) {
+  const id = sel.dataset.id;
+  const row = ausData.find(a=>String(a.id)===id); if(row) row.categoria=sel.value;
+  const enf = document.querySelector(`.enf-inp[data-id="${id}"]`);
+  await fetch(`/api/ausentismo/ausencias/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({categoria:sel.value,enfermedad_afeccion:enf?.value||null})});
+}
+
+async function updEnf(inp) {
+  const id = inp.dataset.id;
+  const row = ausData.find(a=>String(a.id)===id); if(row) row.enfermedad_afeccion=inp.value;
+  const cat = document.querySelector(`.cat-sel[data-id="${id}"]`);
+  await fetch(`/api/ausentismo/ausencias/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({categoria:cat?.value||row?.categoria,enfermedad_afeccion:inp.value||null})});
+}
+
+// ── ANÁLISIS ──
+async function cargarAnalisis() {
+  const [y,m] = mesActual.split('-');
+  const d = await fetch(`/api/ausentismo/analisis?anio=${y}&mes=${m}${sucParam()}`).then(r=>r.json());
+  renderChart('wrapSector','chartSector',cSector,v=>cSector=v,'bar',Object.keys(d.porSector),Object.values(d.porSector),'Días perdidos por sector');
+  renderChart('wrapMotivo','chartMotivo',cMotivo,v=>cMotivo=v,'bar',Object.keys(d.porCategoria),Object.values(d.porCategoria),'Días perdidos por motivo',true);
+  if (!Object.keys(d.porEnfermedad).length) {
+    el('wrapEnf').innerHTML='<div class="chart-empty">Sin datos — completá el campo "Enf./Afección" en la pestaña Ausencias para ver este gráfico.</div>';
+    if(cEnf){cEnf.destroy();cEnf=null;}
+  } else {
+    const eLabels = Object.keys(d.porEnfermedad).sort((a,b)=>d.porEnfermedad[b]-d.porEnfermedad[a]);
+    renderChart('wrapEnf','chartEnf',cEnf,v=>cEnf=v,'bar',eLabels,eLabels.map(l=>d.porEnfermedad[l]),'',true);
+  }
+}
+
+function renderChart(wrapId, canvasId, chartRef, setter, type, labels, data, title, horizontal=false) {
+  if (chartRef) chartRef.destroy();
+  if (!labels.length) { el(wrapId).innerHTML=`<div class="chart-empty">Sin datos</div>`; setter(null); return; }
+  el(wrapId).innerHTML=`<canvas id="${canvasId}" height="${horizontal?Math.max(labels.length*28,120):220}"></canvas>`;
+  setter(new Chart(el(canvasId),{
+    type,
+    data:{labels,datasets:[{data,backgroundColor:PALETTE,borderRadius:4}]},
+    options:{indexAxis:horizontal?'y':'x',plugins:{legend:{display:false}},scales:{[horizontal?'x':'y']:{beginAtZero:true,ticks:{stepSize:1}}}}
+  }));
+}
+
+// ── JORNADA ──
+function renderJornada() {
+  if (!jorData) return;
+  el('kpiExt').textContent = jorData.extendidas;
+  el('kpiInc').textContent = jorData.incompletas;
+  el('kpiTotJor').textContent = jorData.jornadas.length;
+  let data = [...jorData.jornadas];
+  const sec = el('filtJorSector').value, nom = el('filtJorNombre').value.toLowerCase(), fil = el('filtJorFil').value;
+  if (sec) data = data.filter(j=>j.sector_nombre===sec);
+  if (nom) data = data.filter(j=>j.empleado_nombre.toLowerCase().includes(nom));
+  if (fil==='extendida') data = data.filter(j=>j.horas_trabajadas>12);
+  if (fil==='incompleta') data = data.filter(j=>!j.datos_completos);
+  if (!data.length) { el('jornadaTabla').innerHTML='<div class="no-data">Sin registros para los filtros seleccionados.</div>'; return; }
+  el('jornadaTabla').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Empleado</th><th>Sector</th><th style="text-align:right">Horas</th><th>Estado</th></tr></thead>
+      <tbody>${data.map(j=>{
+        const ext = j.horas_trabajadas>12, inc = !j.datos_completos;
+        return `<tr style="cursor:pointer" onclick="verDetalleJornada(${JSON.stringify(j).replace(/"/g,'&quot;')})">
+          <td style="white-space:nowrap">${j.fecha}</td>
+          <td class="nombre">${j.empleado_nombre}</td>
+          <td>${j.sector_nombre||'—'}</td>
+          <td class="num" style="font-weight:700;color:${ext?'#DC2626':''}">${j.horas_trabajadas!=null?j.horas_trabajadas+'h':'—'}</td>
+          <td><span class="badge ${ext?'badge-red':inc?'badge-orange':'badge-green'}">${ext?'⚠ > 12 hs':inc?'Sin egreso':'Normal'}</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+
+// ── UPLOADS ──
+function onFile(input, stId) {
+  const e = el(stId);
+  e.textContent = input.files[0] ? '✓ '+input.files[0].name : 'Ningún archivo seleccionado';
+  e.className = input.files[0] ? 'file-status ok' : 'file-status';
+}
+
+async function subirEmpleados() {
+  const file = el('fileEmp').files[0]; if (!file) return;
+  const btn = el('btnSubEmp'); btn.disabled=true; btn.textContent='Cargando…';
+  el('empErr').innerHTML='';
+  try {
+    const fd = new FormData(); fd.append('file',file);
+    const r = await fetch('/api/ausentismo/empleados',{method:'POST',body:fd});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    cerrarModal('modalEmp');
+    await init();
+  } catch(e) { el('empErr').innerHTML=`<div class="alert alert-err">${e.message}</div>`; }
+  btn.disabled=false; btn.textContent='Cargar';
+}
+
+async function subirDatos() {
+  const marcas = el('fileMarcas').files[0], justif = el('fileJustif').files[0], vac = el('fileVac').files[0];
+  if (!marcas||!justif||!vac) { el('uploadErr').innerHTML='<div class="alert alert-err">Seleccioná los 3 archivos.</div>'; return; }
+  const btn = el('btnSubDatos'); btn.disabled=true; btn.textContent='Procesando…';
+  el('uploadErr').innerHTML='';
+  try {
+    const fd = new FormData(); fd.append('marcas',marcas); fd.append('justif',justif); fd.append('vac',vac);
+    const r = await fetch('/api/ausentismo/upload',{method:'POST',body:fd});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    cerrarModal('modalUpload');
+    await cargarMeses();
+  } catch(e) { el('uploadErr').innerHTML=`<div class="alert alert-err">${e.message}</div>`; }
+  btn.disabled=false; btn.textContent='Procesar';
+}
+
+// ── UTILS ──
+// ── SUCURSALES POR EMPLEADO ──
+const SUCURSALES_OPTS = ['', 'CASA CENTRAL', 'SUC. DOLORES'];
+let sucEmpData = [];
+
+async function abrirModalSuc() {
+  sucEmpData = await fetch('/api/ausentismo/empleados/lista').then(r=>r.json()).catch(()=>[]);
+  renderSucEmpLista();
+  el('modalSuc').classList.remove('hidden');
+}
+
+function renderSucEmpLista() {
+  const q = (el('filtSucEmp').value||'').toLowerCase();
+  const data = sucEmpData.filter(e => !q || `${e.apellido} ${e.nombre}`.toLowerCase().includes(q));
+  if (!data.length) { el('sucEmpLista').innerHTML='<div style="text-align:center;color:#8A97AA;padding:20px;font-size:13px">Sin resultados</div>'; return; }
+  el('sucEmpLista').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr>
+      <th style="background:#F8F9FB;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Empleado</th>
+      <th style="background:#F8F9FB;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Sector</th>
+      <th style="background:#F8F9FB;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Sucursal</th>
+    </tr></thead>
+    <tbody>${data.map(e=>`<tr style="border-bottom:1px solid #F4F5F8">
+      <td style="padding:8px 10px;font-weight:600">${e.apellido} ${e.nombre}</td>
+      <td style="padding:8px 10px;color:#8A97AA">${e.sector_nombre||'—'}</td>
+      <td style="padding:8px 10px">
+        <select style="border:1px solid #D8DEE8;border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;color:#18243A;background:#fff;min-width:160px"
+          onchange="guardarSucEmp('${e.legajo}',this.value,this)">
+          ${SUCURSALES_OPTS.map(s=>`<option value="${s}" ${(e.sucursal_nombre||'')=== s?'selected':''}>${s||'— Sin asignar —'}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function guardarSucEmp(legajo, sucursal, sel) {
+  sel.disabled = true;
+  await fetch(`/api/ausentismo/empleados/${legajo}/sucursal`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sucursal })
+  });
+  // Actualizar dato local
+  const emp = sucEmpData.find(e=>e.legajo===legajo);
+  if (emp) emp.sucursal_nombre = sucursal;
+  sel.disabled = false;
+  // Refrescar botones de sucursal y datos
+  await cargarSucursales();
+  if (mesActual) cargarMesActual();
+}
+
+// ── EXCLUSIONES ──
+let exclLista = [];
+
+async function abrirModalExcl() {
+  exclLista = await fetch('/api/ausentismo/empleados/lista').then(r=>r.json()).catch(()=>[]);
+  renderExclLista();
+  el('modalExcl').classList.remove('hidden');
+}
+
+function renderExclLista() {
+  const q = (el('filtExcl').value||'').toLowerCase();
+  const data = exclLista.filter(e => !q || `${e.apellido} ${e.nombre}`.toLowerCase().includes(q));
+  if (!data.length) { el('exclLista').innerHTML='<div style="text-align:center;color:#8A97AA;padding:20px;font-size:13px">Sin resultados</div>'; return; }
+  el('exclLista').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr>
+      <th style="background:#F8F9FB;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Empleado</th>
+      <th style="background:#F8F9FB;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Sector</th>
+      <th style="background:#F8F9FB;padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6">Sucursal</th>
+      <th style="background:#F8F9FB;padding:8px 10px;font-size:11px;font-weight:700;color:#8A97AA;border-bottom:1px solid #EEF0F6;text-align:center">Excluido</th>
+    </tr></thead>
+    <tbody>${data.map(e=>`<tr style="border-bottom:1px solid #F4F5F8">
+      <td style="padding:8px 10px;font-weight:600">${e.apellido} ${e.nombre}</td>
+      <td style="padding:8px 10px;color:#8A97AA">${e.sector_nombre||'—'}</td>
+      <td style="padding:8px 10px;color:#8A97AA">${e.sucursal_nombre||'—'}</td>
+      <td style="padding:8px 10px;text-align:center">
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" ${e.excluido?'checked':''} onchange="toggleExcl('${e.legajo}','${e.apellido} ${e.nombre}',this.checked)">
+          ${e.excluido?`<span style="font-size:11px;color:#DC2626;font-weight:600">${e.razon||'Excluido'}</span>`:''}
+        </label>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+async function toggleExcl(legajo, nombre, excluir) {
+  if (excluir) {
+    const razon = prompt(`Razón de exclusión para ${nombre}:`, '') ?? '';
+    await fetch('/api/ausentismo/exclusiones', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ legajo, nombre, razon })
+    });
+  } else {
+    await fetch(`/api/ausentismo/exclusiones/${legajo}`, { method:'DELETE' });
+  }
+  exclLista = await fetch('/api/ausentismo/empleados/lista').then(r=>r.json());
+  renderExclLista();
+  // Recargar datos del mes actual
+  if (mesActual) await cargarMesActual();
+}
+
+function show(id){document.getElementById(id).style.display='';}
+function hide(id){document.getElementById(id).style.display='none';}
+function el(id){return document.getElementById(id);}
+function abrirModalEmpleados(){el('modalEmp').classList.remove('hidden');}
+function abrirModalUpload(){el('modalUpload').classList.remove('hidden');}
+
+async function syncFichaYa() {
+  const btn = el('btnSyncFicha');
+  const [anio, mes] = (mesActual || new Date().toISOString().slice(0,7)).split('-');
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  if (!confirm(`¿Sincronizar datos de FichaYa para ${MESES[+mes-1]} ${anio}?`)) return;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⟳ Sincronizando…';
+  try {
+    const r = await fetch('/api/ausentismo/sync-ficha', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': sessionStorage.getItem('x-admin-key') || '' },
+      body: JSON.stringify({ anio, mes })
+    });
+    const d = await r.json();
+    if (!r.ok) { alert('Error: ' + (d.error || r.status)); return; }
+    alert(`Sincronización completa: ${d.jornadas} fichadas importadas (${d.periodo})`);
+    await cargarMesActual();
+  } catch(e) { alert('Error de conexión: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = orig; }
+}
+function cerrarModal(id){el(id).classList.add('hidden');}
+
+function verDetalleJornada(j){
+  el('detJorTitulo').textContent = j.empleado_nombre + ' — ' + j.fecha;
+  const ingreso = j.hora_ingreso || '—';
+  const egreso = j.hora_egreso || '—';
+  const horas = j.horas_trabajadas != null ? j.horas_trabajadas + 'h' : '—';
+  const ext = j.horas_trabajadas > 12, inc = !j.datos_completos;
+  const estado = ext ? '⚠ Jornada extendida (> 12 hs)' : inc ? '⚠ Sin egreso registrado' : '✓ Normal';
+  const estadoColor = ext ? '#DC2626' : inc ? '#D97706' : '#16A34A';
+  el('detJorContenido').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#EEF0F6">
+      <div style="background:#fff;padding:20px 24px">
+        <div style="font-size:11px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Ingreso</div>
+        <div style="font-size:28px;font-weight:800;color:#18181A;letter-spacing:-.01em">${ingreso}</div>
+      </div>
+      <div style="background:#fff;padding:20px 24px">
+        <div style="font-size:11px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Egreso</div>
+        <div style="font-size:28px;font-weight:800;color:#18181A;letter-spacing:-.01em">${egreso}</div>
+      </div>
+    </div>
+    <div style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #EEF0F6">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total trabajado</div>
+        <div style="font-size:20px;font-weight:700;color:#18181A">${horas}</div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:${estadoColor}">${estado}</div>
+    </div>
+    <div style="padding:0 24px 16px;font-size:12px;color:#9896A0">${j.sector_nombre||''}</div>
+  `;
+  el('modalDetJor').classList.remove('hidden');
+}
+
+init();
+</script>
+</body>
+</html>

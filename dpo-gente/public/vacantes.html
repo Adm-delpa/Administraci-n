@@ -1,0 +1,967 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vacantes · DPO Gente</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.btn-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.btn-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-hdr{background:#1B3F72;padding:18px 24px}
+.page-hdr h1{font-size:16px;font-weight:700;color:#fff}
+.page-hdr p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+
+.filters-bar{background:#fff;border-bottom:1px solid #EEF0F6;padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.suc-tabs{display:flex;gap:4px}
+.suc-tab{padding:5px 14px;border-radius:20px;border:1px solid #D8DEE8;background:#fff;font-size:11px;font-weight:600;color:#5A6880;cursor:pointer}
+.suc-tab.on{background:#1B3F72;color:#fff;border-color:#1B3F72}
+.filter-sel{padding:5px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12px;background:#fff;color:#18243A;font-family:inherit;cursor:pointer}
+.filter-sel:focus{outline:none;border-color:#2563A8}
+.btn-nueva{margin-left:auto;padding:7px 16px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer}
+.btn-nueva:hover{background:#2563A8}
+
+.main{max-width:1060px;margin:0 auto;padding:20px}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:10.5px;color:#6B7A94;margin-top:3px}
+.kpi.navy .kpi-val{color:#1B3F72}
+.kpi.green .kpi-val{color:#10B981}
+.kpi.gray .kpi-val{color:#64748B}
+.kpi.red .kpi-val{color:#EF4444}
+.kpi.orange .kpi-val{color:#F59E0B}
+
+/* Table */
+.table-wrap{background:#fff;border-radius:10px;border:1px solid #EEF0F6;overflow:hidden}
+.table-hdr{padding:12px 16px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between}
+.table-title{font-size:12px;font-weight:700;color:#18243A}
+.vac-table{width:100%;border-collapse:collapse;font-size:12px}
+.vac-table th{text-align:left;padding:8px 14px;border-bottom:1px solid #EEF0F6;font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.vac-table td{padding:10px 14px;border-bottom:1px solid #F5F6FA;vertical-align:middle}
+.vac-table tr:last-child td{border-bottom:none}
+.vac-table tr:hover td{background:#FAFBFD;cursor:pointer}
+.posicion{font-weight:700;color:#18243A}
+.sector-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#EBF2FA;color:#1B3F72}
+.sede-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#F3F0FF;color:#5B21B6}
+
+/* Días semáforo */
+.dias-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;font-variant-numeric:tabular-nums}
+.dias-verde{background:#D1FAE5;color:#065F46}
+.dias-amarillo{background:#FEF3C7;color:#92400E}
+.dias-naranja{background:#FFEDD5;color:#9A3412}
+.dias-rojo{background:#FEE2E2;color:#B91C1C}
+.dias-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* Status pill */
+.status-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.status-curso{background:#EBF2FA;color:#1B3F72}
+.status-ok{background:#D1FAE5;color:#065F46}
+.status-nook{background:#FEE2E2;color:#B91C1C}
+
+.empty-row td{text-align:center;color:#8A97AA;padding:32px;font-size:12.5px}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:200;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:min(680px,100%);box-shadow:0 16px 48px rgba(0,0,0,.18)}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;border-radius:12px 12px 0 0;z-index:1}
+.modal-title{font-size:14px;font-weight:700;color:#18243A}
+.modal-close{background:none;border:none;font-size:18px;color:#8A97AA;cursor:pointer;padding:2px 6px;line-height:1}
+.modal-close:hover{color:#18243A}
+.modal-body{padding:18px}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:540px){.form-grid,.form-grid.cols3{grid-template-columns:1fr}}
+.form-full{grid-column:1/-1}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10.5px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select,.form-textarea{padding:7px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;font-family:inherit;background:#fff}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:#2563A8}
+.form-textarea{resize:vertical;min-height:70px}
+.form-section{font-size:10.5px;font-weight:800;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid #EEF0F6;grid-column:1/-1}
+.modal-footer{padding:14px 18px;border-top:1px solid #EEF0F6;display:flex;gap:10px;justify-content:flex-end}
+.btn-cancel{padding:7px 16px;border:1.5px solid #D8DEE8;background:#fff;border-radius:7px;font-size:12.5px;font-weight:600;color:#5A6880;cursor:pointer}
+.btn-cancel:hover{background:#F5F6FA}
+.btn-save{padding:7px 18px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer}
+.btn-save:hover{background:#2563A8}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── DETALLE VACANTE ── */
+.detalle-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:200;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.detalle-bg.open{display:flex}
+.detalle-modal{background:#fff;border-radius:12px;width:min(860px,100%);box-shadow:0 16px 48px rgba(0,0,0,.18)}
+.detalle-hdr{padding:16px 20px;border-bottom:1px solid #EEF0F6;display:flex;align-items:flex-start;gap:14px;position:sticky;top:0;background:#fff;border-radius:12px 12px 0 0;z-index:1}
+.detalle-info{flex:1}
+.detalle-titulo{font-size:16px;font-weight:800;color:#18243A}
+.detalle-sub{font-size:12px;color:#5A6880;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.detalle-dias{margin-left:auto;flex-shrink:0}
+.detalle-body{padding:20px}
+.detalle-actions{display:flex;gap:8px;margin-bottom:16px}
+.btn-sm{padding:6px 13px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;border:1.5px solid #D8DEE8;background:#fff;color:#5A6880}
+.btn-sm:hover{border-color:#1B3F72;color:#1B3F72}
+.btn-sm.primary{background:#1B3F72;color:#fff;border-color:#1B3F72}
+.btn-sm.primary:hover{background:#2563A8;border-color:#2563A8}
+.btn-sm.danger{border-color:#FCA5A5;color:#DC2626}
+.btn-sm.danger:hover{background:#FEE2E2}
+
+/* Candidatos list */
+.cands-section{margin-top:4px}
+.cands-title{font-size:11px;font-weight:800;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.cand-rows{border:1px solid #EEF0F6;border-radius:8px;overflow:hidden}
+.cand-row{border-bottom:1px solid #F5F6FA;cursor:pointer}
+.cand-row:last-child{border-bottom:none}
+.cand-row:hover .cand-summary{background:#FAFBFD}
+.cand-summary{display:flex;align-items:center;gap:10px;padding:10px 14px;transition:background .1s}
+.cand-avatar{width:30px;height:30px;border-radius:50%;background:#EBF2FA;color:#1B3F72;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cand-main{flex:1;min-width:0}
+.cand-nombre{font-size:12.5px;font-weight:700;color:#18243A}
+.cand-meta{font-size:11px;color:#8A97AA;margin-top:1px;display:flex;gap:6px;flex-wrap:wrap}
+.stage-dots{display:flex;gap:3px;align-items:center;flex-shrink:0}
+.stage{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:800;border:2px solid;flex-shrink:0}
+.stage.ok{background:#D1FAE5;color:#065F46;border-color:#6EE7B7}
+.stage.pending{background:#F1F5F9;color:#94A3B8;border-color:#E2E8F0}
+.cand-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;margin-left:4px;flex-shrink:0}
+.cb-green{background:#D1FAE5;color:#065F46}
+.cb-red{background:#FEE2E2;color:#B91C1C}
+.cb-teal{background:#CCFBF1;color:#0F766E}
+.cb-gray{background:#F1F5F9;color:#64748B}
+.cand-chev{font-size:9px;color:#C0C8D4;transition:transform .2s;flex-shrink:0;margin-left:2px}
+.cand-chev.open{transform:rotate(180deg)}
+.cand-expanded{display:none;padding:10px 14px 14px 54px;border-top:1px solid #F5F6FA;background:#FAFBFD}
+.cand-expanded.open{display:block}
+.exp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 14px;margin-bottom:10px}
+.exp-item{display:flex;flex-direction:column;gap:2px}
+.exp-label{font-size:9.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em}
+.exp-val{font-size:12px;color:#18243A}
+.cand-comentarios{font-size:11.5px;color:#18243A;background:#fff;border:1px solid #EEF0F6;border-radius:6px;padding:8px 10px;margin-bottom:8px}
+.qa-block{background:#fff;border:1px solid #EEF0F6;border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.qa-title{font-size:9.5px;font-weight:800;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.qa-item{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #F5F6FA}
+.qa-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.qa-q{font-size:11px;font-weight:700;color:#8A97AA;margin-bottom:3px}
+.qa-a{font-size:12px;color:#18243A;line-height:1.5}
+.btn-xs{padding:4px 10px;border-radius:5px;font-size:10.5px;font-weight:700;cursor:pointer;border:1px solid #D8DEE8;background:#fff;color:#5A6880}
+.btn-xs:hover{border-color:#1B3F72;color:#1B3F72}
+.btn-xs.danger{border-color:#FCA5A5;color:#DC2626}
+.btn-xs.danger:hover{background:#FEE2E2}
+.cand-btns{display:flex;gap:6px}
+.no-cands{text-align:center;color:#8A97AA;font-size:12.5px;padding:24px;background:#F8F9FC;border-radius:8px}
+
+/* Preguntas */
+.pregs-section{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #EEF0F6}
+.preg-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.preg-text{flex:1;font-size:12px;color:#18243A;padding:6px 10px;background:#F8F9FC;border:1px solid #EEF0F6;border-radius:6px}
+.preg-input{flex:1;padding:6px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12px;color:#18243A;font-family:inherit}
+.preg-input:focus{outline:none;border-color:#2563A8}
+.btn-add-preg{padding:5px 12px;border:1.5px dashed #D8DEE8;border-radius:6px;background:transparent;font-size:11.5px;font-weight:600;color:#8A97AA;cursor:pointer;margin-top:4px}
+.btn-add-preg:hover{border-color:#1B3F72;color:#1B3F72}
+
+/* Respuestas en candidato */
+.resp-block{margin-top:12px;background:#F8F9FC;border:1px solid #EEF0F6;border-radius:8px;padding:12px 14px}
+.resp-block-title{font-size:10px;font-weight:800;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.resp-item{margin-bottom:10px}
+.resp-pregunta{font-size:11.5px;font-weight:700;color:#18243A;margin-bottom:4px}
+.resp-respuesta{font-size:11.5px;color:#5A6880;line-height:1.5}
+
+/* Respuestas en form candidato */
+.form-resp-block{grid-column:1/-1;background:#F8F9FC;border:1px solid #EEF0F6;border-radius:8px;padding:14px}
+.form-resp-title{font-size:10.5px;font-weight:800;color:#8A97AA;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.form-resp-item{margin-bottom:10px}
+.form-resp-label{font-size:11.5px;font-weight:700;color:#18243A;margin-bottom:4px;display:block}
+.form-resp-ta{width:100%;padding:6px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12px;font-family:inherit;color:#18243A;resize:vertical;min-height:60px}
+.form-resp-ta:focus{outline:none;border-color:#2563A8}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="btn-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Vacancy Fulfillment</span>
+</div>
+
+<div class="page-hdr" style="display:flex;align-items:flex-start;justify-content:space-between">
+  <div>
+    <h1>Vacancy Fulfillment</h1>
+    <p>Gestión de búsquedas · Seguimiento de candidatos · Control de tiempos</p>
+  </div>
+  <button onclick="window.location.href='/movimientos'" style="padding:7px 14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:7px;color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 Transferencias internas</button>
+</div>
+
+<div class="filters-bar">
+  <div class="suc-tabs">
+    <button class="suc-tab on" onclick="setSede('todas')">Todas</button>
+    <button class="suc-tab" onclick="setSede('Dolores')">Dolores</button>
+    <button class="suc-tab" onclick="setSede('Casa Central')">Casa Central</button>
+  </div>
+  <select class="filter-sel" id="sel-anio" onchange="cargar()">
+    <option value="">Todos los años</option>
+  </select>
+  <select class="filter-sel" id="sel-status" onchange="cargar()">
+    <option value="">Todos los status</option>
+    <option value="En curso">En curso</option>
+    <option value="Ok">Ok</option>
+    <option value="No ok">No ok</option>
+  </select>
+  <button class="btn-nueva" onclick="abrirNuevaVacante()">+ Nueva vacante</button>
+</div>
+
+<div class="main">
+  <div class="kpi-row">
+    <div class="kpi navy"><div class="kpi-label">Abiertas</div><div class="kpi-val" id="kpi-abiertas">—</div><div class="kpi-sub">en curso</div></div>
+    <div class="kpi orange"><div class="kpi-label">Promedio días</div><div class="kpi-val" id="kpi-promedio">—</div><div class="kpi-sub">búsquedas abiertas</div></div>
+    <div class="kpi red"><div class="kpi-label">En riesgo</div><div class="kpi-val" id="kpi-riesgo">—</div><div class="kpi-sub">&gt;45 días</div></div>
+    <div class="kpi green"><div class="kpi-label">Cubiertas</div><div class="kpi-val" id="kpi-cubiertas">—</div><div class="kpi-sub">este año</div></div>
+    <div class="kpi gray"><div class="kpi-label">Cerrado sin cobertura</div><div class="kpi-val" id="kpi-sincobertura">—</div><div class="kpi-sub">este año</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-hdr">
+      <span class="table-title" id="table-count">Vacantes</span>
+    </div>
+    <table class="vac-table">
+      <thead>
+        <tr>
+          <th>Posición</th>
+          <th>Sector</th>
+          <th>Sede</th>
+          <th>Tipo</th>
+          <th>Apertura</th>
+          <th>Fecha de fin</th>
+          <th>Días</th>
+          <th>Candidatos</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal nueva/editar vacante -->
+<div class="modal-bg" id="modal-vacante-bg" onclick="cerrarModalVacante(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modal-vacante-title">Nueva vacante</span>
+      <button class="modal-close" onclick="cerrarModalVacante()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Sede</label>
+          <select class="form-select" id="v-sede">
+            <option value="Dolores">Dolores</option>
+            <option value="Casa Central">Casa Central</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de contratación</label>
+          <select class="form-select" id="v-tipo">
+            <option value="Indeterminado">Indeterminado</option>
+            <option value="Plazo Fijo">Plazo Fijo</option>
+            <option value="Temporario">Temporario</option>
+            <option value="Pasantia">Pasantia</option>
+          </select>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Posición</label>
+          <input class="form-input" id="v-posicion" type="text" placeholder="Ej: Promotor de Ventas">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sector</label>
+          <select class="form-select" id="v-sector">
+            <option value="Administracion">Administración</option>
+            <option value="Operaciones">Operaciones</option>
+            <option value="Ventas">Ventas</option>
+            <option value="Almacen">Almacén</option>
+            <option value="Distribucion">Distribución</option>
+          </select>
+        </div>
+        <input type="hidden" id="v-status" value="En curso">
+        <div class="form-group">
+          <label class="form-label">Fecha apertura de vacante</label>
+          <input class="form-input" id="v-apertura" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de inicio objetivo</label>
+          <input class="form-input" id="v-inicio" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de finalización de búsqueda</label>
+          <input class="form-input" id="v-finalizacion" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mes</label>
+          <select class="form-select" id="v-mes">
+            <option value="Enero">Enero</option><option value="Febrero">Febrero</option>
+            <option value="Marzo">Marzo</option><option value="Abril">Abril</option>
+            <option value="Mayo">Mayo</option><option value="Junio">Junio</option>
+            <option value="Julio">Julio</option><option value="Agosto">Agosto</option>
+            <option value="Septiembre">Septiembre</option><option value="Octubre">Octubre</option>
+            <option value="Noviembre">Noviembre</option><option value="Diciembre">Diciembre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Año</label>
+          <input class="form-input" id="v-anio" type="number" value="2026" min="2020" max="2099">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalVacante()">Cancelar</button>
+      <button class="btn-save" id="btn-guardar-vac" onclick="guardarVacante()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal detalle vacante + candidatos -->
+<div class="detalle-bg" id="detalle-bg" onclick="cerrarDetalle(event)">
+  <div class="detalle-modal">
+    <div class="detalle-hdr">
+      <div class="detalle-info">
+        <div class="detalle-titulo" id="det-titulo">—</div>
+        <div class="detalle-sub" id="det-sub"></div>
+      </div>
+      <div class="detalle-dias" id="det-dias"></div>
+      <button class="modal-close" onclick="cerrarDetalle()" style="margin-left:10px">✕</button>
+    </div>
+    <div class="detalle-body">
+      <div class="detalle-actions">
+        <button class="btn-sm" onclick="exportarCandidatos()" style="border-color:#217346;color:#217346">⬇ Exportar Excel</button>
+        <button class="btn-sm primary" onclick="abrirModalCandidato()">+ Agregar candidato</button>
+        <button class="btn-sm" id="btn-preguntas" onclick="abrirModalPreguntas()">Preguntas</button>
+        <button class="btn-sm" onclick="editarVacanteActual()">Editar vacante</button>
+        <button class="btn-sm danger" onclick="eliminarVacanteActual()">Eliminar</button>
+      </div>
+
+      <div class="cands-section">
+        <div class="cands-title">Candidatos evaluados</div>
+        <div id="cands-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal preguntas -->
+<div class="modal-bg" id="modal-pregs-bg" onclick="cerrarModalPreguntas(event)">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-hdr">
+      <span class="modal-title">Preguntas de entrevista</span>
+      <button class="modal-close" onclick="cerrarModalPreguntas()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="pregs-list"></div>
+      <button class="btn-add-preg" onclick="agregarPregunta()" style="margin-top:10px">+ Agregar pregunta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal candidato -->
+<div class="modal-bg" id="modal-cand-bg" onclick="cerrarModalCandidato(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modal-cand-title">Agregar candidato</span>
+      <button class="modal-close" onclick="cerrarModalCandidato()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Apellido</label>
+          <input class="form-input" id="c-apellido" type="text">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input class="form-input" id="c-nombre" type="text">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Celular</label>
+          <input class="form-input" id="c-celular" type="text">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mail</label>
+          <input class="form-input" id="c-mail" type="email">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Fuente de reclutamiento</label>
+          <select class="form-select" id="c-fuente">
+            <option value="">— Seleccionar —</option>
+            <option value="Referido">Referido</option>
+            <option value="Marca Empleadora">Marca Empleadora</option>
+            <option value="Portal Web">Portal Web</option>
+            <option value="Mail">Mail</option>
+            <option value="OPR">OPR</option>
+            <option value="Job Posting">Job Posting</option>
+            <option value="Programa Pasantías">Programa Pasantías</option>
+            <option value="No Aplica">No Aplica</option>
+          </select>
+        </div>
+        <div class="form-section">Entrevistas</div>
+        <div class="form-group">
+          <label class="form-label">Fecha entrevista líder</label>
+          <input class="form-input" id="c-ent-lider" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha entrevista RRHH / JDV</label>
+          <input class="form-input" id="c-ent-rrhh" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha entrevista dueño</label>
+          <input class="form-input" id="c-ent-dueno" type="date">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Comentarios de entrevistas</label>
+          <textarea class="form-textarea" id="c-comentarios"></textarea>
+        </div>
+        <div id="form-respuestas-wrap"></div>
+        <div class="form-section">Resultado</div>
+        <div class="form-group">
+          <label class="form-label">Acción</label>
+          <select class="form-select" id="c-accion">
+            <option value="">— Seleccionar —</option>
+            <option value="Avanza / Contratado">Avanza / Contratado</option>
+            <option value="No avanza">No avanza</option>
+            <option value="Pool de candidatos">Pool de candidatos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Feedback</label>
+          <input class="form-input" id="c-feedback" type="text" placeholder="Ok / No ok">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Pool de candidatos (posición a la que podría aplicar)</label>
+          <input class="form-input" id="c-pool" type="text">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de cierre / confirmación</label>
+          <input class="form-input" id="c-cierre" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha de ingreso</label>
+          <input class="form-input" id="c-ingreso" type="date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cerrarModalCandidato()">Cancelar</button>
+      <button class="btn-save" id="btn-guardar-cand" onclick="guardarCandidato()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+
+const HOY = new Date(); HOY.setHours(0,0,0,0);
+let SEDE = 'todas';
+let VACANTES = [];
+let VAC_ACTIVA = null;
+let CAND_EDIT_ID = null;
+let VAC_EDIT_ID = null;
+let PREGUNTAS = []; // preguntas de la vacante activa
+
+// ── SEDE ──
+function setSede(s) {
+  SEDE = s;
+  document.querySelectorAll('.suc-tab').forEach((b,i) => b.classList.toggle('on', ['todas','Dolores','Casa Central'][i] === s));
+  cargar();
+}
+
+// ── DIAS ──
+function efectivoStatus(v) {
+  if (!v.fecha_finalizacion) return 'En curso';
+  return parseInt(v.n_contratados) > 0 ? 'Ok' : 'Cerrado sin cobertura';
+}
+
+function parseLocalDate(s) {
+  if (!s) return null;
+  const p = String(s).slice(0,10).split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+
+function diasEntre(apertura, fin) {
+  const d = parseLocalDate(apertura);
+  if (!d) return null;
+  const hasta = fin ? parseLocalDate(fin) : (() => { const t = new Date(); t.setHours(0,0,0,0); return t; })();
+  return Math.round((hasta - d) / 86400000);
+}
+
+function diasDesde(fechaStr) {
+  if (!fechaStr) return null;
+  const d = new Date(fechaStr); d.setHours(0,0,0,0);
+  return Math.round((HOY - d) / 86400000);
+}
+
+function diasBadge(v) {
+  const est = efectivoStatus(v);
+  if (est === 'Ok') return `<span class="dias-badge dias-verde">✓ Cubierta</span>`;
+  const dias = diasEntre(v.apertura, v.fecha_finalizacion);
+  if (dias === null) return '—';
+  let cls = dias < 30 ? 'dias-verde' : dias < 45 ? 'dias-amarillo' : dias < 55 ? 'dias-naranja' : 'dias-rojo';
+  return `<span class="dias-badge ${cls}"><span class="dias-dot"></span>${dias} días</span>`;
+}
+
+// ── CARGAR ──
+async function cargar() {
+  const anio   = document.getElementById('sel-anio').value;
+  const status = document.getElementById('sel-status').value;
+  const params = new URLSearchParams();
+  if (anio)   params.set('anio', anio);
+  if (status) params.set('status', status);
+  if (SEDE !== 'todas') params.set('sede', SEDE);
+  try {
+    VACANTES = await fetch('/api/vacantes?' + params).then(r => r.json());
+    renderTabla();
+    renderKPIs();
+  } catch(e) {}
+}
+
+function renderKPIs() {
+  const selAnio = parseInt(document.getElementById('sel-anio').value) || new Date().getFullYear();
+  const vacsAnio = VACANTES.filter(v => v.anio == selAnio);
+  const abiertas = vacsAnio.filter(v => efectivoStatus(v) === 'En curso');
+  const todasConDias = vacsAnio.map(v => diasEntre(v.apertura, v.fecha_finalizacion)).filter(d => d !== null);
+  const diasAbiertas = abiertas.map(v => diasEntre(v.apertura, v.fecha_finalizacion)).filter(d => d !== null);
+  const promedio = todasConDias.length ? Math.round(todasConDias.reduce((a,b)=>a+b,0)/todasConDias.length) : 0;
+  const riesgo = diasAbiertas.filter(d => d > 45).length;
+  const cubiertas = vacsAnio.filter(v => efectivoStatus(v) === 'Ok').length;
+  const sinCobertura = vacsAnio.filter(v => efectivoStatus(v) === 'Cerrado sin cobertura').length;
+  document.getElementById('kpi-abiertas').textContent = abiertas.length;
+  document.getElementById('kpi-promedio').textContent = todasConDias.length ? promedio : '—';
+  document.getElementById('kpi-riesgo').textContent = riesgo;
+  document.getElementById('kpi-cubiertas').textContent = cubiertas;
+  document.getElementById('kpi-sincobertura').textContent = sinCobertura;
+}
+
+function renderTabla() {
+  document.getElementById('table-count').textContent = `${VACANTES.length} vacante${VACANTES.length!==1?'s':''}`;
+  const tbody = document.getElementById('tabla-body');
+  if (!VACANTES.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No hay vacantes con los filtros seleccionados.</td></tr>';
+    return;
+  }
+  const fechaFmt = f => f ? new Date(f).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+  tbody.innerHTML = VACANTES.map(v => {
+    const badge = diasBadge(v);
+    const est = efectivoStatus(v);
+    const sp = est === 'Ok' ? 'status-ok' : est === 'Cerrado sin cobertura' ? 'status-nook' : 'status-curso';
+    const statusLabel = est === 'Ok' ? 'Cubierta' : est === 'Cerrado sin cobertura' ? 'Cerrado sin cobertura' : 'En curso';
+    return `<tr onclick="abrirDetalle(${v.id})">
+      <td><div class="posicion">${v.posicion||'—'}</div></td>
+      <td><span class="sector-tag">${v.sector||'—'}</span></td>
+      <td><span class="sede-tag">${v.sede||'—'}</span></td>
+      <td style="color:#5A6880;font-size:11.5px">${v.tipo_contratacion||'—'}</td>
+      <td style="color:#5A6880;font-size:11.5px">${fechaFmt(v.apertura)}</td>
+      <td style="color:#5A6880;font-size:11.5px">${fechaFmt(v.fecha_finalizacion)}</td>
+      <td>${badge}</td>
+      <td style="color:#18243A;font-weight:700;font-size:12px">${v.n_candidatos||0}</td>
+      <td><span class="status-pill ${sp}">${statusLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MODAL VACANTE ──
+function abrirNuevaVacante() {
+  VAC_EDIT_ID = null;
+  document.getElementById('modal-vacante-title').textContent = 'Nueva vacante';
+  ['v-sede','v-tipo','v-posicion','v-sector','v-status','v-apertura','v-inicio','v-finalizacion','v-mes','v-anio'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else if (id === 'v-anio') el.value = new Date().getFullYear();
+    else el.value = '';
+  });
+  document.getElementById('v-apertura').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-vacante-bg').classList.add('open');
+}
+
+function editarVacanteActual() {
+  const v = VACANTES.find(x => x.id === VAC_ACTIVA);
+  if (!v) return;
+  VAC_EDIT_ID = v.id;
+  document.getElementById('modal-vacante-title').textContent = 'Editar vacante';
+  document.getElementById('v-sede').value = v.sede || 'Dolores';
+  document.getElementById('v-posicion').value = v.posicion || '';
+  document.getElementById('v-sector').value = v.sector || 'Ventas';
+  document.getElementById('v-tipo').value = v.tipo_contratacion || 'Indeterminado';
+  document.getElementById('v-status').value = v.status || 'En curso';
+  document.getElementById('v-apertura').value = v.apertura ? v.apertura.split('T')[0] : '';
+  document.getElementById('v-inicio').value = v.fecha_inicio ? v.fecha_inicio.split('T')[0] : '';
+  document.getElementById('v-finalizacion').value = v.fecha_finalizacion ? v.fecha_finalizacion.split('T')[0] : '';
+  document.getElementById('v-mes').value = v.mes || 'Enero';
+  document.getElementById('v-anio').value = v.anio || new Date().getFullYear();
+  document.getElementById('modal-vacante-bg').classList.add('open');
+}
+
+function cerrarModalVacante(e) {
+  if (e && e.target !== document.getElementById('modal-vacante-bg')) return;
+  document.getElementById('modal-vacante-bg').classList.remove('open');
+}
+
+async function guardarVacante() {
+  const btn = document.getElementById('btn-guardar-vac');
+  btn.disabled = true;
+  const body = {
+    sede: document.getElementById('v-sede').value,
+    posicion: document.getElementById('v-posicion').value,
+    sector: document.getElementById('v-sector').value,
+    tipo_contratacion: document.getElementById('v-tipo').value,
+    status: document.getElementById('v-status').value,
+    apertura: document.getElementById('v-apertura').value || null,
+    fecha_inicio: document.getElementById('v-inicio').value || null,
+    fecha_finalizacion: document.getElementById('v-finalizacion').value || null,
+    mes: document.getElementById('v-mes').value,
+    anio: parseInt(document.getElementById('v-anio').value),
+  };
+  try {
+    const url = VAC_EDIT_ID ? `/api/vacantes/${VAC_EDIT_ID}` : '/api/vacantes';
+    const method = VAC_EDIT_ID ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error();
+    document.getElementById('modal-vacante-bg').classList.remove('open');
+    await cargar();
+    if (VAC_EDIT_ID) { VAC_ACTIVA = VAC_EDIT_ID; abrirDetalle(VAC_ACTIVA); }
+  } catch(e) { alert('Error al guardar.'); }
+  finally { btn.disabled = false; }
+}
+
+// ── DETALLE ──
+async function abrirDetalle(id) {
+  VAC_ACTIVA = id;
+  const v = VACANTES.find(x => x.id === id);
+  if (!v) return;
+  const fmt = f => f ? new Date(f).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+  const statusLabel = v.status==='Ok' ? 'Cubierta' : v.status==='No ok' ? 'Cerrado sin cobertura' : 'En curso';
+  const statusCls   = v.status==='Ok' ? 'status-ok' : v.status==='No ok' ? 'status-nook' : 'status-curso';
+  document.getElementById('det-titulo').textContent = v.posicion || '—';
+  document.getElementById('det-sub').innerHTML = [
+    `<span>${v.sector||''}</span>`,
+    `<span>${v.sede||''}</span>`,
+    `<span>${v.tipo_contratacion||''}</span>`,
+    v.apertura ? `<span>Apertura: ${fmt(v.apertura)}</span>` : '',
+    v.fecha_finalizacion ? `<span>Finalización: ${fmt(v.fecha_finalizacion)}</span>` : '',
+    `<span class="status-pill ${statusCls}">${statusLabel}</span>`
+  ].filter(Boolean).join('');
+  document.getElementById('det-dias').innerHTML = diasBadge(v);
+  document.getElementById('detalle-bg').classList.add('open');
+  await cargarPreguntas(id);
+  await cargarCandidatos(id);
+}
+
+function cerrarDetalle(e) {
+  if (e && e.target !== document.getElementById('detalle-bg')) return;
+  document.getElementById('detalle-bg').classList.remove('open');
+}
+
+async function cargarCandidatos(vacId) {
+  try {
+    const cands = await fetch(`/api/vacantes/${vacId}/candidatos`).then(r => r.json());
+    const el = document.getElementById('cands-list');
+    if (!cands.length) { el.innerHTML = '<div class="no-cands">Sin candidatos todavía. Agregá uno con el botón de arriba.</div>'; return; }
+    const fmtDate = f => f ? new Date(f).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+    const respsAll = await Promise.all(cands.map(c =>
+      fetch(`/api/vacantes/${vacId}/candidatos/${c.id}/respuestas`).then(r => r.json())
+    ));
+    const stageOk = d => d ? `<div class="stage ok" title="${fmtDate(d)}">✓</div>` : `<div class="stage pending">·</div>`;
+    const accionBadge = a => {
+      if (!a) return `<span class="cand-badge cb-gray">Sin acción</span>`;
+      if (a === 'Avanza / Contratado') return `<span class="cand-badge cb-green">${a}</span>`;
+      if (a === 'No avanza') return `<span class="cand-badge cb-red">${a}</span>`;
+      if (a === 'Pool de candidatos') return `<span class="cand-badge cb-teal">${a}</span>`;
+      return `<span class="cand-badge cb-gray">${a}</span>`;
+    };
+    const initials = c => {
+      const a = (c.apellido||'').trim()[0]||'';
+      const n = (c.nombre||'').trim()[0]||'';
+      return (a + n).toUpperCase() || '?';
+    };
+    const metaParts = c => {
+      const parts = [];
+      if (c.fuente) parts.push(c.fuente);
+      if (c.fecha_entrevista_lider) parts.push(`L: ${fmtDate(c.fecha_entrevista_lider)}`);
+      if (c.fecha_entrevista_rrhh) parts.push(`R: ${fmtDate(c.fecha_entrevista_rrhh)}`);
+      if (c.fecha_entrevista_dueno) parts.push(`D: ${fmtDate(c.fecha_entrevista_dueno)}`);
+      return parts.join(' · ') || '—';
+    };
+    const rows = cands.map((c, i) => {
+      const resps = respsAll[i];
+      const respMap = {};
+      resps.forEach(r => { respMap[r.pregunta_id] = r.respuesta; });
+      const respsHtml = PREGUNTAS.length && resps.some(r => r.respuesta)
+        ? `<div class="qa-block">
+            <div class="qa-title">Respuestas de entrevista</div>
+            ${PREGUNTAS.filter(p => respMap[p.id]).map(p => `
+              <div class="qa-item">
+                <div class="qa-q">${p.pregunta}</div>
+                <div class="qa-a">${respMap[p.id]}</div>
+              </div>`).join('')}
+          </div>` : '';
+      return `<div class="cand-row" onclick="toggleCand(this)">
+        <div class="cand-summary">
+          <div class="cand-avatar">${initials(c)}</div>
+          <div class="cand-main">
+            <div class="cand-nombre">${c.apellido||''}, ${c.nombre||''}</div>
+            <div class="cand-meta">${metaParts(c)}</div>
+          </div>
+          <div class="stage-dots">
+            ${stageOk(c.fecha_entrevista_lider)}
+            ${stageOk(c.fecha_entrevista_rrhh)}
+            ${stageOk(c.fecha_entrevista_dueno)}
+          </div>
+          ${accionBadge(c.accion)}
+          <span class="cand-chev">▼</span>
+        </div>
+        <div class="cand-expanded">
+          <div class="exp-grid">
+            <div class="exp-item"><span class="exp-label">Celular</span><span class="exp-val">${c.celular||'—'}</span></div>
+            <div class="exp-item"><span class="exp-label">Mail</span><span class="exp-val">${c.mail||'—'}</span></div>
+            <div class="exp-item"><span class="exp-label">Feedback</span><span class="exp-val">${c.feedback||'—'}</span></div>
+            <div class="exp-item"><span class="exp-label">Cierre</span><span class="exp-val">${fmtDate(c.fecha_cierre)}</span></div>
+            <div class="exp-item"><span class="exp-label">Ingreso</span><span class="exp-val">${fmtDate(c.fecha_ingreso)}</span></div>
+            ${c.pool_posicion ? `<div class="exp-item"><span class="exp-label">Pool</span><span class="exp-val">${c.pool_posicion}</span></div>` : ''}
+          </div>
+          ${c.comentarios ? `<div class="cand-comentarios">${c.comentarios}</div>` : ''}
+          ${respsHtml}
+          <div class="cand-btns">
+            <button class="btn-xs" onclick="event.stopPropagation();editarCandidato(${c.id}, ${vacId})">Editar</button>
+            <button class="btn-xs danger" onclick="event.stopPropagation();eliminarCandidato(${c.id}, ${vacId})">Eliminar</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    el.innerHTML = `<div class="cand-rows">${rows}</div>`;
+  } catch(e) {}
+}
+
+function exportarCandidatos() {
+  if (!VAC_ACTIVA) return;
+  window.location.href = `/api/vacantes/${VAC_ACTIVA}/export`;
+}
+
+function toggleCand(row) {
+  const exp = row.querySelector('.cand-expanded');
+  const chev = row.querySelector('.cand-chev');
+  const isOpen = exp.classList.contains('open');
+  document.querySelectorAll('.cand-expanded.open').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.cand-chev.open').forEach(c => c.classList.remove('open'));
+  if (!isOpen) { exp.classList.add('open'); chev.classList.add('open'); }
+}
+
+// ── PREGUNTAS ──
+async function cargarPreguntas(vacId) {
+  try {
+    PREGUNTAS = await fetch(`/api/vacantes/${vacId}/preguntas`).then(r => r.json());
+    renderPreguntas();
+  } catch(e) {}
+}
+
+function abrirModalPreguntas() {
+  document.getElementById('modal-pregs-bg').classList.add('open');
+}
+
+function cerrarModalPreguntas(e) {
+  if (e && e.target !== document.getElementById('modal-pregs-bg')) return;
+  document.getElementById('modal-pregs-bg').classList.remove('open');
+}
+
+function actualizarBtnPreguntas() {
+  const btn = document.getElementById('btn-preguntas');
+  if (btn) btn.textContent = `Preguntas${PREGUNTAS.length ? ` (${PREGUNTAS.length})` : ''}`;
+}
+
+function renderPreguntas() {
+  actualizarBtnPreguntas();
+  const el = document.getElementById('pregs-list');
+  if (!PREGUNTAS.length) { el.innerHTML = '<div style="font-size:12px;color:#8A97AA;margin-bottom:8px">Sin preguntas todavía.</div>'; return; }
+  el.innerHTML = PREGUNTAS.map(p => `
+    <div class="preg-item" data-pid="${p.id}">
+      <span class="preg-text">${p.pregunta}</span>
+      <button class="btn-xs" onclick="editarPregunta(${p.id}, this)">Editar</button>
+      <button class="btn-xs danger" onclick="eliminarPregunta(${p.id})">✕</button>
+    </div>`).join('');
+}
+
+async function agregarPregunta() {
+  const texto = prompt('Nueva pregunta de entrevista:');
+  if (!texto || !texto.trim()) return;
+  try {
+    const r = await fetch(`/api/vacantes/${VAC_ACTIVA}/preguntas`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ pregunta: texto.trim(), orden: PREGUNTAS.length })
+    });
+    const p = await r.json();
+    PREGUNTAS.push(p);
+    renderPreguntas();
+  } catch(e) {}
+}
+
+async function editarPregunta(pid, btn) {
+  const p = PREGUNTAS.find(x => x.id === pid);
+  if (!p) return;
+  const nuevo = prompt('Editar pregunta:', p.pregunta);
+  if (!nuevo || !nuevo.trim() || nuevo.trim() === p.pregunta) return;
+  try {
+    await fetch(`/api/vacantes/${VAC_ACTIVA}/preguntas/${pid}`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ pregunta: nuevo.trim() })
+    });
+    p.pregunta = nuevo.trim();
+    renderPreguntas();
+  } catch(e) {}
+}
+
+async function eliminarPregunta(pid) {
+  if (!confirm('¿Eliminás esta pregunta? Se perderán todas las respuestas asociadas.')) return;
+  try {
+    await fetch(`/api/vacantes/${VAC_ACTIVA}/preguntas/${pid}`, { method: 'DELETE' });
+    PREGUNTAS = PREGUNTAS.filter(x => x.id !== pid);
+    renderPreguntas();
+    await cargarCandidatos(VAC_ACTIVA);
+  } catch(e) {}
+}
+
+// ── MODAL CANDIDATO ──
+function renderRespuestasForm(respMap) {
+  const wrap = document.getElementById('form-respuestas-wrap');
+  if (!PREGUNTAS.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="form-resp-block form-full">
+    <div class="form-resp-title">Respuestas a preguntas de entrevista</div>
+    ${PREGUNTAS.map(p => `
+      <div class="form-resp-item">
+        <label class="form-resp-label">${p.pregunta}</label>
+        <textarea class="form-resp-ta" data-pid="${p.id}">${respMap[p.id] || ''}</textarea>
+      </div>`).join('')}
+  </div>`;
+}
+
+function abrirModalCandidato() {
+  CAND_EDIT_ID = null;
+  document.getElementById('modal-cand-title').textContent = 'Agregar candidato';
+  ['c-apellido','c-nombre','c-celular','c-mail','c-comentarios','c-feedback','c-pool','c-cierre','c-ingreso','c-ent-lider','c-ent-rrhh','c-ent-dueno'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-fuente').selectedIndex = 0;
+  document.getElementById('c-accion').selectedIndex = 0;
+  renderRespuestasForm({});
+  document.getElementById('modal-cand-bg').classList.add('open');
+}
+
+async function editarCandidato(cid, vacId) {
+  try {
+    const [cands, resps] = await Promise.all([
+      fetch(`/api/vacantes/${vacId}/candidatos`).then(r => r.json()),
+      fetch(`/api/vacantes/${vacId}/candidatos/${cid}/respuestas`).then(r => r.json())
+    ]);
+    const c = cands.find(x => x.id === cid);
+    if (!c) return;
+    CAND_EDIT_ID = cid;
+    document.getElementById('modal-cand-title').textContent = 'Editar candidato';
+    document.getElementById('c-apellido').value = c.apellido || '';
+    document.getElementById('c-nombre').value = c.nombre || '';
+    document.getElementById('c-celular').value = c.celular || '';
+    document.getElementById('c-mail').value = c.mail || '';
+    document.getElementById('c-fuente').value = c.fuente || '';
+    document.getElementById('c-ent-lider').value = c.fecha_entrevista_lider ? c.fecha_entrevista_lider.split('T')[0] : '';
+    document.getElementById('c-ent-rrhh').value = c.fecha_entrevista_rrhh ? c.fecha_entrevista_rrhh.split('T')[0] : '';
+    document.getElementById('c-ent-dueno').value = c.fecha_entrevista_dueno ? c.fecha_entrevista_dueno.split('T')[0] : '';
+    document.getElementById('c-comentarios').value = c.comentarios || '';
+    document.getElementById('c-accion').value = c.accion || '';
+    document.getElementById('c-feedback').value = c.feedback || '';
+    document.getElementById('c-pool').value = c.pool_posicion || '';
+    document.getElementById('c-cierre').value = c.fecha_cierre ? c.fecha_cierre.split('T')[0] : '';
+    document.getElementById('c-ingreso').value = c.fecha_ingreso ? c.fecha_ingreso.split('T')[0] : '';
+    const respMap = {};
+    resps.forEach(r => { respMap[r.pregunta_id] = r.respuesta; });
+    renderRespuestasForm(respMap);
+    document.getElementById('modal-cand-bg').classList.add('open');
+  } catch(e) {}
+}
+
+function cerrarModalCandidato(e) {
+  if (e && e.target !== document.getElementById('modal-cand-bg')) return;
+  document.getElementById('modal-cand-bg').classList.remove('open');
+}
+
+async function guardarCandidato() {
+  const btn = document.getElementById('btn-guardar-cand');
+  btn.disabled = true;
+  const body = {
+    apellido: document.getElementById('c-apellido').value,
+    nombre: document.getElementById('c-nombre').value,
+    celular: document.getElementById('c-celular').value,
+    mail: document.getElementById('c-mail').value,
+    fuente: document.getElementById('c-fuente').value,
+    fecha_entrevista_lider: document.getElementById('c-ent-lider').value || null,
+    fecha_entrevista_rrhh: document.getElementById('c-ent-rrhh').value || null,
+    fecha_entrevista_dueno: document.getElementById('c-ent-dueno').value || null,
+    comentarios: document.getElementById('c-comentarios').value,
+    accion: document.getElementById('c-accion').value,
+    feedback: document.getElementById('c-feedback').value,
+    pool_posicion: document.getElementById('c-pool').value,
+    fecha_cierre: document.getElementById('c-cierre').value || null,
+    fecha_ingreso: document.getElementById('c-ingreso').value || null,
+  };
+  try {
+    const url = CAND_EDIT_ID
+      ? `/api/vacantes/${VAC_ACTIVA}/candidatos/${CAND_EDIT_ID}`
+      : `/api/vacantes/${VAC_ACTIVA}/candidatos`;
+    const method = CAND_EDIT_ID ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error();
+    const cand = await r.json();
+    const candId = cand.id || CAND_EDIT_ID;
+    // guardar respuestas
+    const tas = document.querySelectorAll('#form-respuestas-wrap [data-pid]');
+    if (tas.length) {
+      const respuestas = Array.from(tas).map(ta => ({ pregunta_id: parseInt(ta.dataset.pid), respuesta: ta.value }));
+      await fetch(`/api/vacantes/${VAC_ACTIVA}/candidatos/${candId}/respuestas`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ respuestas })
+      });
+    }
+    document.getElementById('modal-cand-bg').classList.remove('open');
+    await cargar();
+    await cargarCandidatos(VAC_ACTIVA);
+  } catch(e) { alert('Error al guardar.'); }
+  finally { btn.disabled = false; }
+}
+
+async function eliminarCandidato(cid, vacId) {
+  if (!confirm('¿Eliminás este candidato?')) return;
+  await fetch(`/api/vacantes/${vacId}/candidatos/${cid}`, { method:'DELETE' });
+  await cargarCandidatos(vacId);
+  await cargar();
+}
+
+async function eliminarVacanteActual() {
+  if (!confirm('¿Eliminás esta vacante y todos sus candidatos?')) return;
+  await fetch(`/api/vacantes/${VAC_ACTIVA}`, { method:'DELETE' });
+  document.getElementById('detalle-bg').classList.remove('open');
+  await cargar();
+}
+
+// ── INIT ──
+async function init() {
+  const anioSel = document.getElementById('sel-anio');
+  const anioActual = new Date().getFullYear();
+  for (let a = anioActual; a >= 2025; a--) {
+    anioSel.innerHTML += `<option value="${a}" ${a===anioActual?'selected':''}>${a}</option>`;
+  }
+  await cargar();
+}
+
+init();
+</script>
+</body>
+</html>

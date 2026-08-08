@@ -2146,18 +2146,20 @@ function filtrarModalVincularChess(){
   var cuitMapLocal2={};
   Object.values(state.clientes||{}).forEach(function(cl){if(cl.cuit) cuitMapLocal2[normCUIT(cl.cuit)]=cl;});
   var cliCuitFiltro=mvcCuitDetectado?cuitMapLocal2[mvcCuitDetectado]:null;
-  var lista=state.chess.filter(function(c){
-    var fp=c.fecha+'|'+c.haber+'|'+c.codCli;
-    if(usadosFp.has(fp)) return false;
+  function matchChess(c,q){
     if(mvcCuitDetectado&&!q&&cliCuitFiltro){
       if(parseInt(c.codCli,10)!==parseInt(cliCuitFiltro.c,10)) return false;
     }
     if(!q) return true;
     return (c.nomCli||'').toLowerCase().includes(q)||
            (c.codCli||'').toLowerCase().includes(q)||
-           String(c.haber).includes(q)||
+           String(c.haber).includes(q)||fmtN(c.haber).includes(q)||
            (c.fecha||'').includes(q)||
            (c.ref||'').toLowerCase().includes(q);
+  }
+  var lista=state.chess.filter(function(c){ return matchChess(c,q); }).map(function(c){
+    var fp=c.fecha+'|'+c.haber+'|'+c.codCli;
+    return usadosFp.has(fp) ? Object.assign({},c,{_yaConc:true}) : c;
   });
   if(r) lista.sort(function(a,b){ return Math.abs(a.haber-r.importe)-Math.abs(b.haber-r.importe); });
   var html='';
@@ -2167,15 +2169,16 @@ function filtrarModalVincularChess(){
     var diffLabel=diff!==null?(diff<0.01
       ?'<span style="font-size:11px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px">Exacto</span>'
       :'<span style="font-size:11px;background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:4px">Dif: $'+fmtN(diff)+'</span>'):'';
+    var yaConcLabel=c._yaConc?'<span style="font-size:11px;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:4px;margin-left:4px">Ya conciliado</span>':'';
     var sel=mvcSelChess&&mvcSelChess._mvcI===i;
-    html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'#fef9ee':'transparent')+'" onclick="selChessMVC('+i+')" data-mvci="'+i+'">'
+    html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'#fef9ee':(c._yaConc?'#f8faff':'transparent'))+'" onclick="selChessMVC('+i+')" data-mvci="'+i+'">'
       +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
       +'<span style="font-size:14px;font-weight:600;color:#1a1a1a">$'+fmtN(c.haber)+'</span>'
       +'<span style="font-size:12px;color:#64748b">'+fmtFechaDisplay(c.fecha)+'</span>'
       +'</div>'
       +'<div style="font-size:12px;color:#475569;margin-top:2px">'+esc(c.nomCli||c.codCli||'')+(c.codCli?' <span style="color:#94a3b8">('+esc(c.codCli)+')</span>':'')+'</div>'
       +(c.ref?'<div style="font-size:11px;color:#94a3b8;margin-top:1px">'+esc(c.ref.slice(0,60))+'</div>':'')
-      +'<div style="margin-top:4px">'+diffLabel+'</div>'
+      +'<div style="margin-top:4px">'+diffLabel+yaConcLabel+'</div>'
       +'</div>';
   });
   document.getElementById('mvc-list').innerHTML=html;
@@ -2204,12 +2207,14 @@ async function vincularChess(){
   r.chessDesc=mvcSelChess.ref||'';
   r.chessImporte=mvcSelChess.haber;
   r.motivo='Chess: '+fmtFechaDisplay(mvcSelChess.fecha)+' $'+fmtN(mvcSelChess.haber)+(mvcSelChess.ref?' — '+mvcSelChess.ref.slice(0,50):'');
-  // Si había un PT del mismo cobro Chess, también marcarlo como consumido
-  state.resultados.forEach(function(res){
-    if(res.nivel==='PT'&&res.chessFp===chessFp){
-      res.nivel='MAN'; res.bancoFp=bancoFp; res.bancDesc=r.desc||''; res.bancImporte=r.importe;
-    }
-  });
+  // Si el movimiento Chess no estaba ya conciliado, buscar PT vinculados y actualizarlos
+  if(!mvcSelChess._yaConc){
+    state.resultados.forEach(function(res){
+      if(res.nivel==='PT'&&res.chessFp===chessFp){
+        res.nivel='MAN'; res.bancoFp=bancoFp; res.bancDesc=r.desc||''; res.bancImporte=r.importe;
+      }
+    });
+  }
   loading(true);
   try{
     await guardarResultados();
