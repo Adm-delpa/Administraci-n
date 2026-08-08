@@ -2237,31 +2237,33 @@ function cerrarModalVincular(){
 function filtrarModalVincular(){
   var q=(document.getElementById('mv-busq').value||'').toLowerCase();
   var r=state.filtradas[mvIdx];
-  var usadasFpSet=new Set();
-  state.resultados.forEach(function(res){
-    if((res.nivel==='N1'||res.nivel==='CONC'||res.nivel==='MAN'||res.nivel==='N2')&&res.bancoFp) usadasFpSet.add(res.bancoFp);
-  });
-  // Banco actual + NC/PEND de períodos guardados (para vincular cross-período)
+  // Construir candidatos: libres (state.banco + NC/PEND) + ya conciliados (N1/MAN/CONC desde state.resultados)
   var candidatosFp=new Set();
   var candidatos=[];
   state.banco.forEach(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
-    if(!candidatosFp.has(fp)){candidatosFp.add(fp);candidatos.push(b);}
+    if(!candidatosFp.has(fp)){candidatosFp.add(fp);candidatos.push({fecha:b.fecha,desc:b.desc,importe:b.importe,_yaConc:false});}
   });
   state.resultados.forEach(function(res){
-    if(res.nivel!=='NC'&&res.nivel!=='PEND') return;
     var fp=(res.fecha||'')+'|'+res.importe+'|'+(res.desc||'').slice(0,60);
-    if(!candidatosFp.has(fp)){candidatosFp.add(fp);candidatos.push({fecha:res.fecha,desc:res.desc,importe:res.importe});}
+    var esLibre=res.nivel==='NC'||res.nivel==='PEND';
+    var esConc=res.nivel==='N1'||res.nivel==='CONC'||res.nivel==='MAN'||res.nivel==='N2';
+    if(!esLibre&&!esConc) return;
+    if(!candidatosFp.has(fp)){
+      candidatosFp.add(fp);
+      candidatos.push({fecha:res.fecha,desc:res.desc,importe:res.importe,_yaConc:esConc});
+    } else if(esConc){
+      // Marcar como ya conciliado si ya estaba en la lista
+      var ex=candidatos.find(function(c){ return ((c.fecha||'')+'|'+c.importe+'|'+(c.desc||'').slice(0,60))===fp; });
+      if(ex) ex._yaConc=true;
+    }
   });
   function matchBanco(b,q){
     if(!q) return true;
     var imp=String(b.importe).replace('.',',');
     return (b.desc||'').toLowerCase().includes(q)||imp.includes(q)||String(Math.round(b.importe)).includes(q)||(b.fecha||'').includes(q);
   }
-  var todos=candidatos.filter(function(b){ return matchBanco(b,q); }).map(function(b){
-    var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
-    return usadasFpSet.has(fp) ? Object.assign({},b,{_yaConc:true}) : b;
-  });
+  var todos=candidatos.filter(function(b){ return matchBanco(b,q); });
   if(r) todos.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
   var html='';
   if(!todos.length){html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">No hay movimientos disponibles.</div>';}
