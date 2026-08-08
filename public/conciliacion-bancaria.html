@@ -2257,27 +2257,34 @@ function filtrarModalVincular(){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
     if(usadasFpSet.has(fp)) return false;
     if(!q) return true;
-    return (b.desc||'').toLowerCase().includes(q)||String(b.importe).includes(q)||(b.fecha||'').includes(q);
+    return (b.desc||'').toLowerCase().includes(q)||fmtN(b.importe).includes(q)||(b.fecha||'').includes(q);
   });
-  // También incluir ya-conciliados que coincidan con la búsqueda (para casos de mismo pago)
-  var yaConc=[];
-  if(q){
-    candidatos.forEach(function(b){
-      var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
-      if(!usadasFpSet.has(fp)) return;
-      if((b.desc||'').toLowerCase().includes(q)||String(b.importe).includes(q)||(b.fecha||'').includes(q))
-        yaConc.push(Object.assign({},b,{_yaConc:true}));
-    });
+  var yaConc=candidatos.filter(function(b){
+    var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
+    if(!usadasFpSet.has(fp)) return false;
+    if(!q) return true;
+    return (b.desc||'').toLowerCase().includes(q)||fmtN(b.importe).includes(q)||(b.fecha||'').includes(q);
+  }).map(function(b){ return Object.assign({},b,{_yaConc:true}); });
+  if(r){
+    nc.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
+    yaConc.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
   }
-  if(r) nc.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
   var todos=nc.concat(yaConc);
   var html='';
-  if(!todos.length){html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">No hay movimientos disponibles. Buscá por importe para ver movimientos ya conciliados.</div>';}
+  if(!todos.length){html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">No hay movimientos disponibles.</div>';}
+  if(nc.length===0&&yaConc.length>0){
+    html='<div style="padding:8px 14px;font-size:11px;color:#64748b;background:#f1f5f9">No hay movimientos libres. Mostrando movimientos ya conciliados — podés vincular igual.</div>';
+  } else if(yaConc.length>0){
+    // separador antes de los ya-conciliados se agrega en el loop
+  }
   todos.forEach(function(b,i){
     var diff=r?Math.abs(b.importe-r.importe):null;
     var diffLabel=diff===0?'<span style="font-size:11px;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px">Exacto</span>'
       :'<span style="font-size:11px;background:#ffedd5;color:#9a3412;padding:2px 8px;border-radius:4px">Dif: $'+fmtN(diff)+'</span>';
     var yaConcLabel=b._yaConc?'<span style="font-size:11px;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:4px;margin-left:4px">Ya conciliado</span>':'';
+    if(b._yaConc&&i>0&&!todos[i-1]._yaConc){
+      html+='<div style="padding:6px 14px;font-size:11px;color:#64748b;background:#f1f5f9;border-top:1px solid #e2e8f0">Movimientos ya conciliados</div>';
+    }
     var sel=mvSelBanco&&mvSelBanco._mvI===i;
     html+='<div style="padding:10px 14px;cursor:pointer;border-left:3px solid '+(sel?'#d97706':'transparent')+';background:'+(sel?'#fef9ee':(b._yaConc?'#f8faff':'transparent'))+'" onclick="selBancoMV('+i+')" data-mvi="'+i+'">'
       +'<div style="display:flex;justify-content:space-between;align-items:baseline">'
