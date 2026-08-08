@@ -2258,17 +2258,10 @@ function filtrarModalVincular(){
     var imp=String(b.importe).replace('.',',');
     return (b.desc||'').toLowerCase().includes(q)||imp.includes(q)||String(Math.round(b.importe)).includes(q)||(b.fecha||'').includes(q);
   }
-  var nc=candidatos.filter(function(b){
+  var todos=candidatos.filter(function(b){ return matchBanco(b,q); }).map(function(b){
     var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
-    if(usadasFpSet.has(fp)) return false;
-    return matchBanco(b,q);
+    return usadasFpSet.has(fp) ? Object.assign({},b,{_yaConc:true}) : b;
   });
-  var yaConc=candidatos.filter(function(b){
-    var fp=(b.fecha||'')+'|'+b.importe+'|'+(b.desc||'').slice(0,60);
-    if(!usadasFpSet.has(fp)) return false;
-    return matchBanco(b,q);
-  }).map(function(b){ return Object.assign({},b,{_yaConc:true}); });
-  var todos=nc.concat(yaConc);
   if(r) todos.sort(function(a,b){return Math.abs(a.importe-r.importe)-Math.abs(b.importe-r.importe);});
   var html='';
   if(!todos.length){html='<div style="padding:16px;text-align:center;color:#64748b;font-size:13px">No hay movimientos disponibles.</div>';}
