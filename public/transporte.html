@@ -747,7 +747,10 @@ function renderTabla() {
       var rdfEsperado=(rdfMes&&valorPallet)?(valorPallet*pallets):null;
       var descuento=parseFloat(r.descuento)||0;
       var rdfCelda,estadoCelda;
-      if(!rdfMes||!rdfEsperado){
+      if(r.conciliado){
+        rdfCelda=rdfEsperado?'$'+fmtN(rdfEsperado):'<span style="color:#9896A0">Sin RDF</span>';
+        estadoCelda='<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#D4F2E8;color:#075C41">✓ Conciliado</span>';
+      } else if(!rdfMes||!rdfEsperado){
         rdfCelda='<span style="color:#9896A0">Sin RDF</span>';
         estadoCelda='<span class="badge-no" style="font-size:11px">Sin RDF</span>';
       } else if(!descuento){
@@ -776,6 +779,9 @@ function renderTabla() {
         +'<td>'+rdfCelda+'</td>'
         +'<td>'+estadoCelda+'</td>'
         +'<td style="white-space:nowrap">'
+          +(r.conciliado
+            ?'<button class="btn-edit" style="background:#D4F2E8;color:#075C41;border-color:#A7E3CC" onclick="toggleConciliado('+gi+')" title="Desmarcar conciliado">✓ Conc.</button>'
+            :'<button class="btn-edit" style="color:#075C41;border-color:#A7E3CC" onclick="toggleConciliado('+gi+')" title="Marcar como conciliado">Conciliar</button>')
           +'<button class="btn-edit" onclick="editar('+gi+')">Editar</button>'
           +'<button class="btn-del" onclick="eliminar('+gi+')">✕</button>'
         +'</td>'
@@ -783,6 +789,14 @@ function renderTabla() {
     });
   }
   document.getElementById('tbl-body').innerHTML=html;
+}
+
+async function toggleConciliado(gi){
+  var r=registros[gi];
+  if(!r) return;
+  r.conciliado=!r.conciliado;
+  try{ await guardarRegistrosDB(); }catch(e){ toast('Error al guardar','err-t'); r.conciliado=!r.conciliado; return; }
+  renderTabla();
 }
 
 // ── MODAL VIAJE ───────────────────────────────────────────────────────────────
