@@ -172,6 +172,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     <table>
       <thead>
         <tr>
+          <th style="width:32px"></th>
           <th>Fecha</th>
           <th>Factura(s)</th>
           <th>Remito(s)</th>
@@ -747,24 +748,25 @@ function renderTabla() {
       var rdfEsperado=(rdfMes&&valorPallet)?(valorPallet*pallets):null;
       var descuento=parseFloat(r.descuento)||0;
       var rdfCelda,estadoCelda;
-      var checkBox='<span onclick="toggleConciliado('+gi+')" title="'+(r.conciliado?'Desmarcar conciliado':'Marcar como conciliado')+'" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;border:1.5px solid '+(r.conciliado?'#075C41':'#BDBAC5')+';background:'+(r.conciliado?'#075C41':'#fff')+';cursor:pointer;margin-right:7px;flex-shrink:0;vertical-align:middle">'+(r.conciliado?'<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')+'</span>';
+      var checkBox='<span onclick="toggleConciliado('+gi+')" title="'+(r.conciliado?'Desmarcar conciliado':'Marcar como conciliado')+'" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;border:1.5px solid '+(r.conciliado?'#075C41':'#BDBAC5')+';background:'+(r.conciliado?'#075C41':'#fff')+';cursor:pointer;flex-shrink:0">'+(r.conciliado?'<svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')+'</span>';
       if(!rdfMes||!rdfEsperado){
         rdfCelda='<span style="color:#9896A0">Sin RDF</span>';
-        estadoCelda=checkBox+'<span class="badge-no" style="font-size:11px">Sin RDF</span>';
+        estadoCelda='<span class="badge-no" style="font-size:11px">Sin RDF</span>';
       } else if(!descuento){
         rdfCelda='$'+fmtN(rdfEsperado);
-        estadoCelda=checkBox+'<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#F2F1EE;color:#6B6876">Pendiente</span>';
+        estadoCelda='<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#F2F1EE;color:#6B6876">Pendiente</span>';
       } else {
         var dif=descuento-rdfEsperado;
         rdfCelda='$'+fmtN(rdfEsperado);
         if(Math.abs(dif)<1){
-          estadoCelda=checkBox+'<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#D4F2E8;color:#075C41">✓ Coincide</span>';
+          estadoCelda='<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#D4F2E8;color:#075C41">✓ Coincide</span>';
         } else {
           var difStr=(dif>0?'+':'')+fmtN(dif);
-          estadoCelda=checkBox+'<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#FEF3C7;color:#92400E" title="Dif: $'+difStr+'">⚠ $'+difStr+'</span>';
+          estadoCelda='<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#FEF3C7;color:#92400E" title="Dif: $'+difStr+'">⚠ $'+difStr+'</span>';
         }
       }
       html+='<tr style="'+(r.conciliado?'background:#edfaf4':'')+'">'
+        +'<td style="text-align:center">'+checkBox+'</td>'
         +'<td style="white-space:nowrap">'+esc(r.fecha||'—')+'</td>'
         +'<td style="font-family:monospace;font-size:12px">'+facts+'</td>'
         +'<td style="font-family:monospace;font-size:12px">'+rems+'</td>'
