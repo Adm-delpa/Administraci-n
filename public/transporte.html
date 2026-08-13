@@ -832,7 +832,7 @@ function confirmarExportar(){
       remito,
       r.origen||'',
       r.destino||'',
-      r.chofer||'',
+      CHOFER_EMPRESA[r.chofer]||r.chofer||'',
       r.envase==='si'?'Sí':'No',
       String(parseFloat(r.valor)||0).replace('.',','),
       '',
