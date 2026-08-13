@@ -5,6 +5,10 @@ const path = require('path');
 const https = require('https');
 const querystring = require('querystring');
 const zlib = require('zlib');
+const multer = require('multer');
+const XLSX = require('xlsx');
+
+const uploadPresupuesto = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -1231,6 +1235,159 @@ app.get('/api/cuentas-pagar', async (req, res) => {
     ]);
     res.json({ filas: datos.rows, ultimaSync: sync.rows[0] || null });
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── PRESUPUESTO: upload Excel ──
+app.post('/api/presupuesto/upload', uploadPresupuesto.single('file'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se envió archivo' });
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const result = { volumen: {}, gastoReal: {}, gastoPre: {}, proReal: {}, proPre: {}, inflPre: [], inflReal: [] };
+
+    function cellVal(ws, r, c) {
+      const cell = ws[XLSX.utils.encode_cell({ r, c })];
+      return cell && cell.v !== undefined ? cell.v : 0;
+    }
+
+    // ── VOLUMEN (sheet "Volumen") ──
+    const wsVol = wb.Sheets['Volumen'];
+    if (wsVol) {
+      const segs = ['CERVEZAS ABOVE CORE', 'CERVEZAS CORE', 'UNG PREMIUM', 'UNG SIN PREMIUM', 'AGUAS', 'VINOS', 'MARKETPLACE'];
+      const segLabels = ['Cervezas Above Core', 'Cervezas Core+Value', 'UNG Premium', 'UNG Sin Premium', 'Aguas Eco', 'Vinos y Adyacencias', 'Marketplace Alimentos'];
+      // TOTAL rows 3-9, CC rows 11-17, DOL rows 19-25 (0-indexed)
+      const blocks = { TOTAL: 3, CC: 11, DOL: 19 };
+      Object.entries(blocks).forEach(([key, startRow]) => {
+        result.volumen[key] = [];
+        for (let si = 0; si < 7; si++) {
+          const meses = [];
+          for (let m = 0; m < 12; m++) meses.push(Math.round(+cellVal(wsVol, startRow + si, 2 + m) || 0));
+          result.volumen[key].push(meses);
+        }
+      });
+    }
+
+    // ── GASTOS REAL (sheet "REAL") ──
+    const wsReal = wb.Sheets['REAL'];
+    if (wsReal) {
+      const cats = [
+        { key: 'ventas', startRow: 3, endRow: 15, totalRow: 16 },
+        { key: 'operaciones', startRow: 17, endRow: 35, totalRow: 36 },
+        { key: 'infraestructura', startRow: 37, endRow: 48, totalRow: 49 },
+        { key: 'distribucion', startRow: 50, endRow: 63, totalRow: 64 },
+        { key: 'acarreo', startRow: 65, endRow: 69, totalRow: 70 },
+        { key: 'admin', startRow: 71, endRow: 125, totalRow: 126 }
+      ];
+      // TOTAL columns C-N (2-13), CC columns P-AA (15-26), DOL columns AC-AN (28-39)
+      const colBlocks = { TOTAL: 2, CC: 15, DOL: 28 };
+      Object.entries(colBlocks).forEach(([suc, colStart]) => {
+        result.gastoReal[suc] = {};
+        cats.forEach(cat => {
+          const subcats = {};
+          for (let r = cat.startRow; r <= cat.endRow; r++) {
+            const nameCell = wsReal[XLSX.utils.encode_cell({ r, c: 1 })];
+            if (!nameCell || !nameCell.v) continue;
+            const name = String(nameCell.v).trim();
+            if (name.startsWith('TOTAL')) continue;
+            const meses = [];
+            for (let m = 0; m < 12; m++) meses.push(Math.round(+cellVal(wsReal, r, colStart + m) || 0));
+            if (meses.some(v => v !== 0)) subcats[name] = meses;
+          }
+          const totalMeses = [];
+          for (let m = 0; m < 12; m++) totalMeses.push(Math.round(+cellVal(wsReal, cat.totalRow, colStart + m) || 0));
+          result.gastoReal[suc][cat.key] = { subcats, total: totalMeses };
+        });
+      });
+    }
+
+    // ── GASTOS PRESUPUESTO (sheet "PRESUPUESTO") ──
+    const wsPre = wb.Sheets['PRESUPUESTO'];
+    if (wsPre) {
+      const cats = [
+        { key: 'ventas', startRow: 3, endRow: 15, totalRow: 16 },
+        { key: 'operaciones', startRow: 17, endRow: 35, totalRow: 36 },
+        { key: 'infraestructura', startRow: 37, endRow: 48, totalRow: 49 },
+        { key: 'distribucion', startRow: 50, endRow: 63, totalRow: 64 },
+        { key: 'acarreo', startRow: 65, endRow: 69, totalRow: 70 },
+        { key: 'admin', startRow: 71, endRow: 125, totalRow: 126 }
+      ];
+      const colBlocks = { TOTAL: 2, CC: 15, DOL: 28 };
+      Object.entries(colBlocks).forEach(([suc, colStart]) => {
+        result.gastoPre[suc] = {};
+        cats.forEach(cat => {
+          const subcats = {};
+          for (let r = cat.startRow; r <= cat.endRow; r++) {
+            const nameCell = wsPre[XLSX.utils.encode_cell({ r, c: 1 })];
+            if (!nameCell || !nameCell.v) continue;
+            const name = String(nameCell.v).trim();
+            if (name.startsWith('TOTAL')) continue;
+            const meses = [];
+            for (let m = 0; m < 12; m++) meses.push(Math.round(+cellVal(wsPre, r, colStart + m) || 0));
+            if (meses.some(v => v !== 0)) subcats[name] = meses;
+          }
+          const totalMeses = [];
+          for (let m = 0; m < 12; m++) totalMeses.push(Math.round(+cellVal(wsPre, cat.totalRow, colStart + m) || 0));
+          result.gastoPre[suc][cat.key] = { subcats, total: totalMeses };
+        });
+      });
+    }
+
+    // ── PRORRATEO PRE (sheet "prorrateo PRE") ──
+    const wsProPre = wb.Sheets['prorrateo PRE'];
+    if (wsProPre) {
+      result.proPre = {
+        vol: [], km: [], cam: [], comb: [],
+        volCC: [], volDOL: [], volTOT: []
+      };
+      for (let m = 0; m < 12; m++) {
+        result.proPre.vol.push(+cellVal(wsProPre, 11, 1 + m) || 0);
+        result.proPre.km.push(+cellVal(wsProPre, 18, 1 + m) || 0);
+        result.proPre.cam.push(+cellVal(wsProPre, 26, 1 + m) || 0);
+        result.proPre.comb.push(+cellVal(wsProPre, 33, 1 + m) || 0);
+        result.proPre.volCC.push(+cellVal(wsProPre, 9, 1 + m) || 0);
+        result.proPre.volDOL.push(+cellVal(wsProPre, 10, 1 + m) || 0);
+        result.proPre.volTOT.push(+cellVal(wsProPre, 12, 1 + m) || 0);
+      }
+      // Inflación PRE
+      for (let m = 0; m < 12; m++) {
+        result.inflPre.push(+cellVal(wsProPre, 45, 1 + m) || 0);
+      }
+    }
+
+    // ── PRORRATEO REAL (sheet "prorrateo REAL") ──
+    const wsProReal = wb.Sheets['prorrateo REAL'];
+    if (wsProReal) {
+      result.proReal = { vol: [], km: [], cam: [], comb: [] };
+      for (let m = 0; m < 12; m++) {
+        result.proReal.vol.push(+cellVal(wsProReal, 11, 1 + m) || 0);
+        result.proReal.km.push(+cellVal(wsProReal, 18, 1 + m) || 0);
+        result.proReal.cam.push(+cellVal(wsProReal, 26, 1 + m) || 0);
+        result.proReal.comb.push(+cellVal(wsProReal, 33, 1 + m) || 0);
+      }
+    }
+
+    // ── INFLACIÓN REAL (from prorrateo PRE rows 49-50) ──
+    if (wsProPre) {
+      for (let m = 0; m < 12; m++) {
+        result.inflReal.push(+cellVal(wsProPre, 49, 1 + m) || 0);
+      }
+    }
+
+    // ── TOTAL GENERAL rows from REAL/PRE ──
+    if (wsReal) {
+      result.totalReal = [];
+      for (let m = 0; m < 12; m++) result.totalReal.push(Math.round(+cellVal(wsReal, 128, 2 + m) || 0));
+    }
+    if (wsPre) {
+      result.totalPre = [];
+      for (let m = 0; m < 12; m++) result.totalPre.push(Math.round(+cellVal(wsPre, 128, 2 + m) || 0));
+    }
+
+    result.sheets = wb.SheetNames;
+    res.json(result);
+  } catch (err) {
+    console.error('Error parsing presupuesto Excel:', err);
+    res.status(500).json({ error: 'Error al procesar el archivo: ' + err.message });
+  }
 });
 
 // Servir páginas
