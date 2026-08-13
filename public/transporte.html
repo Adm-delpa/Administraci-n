@@ -137,6 +137,10 @@ label{font-size:12px;font-weight:600;color:#6B6876}
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         Tarifas
       </button>
+      <button class="btn-nuevo" style="background:#fff;color:#16a34a;border:1.5px solid #16a34a" onclick="exportarExcel()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Excel
+      </button>
       <button class="btn-nuevo" onclick="abrirModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nuevo viaje
@@ -360,6 +364,23 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     </div>
     <div class="modal-foot">
       <button class="btn-guardar" onclick="cerrarModalRdf()">Listo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXPORTAR -->
+<div class="modal-bg" id="modal-exportar" onclick="if(event.target===this)cerrarModalExportar()">
+  <div class="modal-box" style="max-width:340px">
+    <div class="modal-header"><h3>Exportar Excel</h3><button class="modal-close" onclick="cerrarModalExportar()">✕</button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px">
+      <div class="form-group">
+        <label>Mes a exportar</label>
+        <input type="month" id="exp-mes" style="width:100%;padding:8px 10px;border:1.5px solid #DDDBD6;border-radius:8px;font-family:inherit;font-size:14px">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="cerrarModalExportar()" style="padding:7px 14px;border:1.5px solid #DDDBD6;background:none;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;color:#6B6876">Cancelar</button>
+        <button onclick="confirmarExportar()" style="padding:7px 16px;background:#16a34a;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Descargar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -786,6 +807,46 @@ function renderTabla() {
     });
   }
   document.getElementById('tbl-body').innerHTML=html;
+}
+
+function exportarExcel(){
+  var mes=document.getElementById('f-mes-fil').value;
+  document.getElementById('exp-mes').value=mes||'';
+  document.getElementById('modal-exportar').classList.add('open');
+}
+function cerrarModalExportar(){ document.getElementById('modal-exportar').classList.remove('open'); }
+function confirmarExportar(){
+  var mes=document.getElementById('exp-mes').value;
+  if(!mes){ alert('Seleccioná un mes'); return; }
+  var datos=registros.filter(function(r){ return (r.fecha||'').slice(0,7)===mes; });
+  if(!datos.length){ alert('No hay viajes en ese mes'); return; }
+  var BOM='﻿';
+  var cols=['Fecha','Remito','Inicio','Fin','Chofer','Tiene envase de litro?','Importe','','Pallets'];
+  var rows=[cols.join(';')];
+  datos.forEach(function(r){
+    var empresa=CHOFER_EMPRESA[r.chofer]||'';
+    var pallets=EMPRESA_PALLETS[empresa]||26;
+    var remito=[r.remito1,r.remito2].filter(Boolean).join(' / ');
+    var row=[
+      r.fecha||'',
+      remito,
+      r.origen||'',
+      r.destino||'',
+      r.chofer||'',
+      r.envase==='si'?'Sí':'No',
+      String(parseFloat(r.valor)||0).replace('.',','),
+      '',
+      pallets
+    ];
+    rows.push(row.join(';'));
+  });
+  var csv=BOM+rows.join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='viajes-'+mes+'.csv';
+  a.click();
+  cerrarModalExportar();
 }
 
 async function toggleConciliado(gi){
