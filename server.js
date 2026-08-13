@@ -1237,6 +1237,113 @@ app.get('/api/cuentas-pagar', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── PRESUPUESTO: Egresos Tipificados ──
+const MESES_ES = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
+
+function detectCat(concepto) {
+  const c = concepto.toUpperCase();
+  if (c.includes('- VENTAS Y PROMOCI')) return 'VENTAS';
+  if (c.includes('- OPERACIONES')) return 'OPERACIONES';
+  if (c.includes('- INFRAESTRUCTURA')) return 'INFRAESTRUCTURA';
+  if (c.includes('- DISTRIBUCION')) return 'DISTRIBUCION';
+  if (c.includes('- ACARREO')) return 'ACARREO';
+  if (c.includes('- ADMIN Y FINANZAS') || c.includes('- ADMINISTRACI')) return 'ADMIN Y FINANZAS';
+  if (c.startsWith('ND BANCARIA') || c.startsWith('NC BANCARIA') || c === 'ITF') return 'ADMIN Y FINANZAS';
+  return null;
+}
+
+app.post('/api/presupuesto/egresos', uploadPresupuesto.single('file'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No se envió archivo' });
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+
+    let ws = wb.Sheets['EgresosTipificados'] || wb.Sheets[wb.SheetNames[0]];
+    const range = XLSX.utils.decode_range(ws['!ref']);
+
+    // Detect columns by header row
+    const headers = {};
+    for (let c = 0; c <= range.e.c; c++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
+      if (cell && cell.v) headers[String(cell.v).trim()] = c;
+    }
+    const colConcepto = headers['Concepto'] ?? 4;
+    const colTotal = headers['Total Cpbte.'] ?? 36;
+    const colMes = headers['Mes'] ?? 41;
+    const colDeposito = headers['DEPOSITO'] ?? 39;
+    const colCentroCosto = headers['Descripción Centro de Costo'] ?? headers['Descripción Centro Costo'] ?? 16;
+
+    // Process rows
+    const gastos = {};   // { cat: { sub: [12 meses] } }
+    const gastosSuc = {}; // { CC|DOL: { cat: { sub: [12 meses] } } }
+    const totales = {};  // { cat: [12 meses] }
+    const registros = { total: 0, matched: 0, unmatched: 0 };
+    const unmatchedConcepts = {};
+
+    for (let r = 1; r <= range.e.r; r++) {
+      const conceptoCell = ws[XLSX.utils.encode_cell({ r, c: colConcepto })];
+      const totalCell = ws[XLSX.utils.encode_cell({ r, c: colTotal })];
+      const mesCell = ws[XLSX.utils.encode_cell({ r, c: colMes })];
+      const sucCell = ws[XLSX.utils.encode_cell({ r, c: colDeposito })];
+
+      if (!conceptoCell || !conceptoCell.v) continue;
+      registros.total++;
+
+      const concepto = String(conceptoCell.v).trim();
+      const total = +totalCell?.v || 0;
+      const mesStr = String(mesCell?.v || '').toLowerCase().trim();
+      const mesIdx = MESES_ES[mesStr];
+      if (mesIdx === undefined) continue;
+
+      const cat = detectCat(concepto);
+      if (!cat) { registros.unmatched++; unmatchedConcepts[concepto] = (unmatchedConcepts[concepto] || 0) + total; continue; }
+      registros.matched++;
+
+      if (!gastos[cat]) gastos[cat] = {};
+      if (!gastos[cat][concepto]) gastos[cat][concepto] = Array(12).fill(0);
+      gastos[cat][concepto][mesIdx] += total;
+
+      if (!totales[cat]) totales[cat] = Array(12).fill(0);
+      totales[cat][mesIdx] += total;
+
+      const sucKey = String(sucCell?.v || '').includes('DOLORES') ? 'DOL' : 'CC';
+      if (!gastosSuc[sucKey]) gastosSuc[sucKey] = {};
+      if (!gastosSuc[sucKey][cat]) gastosSuc[sucKey][cat] = {};
+      if (!gastosSuc[sucKey][cat][concepto]) gastosSuc[sucKey][cat][concepto] = Array(12).fill(0);
+      gastosSuc[sucKey][cat][concepto][mesIdx] += total;
+    }
+
+    // Build totals per suc per cat
+    const totalSuc = {};
+    ['CC', 'DOL'].forEach(sk => {
+      totalSuc[sk] = {};
+      if (gastosSuc[sk]) Object.entries(gastosSuc[sk]).forEach(([cat, subs]) => {
+        totalSuc[sk][cat] = Array(12).fill(0);
+        Object.values(subs).forEach(m => m.forEach((v, i) => totalSuc[sk][cat][i] += v));
+      });
+    });
+
+    // Grand total
+    const grandTotal = Array(12).fill(0);
+    Object.values(totales).forEach(m => m.forEach((v, i) => grandTotal[i] += v));
+
+    res.json({
+      registros,
+      gastos,      // TOTAL: { cat: { subcategoria: [12] } }
+      totales,     // { cat: [12] }
+      gastosSuc,   // { CC|DOL: { cat: { sub: [12] } } }
+      totalSuc,    // { CC|DOL: { cat: [12] } }
+      grandTotal,
+      unmatchedTop: Object.entries(unmatchedConcepts)
+        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+        .slice(0, 10)
+        .map(([c, t]) => ({ concepto: c, total: Math.round(t) }))
+    });
+  } catch (err) {
+    console.error('Error parsing egresos:', err);
+    res.status(500).json({ error: 'Error al procesar: ' + err.message });
+  }
+});
+
 // ── PRESUPUESTO: upload Excel ──
 app.post('/api/presupuesto/upload', uploadPresupuesto.single('file'), (req, res) => {
   try {

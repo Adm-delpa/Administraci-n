@@ -224,27 +224,48 @@ tr.row-result td{font-weight:700;font-size:13px;background:#EBF2FC!important}
 
   <!-- TAB: CARGA DE DATOS -->
   <div id="tab-carga" class="tab-content">
+
+    <!-- EGRESOS TIPIFICADOS -->
     <div class="table-container">
-      <div class="table-title"><span>Importar desde Excel</span></div>
+      <div class="table-title"><span>Egresos Tipificados (Gastos Reales)</span></div>
       <div style="padding:20px">
         <p style="color:#56555A;font-size:13px;margin-bottom:16px;line-height:1.5">
-          Subí el archivo Excel del presupuesto y el sistema extrae automáticamente: volumen por segmento y sucursal,
-          gastos reales y presupuestados por categoría, ratios de prorrateo e inflación.
+          Subí el reporte de Egresos Tipificados exportado de Chess. El sistema agrupa automáticamente
+          por centro de costo y mes, igual que la hoja REAL del presupuesto.
         </p>
-        <div id="uploadZone" style="border:2px dashed #DDDBD6;border-radius:10px;padding:40px 20px;text-align:center;
-          cursor:pointer;transition:all .2s;background:#FAFAF8" onclick="document.getElementById('fileInput').click()"
+        <div id="uploadZoneEgresos" style="border:2px dashed #DDDBD6;border-radius:10px;padding:30px 20px;text-align:center;
+          cursor:pointer;transition:all .2s;background:#FAFAF8" onclick="document.getElementById('fileEgresos').click()"
           ondragover="event.preventDefault();this.style.borderColor='#0D4FA0';this.style.background='#EBF2FC'"
           ondragleave="this.style.borderColor='#DDDBD6';this.style.background='#FAFAF8'"
-          ondrop="event.preventDefault();this.style.borderColor='#DDDBD6';this.style.background='#FAFAF8';handleFile(event.dataTransfer.files[0])">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9896A0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px">
+          ondrop="event.preventDefault();this.style.borderColor='#DDDBD6';this.style.background='#FAFAF8';handleEgresos(event.dataTransfer.files[0])">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9896A0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/>
           </svg>
-          <div style="font-weight:700;color:#18181A;margin-bottom:4px">Arrastrá el archivo Excel acá</div>
-          <div style="font-size:12px;color:#9896A0">o hacé click para seleccionar — .xlsx / .xls</div>
+          <div style="font-weight:700;color:#18181A;margin-bottom:4px">Arrastrá el reporte de Egresos Tipificados</div>
+          <div style="font-size:12px;color:#9896A0">Archivo .xlsx exportado de Chess ERP</div>
         </div>
-        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
-        <div id="uploadStatus" style="margin-top:14px"></div>
-        <div id="uploadPreview" style="margin-top:14px"></div>
+        <input type="file" id="fileEgresos" accept=".xlsx,.xls" style="display:none" onchange="handleEgresos(this.files[0])">
+        <div id="egresosStatus" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- RESULTADO EGRESOS -->
+    <div id="egresosResult" class="hidden">
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
+        <div class="filter-group">
+          <label>Sucursal</label>
+          <select id="egresosSuc" onchange="renderEgresos()">
+            <option value="TOTAL">Total</option>
+            <option value="CC">Casa Central</option>
+            <option value="DOL">Dolores</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="aplicarEgresos()" style="margin-left:auto">Aplicar al Presupuesto</button>
+        <button class="btn-export" onclick="exportCSV('tblEgresos','egresos_tipificados')">Exportar CSV</button>
+      </div>
+      <div class="table-container">
+        <div class="table-title"><span>REAL — Gastos por Centro de Costo</span></div>
+        <div class="table-scroll"><table id="tblEgresos"></table></div>
       </div>
     </div>
   </div>
@@ -586,98 +607,114 @@ function renderProrrateo(){
   tbl.innerHTML=h+'</tbody>';
 }
 
-// ── UPLOAD EXCEL ──
-async function handleFile(file){
+// ── UPLOAD EGRESOS TIPIFICADOS ──
+const CAT_KEYS = { 'VENTAS': 'ventas', 'OPERACIONES': 'operaciones', 'INFRAESTRUCTURA': 'infraestructura',
+  'DISTRIBUCION': 'distribucion', 'ACARREO': 'acarreo', 'ADMIN Y FINANZAS': 'admin' };
+const CAT_ORDER = ['VENTAS','OPERACIONES','INFRAESTRUCTURA','DISTRIBUCION','ACARREO','ADMIN Y FINANZAS'];
+let egresosData = null;
+
+async function handleEgresos(file){
   if(!file) return;
-  const status=document.getElementById('uploadStatus');
-  const preview=document.getElementById('uploadPreview');
+  const status=document.getElementById('egresosStatus');
   status.innerHTML='<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#EBF2FC;border-radius:8px;font-size:13px;color:#0D4FA0;font-weight:600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4m-3.93 7.07l-2.83-2.83M6.34 6.34L3.51 3.51"/></svg>Procesando '+file.name+'...</div>';
-  preview.innerHTML='';
   const form=new FormData();
   form.append('file',file);
   try{
-    const resp=await fetch('/api/presupuesto/upload',{method:'POST',body:form});
+    const resp=await fetch('/api/presupuesto/egresos',{method:'POST',body:form});
     if(!resp.ok){const e=await resp.json();throw new Error(e.error||'Error del servidor');}
-    const data=await resp.json();
-    applyExcelData(data);
-    save();
-    const hojas=data.sheets||[];
-    let nGR=0,nGP=0,nVol=0;
-    if(data.gastoReal)Object.values(data.gastoReal).forEach(suc=>Object.values(suc).forEach(c=>{nGR+=Object.keys(c.subcats||{}).length;}));
-    if(data.gastoPre)Object.values(data.gastoPre).forEach(suc=>Object.values(suc).forEach(c=>{nGP+=Object.keys(c.subcats||{}).length;}));
-    if(data.volumen)nVol=Object.keys(data.volumen).length;
-    status.innerHTML='<div style="padding:10px;background:#D4F2E8;border-radius:8px;font-size:13px;color:#075C41;font-weight:600">Archivo importado correctamente</div>';
-    preview.innerHTML=`<div class="table-container" style="margin-top:10px"><div class="table-title"><span>Resumen de importación</span></div>
-      <div style="padding:14px;font-size:13px;line-height:1.8">
-        <div><strong>Archivo:</strong> ${file.name}</div>
-        <div><strong>Hojas detectadas:</strong> ${hojas.length} (${hojas.slice(0,6).join(', ')}${hojas.length>6?'...':''})</div>
-        <div><strong>Volumen:</strong> ${nVol} bloques (Total/CC/Dolores) x 7 segmentos x 12 meses</div>
-        <div><strong>Gastos Reales:</strong> ${nGR} subcategorías con datos</div>
-        <div><strong>Gastos Presupuestados:</strong> ${nGP} subcategorías con datos</div>
-        <div><strong>Prorrateo:</strong> ${data.proPre?'PRE':'—'} + ${data.proReal?'REAL':'—'} (vol/km/cam/comb)</div>
-        <div><strong>Inflación:</strong> PRE ${data.inflPre?.filter(v=>v).length||0} meses, Real ${data.inflReal?.filter(v=>v).length||0} meses</div>
-      </div></div>`;
-    recalcAll();
+    egresosData=await resp.json();
+    const r=egresosData.registros;
+    status.innerHTML=`<div style="padding:10px;background:#D4F2E8;border-radius:8px;font-size:13px;color:#075C41;font-weight:600">
+      ${r.total.toLocaleString()} registros procesados — ${r.matched.toLocaleString()} gastos clasificados, ${r.unmatched.toLocaleString()} no aplican (productos/compras)</div>`;
+    document.getElementById('egresosResult').classList.remove('hidden');
+    renderEgresos();
   }catch(err){
     status.innerHTML='<div style="padding:10px;background:#FAE0E0;border-radius:8px;font-size:13px;color:#C53030;font-weight:600">Error: '+err.message+'</div>';
   }
 }
 
-function applyExcelData(ex){
+function renderEgresos(){
+  if(!egresosData) return;
+  const suc=document.getElementById('egresosSuc').value;
+  const tbl=document.getElementById('tblEgresos');
+  const gastos = suc==='TOTAL' ? egresosData.gastos : egresosData.gastosSuc[suc] || {};
+  const totCat = suc==='TOTAL' ? egresosData.totales : egresosData.totalSuc[suc] || {};
+  const grand = suc==='TOTAL' ? egresosData.grandTotal : null;
+
+  let h='<thead><tr><th>Centro de Costo / Concepto</th>';
+  MS.forEach(m=>h+=`<th>${m}</th>`);h+='<th class="col-pre">TOTAL</th></tr></thead><tbody>';
+
+  CAT_ORDER.forEach(cat=>{
+    const catColor = CATS.find(c=>c.key===CAT_KEYS[cat])?.color || '#333';
+    const subs = gastos[cat] || {};
+    const catTotal = totCat[cat] || Array(12).fill(0);
+    const catSum = catTotal.reduce((a,b)=>a+b,0);
+
+    h+=`<tr class="row-category"><td><span class="cat-strip" style="background:${catColor}"></span>${cat}</td>`;
+    catTotal.forEach(v=>h+=`<td>${v?fmt(v):'-'}</td>`);
+    h+=`<td class="col-pre">${fmt(catSum)}</td></tr>`;
+
+    Object.entries(subs).sort((a,b)=>{
+      const sa=a[1].reduce((x,y)=>x+Math.abs(y),0), sb=b[1].reduce((x,y)=>x+Math.abs(y),0);
+      return sb-sa;
+    }).forEach(([sub, meses])=>{
+      const sum=meses.reduce((a,b)=>a+b,0);
+      const label=sub.replace(/ - (VENTAS Y PROMOCI[OÓ]N|OPERACIONES|INFRAESTRUCTURA|DISTRIBUCION|ACARREO|ADMIN Y FINANZAS|ADMINISTRACI[OÓ]N)$/i,'');
+      h+=`<tr class="row-sub"><td>${label}</td>`;
+      meses.forEach(v=>h+=`<td>${v?fmt(v):'-'}</td>`);
+      h+=`<td class="col-pre">${fmt(sum)}</td></tr>`;
+    });
+  });
+
+  if(grand){
+    const gt=grand.reduce((a,b)=>a+b,0);
+    h+='<tr class="row-result"><td>TOTAL GASTOS</td>';
+    grand.forEach(v=>h+=`<td>${fmt(v)}</td>`);
+    h+=`<td class="col-pre">${fmt(gt)}</td></tr>`;
+  } else {
+    let gt=Array(12).fill(0);
+    Object.values(totCat).forEach(t=>t.forEach((v,i)=>gt[i]+=v));
+    const s=gt.reduce((a,b)=>a+b,0);
+    h+='<tr class="row-result"><td>TOTAL GASTOS</td>';
+    gt.forEach(v=>h+=`<td>${fmt(v)}</td>`);
+    h+=`<td class="col-pre">${fmt(s)}</td></tr>`;
+  }
+
+  tbl.innerHTML=h+'</tbody>';
+}
+
+function aplicarEgresos(){
+  if(!egresosData) return;
   const d=S.data;
-  if(ex.volumen){
-    if(ex.volumen.CC)d.vol.CC=ex.volumen.CC;
-    if(ex.volumen.DOL)d.vol.DOL=ex.volumen.DOL;
-  }
-  if(ex.inflPre&&ex.inflPre.length===12)d.inflPre=ex.inflPre;
-  if(ex.inflReal&&ex.inflReal.length===12)d.inflReal=ex.inflReal;
-  if(ex.proPre){
-    if(ex.proPre.vol)d.proPre.vol=ex.proPre.vol;
-    if(ex.proPre.km)d.proPre.km=ex.proPre.km;
-    if(ex.proPre.cam)d.proPre.cam=ex.proPre.cam;
-    if(ex.proPre.comb)d.proPre.comb=ex.proPre.comb;
-  }
-  if(ex.proReal){
-    if(ex.proReal.vol)d.proReal.vol=ex.proReal.vol;
-    if(ex.proReal.km)d.proReal.km=ex.proReal.km;
-    if(ex.proReal.cam)d.proReal.cam=ex.proReal.cam;
-    if(ex.proReal.comb)d.proReal.comb=ex.proReal.comb;
-  }
-  // Gastos: store full structure from Excel (TOTAL has the real values, CC/DOL via prorrateo)
-  if(ex.gastoReal&&ex.gastoReal.TOTAL){
-    d.gastoReal={};
-    CATS.forEach(c=>{
-      const catData=ex.gastoReal.TOTAL[c.key];
-      if(catData&&catData.subcats){
-        d.gastoReal[c.key]={};
-        Object.entries(catData.subcats).forEach(([sub,meses])=>{d.gastoReal[c.key][sub]=meses;});
-        d.gastoReal[c.key].__total=catData.total;
-      }
+  d.gastoReal={};
+  CAT_ORDER.forEach(cat=>{
+    const ck=CAT_KEYS[cat];
+    const subs=egresosData.gastos[cat]||{};
+    const total=egresosData.totales[cat]||Array(12).fill(0);
+    d.gastoReal[ck]={};
+    Object.entries(subs).forEach(([sub,meses])=>{d.gastoReal[ck][sub]=meses;});
+    d.gastoReal[ck].__total=total;
+  });
+  // Store per-sucursal
+  d.gastoRealCC={};d.gastoRealDOL={};
+  ['CC','DOL'].forEach(sk=>{
+    const target=sk==='CC'?d.gastoRealCC:d.gastoRealDOL;
+    const src=egresosData.gastosSuc[sk]||{};
+    const srcT=egresosData.totalSuc[sk]||{};
+    CAT_ORDER.forEach(cat=>{
+      const ck=CAT_KEYS[cat];
+      target[ck]={subcats:src[cat]||{},total:srcT[cat]||Array(12).fill(0)};
     });
-    if(ex.gastoReal.CC){d.gastoRealCC={};CATS.forEach(c=>{const cd=ex.gastoReal.CC[c.key];if(cd)d.gastoRealCC[c.key]={subcats:cd.subcats,total:cd.total};});}
-    if(ex.gastoReal.DOL){d.gastoRealDOL={};CATS.forEach(c=>{const cd=ex.gastoReal.DOL[c.key];if(cd)d.gastoRealDOL[c.key]={subcats:cd.subcats,total:cd.total};});}
-  }
-  if(ex.gastoPre&&ex.gastoPre.TOTAL){
-    d.gastoPre={};
-    CATS.forEach(c=>{
-      const catData=ex.gastoPre.TOTAL[c.key];
-      if(catData&&catData.subcats){
-        d.gastoPre[c.key]={};
-        Object.entries(catData.subcats).forEach(([sub,meses])=>{d.gastoPre[c.key][sub]=meses;});
-        d.gastoPre[c.key].__total=catData.total;
-      }
-    });
-    if(ex.gastoPre.CC){d.gastoPreCC={};CATS.forEach(c=>{const cd=ex.gastoPre.CC[c.key];if(cd)d.gastoPreCC[c.key]={subcats:cd.subcats,total:cd.total};});}
-    if(ex.gastoPre.DOL){d.gastoPreDOL={};CATS.forEach(c=>{const cd=ex.gastoPre.DOL[c.key];if(cd)d.gastoPreDOL[c.key]={subcats:cd.subcats,total:cd.total};});}
-  }
+  });
   d.excelLoaded=true;
-  // Detect mesActual from real data (last month with non-zero total gastos)
   let lastReal=0;
-  CATS.forEach(c=>{
-    const t=d.gastoReal[c.key]?.__total;
-    if(t)t.forEach((v,i)=>{if(v)lastReal=Math.max(lastReal,i+1);});
+  Object.values(d.gastoReal).forEach(c=>{
+    const t=c.__total;if(t)t.forEach((v,i)=>{if(v)lastReal=Math.max(lastReal,i+1);});
   });
   d.mesActual=lastReal;
+  save();
+  recalcAll();
+  alert('Gastos reales aplicados al presupuesto ('+lastReal+' meses con datos)');
 }
 
 // ── EXPORT ──
