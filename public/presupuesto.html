@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Presupuesto — Del Palacio S.A.</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh;font-size:14px}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:1400px;margin:0 auto;padding:1.5rem 1rem}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb-sep{color:#DDDBD6}
+
+/* Tabs */
+.nav-tabs{display:flex;gap:0;border-bottom:2px solid #DDDBD6;margin-bottom:1.25rem;overflow-x:auto}
+.nav-tab{padding:10px 18px;font-size:13px;font-weight:600;color:#9896A0;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .15s}
+.nav-tab:hover{color:#18181A;background:rgba(0,0,0,.03)}
+.nav-tab.active{color:#0D4FA0;border-bottom-color:#0D4FA0}
+
+/* Filters */
+.filters{display:flex;align-items:center;gap:14px;margin-bottom:1.25rem;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:6px}
+.filter-group label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0}
+.filter-group select{padding:6px 10px;border:1.5px solid #DDDBD6;border-radius:6px;font-size:13px;
+  background:#fff;font-family:inherit;outline:none}
+.filter-group select:focus{border-color:#1E6FD9}
+
+/* Month selector */
+.month-selector{display:flex;gap:3px}
+.month-btn{padding:4px 9px;border-radius:4px;border:1px solid #DDDBD6;background:#fff;
+  cursor:pointer;font-size:11px;font-weight:600;color:#56555A;transition:all .15s}
+.month-btn.active{background:#0D4FA0;color:#fff;border-color:#0D4FA0}
+.month-btn:hover:not(.active){background:#F2F1EE}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:1.25rem}
+.kpi-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:4px}
+.kpi-value{font-size:22px;font-weight:700;color:#18181A}
+.kpi-sub{font-size:11px;margin-top:2px;font-weight:500}
+
+/* Tables */
+.table-container{background:#fff;border:1px solid #DDDBD6;border-radius:10px;overflow:hidden;margin-bottom:1.25rem}
+.table-title{padding:12px 16px;font-weight:700;font-size:14px;border-bottom:1px solid #DDDBD6;
+  display:flex;align-items:center;justify-content:space-between}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#F8F7F5;padding:7px 10px;text-align:right;font-weight:700;font-size:11px;
+  color:#9896A0;border-bottom:1.5px solid #DDDBD6;white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+th:first-child{text-align:left;min-width:200px;position:sticky;left:0;z-index:2;background:#F8F7F5}
+td{padding:6px 10px;text-align:right;border-bottom:1px solid #F2F1EE;white-space:nowrap}
+td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:#fff;z-index:1}
+tr:hover td{background:#F8F7F5}
+tr.row-total td{font-weight:700;border-top:2px solid #DDDBD6;background:#F8F7F5!important}
+tr.row-category td{background:#F8F7F5;font-weight:700;color:#0D4FA0}
+tr.row-sub td:first-child{padding-left:24px;font-weight:400;color:#56555A}
+tr.row-result td{font-weight:700;font-size:13px;background:#EBF2FC!important}
+
+.num-pos{color:#075C41}
+.num-neg{color:#C53030}
+.pct-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
+.pct-pos{background:#D4F2E8;color:#075C41}
+.pct-neg{background:#FAE0E0;color:#C53030}
+
+.col-pre{background:#EBF2FC!important}
+.col-real{background:#FFF8E7!important}
+
+.cat-strip{width:4px;height:14px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:middle}
+
+.btn-export{background:#F2F1EE;border:1px solid #DDDBD6;border-radius:6px;padding:5px 14px;font-size:12px;
+  font-weight:600;cursor:pointer;color:#56555A;font-family:inherit}
+.btn-export:hover{background:#E8E6E1}
+
+/* Carga de datos */
+.input-grid{display:grid;gap:1px;background:#DDDBD6;border:1px solid #DDDBD6;border-radius:6px;overflow:hidden}
+.input-grid>*{background:#fff;padding:5px 7px;font-size:11px}
+.input-grid .ig-header{background:#F8F7F5;font-weight:700;text-align:center;color:#9896A0;font-size:10px;text-transform:uppercase}
+.input-grid .ig-label{font-weight:600;color:#18181A}
+.input-grid input[type="number"]{width:100%;border:1px solid #DDDBD6;border-radius:4px;padding:4px 6px;
+  font-size:11px;text-align:right;font-family:inherit;outline:none}
+.input-grid input[type="number"]:focus{border-color:#1E6FD9;box-shadow:0 0 0 2px rgba(30,111,217,.15)}
+
+.btn-primary{background:#0D4FA0;color:#fff;border:none;border-radius:7px;padding:8px 20px;
+  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.btn-primary:hover{background:#0B3F80}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.hidden{display:none!important}
+
+@media(max-width:768px){
+  .topbar{padding:.75rem 1rem}
+  .page{padding:1rem .75rem}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  th:first-child,td:first-child{min-width:140px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Presupuesto 2026</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+    </div>
+    <button class="logout-btn" onclick="window.location.href='/panel'">Volver</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Presupuesto</span>
+  </div>
+
+  <!-- TABS -->
+  <div class="nav-tabs" id="navTabs">
+    <div class="nav-tab active" data-tab="resultados">Resultados</div>
+    <div class="nav-tab" data-tab="presVsReal">Pre vs Real</div>
+    <div class="nav-tab" data-tab="volumen">Volumen</div>
+    <div class="nav-tab" data-tab="costoHL">Costo x HL</div>
+    <div class="nav-tab" data-tab="prorrateo">Prorrateo</div>
+    <div class="nav-tab" data-tab="carga" id="tabCarga">Carga de Datos</div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters">
+    <div class="filter-group">
+      <label>Sucursal</label>
+      <select id="filterSucursal" onchange="recalcAll()">
+        <option value="TOTAL">Total General</option>
+        <option value="CASA CENTRAL">Casa Central</option>
+        <option value="DOLORES">Dolores</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Vista</label>
+      <select id="filterVista" onchange="recalcAll()">
+        <option value="acumulado">Acumulado Anual</option>
+        <option value="mensual">Por Mes</option>
+      </select>
+    </div>
+    <div class="filter-group hidden" id="monthGroup">
+      <label>Mes</label>
+      <div class="month-selector" id="monthSelector"></div>
+    </div>
+  </div>
+
+  <!-- TAB: RESULTADOS -->
+  <div id="tab-resultados" class="tab-content active">
+    <div class="kpi-row" id="kpiRow"></div>
+    <div class="table-container">
+      <div class="table-title">
+        <span>Estado de Resultados</span>
+        <button class="btn-export" onclick="exportCSV('tblResultados','resultados')">Exportar CSV</button>
+      </div>
+      <div class="table-scroll"><table id="tblResultados"></table></div>
+    </div>
+  </div>
+
+  <!-- TAB: PRE VS REAL -->
+  <div id="tab-presVsReal" class="tab-content">
+    <div class="table-container">
+      <div class="table-title">
+        <span>Presupuesto vs Real — Detalle de Gastos</span>
+        <button class="btn-export" onclick="exportCSV('tblPresVsReal','pre_vs_real')">Exportar CSV</button>
+      </div>
+      <div class="table-scroll"><table id="tblPresVsReal"></table></div>
+    </div>
+  </div>
+
+  <!-- TAB: VOLUMEN -->
+  <div id="tab-volumen" class="tab-content">
+    <div class="kpi-row" id="kpiVolumen"></div>
+    <div class="table-container">
+      <div class="table-title"><span>Volumen por Segmento (HL)</span></div>
+      <div class="table-scroll"><table id="tblVolumen"></table></div>
+    </div>
+  </div>
+
+  <!-- TAB: COSTO x HL -->
+  <div id="tab-costoHL" class="tab-content">
+    <div class="table-container">
+      <div class="table-title"><span>Costo por Hectolitro</span></div>
+      <div class="table-scroll"><table id="tblCostoHL"></table></div>
+    </div>
+  </div>
+
+  <!-- TAB: PRORRATEO -->
+  <div id="tab-prorrateo" class="tab-content">
+    <div class="table-container">
+      <div class="table-title"><span>Ratios de Prorrateo e Inflación</span></div>
+      <div class="table-scroll"><table id="tblProrrateo"></table></div>
+    </div>
+  </div>
+
+  <!-- TAB: CARGA DE DATOS -->
+  <div id="tab-carga" class="tab-content">
+    <div class="table-container">
+      <div class="table-title"><span>Carga de Datos Mensuales</span></div>
+      <div style="padding:16px">
+        <p style="color:#9896A0;font-size:12px;margin-bottom:14px">
+          Seleccione la categoría de datos a cargar y complete los valores para cada mes.
+        </p>
+        <div class="filter-group" style="margin-bottom:14px">
+          <label>Categoría</label>
+          <select id="cargaCategoria" onchange="showCargaForm()">
+            <option value="">Seleccionar...</option>
+            <option value="volumen">Volumen (HL por segmento)</option>
+            <option value="precios">$/HL PNIT (Precios)</option>
+            <option value="inflacion">Inflación Real (ICV)</option>
+            <option value="prorrateo">Ratios Prorrateo</option>
+          </select>
+        </div>
+        <div id="cargaForm"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── AUTH ──
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) { window.location.href = '/'; }
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre||userData.username).charAt(0).toUpperCase();
+
+const isReadOnly = userData.rol !== 'admin' && (!userData.modulos || userData.modulos['presupuesto'] !== 'admin');
+if (isReadOnly) document.getElementById('tabCarga').classList.add('hidden');
+
+// ── CONSTANTS ──
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const SEGMENTOS = ['Cervezas Above Core','Cervezas Core+Value','UNG Premium','UNG Sin Premium','Aguas Eco','Vinos y Adyacencias','Marketplace Alimentos'];
+const CATS = [
+  {key:'ventas',name:'Ventas y Promoción',color:'#E65100'},
+  {key:'operaciones',name:'Operaciones',color:'#1565C0'},
+  {key:'infraestructura',name:'Infraestructura',color:'#6A1B9A'},
+  {key:'distribucion',name:'Distribución',color:'#2E7D32'},
+  {key:'acarreo',name:'Acarreo',color:'#AD1457'},
+  {key:'admin',name:'Admin y Finanzas',color:'#00695C'}
+];
+const SUBCATS = {
+  ventas:['Sueldos Ventas','Cargas Sociales Ventas','Promociones','Eventos','Material POP','Viáticos','Capacitación','Indumentaria','Telefonía','Otros'],
+  operaciones:['Sueldos Operaciones','Cargas Sociales Ops','Serv. Limpieza','Mant. Equipos','Pallets','Indumentaria Ops','Otros Ops'],
+  infraestructura:['Alquileres','Servicios (Luz/Gas/Agua)','Internet','Seguros','Reparación y Mant.','Imp. Inmobiliarios','Otros Infra'],
+  distribucion:['Combustible','Mant. Flota','Seguros Flota','Peajes','Patentes','GPS/Rastreo','Otros Dist.'],
+  acarreo:['Flete Quilmes','Flete Terceros','Flete Mar de Ajo'],
+  admin:['Sueldos Admin','Cargas Sociales Admin','Honorarios Prof.','Gastos Bancarios','ITF','Ingresos Brutos','Imp. Varios','Sistemas/Software','Otros Admin']
+};
+
+let S = { tab:'resultados', suc:'TOTAL', vista:'acumulado', mes:0, data:null };
+
+// ── DATA ──
+function defaultData(){
+  return {
+    year:2026, mesActual:7,
+    inflPre:[.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02,.02],
+    inflReal:[.038,.032,.028,.035,.041,.045,.042,0,0,0,0,0],
+    vol:{ CC:SEGMENTOS.map(()=>Array(12).fill(0)), DOL:SEGMENTOS.map(()=>Array(12).fill(0)) },
+    precHL:SEGMENTOS.map(()=>Array(12).fill(0)),
+    tsHL:SEGMENTOS.map(()=>Array(12).fill(0)),
+    tsHLcmq:SEGMENTOS.map(()=>Array(12).fill(0)),
+    cmvRate:SEGMENTOS.map(()=>Array(12).fill(0)),
+    ndcExtra:Array(12).fill(0), ndcCMQ:Array(12).fill(0),
+    proReal:{vol:Array(12).fill(.7),km:Array(12).fill(.65),cam:Array(12).fill(.6),comb:Array(12).fill(.55)},
+    proPre:{vol:Array(12).fill(.7),km:Array(12).fill(.65),cam:Array(12).fill(.6),comb:Array(12).fill(.55)},
+    gastoPre:{}, gastoReal:{},
+    wsc:{t:Array(12).fill(0),cc:Array(12).fill(0),dol:Array(12).fill(0)},
+    acarreo:{t:Array(12).fill(0),cc:Array(12).fill(0),dol:Array(12).fill(0)},
+    cyo:Array(12).fill(0), recon:Array(12).fill(0)
+  };
+}
+
+function loadSample(){
+  const d=S.data;
+  const vCC=[[1850,1720,1900,1680,1550,1400,1350,1500,1600,1750,1900,2100],[3200,3050,3400,3100,2800,2500,2400,2700,2900,3100,3400,3800],[420,390,440,400,360,320,310,350,370,410,440,490],[280,260,290,265,240,215,205,230,250,275,290,325],[650,600,680,620,560,500,480,540,580,640,680,760],[180,165,190,170,155,140,130,150,160,175,190,210],[95,85,100,90,80,72,68,78,84,92,100,110]];
+  d.vol.CC=vCC; d.vol.DOL=vCC.map(s=>s.map(v=>Math.round(v*.35)));
+  const pBase=[185000,142000,210000,165000,95000,220000,130000];
+  d.precHL=pBase.map(b=>{const a=[b];for(let i=1;i<12;i++)a.push(Math.round(a[i-1]*(1+d.inflPre[i])));return a;});
+  d.tsHL=[12000,9500,15000,11000,6000,14000,8000].map(b=>{const a=[b];for(let i=1;i<12;i++)a.push(Math.round(a[i-1]*(1+d.inflPre[i])));return a;});
+  d.cmvRate=SEGMENTOS.map(()=>Array(12).fill(.62));
+  CATS.forEach(c=>{d.gastoPre[c.key]={};d.gastoReal[c.key]={};
+    (SUBCATS[c.key]||[]).forEach(sub=>{
+      const base=500000+Math.random()*2000000|0;
+      d.gastoPre[c.key][sub]=base;
+      d.gastoReal[c.key][sub]=Array(12).fill(0).map((_,i)=>i>=d.mesActual?0:Math.round(base*(1+(Math.random()-.4)*.3)*Math.pow(1.035,i)));
+    });
+  });
+  for(let m=0;m<12;m++){
+    d.wsc.t[m]=Math.round(1200000*Math.pow(1.02,m));d.wsc.cc[m]=Math.round(d.wsc.t[m]*.65);d.wsc.dol[m]=d.wsc.t[m]-d.wsc.cc[m];
+    d.acarreo.t[m]=Math.round(3500000*Math.pow(1.02,m));d.acarreo.cc[m]=Math.round(d.acarreo.t[m]*.6);d.acarreo.dol[m]=d.acarreo.t[m]-d.acarreo.cc[m];
+  }
+}
+
+function initData(){
+  try{const s=localStorage.getItem('dpPre2026');if(s){S.data=JSON.parse(s);return;}}catch(e){}
+  S.data=defaultData();loadSample();save();
+}
+function save(){try{localStorage.setItem('dpPre2026',JSON.stringify(S.data));}catch(e){}}
+
+// ── CALC ENGINE (replicates Excel) ──
+function volSuc(suc){return suc==='CASA CENTRAL'?'CC':suc==='DOLORES'?'DOL':null;}
+function getVol(suc,si,m){
+  if(suc==='TOTAL')return(S.data.vol.CC[si][m]||0)+(S.data.vol.DOL[si][m]||0);
+  return S.data.vol[volSuc(suc)]?.[si]?.[m]||0;
+}
+function getVolT(suc,m){let t=0;for(let i=0;i<7;i++)t+=getVol(suc,i,m);return t;}
+function factBruta(suc,si,m){return getVol(suc,si,m)*(S.data.precHL[si]?.[m]||0);}
+function bonDP(suc,si,m){return getVol(suc,si,m)*(S.data.tsHL[si]?.[m]||0);}
+function bonCMQ(suc,si,m){return getVol(suc,si,m)*(S.data.tsHLcmq[si]?.[m]||0);}
+function cmv(suc,si,m){return factBruta(suc,si,m)*(S.data.cmvRate[si]?.[m]||0);}
+function factNeta(suc,m){let t=0;for(let s=0;s<7;s++)t+=factBruta(suc,s,m)-bonDP(suc,s,m)-bonCMQ(suc,s,m)-cmv(suc,s,m);return t-(S.data.ndcExtra[m]||0)-(S.data.ndcCMQ[m]||0);}
+function proRatio(tipo,m,real){const src=real?S.data.proReal:S.data.proPre;return src[tipo]?.[m]||.5;}
+function gastoPre(ck,sub,m){let v=S.data.gastoPre[ck]?.[sub]||0;for(let i=0;i<m;i++)v*=(1+S.data.inflPre[i]);return v;}
+function gastoReal(ck,sub,m){return S.data.gastoReal[ck]?.[sub]?.[m]||0;}
+function gastoPreSuc(ck,sub,m,suc){const t=gastoPre(ck,sub,m);if(suc==='TOTAL')return t;const r=proRatio('vol',m,false);return suc==='CASA CENTRAL'?t*r:t*(1-r);}
+function gastoRealSuc(ck,sub,m,suc){const t=gastoReal(ck,sub,m);if(suc==='TOTAL')return t;const r=proRatio('vol',m,true);return suc==='CASA CENTRAL'?t*r:t*(1-r);}
+function totalCat(ck,m,suc,real){let t=0;(SUBCATS[ck]||[]).forEach(sub=>t+=real?gastoRealSuc(ck,sub,m,suc):gastoPreSuc(ck,sub,m,suc));return t;}
+function totalGastos(m,suc,real){let t=0;CATS.forEach(c=>t+=totalCat(c.key,m,suc,real));return t;}
+function wscSuc(m,suc){const d=S.data.wsc;return suc==='TOTAL'?d.t[m]:suc==='CASA CENTRAL'?d.cc[m]:d.dol[m];}
+function acarreoSuc(m,suc){const d=S.data.acarreo;return suc==='TOTAL'?d.t[m]:suc==='CASA CENTRAL'?d.cc[m]:d.dol[m];}
+
+function calcRes(suc,m){
+  const r={};
+  r.factBrutaSeg=SEGMENTOS.map((_,i)=>factBruta(suc,i,m));
+  r.factBruta=r.factBrutaSeg.reduce((a,b)=>a+b,0);
+  r.bonDP=SEGMENTOS.map((_,i)=>bonDP(suc,i,m)).reduce((a,b)=>a+b,0);
+  r.bonCMQ=SEGMENTOS.map((_,i)=>bonCMQ(suc,i,m)).reduce((a,b)=>a+b,0);
+  r.cmv=SEGMENTOS.map((_,i)=>cmv(suc,i,m)).reduce((a,b)=>a+b,0);
+  r.factNeta=r.factBruta-r.bonDP-r.bonCMQ-r.cmv;
+  r.wsc=wscSuc(m,suc); r.cyo=S.data.cyo[m]||0; r.recon=S.data.recon[m]||0;
+  r.gastosCat={};CATS.forEach(c=>r.gastosCat[c.key]=totalCat(c.key,m,suc,m<S.data.mesActual));
+  r.totalGastos=Object.values(r.gastosCat).reduce((a,b)=>a+b,0);
+  r.resultado=r.factNeta-r.totalGastos+r.recon+r.wsc+r.cyo;
+  r.volTotal=getVolT(suc,m);
+  return r;
+}
+function calcResRange(suc,from,to){
+  const a=calcRes(suc,from);
+  for(let m=from+1;m<=to;m++){const r=calcRes(suc,m);
+    Object.keys(r).forEach(k=>{if(typeof r[k]==='number')a[k]+=r[k];
+      else if(typeof r[k]==='object')Object.keys(r[k]).forEach(sk=>a[k][sk]+=r[k][sk]);});
+  }return a;
+}
+
+// ── FORMAT ──
+function fmt(n){if(n==null||isNaN(n))return'-';const neg=n<0;const abs=Math.abs(n);
+  let s;if(abs>=1e6)s=(abs/1e6).toFixed(1)+'M';else s=Math.round(abs).toLocaleString('es-AR');
+  return(neg?'-':'')+'$'+s;}
+function fmtN(n){return n==null||isNaN(n)?'-':Math.round(n).toLocaleString('es-AR');}
+function fmtPct(n){return n==null||isNaN(n)||!isFinite(n)?'-':(n*100).toFixed(1)+'%';}
+function vari(p,r){return!p?0:(p-r)/Math.abs(p);}
+
+// ── RENDER: RESULTADOS ──
+function renderKPIs(){
+  const r=S.vista==='mensual'?calcRes(S.suc,S.mes):calcResRange(S.suc,0,11);
+  document.getElementById('kpiRow').innerHTML=
+    `<div class="kpi-card"><div class="kpi-label">Facturación Neta</div><div class="kpi-value">${fmt(r.factNeta)}</div></div>`+
+    `<div class="kpi-card"><div class="kpi-label">Gastos Totales</div><div class="kpi-value">${fmt(r.totalGastos)}</div></div>`+
+    `<div class="kpi-card"><div class="kpi-label">Resultado</div><div class="kpi-value" style="color:${r.resultado>=0?'#075C41':'#C53030'}">${fmt(r.resultado)}</div></div>`+
+    `<div class="kpi-card"><div class="kpi-label">Margen s/FN</div><div class="kpi-value">${r.factNeta?fmtPct(r.resultado/r.factNeta):'-'}</div></div>`+
+    `<div class="kpi-card"><div class="kpi-label">Volumen (HL)</div><div class="kpi-value">${fmtN(r.volTotal)}</div></div>`;
+}
+
+function renderResultados(){
+  const tbl=document.getElementById('tblResultados');
+  if(S.vista==='mensual'){const r=calcRes(S.suc,S.mes);tbl.innerHTML=buildResTable([r],[MESES[S.mes]]);}
+  else{const m=[];const h=[];for(let i=0;i<12;i++){m.push(calcRes(S.suc,i));h.push(MS[i]);}
+    m.push(calcResRange(S.suc,0,11));h.push('ACUM');tbl.innerHTML=buildResTable(m,h);}
+}
+
+function buildResTable(data,headers){
+  let h='<thead><tr><th>Concepto</th>';
+  headers.forEach((t,i)=>{const c=i===headers.length-1&&headers.length>1?' class="col-pre"':'';h+=`<th${c}>${t}</th>`;});
+  h+='</tr></thead><tbody>';
+  const rows=[
+    {l:'VOLUMEN (HL)',k:'volTotal',f:fmtN,c:'row-total'},
+    {l:'Facturación Bruta',k:'factBruta',f:fmt},
+    {l:'(-) Bonif. DP',k:'bonDP',f:fmt,c:'row-sub',neg:1},
+    {l:'(-) Bonif. CMQ',k:'bonCMQ',f:fmt,c:'row-sub',neg:1},
+    {l:'(-) CMV',k:'cmv',f:fmt,c:'row-sub',neg:1},
+    {l:'FACTURACIÓN NETA',k:'factNeta',f:fmt,c:'row-result'},
+    {sp:1},
+    ...CATS.map(c=>({l:c.name,k:'gastosCat.'+c.key,f:fmt,c:'row-category',color:c.color})),
+    {l:'TOTAL GASTOS',k:'totalGastos',f:fmt,c:'row-total'},
+    {sp:1},
+    {l:'WSC',k:'wsc',f:fmt,c:'row-sub'},
+    {l:'CyO',k:'cyo',f:fmt,c:'row-sub'},
+    {l:'Reconocimientos',k:'recon',f:fmt,c:'row-sub'},
+    {sp:1},
+    {l:'RESULTADO',k:'resultado',f:fmt,c:'row-result'}
+  ];
+  rows.forEach(row=>{
+    if(row.sp){h+='<tr><td colspan="99" style="height:6px;border:none"></td></tr>';return;}
+    h+=`<tr class="${row.c||''}"><td>`;
+    if(row.color)h+=`<span class="cat-strip" style="background:${row.color}"></span>`;
+    h+=`${row.l}</td>`;
+    data.forEach((d,i)=>{
+      let v;if(row.k.includes('.')){const p=row.k.split('.');v=d[p[0]]?.[p[1]]||0;}else v=d[row.k]||0;
+      const disp=row.neg?row.f(-Math.abs(v)):row.f(v);
+      const cls=(i===data.length-1&&data.length>1?' col-pre':'')+(v<0?' num-neg':'');
+      h+=`<td class="${cls}">${disp}</td>`;
+    });
+    h+='</tr>';
+  });
+  return h+'</tbody>';
+}
+
+// ── RENDER: PRE VS REAL ──
+function renderPresVsReal(){
+  const suc=S.suc;const tbl=document.getElementById('tblPresVsReal');
+  let h='<thead><tr><th>Concepto</th>';
+  if(S.vista==='mensual'){
+    h+=`<th class="col-pre">PRE ${MS[S.mes]}</th><th class="col-real">REAL ${MS[S.mes]}</th><th>Var $</th><th>Var %</th></tr></thead><tbody>`;
+    CATS.forEach(cat=>{
+      const p=totalCat(cat.key,S.mes,suc,false),r=totalCat(cat.key,S.mes,suc,true),v=p-r,vp=vari(p,r);
+      h+=`<tr class="row-category"><td><span class="cat-strip" style="background:${cat.color}"></span>${cat.name}</td>`;
+      h+=`<td class="col-pre">${fmt(p)}</td><td class="col-real">${fmt(r)}</td>`;
+      h+=`<td class="${v>=0?'num-pos':'num-neg'}">${fmt(v)}</td><td><span class="pct-badge ${vp>=0?'pct-pos':'pct-neg'}">${fmtPct(vp)}</span></td></tr>`;
+      (SUBCATS[cat.key]||[]).forEach(sub=>{
+        const ps=gastoPreSuc(cat.key,sub,S.mes,suc),rs=gastoRealSuc(cat.key,sub,S.mes,suc),vs=ps-rs,vps=vari(ps,rs);
+        h+=`<tr class="row-sub"><td>${sub}</td><td class="col-pre">${fmt(ps)}</td><td class="col-real">${fmt(rs)}</td>`;
+        h+=`<td class="${vs>=0?'num-pos':'num-neg'}">${fmt(vs)}</td><td><span class="pct-badge ${vps>=0?'pct-pos':'pct-neg'}">${fmtPct(vps)}</span></td></tr>`;
+      });
+    });
+  } else {
+    h+='<th class="col-pre">PRESUPUESTO</th><th class="col-real">REAL</th><th>Var $</th><th>Var %</th></tr></thead><tbody>';
+    CATS.forEach(cat=>{
+      let pc=0,rc=0;for(let m=0;m<12;m++){pc+=totalCat(cat.key,m,suc,false);rc+=totalCat(cat.key,m,suc,true);}
+      const vc=pc-rc,vpc=vari(pc,rc);
+      h+=`<tr class="row-category"><td><span class="cat-strip" style="background:${cat.color}"></span>${cat.name}</td>`;
+      h+=`<td class="col-pre">${fmt(pc)}</td><td class="col-real">${fmt(rc)}</td>`;
+      h+=`<td class="${vc>=0?'num-pos':'num-neg'}">${fmt(vc)}</td><td><span class="pct-badge ${vpc>=0?'pct-pos':'pct-neg'}">${fmtPct(vpc)}</span></td></tr>`;
+      (SUBCATS[cat.key]||[]).forEach(sub=>{
+        let ps=0,rs=0;for(let m=0;m<12;m++){ps+=gastoPreSuc(cat.key,sub,m,suc);rs+=gastoRealSuc(cat.key,sub,m,suc);}
+        const vs=ps-rs,vps=vari(ps,rs);
+        h+=`<tr class="row-sub"><td>${sub}</td><td class="col-pre">${fmt(ps)}</td><td class="col-real">${fmt(rs)}</td>`;
+        h+=`<td class="${vs>=0?'num-pos':'num-neg'}">${fmt(vs)}</td><td><span class="pct-badge ${vps>=0?'pct-pos':'pct-neg'}">${fmtPct(vps)}</span></td></tr>`;
+      });
+    });
+    let tp=0,tr2=0;for(let m=0;m<12;m++){tp+=totalGastos(m,suc,false);tr2+=totalGastos(m,suc,true);}
+    const tv=tp-tr2,tvp=vari(tp,tr2);
+    h+=`<tr class="row-total"><td>TOTAL GASTOS</td><td class="col-pre">${fmt(tp)}</td><td class="col-real">${fmt(tr2)}</td>`;
+    h+=`<td class="${tv>=0?'num-pos':'num-neg'}">${fmt(tv)}</td><td><span class="pct-badge ${tvp>=0?'pct-pos':'pct-neg'}">${fmtPct(tvp)}</span></td></tr>`;
+  }
+  tbl.innerHTML=h+'</tbody>';
+}
+
+// ── RENDER: VOLUMEN ──
+function renderVolumen(){
+  const suc=S.suc;const tbl=document.getElementById('tblVolumen');
+  let h='<thead><tr><th>Segmento</th>';
+  if(S.vista==='mensual'){
+    h+=`<th>${MESES[S.mes]}</th><th>% Part.</th></tr></thead><tbody>`;
+    const tot=getVolT(suc,S.mes);
+    SEGMENTOS.forEach((seg,i)=>{const v=getVol(suc,i,S.mes);h+=`<tr><td>${seg}</td><td>${fmtN(v)}</td><td>${fmtPct(tot?v/tot:0)}</td></tr>`;});
+    h+=`<tr class="row-total"><td>TOTAL</td><td>${fmtN(tot)}</td><td>100.0%</td></tr>`;
+  } else {
+    MS.forEach(m=>h+=`<th>${m}</th>`);h+='<th class="col-pre">ACUM</th></tr></thead><tbody>';
+    SEGMENTOS.forEach((seg,i)=>{h+=`<tr><td>${seg}</td>`;let ac=0;
+      for(let m=0;m<12;m++){const v=getVol(suc,i,m);ac+=v;h+=`<td>${fmtN(v)}</td>`;}
+      h+=`<td class="col-pre">${fmtN(ac)}</td></tr>`;});
+    h+=`<tr class="row-total"><td>TOTAL</td>`;let gt=0;
+    for(let m=0;m<12;m++){const t=getVolT(suc,m);gt+=t;h+=`<td>${fmtN(t)}</td>`;}
+    h+=`<td class="col-pre">${fmtN(gt)}</td></tr>`;
+  }
+  tbl.innerHTML=h+'</tbody>';
+  const ta=S.vista==='mensual'?getVolT(suc,S.mes):Array.from({length:12},(_,m)=>getVolT(suc,m)).reduce((a,b)=>a+b,0);
+  document.getElementById('kpiVolumen').innerHTML=
+    `<div class="kpi-card"><div class="kpi-label">Volumen Total</div><div class="kpi-value">${fmtN(ta)} HL</div></div>`;
+}
+
+// ── RENDER: COSTO x HL ──
+function renderCostoHL(){
+  const suc=S.suc;const tbl=document.getElementById('tblCostoHL');
+  const names=['Ventas y Promo','Operaciones','Infraestructura','Distribución','Acarreo','Admin y Finanzas'];
+  const keys=CATS.map(c=>c.key);
+  let h='<thead><tr><th>Concepto</th>';
+  if(S.vista==='mensual'){
+    h+=`<th>Gasto</th><th>$/HL</th></tr></thead><tbody>`;
+    const vol=getVolT(suc,S.mes);let tg=0;
+    keys.forEach((ck,i)=>{const g=totalCat(ck,S.mes,suc,S.mes<S.data.mesActual);tg+=g;
+      h+=`<tr><td>${names[i]}</td><td>${fmt(g)}</td><td>${vol?fmt(g/vol):'-'}</td></tr>`;});
+    h+=`<tr class="row-total"><td>TOTAL</td><td>${fmt(tg)}</td><td>${vol?fmt(tg/vol):'-'}</td></tr>`;
+  } else {
+    MS.forEach(m=>h+=`<th>${m}</th>`);h+='</tr></thead><tbody>';
+    keys.forEach((ck,ci)=>{h+=`<tr><td>${names[ci]}</td>`;
+      for(let m=0;m<12;m++){const vol=getVolT(suc,m);const g=totalCat(ck,m,suc,m<S.data.mesActual);h+=`<td>${vol?fmt(g/vol):'-'}</td>`;}
+      h+='</tr>';});
+    h+=`<tr class="row-total"><td>TOTAL</td>`;
+    for(let m=0;m<12;m++){const vol=getVolT(suc,m);const g=totalGastos(m,suc,m<S.data.mesActual);h+=`<td>${vol?fmt(g/vol):'-'}</td>`;}
+    h+='</tr>';
+  }
+  tbl.innerHTML=h+'</tbody>';
+}
+
+// ── RENDER: PRORRATEO ──
+function renderProrrateo(){
+  const tbl=document.getElementById('tblProrrateo');
+  const tipos=[['vol','Volumen'],['km','Kilómetros'],['cam','Camiones'],['comb','Combustible']];
+  let h='<thead><tr><th>Ratio</th><th>Tipo</th>';MS.forEach(m=>h+=`<th>${m}</th>`);h+='</tr></thead><tbody>';
+  ['Presupuestado','Real'].forEach(tipo=>{
+    const src=tipo==='Real'?S.data.proReal:S.data.proPre;
+    tipos.forEach(([k,lbl])=>{h+=`<tr><td>${lbl}</td><td>${tipo}</td>`;
+      for(let m=0;m<12;m++)h+=`<td>${fmtPct(src[k][m])}</td>`;h+='</tr>';});
+    if(tipo==='Presupuestado')h+='<tr><td colspan="99" style="height:3px;border:none;background:#DDDBD6"></td></tr>';
+  });
+  h+='<tr><td colspan="99" style="height:8px;border:none"></td></tr>';
+  h+='<tr class="row-category"><td colspan="99">Inflación</td></tr>';
+  h+='<tr><td>Presupuestada</td><td></td>';S.data.inflPre.forEach(v=>h+=`<td>${fmtPct(v)}</td>`);h+='</tr>';
+  h+='<tr><td>Real (ICV)</td><td></td>';S.data.inflReal.forEach(v=>h+=`<td>${v?fmtPct(v):'-'}</td>`);h+='</tr>';
+  let ap=0,ar=0;
+  h+='<tr><td>Acum. Pre</td><td></td>';for(let m=0;m<12;m++){ap=(1+ap)*(1+S.data.inflPre[m])-1;h+=`<td>${fmtPct(ap)}</td>`;}h+='</tr>';
+  h+='<tr><td>Acum. Real</td><td></td>';for(let m=0;m<12;m++){if(S.data.inflReal[m]){ar=(1+ar)*(1+S.data.inflReal[m])-1;h+=`<td>${fmtPct(ar)}</td>`;}else h+='<td>-</td>';}h+='</tr>';
+  tbl.innerHTML=h+'</tbody>';
+}
+
+// ── CARGA DE DATOS ──
+function showCargaForm(){
+  const cat=document.getElementById('cargaCategoria').value;
+  const c=document.getElementById('cargaForm');
+  if(!cat){c.innerHTML='';return;}
+  if(cat==='volumen'){
+    let h='';
+    ['CASA CENTRAL','DOLORES'].forEach(suc=>{
+      const sk=suc==='CASA CENTRAL'?'CC':'DOL';
+      h+=`<div style="font-weight:700;color:#0D4FA0;margin:14px 0 8px;font-size:13px">${suc}</div>`;
+      h+=`<div class="input-grid" style="grid-template-columns:180px repeat(12,1fr)"><div class="ig-header">Segmento</div>`;
+      MS.forEach(m=>h+=`<div class="ig-header">${m}</div>`);
+      SEGMENTOS.forEach((seg,si)=>{h+=`<div class="ig-label">${seg}</div>`;
+        for(let m=0;m<12;m++){const v=S.data.vol[sk][si][m]||'';
+          h+=`<div><input type="number" value="${v}" onchange="S.data.vol['${sk}'][${si}][${m}]=+this.value||0"></div>`;}
+      });h+='</div>';
+    });
+    h+='<button class="btn-primary" style="margin-top:14px" onclick="save();recalcAll()">Guardar y Recalcular</button>';
+    c.innerHTML=h;
+  } else if(cat==='inflacion'){
+    let h='<div class="input-grid" style="grid-template-columns:160px repeat(12,1fr)"><div class="ig-header">Tipo</div>';
+    MS.forEach(m=>h+=`<div class="ig-header">${m}</div>`);
+    h+='<div class="ig-label">Presupuestada (%)</div>';
+    for(let m=0;m<12;m++)h+=`<div><input type="number" step="0.1" value="${(S.data.inflPre[m]*100).toFixed(1)}" onchange="S.data.inflPre[${m}]=this.value/100"></div>`;
+    h+='<div class="ig-label">Real ICV (%)</div>';
+    for(let m=0;m<12;m++)h+=`<div><input type="number" step="0.1" value="${(S.data.inflReal[m]*100).toFixed(1)}" onchange="S.data.inflReal[${m}]=this.value/100"></div>`;
+    h+='</div><button class="btn-primary" style="margin-top:14px" onclick="save();recalcAll()">Guardar y Recalcular</button>';
+    c.innerHTML=h;
+  } else if(cat==='precios'){
+    let h='<div class="input-grid" style="grid-template-columns:180px repeat(12,1fr)"><div class="ig-header">Segmento</div>';
+    MS.forEach(m=>h+=`<div class="ig-header">${m}</div>`);
+    SEGMENTOS.forEach((seg,si)=>{h+=`<div class="ig-label">${seg}</div>`;
+      for(let m=0;m<12;m++){const v=S.data.precHL[si][m]||'';
+        h+=`<div><input type="number" value="${v}" onchange="S.data.precHL[${si}][${m}]=+this.value||0"></div>`;}
+    });
+    h+='</div><button class="btn-primary" style="margin-top:14px" onclick="save();recalcAll()">Guardar y Recalcular</button>';
+    c.innerHTML=h;
+  } else if(cat==='prorrateo'){
+    const tipos=[['vol','Volumen (CC %)'],['km','Kilómetros (CC %)'],['cam','Camiones (CC %)'],['comb','Combustible (CC %)']];
+    let h='<div style="font-weight:700;color:#0D4FA0;margin-bottom:8px;font-size:13px">Presupuestado</div>';
+    h+='<div class="input-grid" style="grid-template-columns:160px repeat(12,1fr)"><div class="ig-header">Ratio</div>';
+    MS.forEach(m=>h+=`<div class="ig-header">${m}</div>`);
+    tipos.forEach(([k,lbl])=>{h+=`<div class="ig-label">${lbl}</div>`;
+      for(let m=0;m<12;m++)h+=`<div><input type="number" step="1" value="${(S.data.proPre[k][m]*100).toFixed(0)}" onchange="S.data.proPre['${k}'][${m}]=this.value/100"></div>`;
+    });
+    h+='</div><div style="font-weight:700;color:#0D4FA0;margin:14px 0 8px;font-size:13px">Real</div>';
+    h+='<div class="input-grid" style="grid-template-columns:160px repeat(12,1fr)"><div class="ig-header">Ratio</div>';
+    MS.forEach(m=>h+=`<div class="ig-header">${m}</div>`);
+    tipos.forEach(([k,lbl])=>{h+=`<div class="ig-label">${lbl}</div>`;
+      for(let m=0;m<12;m++)h+=`<div><input type="number" step="1" value="${(S.data.proReal[k][m]*100).toFixed(0)}" onchange="S.data.proReal['${k}'][${m}]=this.value/100"></div>`;
+    });
+    h+='</div><button class="btn-primary" style="margin-top:14px" onclick="save();recalcAll()">Guardar y Recalcular</button>';
+    c.innerHTML=h;
+  } else c.innerHTML='<p style="color:#9896A0;padding:20px">En desarrollo.</p>';
+}
+
+// ── EXPORT ──
+function exportCSV(tblId,name){
+  const tbl=document.getElementById(tblId);if(!tbl)return;
+  let csv='';tbl.querySelectorAll('tr').forEach(row=>{const cells=[];
+    row.querySelectorAll('th,td').forEach(cell=>cells.push('"'+cell.textContent.replace(/"/g,'""')+'"'));
+    csv+=cells.join(',')+'\n';});
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${name}_${S.suc}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+
+// ── NAV ──
+function switchTab(tab){
+  S.tab=tab;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  recalcAll();
+}
+function recalcAll(){
+  S.suc=document.getElementById('filterSucursal').value;
+  S.vista=document.getElementById('filterVista').value;
+  document.getElementById('monthGroup').classList.toggle('hidden',S.vista!=='mensual');
+  switch(S.tab){
+    case'resultados':renderKPIs();renderResultados();break;
+    case'presVsReal':renderPresVsReal();break;
+    case'volumen':renderVolumen();break;
+    case'costoHL':renderCostoHL();break;
+    case'prorrateo':renderProrrateo();break;
+  }
+}
+
+document.querySelectorAll('.nav-tab').forEach(tab=>tab.addEventListener('click',()=>switchTab(tab.dataset.tab)));
+
+// Month buttons
+const msel=document.getElementById('monthSelector');
+MS.forEach((m,i)=>{const b=document.createElement('div');b.className='month-btn'+(i===0?' active':'');b.textContent=m;
+  b.onclick=()=>{S.mes=i;msel.querySelectorAll('.month-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');recalcAll();};
+  msel.appendChild(b);});
+
+initData();recalcAll();
+</script>
+</body>
+</html>

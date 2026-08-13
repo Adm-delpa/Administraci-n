@@ -1247,6 +1247,7 @@ app.get('/administracion', (req, res) => res.sendFile(path.join(__dirname, 'publ
 app.get('/tareas', (req, res) => res.sendFile(path.join(__dirname, 'public', 'tareas.html')));
 app.get('/cuentas-pagar', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cuentas-pagar.html')));
 app.get('/transporte', (req, res) => res.sendFile(path.join(__dirname, 'public', 'transporte.html')));
+app.get('/presupuesto', (req, res) => res.sendFile(path.join(__dirname, 'public', 'presupuesto.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
