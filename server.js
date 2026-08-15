@@ -1590,8 +1590,8 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
     const sessionCookie = await fichaYaLogin();
 
     // 1) Download wide range (last 6 months) to discover all active employees
-    const sixMonthsAgo = new Date(y, m - 7, 1);
-    const empDesde = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth()+1).padStart(2,'0')}-01`;
+    const prevMonth = new Date(y, m - 2, 1);
+    const empDesde = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth()+1).padStart(2,'0')}-01`;
     console.log('[FichaYa] Descargando empleados desde', empDesde, 'hasta', hasta);
     const allRows = await fichaYaDownload(sessionCookie, empDesde, hasta);
 
@@ -1604,10 +1604,10 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
       let regCount = 0, empNuevos = 0;
 
       const empCache = {};
-      const existing = await client.query('SELECT id, nombre, legajo FROM asistencia_empleados WHERE activo=true');
+      const existing = await client.query('SELECT id, nombre, legajo FROM asistencia_empleados');
       existing.rows.forEach(e => { empCache[e.nombre.toLowerCase().trim()] = e.id; });
 
-      // Register all employees found in the wide range
+      // Register employees found in the discovery range, mark as active
       const seen = new Set();
       for (const row of allRows) {
         const nombre = fichaYaNombre(row);
@@ -1617,15 +1617,20 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
         const area = String(row['Sector Nombre'] || row['Sector'] || '').trim() || null;
         if (!empCache[nombre.toLowerCase()]) {
           const ins = await client.query(
-            'INSERT INTO asistencia_empleados (nombre, sucursal, area) VALUES ($1,$2,$3) RETURNING id',
+            'INSERT INTO asistencia_empleados (nombre, sucursal, area, activo) VALUES ($1,$2,$3,true) RETURNING id',
             [nombre, sucursal, area]
           );
           empCache[nombre.toLowerCase()] = ins.rows[0].id;
           empNuevos++;
         } else {
-          // Update sucursal/area if changed
-          await client.query('UPDATE asistencia_empleados SET sucursal=COALESCE($2,sucursal), area=COALESCE($3,area) WHERE id=$1', [empCache[nombre.toLowerCase()], sucursal, area]);
+          await client.query('UPDATE asistencia_empleados SET sucursal=COALESCE($2,sucursal), area=COALESCE($3,area), activo=true WHERE id=$1', [empCache[nombre.toLowerCase()], sucursal, area]);
         }
+      }
+
+      // Mark employees NOT found in the discovery range as inactive
+      const activeIds = [...seen].map(n => empCache[n]).filter(Boolean);
+      if (activeIds.length) {
+        await client.query('UPDATE asistencia_empleados SET activo=false WHERE id != ALL($1::int[]) AND activo=true', [activeIds]);
       }
 
       // Group month records by employee+date to consolidate split shifts
