@@ -1489,26 +1489,47 @@ const FICHAYA_URL = process.env.FICHAYA_URL || 'https://control-asistencia.up.ra
 const FICHAYA_USER = process.env.FICHAYA_USER || 'reportes';
 const FICHAYA_PASS = process.env.FICHAYA_PASS || 'reporte123';
 
+function extractCookies(res) {
+  const raw = res.headers.getSetCookie ? res.headers.getSetCookie() : [];
+  const map = {};
+  raw.forEach(c => { const pair = c.split(';')[0].trim(); const eq = pair.indexOf('='); if (eq > 0) map[pair.substring(0,eq)] = pair; });
+  return map;
+}
+
+function mergeCookies(...maps) {
+  const merged = {};
+  maps.forEach(m => Object.assign(merged, m));
+  return Object.values(merged).join('; ');
+}
+
 async function fichaYaLogin() {
   const loginPageRes = await fetch(FICHAYA_URL + '/login');
   const loginHtml = await loginPageRes.text();
   const csrfMatch = loginHtml.match(/name="csrf_token"\s+value="([^"]+)"/);
   if (!csrfMatch) throw new Error('No se pudo obtener CSRF token de Ficha Ya');
-  const cookies = (loginPageRes.headers.get('set-cookie') || '').split(',')
-    .map(c => c.split(';')[0].trim()).filter(Boolean).join('; ');
+  const cookies1 = extractCookies(loginPageRes);
 
   const body = new URLSearchParams({ csrf_token: csrfMatch[1], username: FICHAYA_USER, password: FICHAYA_PASS });
   const loginRes = await fetch(FICHAYA_URL + '/login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': cookies },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': mergeCookies(cookies1) },
     body: body.toString(),
     redirect: 'manual'
   });
-  const setCookies = loginRes.headers.getSetCookie ? loginRes.headers.getSetCookie() : [];
-  const allCookies = [...cookies.split('; '), ...setCookies.map(c => c.split(';')[0].trim())].filter(Boolean);
-  const cookieMap = {};
-  allCookies.forEach(c => { const [k] = c.split('='); cookieMap[k] = c; });
-  return Object.values(cookieMap).join('; ');
+  const cookies2 = extractCookies(loginRes);
+
+  const location = loginRes.headers.get('location');
+  let cookies3 = {};
+  if (location) {
+    const redirectUrl = location.startsWith('http') ? location : FICHAYA_URL + location;
+    const redirectRes = await fetch(redirectUrl, {
+      headers: { 'Cookie': mergeCookies(cookies1, cookies2) },
+      redirect: 'manual'
+    });
+    cookies3 = extractCookies(redirectRes);
+  }
+
+  return mergeCookies(cookies1, cookies2, cookies3);
 }
 
 app.post('/api/asistencia/sync-fichaya', async (req, res) => {
@@ -1522,9 +1543,15 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
     const sessionCookie = await fichaYaLogin();
 
     const xlsxUrl = `${FICHAYA_URL}/asistencias/?export=xlsx&fecha_desde=${desde}&fecha_hasta=${hasta}`;
-    const xlsxRes = await fetch(xlsxUrl, { headers: { 'Cookie': sessionCookie } });
+    const xlsxRes = await fetch(xlsxUrl, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
     if (!xlsxRes.ok) throw new Error('Error al descargar Excel de Ficha Ya: ' + xlsxRes.status);
+    const contentType = xlsxRes.headers.get('content-type') || '';
     const buf = Buffer.from(await xlsxRes.arrayBuffer());
+    if (contentType.includes('text/html')) {
+      const html = buf.toString('utf-8').substring(0, 200);
+      if (html.includes('login') || html.includes('Login')) throw new Error('Sesión de Ficha Ya expirada o credenciales incorrectas');
+      throw new Error('Ficha Ya devolvió HTML en vez de Excel');
+    }
 
     const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
