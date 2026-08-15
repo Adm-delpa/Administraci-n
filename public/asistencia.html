@@ -154,7 +154,8 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       <div class="page-title">Asistencia del Personal</div>
       <div class="page-sub">Control de presentismo, vacaciones y ausencias</div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap" id="acciones-wrap"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center" id="acciones-wrap"></div>
+    <button onclick="document.getElementById('modal-ayuda').classList.add('open')" style="width:32px;height:32px;border-radius:50%;border:1px solid #DDDBD6;background:#fff;color:#0D4FA0;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0" title="Ayuda">?</button>
   </div>
 
   <!-- STATS -->
@@ -351,6 +352,76 @@ label{font-size:12px;font-weight:600;color:#6B6876}
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:8px">Días registrados (<span id="nl-count">0</span>)</div>
         <div class="empleado-list" id="nl-list"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AYUDA -->
+<div class="modal-bg" id="modal-ayuda">
+  <div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto">
+    <div class="modal-head">
+      <h3>Ayuda — Módulo de Asistencia</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-ayuda')">&times;</button>
+    </div>
+    <div class="modal-body" style="font-size:13px;color:#6B6876;line-height:1.6">
+      <h4 style="font-size:14px;color:#18181A;margin:0 0 8px">Qué muestra la grilla</h4>
+      <p>La grilla mensual muestra un empleado por fila y un día por columna. Cada celda indica el estado de asistencia:</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0 16px">
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#D4F2E8;color:#075C41;flex-shrink:0">✓</span>
+          <span><strong style="color:#18181A">Presente</strong><br><span style="font-size:11px;color:#9896A0">Fichó entrada y salida</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#FEE2E2;color:#dc2626;flex-shrink:0">✕</span>
+          <span><strong style="color:#18181A">Falta injustificada</strong><br><span style="font-size:11px;color:#9896A0">No fichó o ausente</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#FFF3E0;color:#E65100;flex-shrink:0">⚠</span>
+          <span><strong style="color:#18181A">Fichaje incompleto</strong><br><span style="font-size:11px;color:#9896A0">Solo entrada o solo salida</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#FEF3C7;color:#B45309;flex-shrink:0">FJ</span>
+          <span><strong style="color:#18181A">Falta justificada</strong><br><span style="font-size:11px;color:#9896A0">Con certificado adjunto</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#DCE9FA;color:#1E6FD9;flex-shrink:0">V</span>
+          <span><strong style="color:#18181A">Vacaciones</strong><br><span style="font-size:11px;color:#9896A0">Licencia por vacaciones</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#EDE5FA;color:#6B3FC8;flex-shrink:0">NL</span>
+          <span><strong style="color:#18181A">No laborable</strong><br><span style="font-size:11px;color:#9896A0">Feriado o día especial</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#E8E7E4;color:#9896A0;flex-shrink:0">—</span>
+          <span><strong style="color:#18181A">Domingo</strong><br><span style="font-size:11px;color:#9896A0">Día no laboral</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#F8F7F5;border-radius:6px">
+          <span style="width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:#F2F1EE;color:#BFBDB6;flex-shrink:0"></span>
+          <span><strong style="color:#18181A">Sin datos</strong><br><span style="font-size:11px;color:#9896A0">Día futuro</span></span>
+        </div>
+      </div>
+
+      <h4 style="font-size:14px;color:#18181A;margin:16px 0 8px">Sectores</h4>
+      <p>Las pestañas arriba de la grilla filtran por sector. Solo se ven los sectores asignados a tu usuario.</p>
+
+      <h4 style="font-size:14px;color:#18181A;margin:16px 0 8px">Filtros</h4>
+      <p>Podés filtrar por <strong>mes</strong>, <strong>sucursal</strong>, <strong>empleado</strong> y <strong>estado</strong> (con faltas, con fichajes incompletos, o ambos).</p>
+
+      <h4 style="font-size:14px;color:#18181A;margin:16px 0 8px">Detalle de un día</h4>
+      <p>Hacé clic en cualquier celda para ver el detalle: estado, hora de entrada y salida, horas trabajadas y observaciones. Si trabaja en horario cortado, se muestran los turnos por separado.</p>
+
+      <h4 style="font-size:14px;color:#18181A;margin:16px 0 8px">Justificaciones y certificados</h4>
+      <p>Las justificaciones cargadas en Ficha Ya se sincronizan automáticamente. Los días justificados aparecen en amarillo (FJ). Al hacer clic en una celda FJ se ve el diagnóstico o motivo. Si tiene certificado adjunto, aparece el botón <strong>"Ver certificado"</strong> para abrir el PDF o imagen.</p>
+
+      <h4 style="font-size:14px;color:#18181A;margin:16px 0 8px">Sincronización</h4>
+      <p>Los datos se actualizan automáticamente todos los días a las <strong>9:30 hs</strong> y a las <strong>22:00 hs</strong>. No es necesario hacer nada.</p>
+
+      <div style="background:#F8F7F5;border-left:3px solid #0D4FA0;border-radius:0 6px 6px 0;padding:8px 12px;margin-top:12px;font-size:12px">
+        <strong style="color:#18181A">Importante:</strong> Esta pantalla es solo de consulta. Ante cualquier error o inconsistencia, comunicalo a Administración.
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modal-ayuda')" style="margin-left:auto">Cerrar</button>
     </div>
   </div>
 </div>
