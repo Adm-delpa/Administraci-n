@@ -322,6 +322,17 @@ label{font-size:12px;font-weight:600;color:#6B6876}
   </div>
 </div>
 
+<!-- MODAL ADJUNTO -->
+<div class="modal-bg" id="modal-adjunto">
+  <div class="modal" style="max-width:900px;height:85vh;display:flex;flex-direction:column">
+    <div class="modal-head">
+      <h3>Certificado</h3>
+      <button class="modal-close" onclick="cerrarAdjunto()">&times;</button>
+    </div>
+    <iframe id="adjunto-viewer" src="" style="flex:1;border:none;border-radius:0 0 14px 14px"></iframe>
+  </div>
+</div>
+
 <!-- MODAL DÍAS NO LABORABLES -->
 <div class="modal-bg" id="modal-no-laborables">
   <div class="modal" style="max-width:500px">
@@ -730,7 +741,14 @@ function formatHora(h) {
 
 function verAdjunto() {
   const url = document.getElementById('det-adjunto-wrap').dataset.url;
-  if (url) window.open('/api/asistencia/adjunto?path=' + encodeURIComponent(url), '_blank');
+  if (!url) return;
+  const src = '/api/asistencia/adjunto?path=' + encodeURIComponent(url);
+  document.getElementById('adjunto-viewer').src = src;
+  document.getElementById('modal-adjunto').classList.add('open');
+}
+function cerrarAdjunto() {
+  document.getElementById('modal-adjunto').classList.remove('open');
+  document.getElementById('adjunto-viewer').src = '';
 }
 
 function abrirDetalle(empId, fecha) {
