@@ -1544,6 +1544,41 @@ async function fichaYaLogin() {
   return finalCookies;
 }
 
+async function fichaYaDownload(sessionCookie, desde, hasta) {
+  const xlsxUrl = `${FICHAYA_URL}/asistencias/?export=xlsx&fecha_desde=${desde}&fecha_hasta=${hasta}`;
+  console.log('[FichaYa] Descargando:', xlsxUrl);
+  const xlsxRes = await fetch(xlsxUrl, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
+  const contentType = xlsxRes.headers.get('content-type') || '';
+  if (!xlsxRes.ok) throw new Error('Error al descargar Excel de Ficha Ya: ' + xlsxRes.status);
+  const buf = Buffer.from(await xlsxRes.arrayBuffer());
+  if (contentType.includes('text/html')) {
+    const html = buf.toString('utf-8').substring(0, 300);
+    if (html.includes('login') || html.includes('Login')) throw new Error('Sesión de Ficha Ya expirada o credenciales incorrectas');
+    throw new Error('Ficha Ya devolvió HTML en vez de Excel');
+  }
+  const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  const firstKeys = Object.keys(rows[0] || {});
+  if (firstKeys.some(k => k.startsWith('__EMPTY'))) {
+    const headerRow = rows[0];
+    const realHeaders = {};
+    firstKeys.forEach(k => { if (String(headerRow[k]).trim()) realHeaders[k] = String(headerRow[k]).trim(); });
+    rows = rows.slice(1).map(r => {
+      const mapped = {};
+      firstKeys.forEach(k => { if (realHeaders[k]) mapped[realHeaders[k]] = r[k]; });
+      return mapped;
+    });
+  }
+  return rows;
+}
+
+function fichaYaNombre(row) {
+  const apellido = String(row['Apellido'] || '').trim();
+  const nombreRaw = String(row['Nombre'] || '').trim();
+  return (apellido && nombreRaw) ? `${apellido}, ${nombreRaw}` : (nombreRaw || apellido || String(row['Empleado'] || '').trim());
+}
+
 app.post('/api/asistencia/sync-fichaya', async (req, res) => {
   const { mes } = req.body;
   if (!mes) return res.status(400).json({ error: 'Mes requerido (YYYY-MM)' });
@@ -1554,39 +1589,14 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
 
     const sessionCookie = await fichaYaLogin();
 
-    const xlsxUrl = `${FICHAYA_URL}/asistencias/?export=xlsx&fecha_desde=${desde}&fecha_hasta=${hasta}`;
-    console.log('[FichaYa] Descargando:', xlsxUrl);
-    const xlsxRes = await fetch(xlsxUrl, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
-    const contentType = xlsxRes.headers.get('content-type') || '';
-    const contentDisp = xlsxRes.headers.get('content-disposition') || '';
-    console.log('[FichaYa] Export response:', xlsxRes.status, 'type:', contentType, 'disp:', contentDisp, 'url:', xlsxRes.url);
-    if (!xlsxRes.ok) throw new Error('Error al descargar Excel de Ficha Ya: ' + xlsxRes.status);
-    const buf = Buffer.from(await xlsxRes.arrayBuffer());
-    console.log('[FichaYa] Buffer size:', buf.length, 'bytes');
-    if (contentType.includes('text/html')) {
-      const html = buf.toString('utf-8').substring(0, 300);
-      console.log('[FichaYa] HTML recibido:', html);
-      if (html.includes('login') || html.includes('Login')) throw new Error('Sesión de Ficha Ya expirada o credenciales incorrectas');
-      throw new Error('Ficha Ya devolvió HTML en vez de Excel');
-    }
+    // 1) Download wide range (last 6 months) to discover all active employees
+    const sixMonthsAgo = new Date(y, m - 7, 1);
+    const empDesde = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth()+1).padStart(2,'0')}-01`;
+    console.log('[FichaYa] Descargando empleados desde', empDesde, 'hasta', hasta);
+    const allRows = await fichaYaDownload(sessionCookie, empDesde, hasta);
 
-    const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    if (!rows.length) return res.json({ registros: 0, empleados_nuevos: 0, mensaje: 'Sin datos en el período' });
-
-    // FichaYa puts a title row "Asistencias" in A1; real headers are in row 2
-    const firstKeys = Object.keys(rows[0]);
-    if (firstKeys.some(k => k.startsWith('__EMPTY'))) {
-      const headerRow = rows[0];
-      const realHeaders = {};
-      firstKeys.forEach(k => { if (String(headerRow[k]).trim()) realHeaders[k] = String(headerRow[k]).trim(); });
-      rows = rows.slice(1).map(r => {
-        const mapped = {};
-        firstKeys.forEach(k => { if (realHeaders[k]) mapped[realHeaders[k]] = r[k]; });
-        return mapped;
-      });
-    }
+    // 2) Download month-specific records
+    const mesRows = await fichaYaDownload(sessionCookie, desde, hasta);
 
     const client = await pool.connect();
     try {
@@ -1597,10 +1607,30 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
       const existing = await client.query('SELECT id, nombre, legajo FROM asistencia_empleados WHERE activo=true');
       existing.rows.forEach(e => { empCache[e.nombre.toLowerCase().trim()] = e.id; });
 
-      for (const row of rows) {
-        const apellido = String(row['Apellido'] || '').trim();
-        const nombreRaw = String(row['Nombre'] || '').trim();
-        const nombre = (apellido && nombreRaw) ? `${apellido}, ${nombreRaw}` : (nombreRaw || apellido || String(row['Empleado'] || '').trim());
+      // Register all employees found in the wide range
+      const seen = new Set();
+      for (const row of allRows) {
+        const nombre = fichaYaNombre(row);
+        if (!nombre || seen.has(nombre.toLowerCase())) continue;
+        seen.add(nombre.toLowerCase());
+        const sucursal = String(row['Sucursal Nombre'] || row['Sucursal'] || '').trim() || null;
+        const area = String(row['Sector Nombre'] || row['Sector'] || '').trim() || null;
+        if (!empCache[nombre.toLowerCase()]) {
+          const ins = await client.query(
+            'INSERT INTO asistencia_empleados (nombre, sucursal, area) VALUES ($1,$2,$3) RETURNING id',
+            [nombre, sucursal, area]
+          );
+          empCache[nombre.toLowerCase()] = ins.rows[0].id;
+          empNuevos++;
+        } else {
+          // Update sucursal/area if changed
+          await client.query('UPDATE asistencia_empleados SET sucursal=COALESCE($2,sucursal), area=COALESCE($3,area) WHERE id=$1', [empCache[nombre.toLowerCase()], sucursal, area]);
+        }
+      }
+
+      // Process month records
+      for (const row of mesRows) {
+        const nombre = fichaYaNombre(row);
         if (!nombre) continue;
         const sucursal = String(row['Sucursal Nombre'] || row['Sucursal'] || '').trim() || null;
         const area = String(row['Sector Nombre'] || row['Sector'] || '').trim() || null;
