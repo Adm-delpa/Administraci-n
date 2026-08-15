@@ -154,6 +154,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-secondary" onclick="abrirEmpleados()">Empleados</button>
+      <button class="btn-secondary" onclick="abrirNoLaborables()">Días no laborables</button>
       <button class="btn-action" onclick="abrirImport()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Importar Ficha Ya
@@ -288,6 +289,28 @@ label{font-size:12px;font-weight:600;color:#6B6876}
   </div>
 </div>
 
+<!-- MODAL DÍAS NO LABORABLES -->
+<div class="modal-bg" id="modal-no-laborables">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <h3>Días no laborables</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-no-laborables')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6B6876;line-height:1.5">Agregá días que no se trabajan (feriados, jornadas especiales, etc.). Estos días no se cuentan como ausencia.</p>
+      <div class="form-row">
+        <div class="form-group"><label>Fecha</label><input type="date" id="nl-fecha"></div>
+        <div class="form-group"><label>Motivo</label><input type="text" id="nl-motivo" placeholder="Ej: Feriado nacional"></div>
+      </div>
+      <button class="btn-guardar" onclick="agregarNoLaborable()" style="align-self:flex-start">Agregar día</button>
+      <div style="border-top:1px solid #DDDBD6;margin-top:4px;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:8px">Días registrados (<span id="nl-count">0</span>)</div>
+        <div class="empleado-list" id="nl-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -298,6 +321,7 @@ document.getElementById('user-avatar').textContent = (userData.nombre||userData.
 
 let empleados = [];
 let registros = [];
+let noLaborables = [];
 let detalleActual = null;
 
 const $mes = document.getElementById('fil-mes');
@@ -407,6 +431,68 @@ function renderEmpleados() {
   `).join('');
 }
 
+// ── DÍAS NO LABORABLES ──
+async function cargarNoLaborables() {
+  try {
+    const r = await fetch('/api/asistencia/no-laborables');
+    const data = await r.json();
+    noLaborables = Array.isArray(data) ? data : [];
+  } catch(e) { noLaborables = []; }
+}
+
+function abrirNoLaborables() {
+  renderNoLaborables();
+  document.getElementById('modal-no-laborables').classList.add('open');
+}
+
+async function agregarNoLaborable() {
+  const fecha = document.getElementById('nl-fecha').value;
+  const motivo = document.getElementById('nl-motivo').value.trim();
+  if (!fecha) return toast('Seleccioná una fecha', false);
+  if (!motivo) return toast('Ingresá el motivo', false);
+  try {
+    const r = await fetch('/api/asistencia/no-laborables', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ fecha, motivo })
+    });
+    if (!r.ok) throw new Error((await r.json()).error);
+    toast('Día no laborable agregado');
+    document.getElementById('nl-fecha').value = '';
+    document.getElementById('nl-motivo').value = '';
+    await cargarNoLaborables();
+    renderNoLaborables();
+    cargar();
+  } catch(e) { toast(e.message, false); }
+}
+
+async function eliminarNoLaborable(id) {
+  if (!confirm('¿Eliminar este día no laborable?')) return;
+  try {
+    await fetch('/api/asistencia/no-laborables/' + id, { method: 'DELETE' });
+    toast('Día eliminado');
+    await cargarNoLaborables();
+    renderNoLaborables();
+    cargar();
+  } catch(e) { toast('Error al eliminar', false); }
+}
+
+function renderNoLaborables() {
+  const $list = document.getElementById('nl-list');
+  document.getElementById('nl-count').textContent = noLaborables.length;
+  if (!noLaborables.length) { $list.innerHTML = '<div style="color:#9896A0;font-size:13px;padding:1rem;text-align:center">No hay días no laborables registrados</div>'; return; }
+  const sorted = [...noLaborables].sort((a,b) => a.fecha.localeCompare(b.fecha));
+  $list.innerHTML = sorted.map(d => `
+    <div class="empleado-row">
+      <div class="empleado-info">
+        <div>${d.fecha.split('-').reverse().join('/')}</div>
+        <div class="empleado-meta">${d.motivo}</div>
+      </div>
+      <button class="btn-del" onclick="eliminarNoLaborable(${d.id})">Eliminar</button>
+    </div>
+  `).join('');
+}
+
 // ── REGISTROS ──
 async function cargar() {
   const mes = $mes.value;
@@ -445,6 +531,10 @@ function renderGrilla() {
   const regMap = {};
   registros.forEach(r => { regMap[r.empleado_id + '_' + r.fecha] = r; });
 
+  const nlSet = new Set(noLaborables.map(d => d.fecha));
+  const nlMap = {};
+  noLaborables.forEach(d => { nlMap[d.fecha] = d.motivo; });
+
   let totPresente = 0, totVac = 0, totJust = 0, totInjust = 0, totHoras = 0;
 
   const thead = document.getElementById('grilla-head');
@@ -467,6 +557,10 @@ function renderGrilla() {
       const key = emp.id + '_' + d.fecha;
       const reg = regMap[key];
       const isWeekend = d.dow === 0 || d.dow === 6;
+      const isNL = nlSet.has(d.fecha);
+
+      if (isNL) return `<td><div class="cel-dia cel-feriado" title="${nlMap[d.fecha] || 'No laborable'}">NL</div></td>`;
+      if (isWeekend) return `<td><div class="cel-dia cel-weekend">—</div></td>`;
 
       if (reg) {
         let cls = 'cel-vacio';
@@ -480,7 +574,6 @@ function renderGrilla() {
         return `<td><div class="cel-dia ${cls}" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="${reg.hora_entrada||''} - ${reg.hora_salida||''}">${txt}</div></td>`;
       }
 
-      if (isWeekend) return `<td><div class="cel-dia cel-weekend">—</div></td>`;
       return `<td><div class="cel-dia cel-vacio" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer"></div></td>`;
     }).join('');
 
@@ -618,7 +711,7 @@ async function ejecutarImport() {
 }
 
 // ── INIT ──
-cargarEmpleados().then(() => cargar());
+Promise.all([cargarEmpleados(), cargarNoLaborables()]).then(() => cargar());
 </script>
 </body>
 </html>

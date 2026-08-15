@@ -289,6 +289,12 @@ async function initDB() {
         created_at TIMESTAMP DEFAULT NOW()
       );
 
+      CREATE TABLE IF NOT EXISTS asistencia_no_laborables (
+        id SERIAL PRIMARY KEY,
+        fecha DATE NOT NULL UNIQUE,
+        motivo VARCHAR(200) NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS asistencia_registros (
         id SERIAL PRIMARY KEY,
         empleado_id INTEGER REFERENCES asistencia_empleados(id) ON DELETE CASCADE,
@@ -1282,6 +1288,32 @@ app.post('/api/asistencia/empleados', async (req, res) => {
 app.delete('/api/asistencia/empleados/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM asistencia_empleados WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/asistencia/no-laborables', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, fecha::text, motivo FROM asistencia_no_laborables ORDER BY fecha');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/asistencia/no-laborables', async (req, res) => {
+  const { fecha, motivo } = req.body;
+  if (!fecha || !motivo) return res.status(400).json({ error: 'Fecha y motivo requeridos' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO asistencia_no_laborables (fecha, motivo) VALUES ($1,$2) ON CONFLICT (fecha) DO UPDATE SET motivo=$2 RETURNING id, fecha::text, motivo',
+      [fecha, motivo]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/asistencia/no-laborables/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM asistencia_no_laborables WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
