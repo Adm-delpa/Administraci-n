@@ -57,6 +57,8 @@ tr:hover td.cel-nombre{background:#f8f9fc}
 .cel-injustificada{background:#FEE2E2;color:#dc2626}
 .cel-feriado{background:#EDE5FA;color:#6B3FC8}
 .cel-vacio{background:#F2F1EE;color:#BFBDB6}
+.cel-incompleto{background:#FFF3E0;color:#E65100;animation:pulse-warn 2s infinite}
+@keyframes pulse-warn{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 2px rgba(230,81,0,.25)}}
 .cel-weekend{background:#E8E7E4;color:#9896A0}
 
 .leyenda{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:1.5rem;font-size:12px;font-weight:500;color:#6B6876}
@@ -171,6 +173,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     <div class="stat-card"><div class="stat-val" id="st-justificadas" style="color:#B45309">0</div><div class="stat-lbl">Faltas justif.</div></div>
     <div class="stat-card"><div class="stat-val" id="st-injustificadas" style="color:#dc2626">0</div><div class="stat-lbl">Faltas injustif.</div></div>
     <div class="stat-card"><div class="stat-val" id="st-horas">0</div><div class="stat-lbl">Hs. trabajadas</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-incompletos" style="color:#E65100">0</div><div class="stat-lbl">Fichajes incompl.</div></div>
   </div>
 
   <!-- FILTROS -->
@@ -188,6 +191,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     <div class="leyenda-item"><div class="leyenda-dot cel-justificada"></div>Falta justificada</div>
     <div class="leyenda-item"><div class="leyenda-dot cel-injustificada"></div>Falta injustificada</div>
     <div class="leyenda-item"><div class="leyenda-dot cel-feriado"></div>Feriado</div>
+    <div class="leyenda-item"><div class="leyenda-dot cel-incompleto"></div>Fichaje incompleto</div>
     <div class="leyenda-item"><div class="leyenda-dot cel-weekend"></div>Fin de semana</div>
   </div>
 
@@ -591,7 +595,7 @@ function renderGrilla() {
   const nlMap = {};
   noLaborables.forEach(d => { nlMap[d.fecha] = d.motivo; });
 
-  let totPresente = 0, totVac = 0, totJust = 0, totInjust = 0, totHoras = 0;
+  let totPresente = 0, totVac = 0, totJust = 0, totInjust = 0, totHoras = 0, totIncompletos = 0;
 
   const thead = document.getElementById('grilla-head');
   thead.innerHTML = `<tr>
@@ -603,7 +607,7 @@ function renderGrilla() {
   const tbody = document.getElementById('grilla-body');
   if (!emps.length) {
     tbody.innerHTML = '<tr><td colspan="' + (dias.length + 6) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados para mostrar</td></tr>';
-    actualizarStats(0, 0, 0, 0, 0, 0);
+    actualizarStats(0, 0, 0, 0, 0, 0, 0);
     return;
   }
 
@@ -621,14 +625,17 @@ function renderGrilla() {
       if (reg) {
         let cls = 'cel-vacio';
         let txt = '';
-        if (reg.tipo === 'presente') { cls = 'cel-presente'; txt = '✓'; p++; }
+        const incompleto = reg.tipo === 'presente' && ((reg.hora_entrada && !reg.hora_salida) || (!reg.hora_entrada && reg.hora_salida));
+        if (incompleto) { cls = 'cel-incompleto'; txt = '⚠'; totIncompletos++; p++; }
+        else if (reg.tipo === 'presente') { cls = 'cel-presente'; txt = '✓'; p++; }
         else if (reg.tipo === 'vacaciones') { cls = 'cel-vacaciones'; txt = 'V'; v++; }
         else if (reg.tipo === 'falta_justificada') { cls = 'cel-justificada'; txt = 'FJ'; fj++; }
         else if (reg.tipo === 'falta_injustificada') { cls = 'cel-injustificada'; txt = '!'; fi++; }
         else if (reg.tipo === 'feriado') { cls = 'cel-feriado'; txt = 'F'; }
         if (reg.hs_trabajadas) hs += parseFloat(reg.hs_trabajadas);
         const tipTurnos = reg.observaciones && reg.observaciones.includes('/') ? reg.observaciones : `${reg.hora_entrada||''} - ${reg.hora_salida||''}`;
-        return `<td><div class="cel-dia ${cls}" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="${tipTurnos}${reg.hs_trabajadas ? ' ('+reg.hs_trabajadas+'hs)' : ''}">${txt}</div></td>`;
+        const tipLabel = incompleto ? 'FICHAJE INCOMPLETO: ' : '';
+        return `<td><div class="cel-dia ${cls}" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="${tipLabel}${tipTurnos}${reg.hs_trabajadas ? ' ('+reg.hs_trabajadas+'hs)' : ''}">${txt}</div></td>`;
       }
 
       return `<td><div class="cel-dia cel-vacio" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer"></div></td>`;
@@ -647,16 +654,17 @@ function renderGrilla() {
     </tr>`;
   }).join('');
 
-  actualizarStats(emps.length, totPresente, totVac, totJust, totInjust, totHoras);
+  actualizarStats(emps.length, totPresente, totVac, totJust, totInjust, totHoras, totIncompletos);
 }
 
-function actualizarStats(emps, p, v, fj, fi, hs) {
+function actualizarStats(emps, p, v, fj, fi, hs, inc) {
   document.getElementById('st-empleados').textContent = emps;
   document.getElementById('st-presentes').textContent = p;
   document.getElementById('st-vacaciones').textContent = v;
   document.getElementById('st-justificadas').textContent = fj;
   document.getElementById('st-injustificadas').textContent = fi;
   document.getElementById('st-horas').textContent = hs.toFixed(1);
+  document.getElementById('st-incompletos').textContent = inc || 0;
 }
 
 // ── DETALLE DÍA ──
