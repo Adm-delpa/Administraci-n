@@ -303,28 +303,22 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     <div class="modal-body detalle-dia-modal">
       <div class="form-group">
         <label>Estado</label>
-        <select id="det-tipo">
-          <option value="presente">Presente</option>
-          <option value="vacaciones">Vacaciones</option>
-          <option value="falta_justificada">Falta justificada</option>
-          <option value="falta_injustificada">Falta injustificada</option>
-          <option value="feriado">Feriado</option>
-        </select>
+        <input type="text" id="det-tipo-txt" readonly style="background:#F2F1EE;font-weight:600">
       </div>
       <div id="det-turnos-info" style="display:none;background:#F8F9FC;border:1px solid #DDDBD6;border-radius:8px;padding:10px 12px;font-size:13px;color:#18181A">
         <div style="font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#9896A0;margin-bottom:6px">Turnos del día</div>
         <div id="det-turnos-list"></div>
       </div>
       <div class="detalle-horas" id="det-horas-wrap">
-        <div class="form-group"><label>Hora entrada</label><input type="time" id="det-entrada"></div>
-        <div class="form-group"><label>Hora salida</label><input type="time" id="det-salida"></div>
+        <div class="form-group"><label>Hora entrada</label><input type="text" id="det-entrada" readonly style="background:#F2F1EE"></div>
+        <div class="form-group"><label>Hora salida</label><input type="text" id="det-salida" readonly style="background:#F2F1EE"></div>
       </div>
       <div class="form-group"><label>Hs. trabajadas</label><input type="text" id="det-hs" readonly style="background:#F2F1EE"></div>
-      <div class="form-group"><label>Observaciones</label><input type="text" id="det-obs" placeholder="Opcional"></div>
+      <div class="form-group"><label>Observaciones</label><input type="text" id="det-obs" readonly style="background:#F2F1EE"></div>
+      <p style="font-size:11px;color:#9896A0;text-align:center;margin-top:4px">Los cambios deben realizarse desde Ficha Ya</p>
     </div>
     <div class="modal-foot">
-      <button class="btn-cancel" onclick="cerrarModal('modal-detalle')">Cancelar</button>
-      <button class="btn-guardar" onclick="guardarDetalle()">Guardar</button>
+      <button class="btn-cancel" onclick="cerrarModal('modal-detalle')" style="margin-left:auto">Cerrar</button>
     </div>
   </div>
 </div>
@@ -691,17 +685,23 @@ function actualizarStats(emps, p, v, fj, fi, hs, inc) {
 }
 
 // ── DETALLE DÍA ──
+const tipoLabels = { presente: 'Presente', vacaciones: 'Vacaciones', falta_justificada: 'Falta justificada', falta_injustificada: 'Falta injustificada', feriado: 'Feriado' };
+
+function formatHora(h) {
+  if (!h) return '—';
+  return h.length > 5 ? h.slice(0, 5) : h;
+}
+
 function abrirDetalle(empId, fecha) {
   const emp = empleados.find(e => e.id === empId);
   const reg = registros.find(r => r.empleado_id === empId && r.fecha === fecha);
-  detalleActual = { empId, fecha };
 
   document.getElementById('detalle-titulo').textContent = `${emp.nombre} — ${fecha.split('-').reverse().join('/')}`;
-  document.getElementById('det-tipo').value = reg ? reg.tipo : 'presente';
-  document.getElementById('det-entrada').value = reg ? (reg.hora_entrada || '') : '';
-  document.getElementById('det-salida').value = reg ? (reg.hora_salida || '') : '';
-  document.getElementById('det-hs').value = reg ? (reg.hs_trabajadas || '') : '';
-  document.getElementById('det-obs').value = reg ? (reg.observaciones || '') : '';
+  document.getElementById('det-tipo-txt').value = reg ? (tipoLabels[reg.tipo] || reg.tipo) : 'Sin registro';
+  document.getElementById('det-entrada').value = reg ? formatHora(reg.hora_entrada) : '—';
+  document.getElementById('det-salida').value = reg ? formatHora(reg.hora_salida) : '—';
+  document.getElementById('det-hs').value = reg && reg.hs_trabajadas ? reg.hs_trabajadas : '—';
+  document.getElementById('det-obs').value = reg && reg.observaciones ? reg.observaciones : '—';
 
   const turnosInfo = document.getElementById('det-turnos-info');
   const turnosList = document.getElementById('det-turnos-list');
@@ -713,53 +713,8 @@ function abrirDetalle(empId, fecha) {
     turnosInfo.style.display = 'none';
   }
 
-  toggleHoras();
+  document.getElementById('det-horas-wrap').style.display = (reg && reg.tipo === 'presente') ? 'grid' : 'none';
   document.getElementById('modal-detalle').classList.add('open');
-}
-
-document.getElementById('det-tipo').addEventListener('change', toggleHoras);
-document.getElementById('det-entrada').addEventListener('change', calcularHs);
-document.getElementById('det-salida').addEventListener('change', calcularHs);
-
-function toggleHoras() {
-  const tipo = document.getElementById('det-tipo').value;
-  document.getElementById('det-horas-wrap').style.display = tipo === 'presente' ? 'grid' : 'none';
-}
-
-function calcularHs() {
-  const ent = document.getElementById('det-entrada').value;
-  const sal = document.getElementById('det-salida').value;
-  if (ent && sal) {
-    const [h1,m1] = ent.split(':').map(Number);
-    const [h2,m2] = sal.split(':').map(Number);
-    let mins = (h2*60+m2) - (h1*60+m1);
-    if (mins < 0) mins += 24*60;
-    document.getElementById('det-hs').value = (mins/60).toFixed(1);
-  }
-}
-
-async function guardarDetalle() {
-  if (!detalleActual) return;
-  const body = {
-    empleado_id: detalleActual.empId,
-    fecha: detalleActual.fecha,
-    tipo: document.getElementById('det-tipo').value,
-    hora_entrada: document.getElementById('det-entrada').value || null,
-    hora_salida: document.getElementById('det-salida').value || null,
-    hs_trabajadas: parseFloat(document.getElementById('det-hs').value) || null,
-    observaciones: document.getElementById('det-obs').value.trim() || null
-  };
-  try {
-    const r = await fetch('/api/asistencia/registros', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(body)
-    });
-    if (!r.ok) throw new Error((await r.json()).error);
-    toast('Guardado');
-    cerrarModal('modal-detalle');
-    await cargar();
-  } catch(e) { toast(e.message, false); }
 }
 
 // ── IMPORT FICHA YA ──
