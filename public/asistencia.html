@@ -191,6 +191,9 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     <div class="leyenda-item"><div class="leyenda-dot cel-weekend"></div>Fin de semana</div>
   </div>
 
+  <!-- TABS SECTORES -->
+  <div class="tabs" id="sector-tabs"></div>
+
   <!-- GRILLA -->
   <div class="tabla-wrap" id="grilla-wrap">
     <table id="grilla-tabla">
@@ -346,6 +349,7 @@ let empleados = [];
 let registros = [];
 let noLaborables = [];
 let detalleActual = null;
+let sectorActivo = '';
 
 const $mes = document.getElementById('fil-mes');
 const $suc = document.getElementById('fil-sucursal');
@@ -357,7 +361,14 @@ $mes.value = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0');
 
 $mes.addEventListener('change', cargar);
 $suc.addEventListener('change', () => { poblarFiltroEmpleados(); cargar(); });
-$area.addEventListener('change', () => { poblarFiltroEmpleados(); cargar(); });
+$area.addEventListener('change', () => {
+  sectorActivo = $area.value;
+  document.querySelectorAll('#sector-tabs .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.sector === sectorActivo);
+  });
+  poblarFiltroEmpleados();
+  cargar();
+});
 $emp.addEventListener('change', cargar);
 
 function toast(msg, ok=true) {
@@ -384,11 +395,29 @@ async function cargarEmpleados() {
   } catch(e) { empleados = []; poblarFiltros(); }
 }
 
+function poblarSectorTabs() {
+  const areas = [...new Set(empleados.map(e => e.area).filter(Boolean))].sort();
+  const $tabs = document.getElementById('sector-tabs');
+  $tabs.innerHTML = `<div class="tab${sectorActivo===''?' active':''}" data-sector="">Todos</div>` +
+    areas.map(a => `<div class="tab${sectorActivo===a?' active':''}" data-sector="${a}">${a}</div>`).join('');
+  $tabs.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      sectorActivo = tab.dataset.sector;
+      $tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      $area.value = sectorActivo;
+      poblarFiltroEmpleados();
+      cargar();
+    });
+  });
+}
+
 function poblarFiltros() {
   const sucursales = [...new Set(empleados.map(e => e.sucursal).filter(Boolean))].sort();
   const areas = [...new Set(empleados.map(e => e.area).filter(Boolean))].sort();
   $suc.innerHTML = '<option value="">Todas las sucursales</option>' + sucursales.map(s => `<option>${s}</option>`).join('');
   $area.innerHTML = '<option value="">Todas las áreas</option>' + areas.map(a => `<option>${a}</option>`).join('');
+  poblarSectorTabs();
   poblarFiltroEmpleados();
 
   const dl1 = document.getElementById('list-sucursales');
