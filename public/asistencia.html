@@ -645,6 +645,8 @@ function renderGrilla() {
         return `<td><div class="cel-dia ${cls}" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="${tipLabel}${tipTurnos}${reg.hs_trabajadas ? ' ('+reg.hs_trabajadas+'hs)' : ''}">${txt}</div></td>`;
       }
 
+      const hoy = new Date().toISOString().slice(0,10);
+      if (d.fecha < hoy) { fi++; return `<td><div class="cel-dia cel-injustificada" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="Sin fichaje">!</div></td>`; }
       return `<td><div class="cel-dia cel-vacio" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer"></div></td>`;
     }).join('');
 
