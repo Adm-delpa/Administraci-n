@@ -1503,11 +1503,13 @@ function mergeCookies(...maps) {
 }
 
 async function fichaYaLogin() {
+  console.log('[FichaYa] Iniciando login...');
   const loginPageRes = await fetch(FICHAYA_URL + '/login');
   const loginHtml = await loginPageRes.text();
   const csrfMatch = loginHtml.match(/name="csrf_token"\s+value="([^"]+)"/);
   if (!csrfMatch) throw new Error('No se pudo obtener CSRF token de Ficha Ya');
   const cookies1 = extractCookies(loginPageRes);
+  console.log('[FichaYa] GET /login cookies:', Object.keys(cookies1));
 
   const body = new URLSearchParams({ csrf_token: csrfMatch[1], username: FICHAYA_USER, password: FICHAYA_PASS });
   const loginRes = await fetch(FICHAYA_URL + '/login', {
@@ -1517,19 +1519,24 @@ async function fichaYaLogin() {
     redirect: 'manual'
   });
   const cookies2 = extractCookies(loginRes);
+  console.log('[FichaYa] POST /login status:', loginRes.status, 'location:', loginRes.headers.get('location'), 'cookies:', Object.keys(cookies2));
 
   const location = loginRes.headers.get('location');
   let cookies3 = {};
   if (location) {
     const redirectUrl = location.startsWith('http') ? location : FICHAYA_URL + location;
+    console.log('[FichaYa] Siguiendo redirect a:', redirectUrl);
     const redirectRes = await fetch(redirectUrl, {
       headers: { 'Cookie': mergeCookies(cookies1, cookies2) },
       redirect: 'manual'
     });
     cookies3 = extractCookies(redirectRes);
+    console.log('[FichaYa] Redirect status:', redirectRes.status, 'cookies:', Object.keys(cookies3));
   }
 
-  return mergeCookies(cookies1, cookies2, cookies3);
+  const finalCookies = mergeCookies(cookies1, cookies2, cookies3);
+  console.log('[FichaYa] Cookies finales:', finalCookies.substring(0, 80) + '...');
+  return finalCookies;
 }
 
 app.post('/api/asistencia/sync-fichaya', async (req, res) => {
@@ -1543,12 +1550,17 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
     const sessionCookie = await fichaYaLogin();
 
     const xlsxUrl = `${FICHAYA_URL}/asistencias/?export=xlsx&fecha_desde=${desde}&fecha_hasta=${hasta}`;
+    console.log('[FichaYa] Descargando:', xlsxUrl);
     const xlsxRes = await fetch(xlsxUrl, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
-    if (!xlsxRes.ok) throw new Error('Error al descargar Excel de Ficha Ya: ' + xlsxRes.status);
     const contentType = xlsxRes.headers.get('content-type') || '';
+    const contentDisp = xlsxRes.headers.get('content-disposition') || '';
+    console.log('[FichaYa] Export response:', xlsxRes.status, 'type:', contentType, 'disp:', contentDisp, 'url:', xlsxRes.url);
+    if (!xlsxRes.ok) throw new Error('Error al descargar Excel de Ficha Ya: ' + xlsxRes.status);
     const buf = Buffer.from(await xlsxRes.arrayBuffer());
+    console.log('[FichaYa] Buffer size:', buf.length, 'bytes');
     if (contentType.includes('text/html')) {
-      const html = buf.toString('utf-8').substring(0, 200);
+      const html = buf.toString('utf-8').substring(0, 300);
+      console.log('[FichaYa] HTML recibido:', html);
       if (html.includes('login') || html.includes('Login')) throw new Error('Sesión de Ficha Ya expirada o credenciales incorrectas');
       throw new Error('Ficha Ya devolvió HTML en vez de Excel');
     }
