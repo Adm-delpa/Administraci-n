@@ -636,7 +636,9 @@ function renderGrilla() {
       if (reg) {
         let cls = 'cel-vacio';
         let txt = '';
-        const incompleto = reg.tipo === 'presente' && ((reg.hora_entrada && !reg.hora_salida) || (!reg.hora_entrada && reg.hora_salida));
+        const tieneEnt = reg.hora_entrada && reg.hora_entrada !== '00:00:00';
+        const tieneSal = reg.hora_salida && reg.hora_salida !== '00:00:00';
+        const incompleto = reg.tipo === 'presente' && ((tieneEnt && !tieneSal) || (!tieneEnt && tieneSal));
         if (incompleto) { cls = 'cel-incompleto'; txt = '⚠'; inc++; p++; }
         else if (reg.tipo === 'presente') { cls = 'cel-presente'; txt = '✓'; p++; }
         else if (reg.tipo === 'vacaciones') { cls = 'cel-vacaciones'; txt = 'V'; v++; }
