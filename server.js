@@ -1591,6 +1591,31 @@ function fichaYaNombre(row) {
   return (apellido && nombreRaw) ? `${apellido}, ${nombreRaw}` : (nombreRaw || apellido || String(row['Empleado'] || '').trim());
 }
 
+async function fichaYaDownloadJustificaciones(sessionCookie, desde, hasta) {
+  const url = `${FICHAYA_URL}/justificaciones/?export=xlsx&fecha_desde=${desde}&fecha_hasta=${hasta}`;
+  console.log('[FichaYa] Descargando justificaciones:', url);
+  const res = await fetch(url, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
+  const ct = res.headers.get('content-type') || '';
+  if (!res.ok) throw new Error('Error al descargar justificaciones: ' + res.status);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (ct.includes('text/html')) return [];
+  const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  const firstKeys = Object.keys(rows[0] || {});
+  if (firstKeys.some(k => k.startsWith('__EMPTY'))) {
+    const headerRow = rows[0];
+    const realHeaders = {};
+    firstKeys.forEach(k => { if (String(headerRow[k]).trim()) realHeaders[k] = String(headerRow[k]).trim(); });
+    rows = rows.slice(1).map(r => {
+      const mapped = {};
+      firstKeys.forEach(k => { if (realHeaders[k]) mapped[realHeaders[k]] = r[k]; });
+      return mapped;
+    });
+  }
+  return rows;
+}
+
 async function syncFichaYaMes(mes) {
   const [y, m] = mes.split('-').map(Number);
   const desde = `${y}-${String(m).padStart(2,'0')}-01`;
@@ -1720,8 +1745,55 @@ async function syncFichaYaMes(mes) {
         regCount++;
       }
 
+      // ── Sync justificaciones ──
+      let justCount = 0;
+      try {
+        const justRows = await fichaYaDownloadJustificaciones(sessionCookie, desde, hasta);
+        console.log(`[FichaYa] Justificaciones descargadas: ${justRows.length}`);
+        for (const row of justRows) {
+          const estado = String(row['Estado'] || '').toLowerCase().trim();
+          if (estado === 'rechazada') continue;
+
+          const nombre = fichaYaNombre(row);
+          if (!nombre) continue;
+          const empId = empCache[nombre.toLowerCase()];
+          if (!empId) continue;
+
+          let fDesde = row['Fecha Desde'];
+          let fHasta = row['Fecha Hasta'];
+          if (fDesde instanceof Date) fDesde = fDesde.toISOString().slice(0, 10);
+          else fDesde = String(fDesde).trim().slice(0, 10);
+          if (fHasta instanceof Date) fHasta = fHasta.toISOString().slice(0, 10);
+          else fHasta = String(fHasta).trim().slice(0, 10);
+
+          if (!fDesde || !/^\d{4}-\d{2}-\d{2}$/.test(fDesde)) continue;
+          if (!fHasta || !/^\d{4}-\d{2}-\d{2}$/.test(fHasta)) fHasta = fDesde;
+
+          const motivo = String(row['Motivo'] || '').trim();
+          const tipoJustif = estado === 'aprobada' ? 'falta_justificada' : 'falta_justificada';
+          const obsJustif = motivo + (estado === 'pendiente' ? ' (pendiente aprobación)' : '');
+
+          const dStart = new Date(fDesde);
+          const dEnd = new Date(fHasta);
+          for (let dt = new Date(dStart); dt <= dEnd; dt.setDate(dt.getDate() + 1)) {
+            const fechaStr = dt.toISOString().slice(0, 10);
+            if (fechaStr < desde || fechaStr > hasta) continue;
+
+            await client.query(
+              `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas, observaciones)
+               VALUES ($1,$2,$3,NULL,NULL,NULL,$4)
+               ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo=$3, observaciones=$4`,
+              [empId, fechaStr, tipoJustif, obsJustif]
+            );
+            justCount++;
+          }
+        }
+      } catch (justErr) {
+        console.error('[FichaYa] Error al sincronizar justificaciones:', justErr.message);
+      }
+
       await client.query('COMMIT');
-      return { registros: regCount, empleados_nuevos: empNuevos };
+      return { registros: regCount, empleados_nuevos: empNuevos, justificaciones: justCount };
     } catch (e) {
       await client.query('ROLLBACK');
       throw e;

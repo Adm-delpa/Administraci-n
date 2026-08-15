@@ -159,6 +159,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
 
   <!-- STATS -->
   <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="st-habiles" style="color:#0D4FA0">0</div><div class="stat-lbl">Días hábiles</div></div>
     <div class="stat-card"><div class="stat-val" id="st-empleados">0</div><div class="stat-lbl">Empleados</div></div>
     <div class="stat-card"><div class="stat-val" id="st-presentes" style="color:#075C41">0</div><div class="stat-lbl">Días presentes</div></div>
     <div class="stat-card"><div class="stat-val" id="st-vacaciones" style="color:#1E6FD9">0</div><div class="stat-lbl">Vacaciones</div></div>
@@ -306,7 +307,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
         <div class="form-group"><label>Hora salida</label><input type="text" id="det-salida" readonly style="background:#F2F1EE"></div>
       </div>
       <div class="form-group"><label>Hs. trabajadas</label><input type="text" id="det-hs" readonly style="background:#F2F1EE"></div>
-      <div class="form-group"><label>Observaciones</label><input type="text" id="det-obs" readonly style="background:#F2F1EE"></div>
+      <div class="form-group"><label id="lbl-obs">Observaciones</label><input type="text" id="det-obs" readonly style="background:#F2F1EE"></div>
       <p style="font-size:11px;color:#9896A0;text-align:center;margin-top:4px">Los cambios deben realizarse desde Ficha Ya</p>
     </div>
     <div class="modal-foot">
@@ -622,6 +623,7 @@ function renderGrilla() {
   const nlMap = {};
   noLaborables.forEach(d => { nlMap[d.fecha] = d.motivo; });
 
+  const diasHabiles = dias.filter(d => d.dow !== 0 && !nlSet.has(d.fecha)).length;
   let totPresente = 0, totVac = 0, totJust = 0, totInjust = 0, totHoras = 0, totIncompletos = 0;
 
   const thead = document.getElementById('grilla-head');
@@ -634,7 +636,7 @@ function renderGrilla() {
   const tbody = document.getElementById('grilla-body');
   if (!emps.length) {
     tbody.innerHTML = '<tr><td colspan="' + (dias.length + 6) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados para mostrar</td></tr>';
-    actualizarStats(0, 0, 0, 0, 0, 0, 0);
+    actualizarStats(0, 0, 0, 0, 0, 0, 0, diasHabiles);
     return;
   }
 
@@ -698,10 +700,11 @@ function renderGrilla() {
     tbody.innerHTML = filas.join('');
   }
 
-  actualizarStats(filas.length, totPresente, totVac, totJust, totInjust, totHoras, totIncompletos);
+  actualizarStats(filas.length, totPresente, totVac, totJust, totInjust, totHoras, totIncompletos, diasHabiles);
 }
 
-function actualizarStats(emps, p, v, fj, fi, hs, inc) {
+function actualizarStats(emps, p, v, fj, fi, hs, inc, habiles) {
+  document.getElementById('st-habiles').textContent = habiles || 0;
   document.getElementById('st-empleados').textContent = emps;
   document.getElementById('st-presentes').textContent = p;
   document.getElementById('st-vacaciones').textContent = v;
@@ -741,6 +744,13 @@ function abrirDetalle(empId, fecha) {
   }
 
   document.getElementById('det-horas-wrap').style.display = (reg && reg.tipo === 'presente') ? 'grid' : 'none';
+
+  const obsLabel = document.getElementById('lbl-obs');
+  if (reg && reg.tipo === 'falta_justificada' && reg.observaciones) {
+    obsLabel.textContent = 'Diagnóstico / Motivo';
+  } else {
+    obsLabel.textContent = 'Observaciones';
+  }
   document.getElementById('modal-detalle').classList.add('open');
 }
 
