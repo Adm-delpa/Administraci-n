@@ -1514,7 +1514,12 @@ async function fichaYaLogin() {
   const body = new URLSearchParams({ csrf_token: csrfMatch[1], username: FICHAYA_USER, password: FICHAYA_PASS });
   const loginRes = await fetch(FICHAYA_URL + '/login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': mergeCookies(cookies1) },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Cookie': mergeCookies(cookies1),
+      'Referer': FICHAYA_URL + '/login',
+      'Origin': FICHAYA_URL
+    },
     body: body.toString(),
     redirect: 'manual'
   });
@@ -1567,8 +1572,21 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
 
     const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
     if (!rows.length) return res.json({ registros: 0, empleados_nuevos: 0, mensaje: 'Sin datos en el período' });
+
+    // FichaYa puts a title row "Asistencias" in A1; real headers are in row 2
+    const firstKeys = Object.keys(rows[0]);
+    if (firstKeys.some(k => k.startsWith('__EMPTY'))) {
+      const headerRow = rows[0];
+      const realHeaders = {};
+      firstKeys.forEach(k => { if (String(headerRow[k]).trim()) realHeaders[k] = String(headerRow[k]).trim(); });
+      rows = rows.slice(1).map(r => {
+        const mapped = {};
+        firstKeys.forEach(k => { if (realHeaders[k]) mapped[realHeaders[k]] = r[k]; });
+        return mapped;
+      });
+    }
 
     const client = await pool.connect();
     try {
@@ -1580,10 +1598,12 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
       existing.rows.forEach(e => { empCache[e.nombre.toLowerCase().trim()] = e.id; });
 
       for (const row of rows) {
-        const nombre = String(row['Empleado'] || '').trim();
+        const apellido = String(row['Apellido'] || '').trim();
+        const nombreRaw = String(row['Nombre'] || '').trim();
+        const nombre = (apellido && nombreRaw) ? `${apellido}, ${nombreRaw}` : (nombreRaw || apellido || String(row['Empleado'] || '').trim());
         if (!nombre) continue;
-        const sucursal = String(row['Sucursal'] || '').trim() || null;
-        const area = String(row['Sector'] || '').trim() || null;
+        const sucursal = String(row['Sucursal Nombre'] || row['Sucursal'] || '').trim() || null;
+        const area = String(row['Sector Nombre'] || row['Sector'] || '').trim() || null;
 
         let empId = empCache[nombre.toLowerCase()];
         if (!empId) {
@@ -1610,8 +1630,8 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
           }
         }
 
-        const horaEnt = parseHora(row['Entrada']);
-        const horaSal = parseHora(row['Salida']);
+        const horaEnt = parseHora(row['Hora Entrada'] || row['Entrada']);
+        const horaSal = parseHora(row['Hora Salida'] || row['Salida']);
         let hsTrab = null;
         if (horaEnt && horaSal) {
           const [h1, m1] = horaEnt.split(':').map(Number);
