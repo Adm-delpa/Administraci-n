@@ -7,6 +7,7 @@ const querystring = require('querystring');
 const zlib = require('zlib');
 const multer = require('multer');
 const XLSX = require('xlsx');
+const cron = require('node-cron');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10*1024*1024 } });
 
 const app = express();
@@ -1590,15 +1591,12 @@ function fichaYaNombre(row) {
   return (apellido && nombreRaw) ? `${apellido}, ${nombreRaw}` : (nombreRaw || apellido || String(row['Empleado'] || '').trim());
 }
 
-app.post('/api/asistencia/sync-fichaya', async (req, res) => {
-  const { mes } = req.body;
-  if (!mes) return res.status(400).json({ error: 'Mes requerido (YYYY-MM)' });
-  try {
-    const [y, m] = mes.split('-').map(Number);
-    const desde = `${y}-${String(m).padStart(2,'0')}-01`;
-    const hasta = `${y}-${String(m).padStart(2,'0')}-${new Date(y, m, 0).getDate()}`;
+async function syncFichaYaMes(mes) {
+  const [y, m] = mes.split('-').map(Number);
+  const desde = `${y}-${String(m).padStart(2,'0')}-01`;
+  const hasta = `${y}-${String(m).padStart(2,'0')}-${new Date(y, m, 0).getDate()}`;
 
-    const sessionCookie = await fichaYaLogin();
+  const sessionCookie = await fichaYaLogin();
 
     // 1) Download wide range (last 6 months) to discover all active employees
     const prevMonth = new Date(y, m - 2, 1);
@@ -1723,12 +1721,39 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
       }
 
       await client.query('COMMIT');
-      res.json({ registros: regCount, empleados_nuevos: empNuevos });
+      return { registros: regCount, empleados_nuevos: empNuevos };
     } catch (e) {
       await client.query('ROLLBACK');
       throw e;
     } finally { client.release(); }
+}
+
+app.post('/api/asistencia/sync-fichaya', async (req, res) => {
+  const { mes } = req.body;
+  if (!mes) return res.status(400).json({ error: 'Mes requerido (YYYY-MM)' });
+  try {
+    const result = await syncFichaYaMes(mes);
+    res.json(result);
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── CRON: sync automático a las 9:30 y 22:00 (hora Argentina UTC-3) ──
+cron.schedule('30 12 * * *', async () => {
+  const mes = new Date().toISOString().slice(0, 7);
+  console.log(`[CRON] Sync automático 9:30 AR - mes: ${mes}`);
+  try {
+    const r = await syncFichaYaMes(mes);
+    console.log(`[CRON] Sync completado: ${r.registros} registros, ${r.empleados_nuevos} empleados nuevos`);
+  } catch (e) { console.error('[CRON] Error sync:', e.message); }
+});
+
+cron.schedule('0 1 * * *', async () => {
+  const mes = new Date().toISOString().slice(0, 7);
+  console.log(`[CRON] Sync automático 22:00 AR - mes: ${mes}`);
+  try {
+    const r = await syncFichaYaMes(mes);
+    console.log(`[CRON] Sync completado: ${r.registros} registros, ${r.empleados_nuevos} empleados nuevos`);
+  } catch (e) { console.error('[CRON] Error sync:', e.message); }
 });
 
 // Servir páginas
