@@ -155,10 +155,11 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-secondary" onclick="abrirEmpleados()">Empleados</button>
       <button class="btn-secondary" onclick="abrirNoLaborables()">Días no laborables</button>
-      <button class="btn-action" onclick="abrirImport()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Importar Ficha Ya
+      <button class="btn-action" onclick="abrirSync()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Sincronizar Ficha Ya
       </button>
+      <button class="btn-secondary" onclick="abrirImport()" style="font-size:12px">Importar Excel</button>
     </div>
   </div>
 
@@ -196,6 +197,28 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       <thead id="grilla-head"></thead>
       <tbody id="grilla-body"></tbody>
     </table>
+  </div>
+</div>
+
+<!-- MODAL SYNC FICHA YA -->
+<div class="modal-bg" id="modal-sync">
+  <div class="modal" style="max-width:450px">
+    <div class="modal-head">
+      <h3>Sincronizar con Ficha Ya</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-sync')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6B6876;line-height:1.5">Se conecta automáticamente a Ficha Ya, descarga las asistencias del mes seleccionado y actualiza los registros.</p>
+      <div class="form-group">
+        <label>Mes a sincronizar</label>
+        <input type="month" id="sync-mes">
+      </div>
+      <div id="sync-status" style="display:none;padding:12px;border-radius:8px;font-size:13px;line-height:1.5"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modal-sync')">Cancelar</button>
+      <button class="btn-guardar" id="btn-sync" onclick="ejecutarSync()">Sincronizar</button>
+    </div>
   </div>
 </div>
 
@@ -708,6 +731,54 @@ async function ejecutarImport() {
   } catch(e) { toast(e.message, false); }
   btn.disabled = false;
   btn.textContent = 'Importar';
+}
+
+// ── SYNC FICHA YA ──
+function abrirSync() {
+  document.getElementById('sync-mes').value = $mes.value;
+  document.getElementById('sync-status').style.display = 'none';
+  document.getElementById('btn-sync').disabled = false;
+  document.getElementById('btn-sync').textContent = 'Sincronizar';
+  document.getElementById('modal-sync').classList.add('open');
+}
+
+async function ejecutarSync() {
+  const mes = document.getElementById('sync-mes').value;
+  if (!mes) return toast('Seleccioná un mes', false);
+  const btn = document.getElementById('btn-sync');
+  const status = document.getElementById('sync-status');
+  btn.disabled = true;
+  btn.textContent = 'Conectando con Ficha Ya...';
+  status.style.display = 'block';
+  status.style.background = '#F2F1EE';
+  status.style.color = '#6B6876';
+  status.textContent = 'Descargando asistencias desde Ficha Ya...';
+
+  try {
+    const r = await fetch('/api/asistencia/sync-fichaya', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ mes })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+
+    status.style.background = '#D4F2E8';
+    status.style.color = '#075C41';
+    status.innerHTML = `<strong>Sincronización completada</strong><br>${data.registros} registros actualizados${data.empleados_nuevos ? ', ' + data.empleados_nuevos + ' empleados nuevos' : ''}`;
+    toast('Sincronización exitosa');
+    await cargarEmpleados();
+    await cargarNoLaborables();
+    $mes.value = mes;
+    await cargar();
+  } catch(e) {
+    status.style.background = '#FEE2E2';
+    status.style.color = '#dc2626';
+    status.textContent = 'Error: ' + e.message;
+    toast(e.message, false);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Sincronizar';
 }
 
 // ── INIT ──

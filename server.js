@@ -1484,6 +1484,129 @@ function parseHora(val) {
   return null;
 }
 
+// ── SYNC FICHA YA ──
+const FICHAYA_URL = process.env.FICHAYA_URL || 'https://control-asistencia.up.railway.app';
+const FICHAYA_USER = process.env.FICHAYA_USER || 'reportes';
+const FICHAYA_PASS = process.env.FICHAYA_PASS || 'reporte123';
+
+async function fichaYaLogin() {
+  const loginPageRes = await fetch(FICHAYA_URL + '/login');
+  const loginHtml = await loginPageRes.text();
+  const csrfMatch = loginHtml.match(/name="csrf_token"\s+value="([^"]+)"/);
+  if (!csrfMatch) throw new Error('No se pudo obtener CSRF token de Ficha Ya');
+  const cookies = (loginPageRes.headers.get('set-cookie') || '').split(',')
+    .map(c => c.split(';')[0].trim()).filter(Boolean).join('; ');
+
+  const body = new URLSearchParams({ csrf_token: csrfMatch[1], username: FICHAYA_USER, password: FICHAYA_PASS });
+  const loginRes = await fetch(FICHAYA_URL + '/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cookie': cookies },
+    body: body.toString(),
+    redirect: 'manual'
+  });
+  const setCookies = loginRes.headers.getSetCookie ? loginRes.headers.getSetCookie() : [];
+  const allCookies = [...cookies.split('; '), ...setCookies.map(c => c.split(';')[0].trim())].filter(Boolean);
+  const cookieMap = {};
+  allCookies.forEach(c => { const [k] = c.split('='); cookieMap[k] = c; });
+  return Object.values(cookieMap).join('; ');
+}
+
+app.post('/api/asistencia/sync-fichaya', async (req, res) => {
+  const { mes } = req.body;
+  if (!mes) return res.status(400).json({ error: 'Mes requerido (YYYY-MM)' });
+  try {
+    const [y, m] = mes.split('-').map(Number);
+    const desde = `${y}-${String(m).padStart(2,'0')}-01`;
+    const hasta = `${y}-${String(m).padStart(2,'0')}-${new Date(y, m, 0).getDate()}`;
+
+    const sessionCookie = await fichaYaLogin();
+
+    const xlsxUrl = `${FICHAYA_URL}/asistencias/?export=xlsx&fecha_desde=${desde}&fecha_hasta=${hasta}`;
+    const xlsxRes = await fetch(xlsxUrl, { headers: { 'Cookie': sessionCookie } });
+    if (!xlsxRes.ok) throw new Error('Error al descargar Excel de Ficha Ya: ' + xlsxRes.status);
+    const buf = Buffer.from(await xlsxRes.arrayBuffer());
+
+    const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!rows.length) return res.json({ registros: 0, empleados_nuevos: 0, mensaje: 'Sin datos en el período' });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      let regCount = 0, empNuevos = 0;
+
+      const empCache = {};
+      const existing = await client.query('SELECT id, nombre, legajo FROM asistencia_empleados WHERE activo=true');
+      existing.rows.forEach(e => { empCache[e.nombre.toLowerCase().trim()] = e.id; });
+
+      for (const row of rows) {
+        const nombre = String(row['Empleado'] || '').trim();
+        if (!nombre) continue;
+        const sucursal = String(row['Sucursal'] || '').trim() || null;
+        const area = String(row['Sector'] || '').trim() || null;
+
+        let empId = empCache[nombre.toLowerCase()];
+        if (!empId) {
+          const ins = await client.query(
+            'INSERT INTO asistencia_empleados (nombre, sucursal, area) VALUES ($1,$2,$3) RETURNING id',
+            [nombre, sucursal, area]
+          );
+          empId = ins.rows[0].id;
+          empCache[nombre.toLowerCase()] = empId;
+          empNuevos++;
+        }
+
+        let fecha = row['Fecha'];
+        if (fecha instanceof Date) {
+          fecha = fecha.toISOString().slice(0, 10);
+        } else {
+          fecha = String(fecha).trim();
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+            const parts = fecha.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+            if (parts) {
+              const yr = parts[3].length === 2 ? '20' + parts[3] : parts[3];
+              fecha = `${yr}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+            } else continue;
+          }
+        }
+
+        const horaEnt = parseHora(row['Entrada']);
+        const horaSal = parseHora(row['Salida']);
+        let hsTrab = null;
+        if (horaEnt && horaSal) {
+          const [h1, m1] = horaEnt.split(':').map(Number);
+          const [h2, m2] = horaSal.split(':').map(Number);
+          let mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+          if (mins < 0) mins += 24 * 60;
+          hsTrab = +(mins / 60).toFixed(1);
+        }
+
+        const estado = String(row['Estado'] || '').toLowerCase().trim();
+        let tipo = 'presente';
+        if (estado === 'ausente') tipo = 'falta_injustificada';
+        else if (estado === 'ok' || estado === 'tarde') tipo = 'presente';
+        else if (estado.includes('vacaci')) tipo = 'vacaciones';
+        else if (estado.includes('justificad')) tipo = 'falta_justificada';
+
+        await client.query(
+          `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas)
+           VALUES ($1,$2,$3,$4,$5,$6)
+           ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo=$3, hora_entrada=$4, hora_salida=$5, hs_trabajadas=$6`,
+          [empId, fecha, tipo, horaEnt, horaSal, hsTrab]
+        );
+        regCount++;
+      }
+
+      await client.query('COMMIT');
+      res.json({ registros: regCount, empleados_nuevos: empNuevos });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally { client.release(); }
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Servir páginas
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/panel', (req, res) => res.sendFile(path.join(__dirname, 'public', 'panel.html')));
