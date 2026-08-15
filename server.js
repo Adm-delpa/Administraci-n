@@ -1628,7 +1628,8 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
         }
       }
 
-      // Process month records
+      // Group month records by employee+date to consolidate split shifts
+      const dayMap = {};
       for (const row of mesRows) {
         const nombre = fichaYaNombre(row);
         if (!nombre) continue;
@@ -1662,27 +1663,45 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
 
         const horaEnt = parseHora(row['Hora Entrada'] || row['Entrada']);
         const horaSal = parseHora(row['Hora Salida'] || row['Salida']);
-        let hsTrab = null;
-        if (horaEnt && horaSal) {
-          const [h1, m1] = horaEnt.split(':').map(Number);
-          const [h2, m2] = horaSal.split(':').map(Number);
-          let mins = (h2 * 60 + m2) - (h1 * 60 + m1);
-          if (mins < 0) mins += 24 * 60;
-          hsTrab = +(mins / 60).toFixed(1);
-        }
-
         const estado = String(row['Estado'] || '').toLowerCase().trim();
-        let tipo = 'presente';
-        if (estado === 'ausente') tipo = 'falta_injustificada';
-        else if (estado === 'ok' || estado === 'tarde') tipo = 'presente';
-        else if (estado.includes('vacaci')) tipo = 'vacaciones';
-        else if (estado.includes('justificad')) tipo = 'falta_justificada';
+
+        const key = empId + '_' + fecha;
+        if (!dayMap[key]) dayMap[key] = { empId, fecha, turnos: [], estado: 'presente' };
+        dayMap[key].turnos.push({ entrada: horaEnt, salida: horaSal });
+        if (estado === 'ausente') dayMap[key].estado = 'falta_injustificada';
+        else if (estado.includes('vacaci')) dayMap[key].estado = 'vacaciones';
+        else if (estado.includes('justificad')) dayMap[key].estado = 'falta_justificada';
+      }
+
+      for (const rec of Object.values(dayMap)) {
+        const turnos = rec.turnos.sort((a, b) => (a.entrada || '').localeCompare(b.entrada || ''));
+        const primeraEnt = turnos.find(t => t.entrada)?.entrada || null;
+        const ultimaSal = [...turnos].reverse().find(t => t.salida)?.salida || null;
+
+        let hsTrab = 0;
+        const detalle = [];
+        for (const t of turnos) {
+          detalle.push(`${t.entrada || '?'}-${t.salida || '?'}`);
+          if (t.entrada && t.salida) {
+            const [h1, m1] = t.entrada.split(':').map(Number);
+            const [h2, m2] = t.salida.split(':').map(Number);
+            let mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (mins < 0) mins += 24 * 60;
+            hsTrab += mins / 60;
+          }
+        }
+        hsTrab = hsTrab ? +hsTrab.toFixed(1) : null;
+
+        let tipo = rec.estado;
+        if (tipo === 'presente' && (rec.estado === 'ok' || rec.estado === 'tarde')) tipo = 'presente';
+
+        const obs = turnos.length > 1 ? detalle.join(' / ') : null;
 
         await client.query(
-          `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas)
-           VALUES ($1,$2,$3,$4,$5,$6)
-           ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo=$3, hora_entrada=$4, hora_salida=$5, hs_trabajadas=$6`,
-          [empId, fecha, tipo, horaEnt, horaSal, hsTrab]
+          `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas, observaciones)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)
+           ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo=$3, hora_entrada=$4, hora_salida=$5, hs_trabajadas=$6, observaciones=COALESCE($7, asistencia_registros.observaciones)`,
+          [rec.empId, rec.fecha, tipo, primeraEnt, ultimaSal, hsTrab, obs]
         );
         regCount++;
       }

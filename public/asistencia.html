@@ -301,6 +301,10 @@ label{font-size:12px;font-weight:600;color:#6B6876}
           <option value="feriado">Feriado</option>
         </select>
       </div>
+      <div id="det-turnos-info" style="display:none;background:#F8F9FC;border:1px solid #DDDBD6;border-radius:8px;padding:10px 12px;font-size:13px;color:#18181A">
+        <div style="font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#9896A0;margin-bottom:6px">Turnos del día</div>
+        <div id="det-turnos-list"></div>
+      </div>
       <div class="detalle-horas" id="det-horas-wrap">
         <div class="form-group"><label>Hora entrada</label><input type="time" id="det-entrada"></div>
         <div class="form-group"><label>Hora salida</label><input type="time" id="det-salida"></div>
@@ -623,7 +627,8 @@ function renderGrilla() {
         else if (reg.tipo === 'falta_injustificada') { cls = 'cel-injustificada'; txt = '!'; fi++; }
         else if (reg.tipo === 'feriado') { cls = 'cel-feriado'; txt = 'F'; }
         if (reg.hs_trabajadas) hs += parseFloat(reg.hs_trabajadas);
-        return `<td><div class="cel-dia ${cls}" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="${reg.hora_entrada||''} - ${reg.hora_salida||''}">${txt}</div></td>`;
+        const tipTurnos = reg.observaciones && reg.observaciones.includes('/') ? reg.observaciones : `${reg.hora_entrada||''} - ${reg.hora_salida||''}`;
+        return `<td><div class="cel-dia ${cls}" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="${tipTurnos}${reg.hs_trabajadas ? ' ('+reg.hs_trabajadas+'hs)' : ''}">${txt}</div></td>`;
       }
 
       return `<td><div class="cel-dia cel-vacio" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer"></div></td>`;
@@ -666,6 +671,16 @@ function abrirDetalle(empId, fecha) {
   document.getElementById('det-salida').value = reg ? (reg.hora_salida || '') : '';
   document.getElementById('det-hs').value = reg ? (reg.hs_trabajadas || '') : '';
   document.getElementById('det-obs').value = reg ? (reg.observaciones || '') : '';
+
+  const turnosInfo = document.getElementById('det-turnos-info');
+  const turnosList = document.getElementById('det-turnos-list');
+  if (reg && reg.observaciones && reg.observaciones.includes('/')) {
+    const turnos = reg.observaciones.split('/').map(t => t.trim());
+    turnosList.innerHTML = turnos.map((t, i) => `<div style="display:flex;justify-content:space-between;padding:3px 0;${i?'border-top:1px solid #EEEDEA':''}"><span>Turno ${i+1}</span><span style="font-weight:600">${t}</span></div>`).join('');
+    turnosInfo.style.display = 'block';
+  } else {
+    turnosInfo.style.display = 'none';
+  }
 
   toggleHoras();
   document.getElementById('modal-detalle').classList.add('open');
