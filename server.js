@@ -93,6 +93,7 @@ async function initDB() {
       );
 
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modulos JSONB DEFAULT NULL;
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sectores_asistencia JSONB DEFAULT NULL;
       DO $$ BEGIN
         IF (SELECT data_type FROM information_schema.columns WHERE table_name='usuarios' AND column_name='modulos') = 'ARRAY' THEN
           ALTER TABLE usuarios ALTER COLUMN modulos TYPE JSONB USING NULL;
@@ -346,7 +347,7 @@ app.post('/api/login', async (req, res) => {
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-    res.json({ ok: true, username: user.username, rol: user.rol, nombre: user.nombre, modulos: user.modulos || null });
+    res.json({ ok: true, username: user.username, rol: user.rol, nombre: user.nombre, modulos: user.modulos || null, sectores_asistencia: user.sectores_asistencia || null });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
@@ -456,7 +457,7 @@ app.get('/api/usuarios', async (req, res) => {
   const adminUsername = req.headers['x-admin'];
   if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
   try {
-    const r = await pool.query('SELECT id, username, nombre, rol, modulos, created_at FROM usuarios ORDER BY created_at ASC');
+    const r = await pool.query('SELECT id, username, nombre, rol, modulos, sectores_asistencia, created_at FROM usuarios ORDER BY created_at ASC');
     res.json(r.rows);
   } catch(e) { res.status(500).json({ error: 'Error al listar usuarios' }); }
 });
@@ -501,6 +502,16 @@ app.put('/api/usuarios/:username/modulos', async (req, res) => {
     await pool.query('UPDATE usuarios SET modulos=$1 WHERE username=$2', [modulos ? JSON.stringify(modulos) : null, username]);
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'Error al actualizar módulos' }); }
+});
+
+app.put('/api/usuarios/:username/sectores-asistencia', async (req, res) => {
+  const { adminUsername, sectores } = req.body;
+  const { username } = req.params;
+  if (!adminUsername || !(await esAdmin(adminUsername))) return res.status(403).json({ error: 'Sin permiso' });
+  try {
+    await pool.query('UPDATE usuarios SET sectores_asistencia=$1 WHERE username=$2', [sectores && sectores.length ? JSON.stringify(sectores) : null, username]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'Error al actualizar sectores' }); }
 });
 
 app.post('/api/usuarios/reset-password', async (req, res) => {

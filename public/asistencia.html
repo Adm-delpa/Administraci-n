@@ -358,6 +358,7 @@ let registros = [];
 let noLaborables = [];
 let detalleActual = null;
 let sectorActivo = '';
+const sectoresPermitidos = userData.sectores_asistencia || null;
 
 const $mes = document.getElementById('fil-mes');
 const $estado = document.getElementById('fil-estado');
@@ -406,10 +407,22 @@ async function cargarEmpleados() {
 }
 
 function poblarSectorTabs() {
-  const areas = [...new Set(empleados.map(e => e.area).filter(Boolean))].sort();
+  let areas = [...new Set(empleados.map(e => e.area).filter(Boolean))].sort();
+  if (sectoresPermitidos) areas = areas.filter(a => sectoresPermitidos.includes(a));
   const $tabs = document.getElementById('sector-tabs');
-  $tabs.innerHTML = `<div class="tab${sectorActivo===''?' active':''}" data-sector="">Todos</div>` +
-    areas.map(a => `<div class="tab${sectorActivo===a?' active':''}" data-sector="${a}">${a}</div>`).join('');
+  if (sectoresPermitidos && areas.length === 1) {
+    sectorActivo = areas[0];
+    $area.value = sectorActivo;
+    $tabs.innerHTML = `<div class="tab active" data-sector="${areas[0]}">${areas[0]}</div>`;
+  } else {
+    const showTodos = !sectoresPermitidos;
+    $tabs.innerHTML = (showTodos ? `<div class="tab${sectorActivo===''?' active':''}" data-sector="">Todos</div>` : '') +
+      areas.map(a => `<div class="tab${sectorActivo===a?' active':''}" data-sector="${a}">${a}</div>`).join('');
+    if (sectoresPermitidos && !sectorActivo) {
+      sectorActivo = areas[0] || '';
+      $area.value = sectorActivo;
+    }
+  }
   $tabs.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       sectorActivo = tab.dataset.sector;
@@ -420,6 +433,10 @@ function poblarSectorTabs() {
       cargar();
     });
   });
+  // Auto-select first allowed tab
+  if (sectoresPermitidos && !$tabs.querySelector('.tab.active') && $tabs.querySelector('.tab')) {
+    $tabs.querySelector('.tab').click();
+  }
 }
 
 function poblarFiltros() {

@@ -347,6 +347,8 @@ const ALL_MODULOS=[
   {id:'asistencia',           label:'Asistencia',        href:'/asistencia'},
 ];
 
+const SECTORES_ASISTENCIA = ['ADMINISTRACION','ALMACEN','OPERACIONES','PROCESOS','VENTAS'];
+
 // Ocultar módulos sin acceso: admin sin modulos configurados = todo, vista sin modulos = nada
 if(userData.rol!=='admin'){
   ALL_MODULOS.forEach(({id,href})=>{
@@ -461,10 +463,20 @@ async function cargarUsuarios(){
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center">
           ${selects}
         </div>
+        <div style="margin-top:4px;padding:8px 10px;background:#F8F9FC;border:1px solid #EEEDEA;border-radius:6px">
+          <div style="font-size:10px;font-weight:700;color:#9896A0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Sectores asistencia ${isGlobalAdmin?'<span style="font-size:9px;font-weight:500;color:#6B6876">(admin = todos)</span>':''}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="sectores-wrap-${u.username}">
+            ${(typeof SECTORES_ASISTENCIA!=='undefined'?SECTORES_ASISTENCIA:[]).map(s=>{
+              const checked=isGlobalAdmin||(u.sectores_asistencia&&u.sectores_asistencia.includes(s));
+              return `<label style="font-size:11px;display:flex;align-items:center;gap:3px;cursor:${isGlobalAdmin?'default':'pointer'}"><input type="checkbox" data-user-sect="${u.username}" value="${s}" ${checked?'checked':''} ${isGlobalAdmin?'disabled':''}>${s}</label>`;
+            }).join('')}
+          </div>
+        </div>
         <div style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">
           <span id="msg-mod-${u.username}" style="font-size:11px;color:#16a34a;display:none">✓ Guardado</span>
           <button onclick="editarUsuario('${u.username}')" style="font-size:11px;font-weight:600;color:#fff;background:#6B3FC8;border:none;cursor:pointer;padding:5px 12px;border-radius:5px">Guardar datos</button>
           <button onclick="guardarModulos('${u.username}')" ${isGlobalAdmin?'disabled':''} style="font-size:11px;font-weight:600;color:#fff;background:#1E6FD9;border:none;cursor:pointer;padding:5px 12px;border-radius:5px;${isGlobalAdmin?'opacity:.4;cursor:default':''}">Guardar módulos</button>
+          <button onclick="guardarSectores('${u.username}')" ${isGlobalAdmin?'disabled':''} style="font-size:11px;font-weight:600;color:#fff;background:#E65100;border:none;cursor:pointer;padding:5px 12px;border-radius:5px;${isGlobalAdmin?'opacity:.4;cursor:default':''}">Guardar sectores</button>
           <button onclick="abrirReset('${u.username}')" style="font-size:11px;font-weight:600;color:#1E6FD9;background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:5px;border:1px solid #DDDBD6">Resetear contraseña</button>
         </div>
       </div>`;
@@ -520,6 +532,19 @@ async function guardarModulos(username){
     if(r.ok){
       const msg=document.getElementById('msg-mod-'+username);
       if(msg){msg.style.display='inline';setTimeout(()=>msg.style.display='none',2000);}
+    }
+  }catch(e){}
+}
+
+async function guardarSectores(username){
+  const checks=document.querySelectorAll(`input[data-user-sect="${username}"]`);
+  const sectores=[];
+  checks.forEach(c=>{ if(c.checked) sectores.push(c.value); });
+  try{
+    const r=await fetch(`/api/usuarios/${username}/sectores-asistencia`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminUsername:userData.username,sectores:sectores.length?sectores:null})});
+    if(r.ok){
+      const msg=document.getElementById('msg-mod-'+username);
+      if(msg){msg.textContent='✓ Sectores guardados';msg.style.display='inline';setTimeout(()=>{msg.textContent='✓ Guardado';msg.style.display='none';},2000);}
     }
   }catch(e){}
 }
