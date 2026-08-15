@@ -250,6 +250,19 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       </div>
     </a>
 
+    <!-- ASISTENCIA -->
+    <a href="/asistencia" class="modulo-card">
+      <span class="modulo-badge badge-activo">Activo</span>
+      <div class="modulo-icon" style="background:#E8F5E9">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14l2 2 4-4"/></svg>
+      </div>
+      <div class="modulo-nombre">Asistencia</div>
+      <div class="modulo-desc">Control de presentismo, vacaciones, ausencias y horas trabajadas del personal.</div>
+      <div class="modulo-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </a>
+
   </div>
 
 
@@ -331,6 +344,7 @@ const ALL_MODULOS=[
   {id:'administracion',       label:'Administración',    href:'/administracion'},
   {id:'transporte',           label:'Transporte',        href:'/transporte'},
   {id:'presupuesto',          label:'Presupuesto',       href:'/presupuesto'},
+  {id:'asistencia',           label:'Asistencia',        href:'/asistencia'},
 ];
 
 // Ocultar módulos sin acceso: admin sin modulos configurados = todo, vista sin modulos = nada

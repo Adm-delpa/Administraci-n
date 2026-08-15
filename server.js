@@ -7,8 +7,7 @@ const querystring = require('querystring');
 const zlib = require('zlib');
 const multer = require('multer');
 const XLSX = require('xlsx');
-
-const uploadPresupuesto = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10*1024*1024 } });
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -278,6 +277,28 @@ async function initDB() {
         filas INTEGER,
         subido_por VARCHAR(100),
         created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS asistencia_empleados (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(200) NOT NULL,
+        legajo VARCHAR(50),
+        sucursal VARCHAR(100),
+        area VARCHAR(100),
+        activo BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS asistencia_registros (
+        id SERIAL PRIMARY KEY,
+        empleado_id INTEGER REFERENCES asistencia_empleados(id) ON DELETE CASCADE,
+        fecha DATE NOT NULL,
+        tipo VARCHAR(30) NOT NULL DEFAULT 'presente',
+        hora_entrada TIME,
+        hora_salida TIME,
+        hs_trabajadas NUMERIC(5,1),
+        observaciones TEXT,
+        UNIQUE(empleado_id, fecha)
       );
 
     `);
@@ -1237,265 +1258,199 @@ app.get('/api/cuentas-pagar', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── PRESUPUESTO: Egresos Tipificados ──
-const MESES_ES = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
 
-function detectCat(concepto) {
-  const c = concepto.toUpperCase();
-  if (c.includes('- VENTAS Y PROMOCI')) return 'VENTAS';
-  if (c.includes('- OPERACIONES')) return 'OPERACIONES';
-  if (c.includes('- INFRAESTRUCTURA')) return 'INFRAESTRUCTURA';
-  if (c.includes('- DISTRIBUCION')) return 'DISTRIBUCION';
-  if (c.includes('- ACARREO')) return 'ACARREO';
-  if (c.includes('- ADMIN Y FINANZAS') || c.includes('- ADMINISTRACI')) return 'ADMIN Y FINANZAS';
-  if (c.startsWith('ND BANCARIA') || c.startsWith('NC BANCARIA') || c === 'ITF') return 'ADMIN Y FINANZAS';
-  return null;
+// ── ASISTENCIA ──
+app.get('/api/asistencia/empleados', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM asistencia_empleados WHERE activo=true ORDER BY nombre');
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/asistencia/empleados', async (req, res) => {
+  const { nombre, legajo, sucursal, area } = req.body;
+  if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
+  try {
+    const r = await pool.query(
+      'INSERT INTO asistencia_empleados (nombre, legajo, sucursal, area) VALUES ($1,$2,$3,$4) RETURNING *',
+      [nombre, legajo||null, sucursal||null, area||null]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/asistencia/empleados/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM asistencia_empleados WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/asistencia/registros', async (req, res) => {
+  const { mes } = req.query;
+  if (!mes) return res.status(400).json({ error: 'Mes requerido (YYYY-MM)' });
+  try {
+    const r = await pool.query(
+      `SELECT id, empleado_id, fecha::text, tipo, hora_entrada::text, hora_salida::text, hs_trabajadas, observaciones
+       FROM asistencia_registros
+       WHERE to_char(fecha,'YYYY-MM') = $1
+       ORDER BY fecha`, [mes]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/asistencia/registros', async (req, res) => {
+  const { empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas, observaciones } = req.body;
+  if (!empleado_id || !fecha || !tipo) return res.status(400).json({ error: 'Datos incompletos' });
+  try {
+    const r = await pool.query(
+      `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas, observaciones)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo=$3, hora_entrada=$4, hora_salida=$5, hs_trabajadas=$6, observaciones=$7
+       RETURNING *`,
+      [empleado_id, fecha, tipo, hora_entrada||null, hora_salida||null, hs_trabajadas||null, observaciones||null]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/asistencia/importar', upload.single('archivo'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No se recibió archivo' });
+  try {
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!rows.length) return res.status(400).json({ error: 'Archivo vacío' });
+
+    const colMap = detectarColumnas(rows[0]);
+    if (!colMap.nombre) return res.status(400).json({ error: 'No se pudo detectar la columna de nombre/empleado' });
+    if (!colMap.fecha) return res.status(400).json({ error: 'No se pudo detectar la columna de fecha' });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      let regCount = 0, empNuevos = 0;
+
+      const empCache = {};
+      const existing = await client.query('SELECT id, nombre, legajo FROM asistencia_empleados WHERE activo=true');
+      existing.rows.forEach(e => {
+        empCache[e.nombre.toLowerCase().trim()] = e.id;
+        if (e.legajo) empCache['leg_'+e.legajo.trim()] = e.id;
+      });
+
+      for (const row of rows) {
+        const nombre = String(row[colMap.nombre] || '').trim();
+        if (!nombre) continue;
+
+        let empId = empCache[nombre.toLowerCase()];
+        const legajo = colMap.legajo ? String(row[colMap.legajo] || '').trim() : '';
+        if (!empId && legajo) empId = empCache['leg_'+legajo];
+
+        if (!empId) {
+          const sucursal = colMap.sucursal ? String(row[colMap.sucursal] || '').trim() : null;
+          const area = colMap.area ? String(row[colMap.area] || '').trim() : null;
+          const ins = await client.query(
+            'INSERT INTO asistencia_empleados (nombre, legajo, sucursal, area) VALUES ($1,$2,$3,$4) RETURNING id',
+            [nombre, legajo||null, sucursal, area]
+          );
+          empId = ins.rows[0].id;
+          empCache[nombre.toLowerCase()] = empId;
+          if (legajo) empCache['leg_'+legajo] = empId;
+          empNuevos++;
+        }
+
+        let fecha = row[colMap.fecha];
+        if (fecha instanceof Date) {
+          fecha = fecha.toISOString().slice(0,10);
+        } else {
+          fecha = String(fecha).trim();
+          const parts = fecha.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+          if (parts) {
+            const y = parts[3].length === 2 ? '20'+parts[3] : parts[3];
+            fecha = `${y}-${parts[2].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+          }
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) continue;
+
+        let horaEnt = colMap.entrada ? parseHora(row[colMap.entrada]) : null;
+        let horaSal = colMap.salida ? parseHora(row[colMap.salida]) : null;
+        let hsTrab = null;
+        if (horaEnt && horaSal) {
+          const [h1,m1] = horaEnt.split(':').map(Number);
+          const [h2,m2] = horaSal.split(':').map(Number);
+          let mins = (h2*60+m2)-(h1*60+m1);
+          if (mins < 0) mins += 24*60;
+          hsTrab = +(mins/60).toFixed(1);
+        }
+        if (colMap.horas && !hsTrab) {
+          const v = parseFloat(row[colMap.horas]);
+          if (!isNaN(v)) hsTrab = v;
+        }
+
+        let tipo = 'presente';
+        if (colMap.novedad) {
+          const nov = String(row[colMap.novedad] || '').toLowerCase().trim();
+          if (nov.includes('vacaci')) tipo = 'vacaciones';
+          else if (nov.includes('justificad') && !nov.includes('injustificad') && !nov.includes('no justificad')) tipo = 'falta_justificada';
+          else if (nov.includes('injustificad') || nov.includes('no justificad')) tipo = 'falta_injustificada';
+          else if (nov.includes('feriado')) tipo = 'feriado';
+          else if (nov.includes('ausente') || nov.includes('falta') || nov.includes('inasist')) tipo = 'falta_injustificada';
+        }
+        if (tipo === 'presente' && !horaEnt && !horaSal && !hsTrab && colMap.novedad) {
+          const nov = String(row[colMap.novedad] || '').toLowerCase().trim();
+          if (nov === '' || nov === 'presente' || nov === 'normal') tipo = 'presente';
+        }
+
+        await client.query(
+          `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas)
+           VALUES ($1,$2,$3,$4,$5,$6)
+           ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo=$3, hora_entrada=$4, hora_salida=$5, hs_trabajadas=$6`,
+          [empId, fecha, tipo, horaEnt, horaSal, hsTrab]
+        );
+        regCount++;
+      }
+
+      await client.query('COMMIT');
+      res.json({ registros: regCount, empleados_nuevos: empNuevos });
+    } catch(e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally { client.release(); }
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+function detectarColumnas(sample) {
+  const map = {};
+  const keys = Object.keys(sample);
+  for (const k of keys) {
+    const kl = k.toLowerCase().trim();
+    if (!map.nombre && (kl.includes('nombre') || kl.includes('empleado') || kl.includes('apellido') || kl === 'name')) map.nombre = k;
+    if (!map.fecha && (kl.includes('fecha') || kl === 'date' || kl === 'dia')) map.fecha = k;
+    if (!map.entrada && (kl.includes('entrada') || kl.includes('ingreso') || kl.includes('checkin') || kl.includes('check in') || kl.includes('hora_entrada'))) map.entrada = k;
+    if (!map.salida && (kl.includes('salida') || kl.includes('egreso') || kl.includes('checkout') || kl.includes('check out') || kl.includes('hora_salida'))) map.salida = k;
+    if (!map.legajo && (kl.includes('legajo') || kl === 'leg' || kl === 'id' || kl.includes('nro'))) map.legajo = k;
+    if (!map.sucursal && (kl.includes('sucursal') || kl.includes('sede') || kl.includes('local'))) map.sucursal = k;
+    if (!map.area && (kl.includes('area') || kl.includes('área') || kl.includes('sector') || kl.includes('depto') || kl.includes('departamento'))) map.area = k;
+    if (!map.novedad && (kl.includes('novedad') || kl.includes('tipo') || kl.includes('estado') || kl.includes('motivo') || kl.includes('concepto'))) map.novedad = k;
+    if (!map.horas && (kl.includes('horas') || kl.includes('hs') || kl.includes('hours'))) map.horas = k;
+  }
+  return map;
 }
 
-app.post('/api/presupuesto/egresos', uploadPresupuesto.single('file'), (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'No se envió archivo' });
-    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
-
-    let ws = wb.Sheets['EgresosTipificados'] || wb.Sheets[wb.SheetNames[0]];
-    const range = XLSX.utils.decode_range(ws['!ref']);
-
-    // Detect columns by header row
-    const headers = {};
-    for (let c = 0; c <= range.e.c; c++) {
-      const cell = ws[XLSX.utils.encode_cell({ r: 0, c })];
-      if (cell && cell.v) headers[String(cell.v).trim()] = c;
-    }
-    const colConcepto = headers['Concepto'] ?? 4;
-    const colTotal = headers['Total Cpbte.'] ?? 36;
-    const colMes = headers['Mes'] ?? 41;
-    const colDeposito = headers['DEPOSITO'] ?? 39;
-    const colCentroCosto = headers['Descripción Centro de Costo'] ?? headers['Descripción Centro Costo'] ?? 16;
-
-    // Process rows
-    const gastos = {};   // { cat: { sub: [12 meses] } }
-    const gastosSuc = {}; // { CC|DOL: { cat: { sub: [12 meses] } } }
-    const totales = {};  // { cat: [12 meses] }
-    const registros = { total: 0, matched: 0, unmatched: 0 };
-    const unmatchedConcepts = {};
-
-    for (let r = 1; r <= range.e.r; r++) {
-      const conceptoCell = ws[XLSX.utils.encode_cell({ r, c: colConcepto })];
-      const totalCell = ws[XLSX.utils.encode_cell({ r, c: colTotal })];
-      const mesCell = ws[XLSX.utils.encode_cell({ r, c: colMes })];
-      const sucCell = ws[XLSX.utils.encode_cell({ r, c: colDeposito })];
-
-      if (!conceptoCell || !conceptoCell.v) continue;
-      registros.total++;
-
-      const concepto = String(conceptoCell.v).trim();
-      const total = +totalCell?.v || 0;
-      const mesStr = String(mesCell?.v || '').toLowerCase().trim();
-      const mesIdx = MESES_ES[mesStr];
-      if (mesIdx === undefined) continue;
-
-      const cat = detectCat(concepto);
-      if (!cat) { registros.unmatched++; unmatchedConcepts[concepto] = (unmatchedConcepts[concepto] || 0) + total; continue; }
-      registros.matched++;
-
-      if (!gastos[cat]) gastos[cat] = {};
-      if (!gastos[cat][concepto]) gastos[cat][concepto] = Array(12).fill(0);
-      gastos[cat][concepto][mesIdx] += total;
-
-      if (!totales[cat]) totales[cat] = Array(12).fill(0);
-      totales[cat][mesIdx] += total;
-
-      const sucKey = String(sucCell?.v || '').includes('DOLORES') ? 'DOL' : 'CC';
-      if (!gastosSuc[sucKey]) gastosSuc[sucKey] = {};
-      if (!gastosSuc[sucKey][cat]) gastosSuc[sucKey][cat] = {};
-      if (!gastosSuc[sucKey][cat][concepto]) gastosSuc[sucKey][cat][concepto] = Array(12).fill(0);
-      gastosSuc[sucKey][cat][concepto][mesIdx] += total;
-    }
-
-    // Build totals per suc per cat
-    const totalSuc = {};
-    ['CC', 'DOL'].forEach(sk => {
-      totalSuc[sk] = {};
-      if (gastosSuc[sk]) Object.entries(gastosSuc[sk]).forEach(([cat, subs]) => {
-        totalSuc[sk][cat] = Array(12).fill(0);
-        Object.values(subs).forEach(m => m.forEach((v, i) => totalSuc[sk][cat][i] += v));
-      });
-    });
-
-    // Grand total
-    const grandTotal = Array(12).fill(0);
-    Object.values(totales).forEach(m => m.forEach((v, i) => grandTotal[i] += v));
-
-    res.json({
-      registros,
-      gastos,      // TOTAL: { cat: { subcategoria: [12] } }
-      totales,     // { cat: [12] }
-      gastosSuc,   // { CC|DOL: { cat: { sub: [12] } } }
-      totalSuc,    // { CC|DOL: { cat: [12] } }
-      grandTotal,
-      unmatchedTop: Object.entries(unmatchedConcepts)
-        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-        .slice(0, 10)
-        .map(([c, t]) => ({ concepto: c, total: Math.round(t) }))
-    });
-  } catch (err) {
-    console.error('Error parsing egresos:', err);
-    res.status(500).json({ error: 'Error al procesar: ' + err.message });
+function parseHora(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val.toTimeString().slice(0,5);
+  const s = String(val).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m) return m[1].padStart(2,'0') + ':' + m[2];
+  const num = parseFloat(s);
+  if (!isNaN(num) && num >= 0 && num < 1) {
+    const totalMins = Math.round(num * 24 * 60);
+    return String(Math.floor(totalMins/60)).padStart(2,'0') + ':' + String(totalMins%60).padStart(2,'0');
   }
-});
-
-// ── PRESUPUESTO: upload Excel ──
-app.post('/api/presupuesto/upload', uploadPresupuesto.single('file'), (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'No se envió archivo' });
-    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const result = { volumen: {}, gastoReal: {}, gastoPre: {}, proReal: {}, proPre: {}, inflPre: [], inflReal: [] };
-
-    function cellVal(ws, r, c) {
-      const cell = ws[XLSX.utils.encode_cell({ r, c })];
-      return cell && cell.v !== undefined ? cell.v : 0;
-    }
-
-    // ── VOLUMEN (sheet "Volumen") ──
-    const wsVol = wb.Sheets['Volumen'];
-    if (wsVol) {
-      const segs = ['CERVEZAS ABOVE CORE', 'CERVEZAS CORE', 'UNG PREMIUM', 'UNG SIN PREMIUM', 'AGUAS', 'VINOS', 'MARKETPLACE'];
-      const segLabels = ['Cervezas Above Core', 'Cervezas Core+Value', 'UNG Premium', 'UNG Sin Premium', 'Aguas Eco', 'Vinos y Adyacencias', 'Marketplace Alimentos'];
-      // TOTAL rows 3-9, CC rows 11-17, DOL rows 19-25 (0-indexed)
-      const blocks = { TOTAL: 3, CC: 11, DOL: 19 };
-      Object.entries(blocks).forEach(([key, startRow]) => {
-        result.volumen[key] = [];
-        for (let si = 0; si < 7; si++) {
-          const meses = [];
-          for (let m = 0; m < 12; m++) meses.push(Math.round(+cellVal(wsVol, startRow + si, 2 + m) || 0));
-          result.volumen[key].push(meses);
-        }
-      });
-    }
-
-    // ── GASTOS REAL (sheet "REAL") ──
-    const wsReal = wb.Sheets['REAL'];
-    if (wsReal) {
-      const cats = [
-        { key: 'ventas', startRow: 3, endRow: 15, totalRow: 16 },
-        { key: 'operaciones', startRow: 17, endRow: 35, totalRow: 36 },
-        { key: 'infraestructura', startRow: 37, endRow: 48, totalRow: 49 },
-        { key: 'distribucion', startRow: 50, endRow: 63, totalRow: 64 },
-        { key: 'acarreo', startRow: 65, endRow: 69, totalRow: 70 },
-        { key: 'admin', startRow: 71, endRow: 125, totalRow: 126 }
-      ];
-      // TOTAL columns C-N (2-13), CC columns P-AA (15-26), DOL columns AC-AN (28-39)
-      const colBlocks = { TOTAL: 2, CC: 15, DOL: 28 };
-      Object.entries(colBlocks).forEach(([suc, colStart]) => {
-        result.gastoReal[suc] = {};
-        cats.forEach(cat => {
-          const subcats = {};
-          for (let r = cat.startRow; r <= cat.endRow; r++) {
-            const nameCell = wsReal[XLSX.utils.encode_cell({ r, c: 1 })];
-            if (!nameCell || !nameCell.v) continue;
-            const name = String(nameCell.v).trim();
-            if (name.startsWith('TOTAL')) continue;
-            const meses = [];
-            for (let m = 0; m < 12; m++) meses.push(Math.round(+cellVal(wsReal, r, colStart + m) || 0));
-            if (meses.some(v => v !== 0)) subcats[name] = meses;
-          }
-          const totalMeses = [];
-          for (let m = 0; m < 12; m++) totalMeses.push(Math.round(+cellVal(wsReal, cat.totalRow, colStart + m) || 0));
-          result.gastoReal[suc][cat.key] = { subcats, total: totalMeses };
-        });
-      });
-    }
-
-    // ── GASTOS PRESUPUESTO (sheet "PRESUPUESTO") ──
-    const wsPre = wb.Sheets['PRESUPUESTO'];
-    if (wsPre) {
-      const cats = [
-        { key: 'ventas', startRow: 3, endRow: 15, totalRow: 16 },
-        { key: 'operaciones', startRow: 17, endRow: 35, totalRow: 36 },
-        { key: 'infraestructura', startRow: 37, endRow: 48, totalRow: 49 },
-        { key: 'distribucion', startRow: 50, endRow: 63, totalRow: 64 },
-        { key: 'acarreo', startRow: 65, endRow: 69, totalRow: 70 },
-        { key: 'admin', startRow: 71, endRow: 125, totalRow: 126 }
-      ];
-      const colBlocks = { TOTAL: 2, CC: 15, DOL: 28 };
-      Object.entries(colBlocks).forEach(([suc, colStart]) => {
-        result.gastoPre[suc] = {};
-        cats.forEach(cat => {
-          const subcats = {};
-          for (let r = cat.startRow; r <= cat.endRow; r++) {
-            const nameCell = wsPre[XLSX.utils.encode_cell({ r, c: 1 })];
-            if (!nameCell || !nameCell.v) continue;
-            const name = String(nameCell.v).trim();
-            if (name.startsWith('TOTAL')) continue;
-            const meses = [];
-            for (let m = 0; m < 12; m++) meses.push(Math.round(+cellVal(wsPre, r, colStart + m) || 0));
-            if (meses.some(v => v !== 0)) subcats[name] = meses;
-          }
-          const totalMeses = [];
-          for (let m = 0; m < 12; m++) totalMeses.push(Math.round(+cellVal(wsPre, cat.totalRow, colStart + m) || 0));
-          result.gastoPre[suc][cat.key] = { subcats, total: totalMeses };
-        });
-      });
-    }
-
-    // ── PRORRATEO PRE (sheet "prorrateo PRE") ──
-    const wsProPre = wb.Sheets['prorrateo PRE'];
-    if (wsProPre) {
-      result.proPre = {
-        vol: [], km: [], cam: [], comb: [],
-        volCC: [], volDOL: [], volTOT: []
-      };
-      for (let m = 0; m < 12; m++) {
-        result.proPre.vol.push(+cellVal(wsProPre, 11, 1 + m) || 0);
-        result.proPre.km.push(+cellVal(wsProPre, 18, 1 + m) || 0);
-        result.proPre.cam.push(+cellVal(wsProPre, 26, 1 + m) || 0);
-        result.proPre.comb.push(+cellVal(wsProPre, 33, 1 + m) || 0);
-        result.proPre.volCC.push(+cellVal(wsProPre, 9, 1 + m) || 0);
-        result.proPre.volDOL.push(+cellVal(wsProPre, 10, 1 + m) || 0);
-        result.proPre.volTOT.push(+cellVal(wsProPre, 12, 1 + m) || 0);
-      }
-      // Inflación PRE
-      for (let m = 0; m < 12; m++) {
-        result.inflPre.push(+cellVal(wsProPre, 45, 1 + m) || 0);
-      }
-    }
-
-    // ── PRORRATEO REAL (sheet "prorrateo REAL") ──
-    const wsProReal = wb.Sheets['prorrateo REAL'];
-    if (wsProReal) {
-      result.proReal = { vol: [], km: [], cam: [], comb: [] };
-      for (let m = 0; m < 12; m++) {
-        result.proReal.vol.push(+cellVal(wsProReal, 11, 1 + m) || 0);
-        result.proReal.km.push(+cellVal(wsProReal, 18, 1 + m) || 0);
-        result.proReal.cam.push(+cellVal(wsProReal, 26, 1 + m) || 0);
-        result.proReal.comb.push(+cellVal(wsProReal, 33, 1 + m) || 0);
-      }
-    }
-
-    // ── INFLACIÓN REAL (from prorrateo PRE rows 49-50) ──
-    if (wsProPre) {
-      for (let m = 0; m < 12; m++) {
-        result.inflReal.push(+cellVal(wsProPre, 49, 1 + m) || 0);
-      }
-    }
-
-    // ── TOTAL GENERAL rows from REAL/PRE ──
-    if (wsReal) {
-      result.totalReal = [];
-      for (let m = 0; m < 12; m++) result.totalReal.push(Math.round(+cellVal(wsReal, 128, 2 + m) || 0));
-    }
-    if (wsPre) {
-      result.totalPre = [];
-      for (let m = 0; m < 12; m++) result.totalPre.push(Math.round(+cellVal(wsPre, 128, 2 + m) || 0));
-    }
-
-    result.sheets = wb.SheetNames;
-    res.json(result);
-  } catch (err) {
-    console.error('Error parsing presupuesto Excel:', err);
-    res.status(500).json({ error: 'Error al procesar el archivo: ' + err.message });
-  }
-});
+  return null;
+}
 
 // Servir páginas
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -1512,6 +1467,7 @@ app.get('/tareas', (req, res) => res.sendFile(path.join(__dirname, 'public', 'ta
 app.get('/cuentas-pagar', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cuentas-pagar.html')));
 app.get('/transporte', (req, res) => res.sendFile(path.join(__dirname, 'public', 'transporte.html')));
 app.get('/presupuesto', (req, res) => res.sendFile(path.join(__dirname, 'public', 'presupuesto.html')));
+app.get('/asistencia', (req, res) => res.sendFile(path.join(__dirname, 'public', 'asistencia.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asistencia — Del Palacio S.A.</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh;font-size:14px}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:1400px;margin:0 auto;padding:2rem 1rem}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1.5rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb-sep{color:#DDDBD6}
+
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:700;color:#18181A;letter-spacing:-.02em}
+.page-sub{font-size:13px;color:#9896A0;font-weight:500;margin-top:.2rem}
+
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:1.5rem}
+.stat-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:1rem;text-align:center}
+.stat-val{font-size:22px;font-weight:700;color:#18181A;font-variant-numeric:tabular-nums}
+.stat-lbl{font-size:11px;color:#9896A0;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:3px}
+
+.filtros{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.filtros input,.filtros select{padding:7px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;background:#fff;color:#18181A;outline:none}
+.filtros input:focus,.filtros select:focus{border-color:#0D4FA0}
+.btn-action{background:#0D4FA0;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-action:hover{background:#0B3F80}
+.btn-secondary{background:#fff;border:1.5px solid #DDDBD6;color:#6B6876;border-radius:8px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-secondary:hover{border-color:#0D4FA0;color:#0D4FA0}
+
+.tabla-wrap{background:#fff;border:1px solid #DDDBD6;border-radius:12px;overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9896A0;padding:8px 6px;border-bottom:1px solid #DDDBD6;text-align:center;white-space:nowrap;background:#fafaf9;position:sticky;top:0;z-index:2}
+th.col-nombre{text-align:left;min-width:160px;position:sticky;left:0;z-index:3;background:#fafaf9}
+td{padding:6px;border-bottom:1px solid #F0EEEb;font-size:12px;vertical-align:middle;text-align:center}
+td.cel-nombre{text-align:left;font-weight:600;font-size:13px;position:sticky;left:0;background:#fff;z-index:1;white-space:nowrap;padding:8px 10px}
+tr:hover td{background:#f8f9fc}
+tr:hover td.cel-nombre{background:#f8f9fc}
+
+.cel-dia{width:34px;height:34px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;cursor:default}
+.cel-presente{background:#D4F2E8;color:#075C41}
+.cel-vacaciones{background:#DCE9FA;color:#1E6FD9}
+.cel-justificada{background:#FEF3C7;color:#B45309}
+.cel-injustificada{background:#FEE2E2;color:#dc2626}
+.cel-feriado{background:#EDE5FA;color:#6B3FC8}
+.cel-vacio{background:#F2F1EE;color:#BFBDB6}
+.cel-weekend{background:#E8E7E4;color:#9896A0}
+
+.leyenda{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:1.5rem;font-size:12px;font-weight:500;color:#6B6876}
+.leyenda-item{display:flex;align-items:center;gap:5px}
+.leyenda-dot{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+
+td.col-resumen{font-size:12px;font-weight:600;white-space:nowrap;padding:6px 8px}
+th.col-resumen{min-width:50px}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{padding:1.25rem 1.5rem;border-bottom:1px solid #DDDBD6;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;border-radius:14px 14px 0 0}
+.modal-head h3{font-size:16px;font-weight:700;color:#18181A}
+.modal-close{background:none;border:none;font-size:20px;color:#9896A0;cursor:pointer;line-height:1;padding:0 4px}
+.modal-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:14px}
+.modal-foot{padding:1rem 1.5rem;border-top:1px solid #DDDBD6;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:#fff;border-radius:0 0 14px 14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label{font-size:12px;font-weight:600;color:#6B6876}
+.form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;color:#18181A;outline:none;background:#fff}
+.form-group input:focus,.form-group select:focus{border-color:#0D4FA0;box-shadow:0 0 0 3px rgba(13,79,160,.08)}
+.btn-cancel{background:none;border:1.5px solid #DDDBD6;color:#6B6876;border-radius:8px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-cancel:hover{border-color:#9896A0}
+.btn-guardar{background:#0D4FA0;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-guardar:hover{background:#0B3F80}
+
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;color:#fff;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999}
+.toast.ok-t{background:#16a34a}
+.toast.err-t{background:#dc2626}
+.toast.show{opacity:1}
+
+.tabs{display:flex;gap:0;border-bottom:2px solid #DDDBD6;margin-bottom:1.5rem}
+.tab{padding:8px 18px;font-size:13px;font-weight:600;color:#9896A0;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab:hover{color:#18181A}
+.tab.active{color:#0D4FA0;border-bottom-color:#0D4FA0}
+
+.import-zone{border:2px dashed #DDDBD6;border-radius:10px;padding:2rem;text-align:center;color:#9896A0;font-size:13px;cursor:pointer;transition:all .2s}
+.import-zone:hover{border-color:#0D4FA0;color:#0D4FA0;background:rgba(13,79,160,.02)}
+.import-zone.dragover{border-color:#0D4FA0;background:rgba(13,79,160,.05)}
+
+.empleado-list{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto}
+.empleado-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fff;border:1px solid #DDDBD6;border-radius:8px;font-size:13px}
+.empleado-row:hover{border-color:#0D4FA0}
+.empleado-info{display:flex;flex-direction:column;gap:2px}
+.empleado-meta{font-size:11px;color:#9896A0}
+.btn-del{background:none;border:1px solid #DDDBD6;color:#6B6876;border-radius:6px;padding:4px 10px;font-family:inherit;font-size:12px;cursor:pointer}
+.btn-del:hover{border-color:#dc2626;color:#dc2626}
+
+.detalle-dia-modal .detalle-head{font-size:14px;font-weight:700;margin-bottom:12px}
+.detalle-horas{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+@media(max-width:700px){
+  .form-row{grid-template-columns:1fr}
+  .topbar{padding:.75rem 1rem}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .filtros{flex-direction:column;align-items:stretch}
+  .filtros select,.filtros input{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Asistencia</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+    </div>
+    <button class="logout-btn" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a>
+    <span class="breadcrumb-sep">›</span>
+    Asistencia
+  </div>
+
+  <div class="page-head">
+    <div>
+      <div class="page-title">Asistencia del Personal</div>
+      <div class="page-sub">Control de presentismo, vacaciones y ausencias</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-secondary" onclick="abrirEmpleados()">Empleados</button>
+      <button class="btn-action" onclick="abrirImport()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importar Ficha Ya
+      </button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="st-empleados">0</div><div class="stat-lbl">Empleados</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-presentes" style="color:#075C41">0</div><div class="stat-lbl">Días presentes</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-vacaciones" style="color:#1E6FD9">0</div><div class="stat-lbl">Vacaciones</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-justificadas" style="color:#B45309">0</div><div class="stat-lbl">Faltas justif.</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-injustificadas" style="color:#dc2626">0</div><div class="stat-lbl">Faltas injustif.</div></div>
+    <div class="stat-card"><div class="stat-val" id="st-horas">0</div><div class="stat-lbl">Hs. trabajadas</div></div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <input type="month" id="fil-mes" style="width:160px">
+    <select id="fil-sucursal"><option value="">Todas las sucursales</option></select>
+    <select id="fil-area"><option value="">Todas las áreas</option></select>
+    <select id="fil-empleado"><option value="">Todos los empleados</option></select>
+  </div>
+
+  <!-- LEYENDA -->
+  <div class="leyenda">
+    <div class="leyenda-item"><div class="leyenda-dot cel-presente"></div>Presente</div>
+    <div class="leyenda-item"><div class="leyenda-dot cel-vacaciones"></div>Vacaciones</div>
+    <div class="leyenda-item"><div class="leyenda-dot cel-justificada"></div>Falta justificada</div>
+    <div class="leyenda-item"><div class="leyenda-dot cel-injustificada"></div>Falta injustificada</div>
+    <div class="leyenda-item"><div class="leyenda-dot cel-feriado"></div>Feriado</div>
+    <div class="leyenda-item"><div class="leyenda-dot cel-weekend"></div>Fin de semana</div>
+  </div>
+
+  <!-- GRILLA -->
+  <div class="tabla-wrap" id="grilla-wrap">
+    <table id="grilla-tabla">
+      <thead id="grilla-head"></thead>
+      <tbody id="grilla-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR -->
+<div class="modal-bg" id="modal-import">
+  <div class="modal" style="max-width:550px">
+    <div class="modal-head">
+      <h3>Importar desde Ficha Ya</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-import')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6B6876;line-height:1.5">Subí el archivo Excel (.xlsx) exportado de Ficha Ya. El sistema leerá las columnas de empleado, fecha, hora de entrada, hora de salida y tipo de novedad.</p>
+      <div class="import-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div>Arrastrá el archivo o hacé click para seleccionar</div>
+        <div id="file-name" style="margin-top:6px;font-weight:600;color:#18181A;display:none"></div>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none">
+
+      <div class="form-group">
+        <label>Formato de columnas</label>
+        <select id="import-formato">
+          <option value="auto">Detectar automáticamente</option>
+          <option value="fichaya">Ficha Ya estándar</option>
+        </select>
+      </div>
+
+      <div id="import-preview" style="display:none;border:1px solid #DDDBD6;border-radius:8px;padding:12px;font-size:12px;max-height:200px;overflow:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modal-import')">Cancelar</button>
+      <button class="btn-guardar" id="btn-importar" disabled onclick="ejecutarImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMPLEADOS -->
+<div class="modal-bg" id="modal-empleados">
+  <div class="modal" style="max-width:550px">
+    <div class="modal-head">
+      <h3>Empleados</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-empleados')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nombre completo</label><input type="text" id="emp-nombre" placeholder="Ej: Juan Pérez"></div>
+        <div class="form-group"><label>Legajo</label><input type="text" id="emp-legajo" placeholder="Ej: 1234"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Sucursal</label><input type="text" id="emp-sucursal" placeholder="Ej: Casa Central" list="list-sucursales"><datalist id="list-sucursales"></datalist></div>
+        <div class="form-group"><label>Área</label><input type="text" id="emp-area" placeholder="Ej: Administración" list="list-areas"><datalist id="list-areas"></datalist></div>
+      </div>
+      <button class="btn-guardar" onclick="agregarEmpleado()" style="align-self:flex-start">Agregar empleado</button>
+      <div style="border-top:1px solid #DDDBD6;margin-top:4px;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:8px">Empleados registrados (<span id="emp-count">0</span>)</div>
+        <div class="empleado-list" id="emp-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE DÍA -->
+<div class="modal-bg" id="modal-detalle">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3 id="detalle-titulo">Detalle</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-detalle')">&times;</button>
+    </div>
+    <div class="modal-body detalle-dia-modal">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="det-tipo">
+          <option value="presente">Presente</option>
+          <option value="vacaciones">Vacaciones</option>
+          <option value="falta_justificada">Falta justificada</option>
+          <option value="falta_injustificada">Falta injustificada</option>
+          <option value="feriado">Feriado</option>
+        </select>
+      </div>
+      <div class="detalle-horas" id="det-horas-wrap">
+        <div class="form-group"><label>Hora entrada</label><input type="time" id="det-entrada"></div>
+        <div class="form-group"><label>Hora salida</label><input type="time" id="det-salida"></div>
+      </div>
+      <div class="form-group"><label>Hs. trabajadas</label><input type="text" id="det-hs" readonly style="background:#F2F1EE"></div>
+      <div class="form-group"><label>Observaciones</label><input type="text" id="det-obs" placeholder="Opcional"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modal-detalle')">Cancelar</button>
+      <button class="btn-guardar" onclick="guardarDetalle()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!userData) { window.location.href = '/'; }
+document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
+document.getElementById('user-avatar').textContent = (userData.nombre||userData.username).charAt(0).toUpperCase();
+
+let empleados = [];
+let registros = [];
+let detalleActual = null;
+
+const $mes = document.getElementById('fil-mes');
+const $suc = document.getElementById('fil-sucursal');
+const $area = document.getElementById('fil-area');
+const $emp = document.getElementById('fil-empleado');
+
+const hoy = new Date();
+$mes.value = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0');
+
+$mes.addEventListener('change', cargar);
+$suc.addEventListener('change', () => { poblarFiltroEmpleados(); cargar(); });
+$area.addEventListener('change', () => { poblarFiltroEmpleados(); cargar(); });
+$emp.addEventListener('change', cargar);
+
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (ok ? 'ok-t' : 'err-t') + ' show';
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+function abrirImport() { document.getElementById('modal-import').classList.add('open'); }
+function abrirEmpleados() {
+  renderEmpleados();
+  document.getElementById('modal-empleados').classList.add('open');
+}
+
+// ── EMPLEADOS ──
+async function cargarEmpleados() {
+  try {
+    const r = await fetch('/api/asistencia/empleados');
+    const data = await r.json();
+    empleados = Array.isArray(data) ? data : [];
+    poblarFiltros();
+  } catch(e) { empleados = []; poblarFiltros(); }
+}
+
+function poblarFiltros() {
+  const sucursales = [...new Set(empleados.map(e => e.sucursal).filter(Boolean))].sort();
+  const areas = [...new Set(empleados.map(e => e.area).filter(Boolean))].sort();
+  $suc.innerHTML = '<option value="">Todas las sucursales</option>' + sucursales.map(s => `<option>${s}</option>`).join('');
+  $area.innerHTML = '<option value="">Todas las áreas</option>' + areas.map(a => `<option>${a}</option>`).join('');
+  poblarFiltroEmpleados();
+
+  const dl1 = document.getElementById('list-sucursales');
+  const dl2 = document.getElementById('list-areas');
+  dl1.innerHTML = sucursales.map(s => `<option value="${s}">`).join('');
+  dl2.innerHTML = areas.map(a => `<option value="${a}">`).join('');
+}
+
+function poblarFiltroEmpleados() {
+  let lista = empleados;
+  if ($suc.value) lista = lista.filter(e => e.sucursal === $suc.value);
+  if ($area.value) lista = lista.filter(e => e.area === $area.value);
+  $emp.innerHTML = '<option value="">Todos los empleados</option>' + lista.map(e => `<option value="${e.id}">${e.nombre} (${e.legajo||''})</option>`).join('');
+}
+
+async function agregarEmpleado() {
+  const nombre = document.getElementById('emp-nombre').value.trim();
+  const legajo = document.getElementById('emp-legajo').value.trim();
+  const sucursal = document.getElementById('emp-sucursal').value.trim();
+  const area = document.getElementById('emp-area').value.trim();
+  if (!nombre) return toast('Ingresá el nombre', false);
+  try {
+    const r = await fetch('/api/asistencia/empleados', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nombre, legajo, sucursal, area })
+    });
+    if (!r.ok) throw new Error((await r.json()).error);
+    toast('Empleado agregado');
+    document.getElementById('emp-nombre').value = '';
+    document.getElementById('emp-legajo').value = '';
+    document.getElementById('emp-sucursal').value = '';
+    document.getElementById('emp-area').value = '';
+    await cargarEmpleados();
+    renderEmpleados();
+    cargar();
+  } catch(e) { toast(e.message, false); }
+}
+
+async function eliminarEmpleado(id) {
+  if (!confirm('¿Eliminar este empleado y todos sus registros?')) return;
+  try {
+    await fetch('/api/asistencia/empleados/' + id, { method: 'DELETE' });
+    toast('Empleado eliminado');
+    await cargarEmpleados();
+    renderEmpleados();
+    cargar();
+  } catch(e) { toast('Error al eliminar', false); }
+}
+
+function renderEmpleados() {
+  const $list = document.getElementById('emp-list');
+  document.getElementById('emp-count').textContent = empleados.length;
+  if (!empleados.length) { $list.innerHTML = '<div style="color:#9896A0;font-size:13px;padding:1rem;text-align:center">No hay empleados registrados</div>'; return; }
+  $list.innerHTML = empleados.map(e => `
+    <div class="empleado-row">
+      <div class="empleado-info">
+        <div>${e.nombre} ${e.legajo ? '<span style="color:#9896A0;font-size:11px">Leg. '+e.legajo+'</span>' : ''}</div>
+        <div class="empleado-meta">${[e.sucursal,e.area].filter(Boolean).join(' · ') || '—'}</div>
+      </div>
+      <button class="btn-del" onclick="eliminarEmpleado(${e.id})">Eliminar</button>
+    </div>
+  `).join('');
+}
+
+// ── REGISTROS ──
+async function cargar() {
+  const mes = $mes.value;
+  if (!mes) return;
+  try {
+    const r = await fetch(`/api/asistencia/registros?mes=${mes}`);
+    const data = await r.json();
+    registros = Array.isArray(data) ? data : [];
+    renderGrilla();
+  } catch(e) { registros = []; renderGrilla(); }
+}
+
+function getDiasDelMes(mesStr) {
+  const [y, m] = mesStr.split('-').map(Number);
+  const dias = new Date(y, m, 0).getDate();
+  const result = [];
+  for (let d = 1; d <= dias; d++) {
+    const fecha = new Date(y, m-1, d);
+    result.push({ num: d, dow: fecha.getDay(), fecha: `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` });
+  }
+  return result;
+}
+
+function renderGrilla() {
+  const mes = $mes.value;
+  const dias = getDiasDelMes(mes);
+  const dowNames = ['D','L','M','M','J','V','S'];
+
+  let emps = empleados.filter(e => {
+    if ($suc.value && e.sucursal !== $suc.value) return false;
+    if ($area.value && e.area !== $area.value) return false;
+    if ($emp.value && e.id !== parseInt($emp.value)) return false;
+    return true;
+  });
+
+  const regMap = {};
+  registros.forEach(r => { regMap[r.empleado_id + '_' + r.fecha] = r; });
+
+  let totPresente = 0, totVac = 0, totJust = 0, totInjust = 0, totHoras = 0;
+
+  const thead = document.getElementById('grilla-head');
+  thead.innerHTML = `<tr>
+    <th class="col-nombre">Empleado</th>
+    ${dias.map(d => `<th style="min-width:36px;${d.dow===0||d.dow===6?'color:#BFBDB6':''}">${dowNames[d.dow]}<br>${d.num}</th>`).join('')}
+    <th class="col-resumen">P</th><th class="col-resumen">V</th><th class="col-resumen">FJ</th><th class="col-resumen">FI</th><th class="col-resumen">Hs</th>
+  </tr>`;
+
+  const tbody = document.getElementById('grilla-body');
+  if (!emps.length) {
+    tbody.innerHTML = '<tr><td colspan="' + (dias.length + 6) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados para mostrar</td></tr>';
+    actualizarStats(0, 0, 0, 0, 0, 0);
+    return;
+  }
+
+  tbody.innerHTML = emps.map(emp => {
+    let p=0, v=0, fj=0, fi=0, hs=0;
+    const celdas = dias.map(d => {
+      const key = emp.id + '_' + d.fecha;
+      const reg = regMap[key];
+      const isWeekend = d.dow === 0 || d.dow === 6;
+
+      if (reg) {
+        let cls = 'cel-vacio';
+        let txt = '';
+        if (reg.tipo === 'presente') { cls = 'cel-presente'; txt = '✓'; p++; }
+        else if (reg.tipo === 'vacaciones') { cls = 'cel-vacaciones'; txt = 'V'; v++; }
+        else if (reg.tipo === 'falta_justificada') { cls = 'cel-justificada'; txt = 'FJ'; fj++; }
+        else if (reg.tipo === 'falta_injustificada') { cls = 'cel-injustificada'; txt = '!'; fi++; }
+        else if (reg.tipo === 'feriado') { cls = 'cel-feriado'; txt = 'F'; }
+        if (reg.hs_trabajadas) hs += parseFloat(reg.hs_trabajadas);
+        return `<td><div class="cel-dia ${cls}" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer" title="${reg.hora_entrada||''} - ${reg.hora_salida||''}">${txt}</div></td>`;
+      }
+
+      if (isWeekend) return `<td><div class="cel-dia cel-weekend">—</div></td>`;
+      return `<td><div class="cel-dia cel-vacio" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer"></div></td>`;
+    }).join('');
+
+    totPresente += p; totVac += v; totJust += fj; totInjust += fi; totHoras += hs;
+
+    return `<tr>
+      <td class="cel-nombre">${emp.nombre}</td>
+      ${celdas}
+      <td class="col-resumen" style="color:#075C41">${p}</td>
+      <td class="col-resumen" style="color:#1E6FD9">${v}</td>
+      <td class="col-resumen" style="color:#B45309">${fj}</td>
+      <td class="col-resumen" style="color:#dc2626">${fi}</td>
+      <td class="col-resumen">${hs.toFixed(1)}</td>
+    </tr>`;
+  }).join('');
+
+  actualizarStats(emps.length, totPresente, totVac, totJust, totInjust, totHoras);
+}
+
+function actualizarStats(emps, p, v, fj, fi, hs) {
+  document.getElementById('st-empleados').textContent = emps;
+  document.getElementById('st-presentes').textContent = p;
+  document.getElementById('st-vacaciones').textContent = v;
+  document.getElementById('st-justificadas').textContent = fj;
+  document.getElementById('st-injustificadas').textContent = fi;
+  document.getElementById('st-horas').textContent = hs.toFixed(1);
+}
+
+// ── DETALLE DÍA ──
+function abrirDetalle(empId, fecha) {
+  const emp = empleados.find(e => e.id === empId);
+  const reg = registros.find(r => r.empleado_id === empId && r.fecha === fecha);
+  detalleActual = { empId, fecha };
+
+  document.getElementById('detalle-titulo').textContent = `${emp.nombre} — ${fecha.split('-').reverse().join('/')}`;
+  document.getElementById('det-tipo').value = reg ? reg.tipo : 'presente';
+  document.getElementById('det-entrada').value = reg ? (reg.hora_entrada || '') : '';
+  document.getElementById('det-salida').value = reg ? (reg.hora_salida || '') : '';
+  document.getElementById('det-hs').value = reg ? (reg.hs_trabajadas || '') : '';
+  document.getElementById('det-obs').value = reg ? (reg.observaciones || '') : '';
+
+  toggleHoras();
+  document.getElementById('modal-detalle').classList.add('open');
+}
+
+document.getElementById('det-tipo').addEventListener('change', toggleHoras);
+document.getElementById('det-entrada').addEventListener('change', calcularHs);
+document.getElementById('det-salida').addEventListener('change', calcularHs);
+
+function toggleHoras() {
+  const tipo = document.getElementById('det-tipo').value;
+  document.getElementById('det-horas-wrap').style.display = tipo === 'presente' ? 'grid' : 'none';
+}
+
+function calcularHs() {
+  const ent = document.getElementById('det-entrada').value;
+  const sal = document.getElementById('det-salida').value;
+  if (ent && sal) {
+    const [h1,m1] = ent.split(':').map(Number);
+    const [h2,m2] = sal.split(':').map(Number);
+    let mins = (h2*60+m2) - (h1*60+m1);
+    if (mins < 0) mins += 24*60;
+    document.getElementById('det-hs').value = (mins/60).toFixed(1);
+  }
+}
+
+async function guardarDetalle() {
+  if (!detalleActual) return;
+  const body = {
+    empleado_id: detalleActual.empId,
+    fecha: detalleActual.fecha,
+    tipo: document.getElementById('det-tipo').value,
+    hora_entrada: document.getElementById('det-entrada').value || null,
+    hora_salida: document.getElementById('det-salida').value || null,
+    hs_trabajadas: parseFloat(document.getElementById('det-hs').value) || null,
+    observaciones: document.getElementById('det-obs').value.trim() || null
+  };
+  try {
+    const r = await fetch('/api/asistencia/registros', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error((await r.json()).error);
+    toast('Guardado');
+    cerrarModal('modal-detalle');
+    await cargar();
+  } catch(e) { toast(e.message, false); }
+}
+
+// ── IMPORT FICHA YA ──
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+let selectedFile = null;
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) { selectedFile = e.dataTransfer.files[0]; mostrarArchivo(); }
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) { selectedFile = fileInput.files[0]; mostrarArchivo(); }
+});
+
+function mostrarArchivo() {
+  const $name = document.getElementById('file-name');
+  $name.textContent = selectedFile.name;
+  $name.style.display = 'block';
+  document.getElementById('btn-importar').disabled = false;
+}
+
+async function ejecutarImport() {
+  if (!selectedFile) return;
+  const btn = document.getElementById('btn-importar');
+  btn.disabled = true;
+  btn.textContent = 'Importando...';
+  try {
+    const fd = new FormData();
+    fd.append('archivo', selectedFile);
+    fd.append('formato', document.getElementById('import-formato').value);
+    const r = await fetch('/api/asistencia/importar', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    toast(`Importados ${data.registros} registros, ${data.empleados_nuevos} empleados nuevos`);
+    cerrarModal('modal-import');
+    selectedFile = null;
+    document.getElementById('file-name').style.display = 'none';
+    fileInput.value = '';
+    await cargarEmpleados();
+    await cargar();
+  } catch(e) { toast(e.message, false); }
+  btn.disabled = false;
+  btn.textContent = 'Importar';
+}
+
+// ── INIT ──
+cargarEmpleados().then(() => cargar());
+</script>
+</body>
+</html>
