@@ -182,6 +182,12 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     <select id="fil-sucursal"><option value="">Todas las sucursales</option></select>
     <select id="fil-area"><option value="">Todas las áreas</option></select>
     <select id="fil-empleado"><option value="">Todos los empleados</option></select>
+    <select id="fil-estado">
+      <option value="">Todos los estados</option>
+      <option value="faltas">Con faltas injustificadas</option>
+      <option value="incompletos">Con fichajes incompletos</option>
+      <option value="faltas+incompletos">Con faltas o incompletos</option>
+    </select>
   </div>
 
   <!-- LEYENDA -->
@@ -360,6 +366,7 @@ let detalleActual = null;
 let sectorActivo = '';
 
 const $mes = document.getElementById('fil-mes');
+const $estado = document.getElementById('fil-estado');
 const $suc = document.getElementById('fil-sucursal');
 const $area = document.getElementById('fil-area');
 const $emp = document.getElementById('fil-empleado');
@@ -378,6 +385,7 @@ $area.addEventListener('change', () => {
   cargar();
 });
 $emp.addEventListener('change', cargar);
+$estado.addEventListener('change', renderGrilla);
 
 function toast(msg, ok=true) {
   const t = document.getElementById('toast');
@@ -611,8 +619,11 @@ function renderGrilla() {
     return;
   }
 
-  tbody.innerHTML = emps.map(emp => {
-    let p=0, v=0, fj=0, fi=0, hs=0;
+  const filEstado = $estado.value;
+  const filas = [];
+
+  emps.forEach(emp => {
+    let p=0, v=0, fj=0, fi=0, hs=0, inc=0;
     const celdas = dias.map(d => {
       const key = emp.id + '_' + d.fecha;
       const reg = regMap[key];
@@ -626,7 +637,7 @@ function renderGrilla() {
         let cls = 'cel-vacio';
         let txt = '';
         const incompleto = reg.tipo === 'presente' && ((reg.hora_entrada && !reg.hora_salida) || (!reg.hora_entrada && reg.hora_salida));
-        if (incompleto) { cls = 'cel-incompleto'; txt = '⚠'; totIncompletos++; p++; }
+        if (incompleto) { cls = 'cel-incompleto'; txt = '⚠'; inc++; p++; }
         else if (reg.tipo === 'presente') { cls = 'cel-presente'; txt = '✓'; p++; }
         else if (reg.tipo === 'vacaciones') { cls = 'cel-vacaciones'; txt = 'V'; v++; }
         else if (reg.tipo === 'falta_justificada') { cls = 'cel-justificada'; txt = 'FJ'; fj++; }
@@ -641,9 +652,13 @@ function renderGrilla() {
       return `<td><div class="cel-dia cel-vacio" onclick="abrirDetalle(${emp.id},'${d.fecha}')" style="cursor:pointer"></div></td>`;
     }).join('');
 
-    totPresente += p; totVac += v; totJust += fj; totInjust += fi; totHoras += hs;
+    if (filEstado === 'faltas' && fi === 0) return;
+    if (filEstado === 'incompletos' && inc === 0) return;
+    if (filEstado === 'faltas+incompletos' && fi === 0 && inc === 0) return;
 
-    return `<tr>
+    totPresente += p; totVac += v; totJust += fj; totInjust += fi; totHoras += hs; totIncompletos += inc;
+
+    filas.push(`<tr>
       <td class="cel-nombre">${emp.nombre}</td>
       ${celdas}
       <td class="col-resumen" style="color:#075C41">${p}</td>
@@ -651,10 +666,16 @@ function renderGrilla() {
       <td class="col-resumen" style="color:#B45309">${fj}</td>
       <td class="col-resumen" style="color:#dc2626">${fi}</td>
       <td class="col-resumen">${hs.toFixed(1)}</td>
-    </tr>`;
-  }).join('');
+    </tr>`);
+  });
 
-  actualizarStats(emps.length, totPresente, totVac, totJust, totInjust, totHoras, totIncompletos);
+  if (!filas.length) {
+    tbody.innerHTML = '<tr><td colspan="' + (dias.length + 6) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados con el filtro seleccionado</td></tr>';
+  } else {
+    tbody.innerHTML = filas.join('');
+  }
+
+  actualizarStats(filas.length, totPresente, totVac, totJust, totInjust, totHoras, totIncompletos);
 }
 
 function actualizarStats(emps, p, v, fj, fi, hs, inc) {
