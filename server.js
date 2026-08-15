@@ -95,6 +95,7 @@ async function initDB() {
 
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS modulos JSONB DEFAULT NULL;
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS sectores_asistencia JSONB DEFAULT NULL;
+      ALTER TABLE asistencia_registros ADD COLUMN IF NOT EXISTS adjunto_url TEXT DEFAULT NULL;
       DO $$ BEGIN
         IF (SELECT data_type FROM information_schema.columns WHERE table_name='usuarios' AND column_name='modulos') = 'ARRAY' THEN
           ALTER TABLE usuarios ALTER COLUMN modulos TYPE JSONB USING NULL;
@@ -1335,7 +1336,7 @@ app.get('/api/asistencia/registros', async (req, res) => {
   if (!mes) return res.status(400).json({ error: 'Mes requerido (YYYY-MM)' });
   try {
     const r = await pool.query(
-      `SELECT id, empleado_id, fecha::text, tipo, hora_entrada::text, hora_salida::text, hs_trabajadas, observaciones
+      `SELECT id, empleado_id, fecha::text, tipo, hora_entrada::text, hora_salida::text, hs_trabajadas, observaciones, adjunto_url
        FROM asistencia_registros
        WHERE to_char(fecha,'YYYY-MM') = $1
        ORDER BY fecha`, [mes]
@@ -1750,6 +1751,25 @@ async function syncFichaYaMes(mes) {
       try {
         const justRows = await fichaYaDownloadJustificaciones(sessionCookie, desde, hasta);
         console.log(`[FichaYa] Justificaciones descargadas: ${justRows.length}`);
+
+        // Scrape HTML to get adjunto URLs per justification ID
+        const adjuntoMap = {};
+        try {
+          const pageRes = await fetch(FICHAYA_URL + '/justificaciones/', { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
+          const pageHtml = await pageRes.text();
+          const trBlocks = pageHtml.match(/<tr>[\s\S]*?<\/tr>/g) || [];
+          for (const tr of trBlocks) {
+            const editMatch = tr.match(/href="\/justificaciones\/editar\/(\d+)"/);
+            const adjLinks = tr.match(/href="(\/media\/legajos\/adjunto\/\d+)"/g) || [];
+            if (editMatch && adjLinks.length) {
+              adjuntoMap[editMatch[1]] = adjLinks.map(l => l.match(/href="([^"]+)"/)[1]);
+            }
+          }
+          console.log(`[FichaYa] Adjuntos mapeados: ${Object.keys(adjuntoMap).length} justificaciones con archivos`);
+        } catch (scrapeErr) {
+          console.error('[FichaYa] Error scrapeando adjuntos:', scrapeErr.message);
+        }
+
         for (const row of justRows) {
           const estado = String(row['Estado'] || '').toLowerCase().trim();
           if (estado === 'rechazada') continue;
@@ -1770,8 +1790,10 @@ async function syncFichaYaMes(mes) {
           if (!fHasta || !/^\d{4}-\d{2}-\d{2}$/.test(fHasta)) fHasta = fDesde;
 
           const motivo = String(row['Motivo'] || '').trim();
-          const tipoJustif = estado === 'aprobada' ? 'falta_justificada' : 'falta_justificada';
           const obsJustif = motivo + (estado === 'pendiente' ? ' (pendiente aprobación)' : '');
+          const justId = String(row['ID'] || '');
+          const adjuntos = adjuntoMap[justId] || [];
+          const adjuntoUrl = adjuntos.length ? adjuntos[0] : null;
 
           const dStart = new Date(fDesde);
           const dEnd = new Date(fHasta);
@@ -1780,10 +1802,10 @@ async function syncFichaYaMes(mes) {
             if (fechaStr < desde || fechaStr > hasta) continue;
 
             await client.query(
-              `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas, observaciones)
-               VALUES ($1,$2,$3,NULL,NULL,NULL,$4)
-               ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo=$3, observaciones=$4`,
-              [empId, fechaStr, tipoJustif, obsJustif]
+              `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas, observaciones, adjunto_url)
+               VALUES ($1,$2,'falta_justificada',NULL,NULL,NULL,$3,$4)
+               ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo='falta_justificada', observaciones=$3, adjunto_url=COALESCE($4, asistencia_registros.adjunto_url)`,
+              [empId, fechaStr, obsJustif, adjuntoUrl]
             );
             justCount++;
           }
@@ -1806,6 +1828,20 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
   try {
     const result = await syncFichaYaMes(mes);
     res.json(result);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/asistencia/adjunto', async (req, res) => {
+  const { path } = req.query;
+  if (!path || !path.startsWith('/media/legajos/adjunto/')) return res.status(400).json({ error: 'Ruta inválida' });
+  try {
+    const sessionCookie = await fichaYaLogin();
+    const adjRes = await fetch(FICHAYA_URL + path, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
+    if (!adjRes.ok) return res.status(adjRes.status).json({ error: 'No se pudo obtener el adjunto' });
+    const ct = adjRes.headers.get('content-type') || 'application/octet-stream';
+    res.setHeader('Content-Type', ct);
+    const buf = Buffer.from(await adjRes.arrayBuffer());
+    res.send(buf);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
