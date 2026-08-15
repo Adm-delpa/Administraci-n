@@ -579,7 +579,7 @@ function renderGrilla() {
     const celdas = dias.map(d => {
       const key = emp.id + '_' + d.fecha;
       const reg = regMap[key];
-      const isWeekend = d.dow === 0 || d.dow === 6;
+      const isWeekend = d.dow === 0;
       const isNL = nlSet.has(d.fecha);
 
       if (isNL) return `<td><div class="cel-dia cel-feriado" title="${nlMap[d.fecha] || 'No laborable'}">NL</div></td>`;
