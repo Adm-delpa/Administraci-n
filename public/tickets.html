@@ -275,6 +275,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;m
       <div class="field"><label>N° cliente <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(si aplica)</span></label><input type="text" id="f-num-cliente" placeholder="Ej: 00087"></div>
       <div class="field"><label>Nombre del cliente</label><input type="text" id="f-nombre-cliente" placeholder="Ej: Supermercado Rey"></div>
     </div>
+    <div class="field" style="margin-bottom:10px" id="f-tel-row">
+      <label>Teléfono de contacto <span style="font-weight:600;color:#dc2626;font-size:11px">*obligatorio</span></label>
+      <input type="text" id="f-tel-contacto" placeholder="Ej: 11 1234-5678">
+    </div>
     <div class="field" style="margin-bottom:10px" id="f-titulo-row">
       <label>Título del ticket</label>
       <input type="text" id="f-titulo" placeholder="Describí brevemente el ticket">
@@ -470,6 +474,7 @@ function ticketResumen(t){
   } else {
     if(t.num_cliente) chips.push('<span class="t-chip t-chip-blue">Cliente '+esc(t.num_cliente)+'</span>');
     if(t.nombre_cliente) chips.push('<span class="t-chip">'+esc(t.nombre_cliente)+'</span>');
+    if(t.tel_contacto) chips.push('<span class="t-chip">Tel: '+esc(t.tel_contacto)+'</span>');
   }
   if(!chips.length) return '';
   return '<div class="t-chips">'+chips.join('')+'</div>';
@@ -583,6 +588,7 @@ function renderDetail(t, el){
   html += '<div class="d-row"><span class="d-lbl">Estado</span><span class="badge '+badgeCls+'" style="margin-left:0">'+badgeTxt+'</span></div>';
   if(t.num_cliente) html += '<div class="d-row"><span class="d-lbl">N° cliente</span><span class="d-val">'+esc(t.num_cliente)+'</span></div>';
   if(t.nombre_cliente) html += '<div class="d-row"><span class="d-lbl">Cliente</span><span class="d-val">'+esc(t.nombre_cliente)+'</span></div>';
+  if(t.tel_contacto) html += '<div class="d-row"><span class="d-lbl">Tel. contacto</span><span class="d-val">'+esc(t.tel_contacto)+'</span></div>';
   var asignadoVal = t.asignado_a_nombre ? esc(t.asignado_a_nombre) : '<span style="color:#9896A0;font-weight:400">Sin asignar</span>';
   var btnReasignar = t.estado !== 'finalizado'
     ? '<button onclick="abrirReasignar('+t.id+',event)" style="margin-left:8px;font-size:10px;padding:2px 8px;border:1px solid #DDDBD6;border-radius:5px;background:white;color:#56555A;cursor:pointer;font-weight:600">Reasignar</button>'
@@ -833,10 +839,12 @@ function toggleAltaFields(){
   var tipo=document.getElementById('f-tipo').value;
   var esAlta=tipo==='alta_cliente';
   var esChq=tipo==='cheque_pendiente';
+  var pideTel=tipo==='reclamo'||tipo==='solicitud'||tipo==='alta_cliente';
   document.getElementById('alta-fields').style.display=esAlta?'block':'none';
   document.getElementById('cheque-fields').style.display=esChq?'block':'none';
   document.getElementById('f-cliente-row').style.display=(esAlta||esChq)?'none':'grid';
   document.getElementById('f-titulo-row').style.display=(esAlta||esChq)?'none':'block';
+  document.getElementById('f-tel-row').style.display=pideTel?'block':'none';
   document.getElementById('f-desc').placeholder=esChq?'Detalle adicional sobre el cheque...':'Detallá el motivo del ticket...';
 }
 function showErr(msg){ var el=document.getElementById('form-err'); el.textContent=msg; el.style.display=msg?'block':'none'; }
@@ -848,6 +856,9 @@ async function crearTicket(){
   var asignado_a=sel.value;
   var asignado_a_nombre=sel.options[sel.selectedIndex].text;
   if(!asignado_a){ showErr('Seleccioná un responsable para el ticket.'); return; }
+  var pideTel=tipo==='reclamo'||tipo==='solicitud'||tipo==='alta_cliente';
+  var telContacto=document.getElementById('f-tel-contacto').value.trim();
+  if(pideTel&&!telContacto){ showErr('Ingresá un teléfono de contacto.'); return; }
   var titulo;
   if(tipo==='alta_cliente'){
     var altaNombre=document.getElementById('f-alta-nombre').value.trim();
@@ -869,10 +880,11 @@ async function crearTicket(){
   var body={tipo,titulo,descripcion:desc||null,username:USER.username,nombre:USER.nombre,
     asignado_a:asignado_a||null,asignado_a_nombre:asignado_a?asignado_a_nombre:null,
     num_cliente:tipo==='cheque_pendiente'?document.getElementById('f-chq-cliente').value.trim()||null:document.getElementById('f-num-cliente').value.trim()||null,
-    nombre_cliente:document.getElementById('f-nombre-cliente').value.trim()||null};
+    nombre_cliente:document.getElementById('f-nombre-cliente').value.trim()||null,
+    tel_contacto:pideTel?telContacto:null};
   if(tipo==='alta_cliente'){
     body.alta_nombre=document.getElementById('f-alta-nombre').value.trim()||null;
-    body.alta_telefono=document.getElementById('f-alta-tel').value.trim()||null;
+    body.alta_telefono=telContacto||null;
     body.alta_fantasia=document.getElementById('f-alta-fantasia').value.trim()||null;
     body.alta_direccion=document.getElementById('f-alta-dir').value.trim()||null;
     body.alta_localidad=document.getElementById('f-alta-loc').value.trim()||null;
