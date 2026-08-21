@@ -1502,6 +1502,8 @@ function parseHora(val) {
 const FICHAYA_URL = process.env.FICHAYA_URL || 'https://control-asistencia.up.railway.app';
 const FICHAYA_USER = process.env.FICHAYA_USER || 'reportes';
 const FICHAYA_PASS = process.env.FICHAYA_PASS || 'reporte123';
+const FICHAYA_ADMIN_USER = process.env.FICHAYA_ADMIN_USER || 'admin';
+const FICHAYA_ADMIN_PASS = process.env.FICHAYA_ADMIN_PASS || 'Admin1234!';
 
 function extractCookies(res) {
   const raw = res.headers.getSetCookie ? res.headers.getSetCookie() : [];
@@ -1516,8 +1518,10 @@ function mergeCookies(...maps) {
   return Object.values(merged).join('; ');
 }
 
-async function fichaYaLogin() {
-  console.log('[FichaYa] Iniciando login...');
+async function fichaYaLogin(user, pass) {
+  const u = user || FICHAYA_USER;
+  const p = pass || FICHAYA_PASS;
+  console.log(`[FichaYa] Iniciando login (${u})...`);
   const loginPageRes = await fetch(FICHAYA_URL + '/login');
   const loginHtml = await loginPageRes.text();
   const csrfMatch = loginHtml.match(/name="csrf_token"\s+value="([^"]+)"/);
@@ -1525,7 +1529,7 @@ async function fichaYaLogin() {
   const cookies1 = extractCookies(loginPageRes);
   console.log('[FichaYa] GET /login cookies:', Object.keys(cookies1));
 
-  const body = new URLSearchParams({ csrf_token: csrfMatch[1], username: FICHAYA_USER, password: FICHAYA_PASS });
+  const body = new URLSearchParams({ csrf_token: csrfMatch[1], username: u, password: p });
   const loginRes = await fetch(FICHAYA_URL + '/login', {
     method: 'POST',
     headers: {
@@ -1599,6 +1603,31 @@ async function fichaYaDownloadJustificaciones(sessionCookie, desde, hasta) {
   const res = await fetch(url, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
   const ct = res.headers.get('content-type') || '';
   if (!res.ok) throw new Error('Error al descargar justificaciones: ' + res.status);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (ct.includes('text/html')) return [];
+  const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  let rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  const firstKeys = Object.keys(rows[0] || {});
+  if (firstKeys.some(k => k.startsWith('__EMPTY'))) {
+    const headerRow = rows[0];
+    const realHeaders = {};
+    firstKeys.forEach(k => { if (String(headerRow[k]).trim()) realHeaders[k] = String(headerRow[k]).trim(); });
+    rows = rows.slice(1).map(r => {
+      const mapped = {};
+      firstKeys.forEach(k => { if (realHeaders[k]) mapped[realHeaders[k]] = r[k]; });
+      return mapped;
+    });
+  }
+  return rows;
+}
+
+async function fichaYaDownloadVacaciones(sessionCookie) {
+  const url = `${FICHAYA_URL}/vacaciones/?export=xlsx`;
+  console.log('[FichaYa] Descargando vacaciones...');
+  const res = await fetch(url, { headers: { 'Cookie': sessionCookie }, redirect: 'follow' });
+  if (!res.ok || res.status === 403) return [];
+  const ct = res.headers.get('content-type') || '';
   const buf = Buffer.from(await res.arrayBuffer());
   if (ct.includes('text/html')) return [];
   const wb = XLSX.read(buf, { type: 'buffer', cellDates: true });
@@ -1820,8 +1849,54 @@ async function syncFichaYaMes(mes) {
         console.error('[FichaYa] Error al sincronizar justificaciones:', justErr.message);
       }
 
+      // ── Sync vacaciones (usa admin porque reportes no tiene acceso) ──
+      let vacCount = 0;
+      try {
+        const adminCookie = await fichaYaLogin(FICHAYA_ADMIN_USER, FICHAYA_ADMIN_PASS);
+        const vacRows = await fichaYaDownloadVacaciones(adminCookie);
+        console.log(`[FichaYa] Vacaciones descargadas: ${vacRows.length}`);
+        for (const row of vacRows) {
+          const estado = String(row['Estado'] || '').toLowerCase().trim();
+          if (estado === 'rechazado') continue;
+
+          const nombre = fichaYaNombre(row);
+          if (!nombre) continue;
+          const empId = empCache[nombre.toLowerCase()];
+          if (!empId) continue;
+
+          let fDesde = row['Fecha Desde'];
+          let fHasta = row['Fecha Hasta'];
+          if (fDesde instanceof Date) fDesde = fDesde.toISOString().slice(0, 10);
+          else fDesde = String(fDesde).trim().slice(0, 10);
+          if (fHasta instanceof Date) fHasta = fHasta.toISOString().slice(0, 10);
+          else fHasta = String(fHasta).trim().slice(0, 10);
+          if (!fDesde || !/^\d{4}-\d{2}-\d{2}$/.test(fDesde)) continue;
+          if (!fHasta || !/^\d{4}-\d{2}-\d{2}$/.test(fHasta)) fHasta = fDesde;
+
+          const obs = estado === 'pendiente' ? 'Vacaciones (pendiente aprobación)' : 'Vacaciones';
+
+          const dStart = new Date(fDesde);
+          const dEnd = new Date(fHasta);
+          for (let dt = new Date(dStart); dt <= dEnd; dt.setDate(dt.getDate() + 1)) {
+            const fechaStr = dt.toISOString().slice(0, 10);
+            if (fechaStr < desde || fechaStr > hasta) continue;
+            if (dt.getDay() === 0) continue;
+
+            await client.query(
+              `INSERT INTO asistencia_registros (empleado_id, fecha, tipo, hora_entrada, hora_salida, hs_trabajadas, observaciones)
+               VALUES ($1,$2,'vacaciones',NULL,NULL,NULL,$3)
+               ON CONFLICT (empleado_id, fecha) DO UPDATE SET tipo='vacaciones', observaciones=$3`,
+              [empId, fechaStr, obs]
+            );
+            vacCount++;
+          }
+        }
+      } catch (vacErr) {
+        console.error('[FichaYa] Error al sincronizar vacaciones:', vacErr.message);
+      }
+
       await client.query('COMMIT');
-      return { registros: regCount, empleados_nuevos: empNuevos, justificaciones: justCount };
+      return { registros: regCount, empleados_nuevos: empNuevos, justificaciones: justCount, vacaciones: vacCount };
     } catch (e) {
       await client.query('ROLLBACK');
       throw e;
