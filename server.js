@@ -1845,22 +1845,25 @@ app.get('/api/asistencia/adjunto', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── CRON: sync automático a las 9:30 y 22:00 (hora Argentina UTC-3) ──
-cron.schedule('30 12 * * *', async () => {
+// ── CRON: sync automático cada hora de 8:00 a 18:00 AR + 22:00 AR ──
+// 8-18 AR = 11-21 UTC (cada hora en punto)
+cron.schedule('0 11-21 * * *', async () => {
   const mes = new Date().toISOString().slice(0, 7);
-  console.log(`[CRON] Sync automático 9:30 AR - mes: ${mes}`);
+  const arHour = new Date().getUTCHours() - 3;
+  console.log(`[CRON] Sync automático ${arHour}:00 AR - mes: ${mes}`);
   try {
     const r = await syncFichaYaMes(mes);
-    console.log(`[CRON] Sync completado: ${r.registros} registros, ${r.empleados_nuevos} empleados nuevos`);
+    console.log(`[CRON] Sync completado: ${r.registros} registros, ${r.empleados_nuevos} empleados nuevos, ${r.justificaciones || 0} justificaciones`);
   } catch (e) { console.error('[CRON] Error sync:', e.message); }
 });
 
+// 22:00 AR = 01:00 UTC
 cron.schedule('0 1 * * *', async () => {
   const mes = new Date().toISOString().slice(0, 7);
   console.log(`[CRON] Sync automático 22:00 AR - mes: ${mes}`);
   try {
     const r = await syncFichaYaMes(mes);
-    console.log(`[CRON] Sync completado: ${r.registros} registros, ${r.empleados_nuevos} empleados nuevos`);
+    console.log(`[CRON] Sync completado: ${r.registros} registros, ${r.empleados_nuevos} empleados nuevos, ${r.justificaciones || 0} justificaciones`);
   } catch (e) { console.error('[CRON] Error sync:', e.message); }
 });
 
@@ -1880,6 +1883,200 @@ app.get('/cuentas-pagar', (req, res) => res.sendFile(path.join(__dirname, 'publi
 app.get('/transporte', (req, res) => res.sendFile(path.join(__dirname, 'public', 'transporte.html')));
 app.get('/presupuesto', (req, res) => res.sendFile(path.join(__dirname, 'public', 'presupuesto.html')));
 app.get('/asistencia', (req, res) => res.sendFile(path.join(__dirname, 'public', 'asistencia.html')));
+
+// ── AUTO-SYNC CHESS CC (cron cada hora de 7 a 19 hs Argentina) ──────────────
+async function autoSyncChessCC() {
+  const chessUser = process.env.CHESS_USER || 'aldana';
+  const chessPass = process.env.CHESS_PASS;
+  if (!chessPass) { console.log('[chess-cron] Sin CHESS_PASS, omitiendo'); return; }
+
+  try {
+    console.log('[chess-cron] Iniciando sincronización automática...');
+    // 1. Login
+    const loginBody = querystring.stringify({ j_username: chessUser, j_password: chessPass });
+    const loginRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: '/AR459/static/auth/j_spring_security_check',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(loginBody), 'Referer': 'https://delpalacio.chesserp.com/AR459/', 'Origin': 'https://delpalacio.chesserp.com' }
+    }, loginBody);
+    const setCookies = loginRes.headers['set-cookie'] || [];
+    const cookies = setCookies.map(c => c.split(';')[0]).join('; ');
+    if (!cookies.includes('JSESSIONID')) { console.log('[chess-cron] Login fallido'); return; }
+
+    // 2. Solicitar Excel
+    const dataRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: '/AR459/web/api/saldoTotalDeudores/exportarExcel?pcEmp=0&pcSucur=1,%202&piLineaCredito=1&pdFecsal=null&pcDocs=-1&plactual=true&plDet=true&plApertura=false',
+      method: 'GET',
+      headers: { 'Cookie': cookies, 'Referer': 'https://delpalacio.chesserp.com/AR459/', 'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*' },
+      binary: true
+    });
+    let filePath;
+    try {
+      const meta = JSON.parse(dataRes.body.toString('utf8'));
+      if (!meta.pcfile) throw new Error('sin pcfile');
+      filePath = meta.pcfile;
+    } catch(e) { console.log('[chess-cron] Respuesta inesperada de Chess'); return; }
+
+    // 3. Descargar Excel
+    const fileRes = await httpsRequest({
+      hostname: 'delpalacio.chesserp.com',
+      path: '/AR459' + filePath,
+      method: 'GET',
+      headers: { 'Cookie': cookies, 'Referer': 'https://delpalacio.chesserp.com/AR459/' },
+      binary: true
+    });
+    if (!fileRes.body || fileRes.body.length < 100) { console.log('[chess-cron] Excel vacío'); return; }
+
+    // 4. Procesar Excel
+    const wb = XLSX.read(fileRes.body, { type: 'buffer' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: 0 });
+    if (!rows.length) { console.log('[chess-cron] Sin filas'); return; }
+
+    const res = processChessRows(rows);
+    if (!res) { console.log('[chess-cron] Formato no reconocido'); return; }
+
+    // 5. Guardar en DB
+    const payload = { data: res.data, multi: res.multi, grupos: res.grupos, fecha: res.fecha, detalleClientes: res.detalleClientes || {}, _savedAt: new Date().toISOString() };
+    await pool.query(
+      `INSERT INTO datos (modulo, periodo, datos) VALUES ($1, $2, $3)
+       ON CONFLICT (modulo, periodo) DO UPDATE SET datos = $3`,
+      ['cobranzas', 'current', JSON.stringify(payload)]
+    );
+    console.log('[chess-cron] OK — ' + res.data.length + ' clientes sincronizados a las ' + new Date().toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }));
+  } catch(err) {
+    console.error('[chess-cron] Error:', err.message);
+  }
+}
+
+function processChessRows(rows) {
+  if (!rows || !rows.length) return null;
+  const keys = Object.keys(rows[0]);
+  const fc = (...ns) => keys.find(k => ns.some(n => k.toLowerCase().replace(/\s+/g, '').includes(n.toLowerCase().replace(/\s+/g, ''))));
+  const tn = v => { if (typeof v === 'number') return v; return parseFloat(String(v).replace(/[^\d.,-]/g, '').replace(',', '.')) || 0; };
+  const excelDate = v => { if (!v) return ''; if (typeof v === 'number' && v > 40000) { const d = new Date(Math.round((v-25569)*86400*1000)); return d.toISOString().slice(0,10); } const d = new Date(v); return isNaN(d)?'':d.toISOString().slice(0,10); };
+  const sp = s => { const str = String(s || '').trim(); const i = str.indexOf(' - '); return i > 0 ? [str.slice(0,i).trim(), str.slice(i+3).trim()] : ['',str]; };
+
+  const cCli = keys.find(k => k.trim() === 'Cliente');
+  const cRazon = keys.find(k => k.trim() === 'Razón social');
+  const cSaldo = keys.find(k => k.trim() === 'Saldo');
+  const cImporte = keys.find(k => k.trim() === 'Importe Total');
+  const cComp = keys.find(k => k.trim() === 'Comprobante');
+  const cDescComp = keys.find(k => k.trim() === 'Descripción Comprobante');
+  const cNum = keys.find(k => k.trim() === 'Número');
+  const cFecha = keys.find(k => k.trim() === 'Fecha');
+  const cFechaVto = keys.find(k => k.trim() === 'Fecha Vencido');
+  const cMora = keys.find(k => k.trim() === 'Días de Mora');
+  const cAntig = keys.find(k => k.trim() === 'Antigüedad deuda');
+  const cSucDesc = keys.find(k => k.trim() === 'Descripción Sucursal');
+  const cVendDesc = keys.find(k => k.trim() === 'Descripción Vendedor');
+  const cConj = keys.find(k => k.trim() === 'Conjunto');
+  const cConjDesc = keys.find(k => k.trim() === 'Descripción Conjunto');
+  const cLoc = keys.find(k => k.trim() === 'Localidad');
+  const cAgrupDesc = keys.find(k => k.trim() === 'Descripción Agrupación');
+  if (!cCli) return null;
+
+  let fecha = '—';
+  if (cFecha && rows[0][cFecha]) {
+    const raw = rows[0][cFecha];
+    if (typeof raw === 'number' && raw > 40000) {
+      const d = new Date(Math.round((raw-25569)*86400*1000));
+      fecha = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+    } else {
+      const s = String(raw).trim();
+      const m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (m) fecha = m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+m[3];
+      else fecha = s;
+    }
+  }
+
+  const CONJ_NAMES = {};
+  const map = {}, detalleMap = {};
+  for (const r of rows) {
+    if (cAgrupDesc && String(r[cAgrupDesc]||'').includes('0005-PC')) continue;
+    const _descComp = String(r[cDescComp]||'').toUpperCase();
+    if (_descComp.includes('FALTANTE') || _descComp.includes('SOBRANTE')) continue;
+    const cliRaw = String(r[cCli] || '').trim();
+    const [cod, nomRaw] = sp(cliRaw);
+    const rawNom = (cRazon && r[cRazon]) ? String(r[cRazon]).trim() : nomRaw;
+    const nom = sp(rawNom)[1] || rawNom;
+    if (!nom) continue;
+    const rawCode = cod || cliRaw;
+    const codigo = rawCode.replace(/^0+/,'') || rawCode;
+    const saldo = tn(r[cSaldo]);
+    const mora = cMora ? tn(r[cMora]) : 0;
+    const antig = cAntig ? tn(r[cAntig]) : 0;
+    const suc = cSucDesc ? String(r[cSucDesc]||'').trim() : '';
+    const vend = cVendDesc ? String(r[cVendDesc]||'').trim() : '';
+    const loc = cLoc ? String(r[cLoc]||'').trim() : '';
+    const conjCod = cConj ? String(r[cConj]||'0').trim() : '0';
+    const conjNom = cConjDesc ? String(r[cConjDesc]||'').trim() : '';
+    const conjStr = (conjCod === '0' || conjCod === '') ? 'Sin conjunto' : conjCod;
+    if (conjNom && conjNom !== 'SIN CONJUNTO' && conjCod !== '0') CONJ_NAMES[conjCod] = conjNom;
+
+    const key = codigo || nom;
+    if (!map[key]) map[key] = { cliente: nom, codigo, saldo: 0, d7: 0, d15: 0, d30: 0, d60: 0, d60p: 0, antiguedad: 0, cantCbte: 0, vendedor: vend, localidad: loc, sucursal: suc, canal: '', conjuntos: new Set([conjStr]), grupos: [], multiVendedor: false };
+    const rec = map[key];
+    rec.saldo += saldo;
+    rec.cantCbte++;
+    rec.antiguedad = Math.max(rec.antiguedad, antig);
+    if (!rec.vendedor && vend) rec.vendedor = vend;
+    if (!rec.localidad && loc) rec.localidad = loc;
+    if (!rec.sucursal && suc) rec.sucursal = suc;
+    rec.conjuntos.add(conjStr);
+    if (mora <= 0) { /* no vencido */ }
+    else if (mora <= 7) rec.d7 += saldo;
+    else if (mora <= 15) rec.d15 += saldo;
+    else if (mora <= 30) rec.d30 += saldo;
+    else if (mora <= 60) rec.d60 += saldo;
+    else rec.d60p += saldo;
+
+    if (!detalleMap[key]) detalleMap[key] = [];
+    detalleMap[key].push({
+      tipo: cComp ? String(r[cComp]||'').trim().toUpperCase() : '',
+      desc: cDescComp ? String(r[cDescComp]||'').trim() : '',
+      num: cNum ? String(r[cNum]||'').trim() : '',
+      fecha: excelDate(r[cFecha]),
+      vto: excelDate(r[cFechaVto]),
+      saldo,
+      importe: cImporte ? tn(r[cImporte]) : 0,
+      mora,
+      suc
+    });
+  }
+
+  const data = Object.values(map).map(r => {
+    const conjs = [...r.conjuntos];
+    r.conjuntos = conjs;
+    r.grupos = conjs.filter(c => c !== 'Sin conjunto').map(c => ({ id: c, nombre: CONJ_NAMES[c] || 'Grupo '+c }));
+    ['saldo','d7','d15','d30','d60','d60p'].forEach(k => r[k] = Math.round((r[k]||0)*100)/100);
+    r.antiguedad = Math.round(r.antiguedad);
+    return r;
+  });
+
+  const gmap = {};
+  for (const r of data) {
+    for (const g of r.grupos) {
+      if (!gmap[g.id]) gmap[g.id] = { id: g.id, nombre: g.nombre, clientes: [] };
+      gmap[g.id].clientes.push({ codigo: r.codigo, cliente: r.cliente, vendedor: r.vendedor, saldo: r.saldo });
+    }
+  }
+  const grupos = Object.values(gmap).map(g => {
+    g.clientes.sort((a,b) => b.saldo - a.saldo);
+    g.deudaTotal = g.clientes.filter(c => c.saldo > 0).reduce((s,c) => s+c.saldo, 0);
+    g.acreedorTotal = g.clientes.filter(c => c.saldo < 0).reduce((s,c) => s+c.saldo, 0);
+    return g;
+  }).sort((a,b) => b.deudaTotal - a.deudaTotal);
+
+  return { data, multi: {}, grupos, fecha, detalleClientes: detalleMap };
+}
+
+// Cron: cada hora de 7 a 19 hs (Argentina = UTC-3)
+// UTC 10-22 = Argentina 7-19
+cron.schedule('0 10-22 * * *', () => {
+  autoSyncChessCC();
+}, { timezone: 'America/Argentina/Buenos_Aires' });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {

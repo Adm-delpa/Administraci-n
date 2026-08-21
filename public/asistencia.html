@@ -414,7 +414,7 @@ label{font-size:12px;font-weight:600;color:#6B6876}
       <p>Las justificaciones cargadas en Ficha Ya se sincronizan automáticamente. Los días justificados aparecen en amarillo (FJ). Al hacer clic en una celda FJ se ve el diagnóstico o motivo. Si tiene certificado adjunto, aparece el botón <strong>"Ver certificado"</strong> para abrir el PDF o imagen.</p>
 
       <h4 style="font-size:14px;color:#18181A;margin:16px 0 8px">Sincronización</h4>
-      <p>Los datos se actualizan automáticamente todos los días a las <strong>9:30 hs</strong> y a las <strong>22:00 hs</strong>. No es necesario hacer nada.</p>
+      <p>Los datos se actualizan automáticamente cada hora entre las <strong>8:00</strong> y las <strong>18:00 hs</strong>, y una vez más a las <strong>22:00 hs</strong>. No es necesario hacer nada.</p>
 
       <div style="background:#F8F7F5;border-left:3px solid #0D4FA0;border-radius:0 6px 6px 0;padding:8px 12px;margin-top:12px;font-size:12px">
         <strong style="color:#18181A">Importante:</strong> Esta pantalla es solo de consulta. Ante cualquier error o inconsistencia, comunicalo a Administración.
@@ -454,7 +454,7 @@ if (esAdminAsist) {
     <button class="btn-secondary" onclick="abrirImport()" style="font-size:12px">Importar Excel</button>
   `;
 } else {
-  accionesWrap.innerHTML = '<div style="font-size:12px;color:#9896A0;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:6px 14px">Sincronización automática: 9:30 y 22:00 hs</div>';
+  accionesWrap.innerHTML = '<div style="font-size:12px;color:#9896A0;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:6px 14px">Sincronización automática: cada hora de 8 a 18 hs + 22 hs</div>';
 }
 
 const $mes = document.getElementById('fil-mes');
