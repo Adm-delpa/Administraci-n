@@ -1706,11 +1706,9 @@ async function syncFichaYaMes(mes) {
         const estado = String(row['Estado'] || '').toLowerCase().trim();
 
         const key = empId + '_' + fecha;
-        if (!dayMap[key]) dayMap[key] = { empId, fecha, turnos: [], estado: 'presente' };
+        if (!dayMap[key]) dayMap[key] = { empId, fecha, turnos: [], estados: [] };
         dayMap[key].turnos.push({ entrada: horaEnt, salida: horaSal });
-        if (estado === 'ausente') dayMap[key].estado = 'falta_injustificada';
-        else if (estado.includes('vacaci')) dayMap[key].estado = 'vacaciones';
-        else if (estado.includes('justificad')) dayMap[key].estado = 'falta_justificada';
+        dayMap[key].estados.push(estado);
       }
 
       for (const rec of Object.values(dayMap)) {
@@ -1732,8 +1730,15 @@ async function syncFichaYaMes(mes) {
         }
         hsTrab = hsTrab ? +hsTrab.toFixed(1) : null;
 
-        let tipo = rec.estado;
-        if (tipo === 'presente' && (rec.estado === 'ok' || rec.estado === 'tarde')) tipo = 'presente';
+        // Determine day status: if any turn has a valid clock-in, it's presente
+        const tieneFilchaje = turnos.some(t => t.entrada || t.salida);
+        const estados = rec.estados;
+        let tipo = 'presente';
+        if (estados.some(e => e.includes('vacaci'))) tipo = 'vacaciones';
+        else if (estados.some(e => e.includes('justificad'))) tipo = 'falta_justificada';
+        else if (tieneFilchaje) tipo = 'presente';
+        else if (estados.includes('ausente')) tipo = 'falta_injustificada';
+        else tipo = 'presente';
 
         const obs = turnos.length > 1 ? detalle.join(' / ') : null;
 
