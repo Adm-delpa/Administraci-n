@@ -839,7 +839,7 @@ function toggleAltaFields(){
   var tipo=document.getElementById('f-tipo').value;
   var esAlta=tipo==='alta_cliente';
   var esChq=tipo==='cheque_pendiente';
-  var pideTel=tipo==='reclamo'||tipo==='solicitud'||tipo==='alta_cliente';
+  var pideTel=tipo==='reclamo'||tipo==='solicitud'||tipo==='alta_cliente'||tipo==='otro';
   document.getElementById('alta-fields').style.display=esAlta?'block':'none';
   document.getElementById('cheque-fields').style.display=esChq?'block':'none';
   document.getElementById('f-cliente-row').style.display=(esAlta||esChq)?'none':'grid';
@@ -856,7 +856,7 @@ async function crearTicket(){
   var asignado_a=sel.value;
   var asignado_a_nombre=sel.options[sel.selectedIndex].text;
   if(!asignado_a){ showErr('Seleccioná un responsable para el ticket.'); return; }
-  var pideTel=tipo==='reclamo'||tipo==='solicitud'||tipo==='alta_cliente';
+  var pideTel=tipo==='reclamo'||tipo==='solicitud'||tipo==='alta_cliente'||tipo==='otro';
   var telContacto=document.getElementById('f-tel-contacto').value.trim();
   if(pideTel&&!telContacto){ showErr('Ingresá un teléfono de contacto.'); return; }
   var titulo;
