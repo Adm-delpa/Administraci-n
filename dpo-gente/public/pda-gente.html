@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDA Total Gente · DPO Gente</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.btn-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.btn-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-hdr{background:#1B3F72;padding:18px 24px}
+.page-hdr h1{font-size:16px;font-weight:700;color:#fff}
+.page-hdr p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+
+.filters-bar{background:#fff;border-bottom:1px solid #EEF0F6;padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.suc-tabs{display:flex;gap:4px}
+.suc-tab{padding:5px 14px;border-radius:20px;border:1px solid #D8DEE8;background:#fff;font-size:11px;font-weight:600;color:#5A6880;cursor:pointer;font-family:inherit}
+.suc-tab.on{background:#1B3F72;color:#fff;border-color:#1B3F72}
+.sede-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:#F3F0FF;color:#5B21B6}
+.sede-comite{background:#FEF3C7;color:#92400E}
+.row-comite td{background:#FFFBEB}
+.filter-sel{padding:5px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12px;background:#fff;color:#18243A;font-family:inherit;cursor:pointer}
+.filter-sel:focus{outline:none;border-color:#2563A8}
+.btn-nueva{margin-left:auto;padding:7px 16px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer}
+.btn-nueva:hover{background:#2563A8}
+
+.main{max-width:1100px;margin:0 auto;padding:20px}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpi-row{grid-template-columns:1fr}}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:10.5px;color:#6B7A94;margin-top:3px}
+.kpi.navy .kpi-val{color:#1B3F72}
+.kpi.green .kpi-val{color:#10B981}
+.kpi.orange .kpi-val{color:#F59E0B}
+.kpi.gray .kpi-val{color:#64748B}
+
+/* Table */
+.table-wrap{background:#fff;border-radius:10px;border:1px solid #EEF0F6;overflow:hidden}
+.table-hdr{padding:12px 16px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between}
+.table-title{font-size:12px;font-weight:700;color:#18243A}
+.pda-table{width:100%;border-collapse:collapse;font-size:12px}
+.pda-table th{text-align:left;padding:8px 14px;border-bottom:1px solid #EEF0F6;font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.pda-table td{padding:10px 14px;border-bottom:1px solid #F5F6FA;vertical-align:middle}
+.pda-table tr:last-child td{border-bottom:none}
+.pda-table tr:hover td{background:#FAFBFD;cursor:pointer}
+.accion-col{font-weight:700;color:#18243A;max-width:200px}
+.obj-col{color:#5A6880;max-width:180px;font-size:11.5px}
+.resp-col{font-weight:600;color:#18243A}
+.fecha-col{font-size:11.5px;color:#5A6880;white-space:nowrap}
+.seg-col{font-size:11.5px;color:#5A6880;max-width:150px}
+.kpi-col{font-size:11.5px;color:#5A6880;max-width:150px}
+
+.status-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.status-pendiente{background:#FEF3C7;color:#92400E}
+.status-en_progreso{background:#EBF2FA;color:#1B3F72}
+.status-completada{background:#D1FAE5;color:#065F46}
+
+.empty-row td{text-align:center;color:#8A97AA;padding:32px;font-size:12.5px}
+
+.overflow-x{overflow-x:auto}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:200;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:min(640px,100%);box-shadow:0 16px 48px rgba(0,0,0,.18)}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;border-radius:12px 12px 0 0;z-index:1}
+.modal-title{font-size:14px;font-weight:700;color:#18243A}
+.modal-close{background:none;border:none;font-size:18px;color:#8A97AA;cursor:pointer;padding:2px 6px;line-height:1}
+.modal-close:hover{color:#18243A}
+.modal-body{padding:18px}
+.modal-footer{padding:14px 18px;border-top:1px solid #EEF0F6;display:flex;gap:10px;justify-content:flex-end}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:540px){.form-grid{grid-template-columns:1fr}}
+.form-full{grid-column:1/-1}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10.5px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select,.form-textarea{padding:7px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;font-family:inherit;background:#fff}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:#2563A8}
+.form-textarea{resize:vertical;min-height:70px}
+
+.btn-cancel{padding:7px 16px;border:1.5px solid #D8DEE8;background:#fff;border-radius:7px;font-size:12.5px;font-weight:600;color:#5A6880;cursor:pointer}
+.btn-cancel:hover{background:#F5F6FA}
+.btn-save{padding:7px 18px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer}
+.btn-save:hover{background:#2563A8}
+.btn-save:disabled{opacity:.5;cursor:not-allowed}
+.btn-delete{padding:7px 14px;border:1.5px solid #FCA5A5;background:#fff;border-radius:7px;font-size:12.5px;font-weight:600;color:#DC2626;cursor:pointer;margin-right:auto}
+.btn-delete:hover{background:#FEE2E2}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="btn-back" onclick="window.location.href='/pilar-gente.html'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">PDA Total Gente</span>
+</div>
+
+<div class="page-hdr">
+  <h1>📌 Planes de Acción — Total Gente</h1>
+  <p>Seguimiento de acciones del área de Gente</p>
+</div>
+
+<div class="filters-bar">
+  <div class="suc-tabs">
+    <button class="suc-tab on" onclick="setSede('todas')">Todas</button>
+    <button class="suc-tab" onclick="setSede('Dolores')">Dolores</button>
+    <button class="suc-tab" onclick="setSede('Casa Central')">Casa Central</button>
+    <button class="suc-tab" onclick="setSede('Comité')">Comité</button>
+  </div>
+  <select class="filter-sel" id="filtroEstado" onchange="render()">
+    <option value="">Todos los estados</option>
+    <option value="pendiente">Pendiente</option>
+    <option value="en_progreso">En progreso</option>
+    <option value="completada">Completada</option>
+  </select>
+  <select class="filter-sel" id="filtroKpi" onchange="render()">
+    <option value="">Todos los KPI / Bloque</option>
+  </select>
+  <select class="filter-sel" id="filtroOrden" onchange="render()">
+    <option value="">Sin ordenar</option>
+    <option value="inicio_asc">Inicio más antiguo</option>
+    <option value="inicio_desc">Inicio más reciente</option>
+    <option value="fin_asc">Fin más antiguo</option>
+    <option value="fin_desc">Fin más reciente</option>
+  </select>
+  <button class="btn-nueva" onclick="abrirModal()">+ Nueva acción</button>
+</div>
+
+<div class="main">
+  <div class="kpi-row" id="kpis"></div>
+  <div class="table-wrap">
+    <div class="table-hdr">
+      <span class="table-title" id="tableCount">Planes de acción</span>
+    </div>
+    <div class="overflow-x">
+      <table class="pda-table">
+        <thead>
+          <tr>
+            <th>Sucursal</th>
+            <th>Acción</th>
+            <th>Objetivo</th>
+            <th>Responsable</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Seguimiento</th>
+            <th>KPI / Bloque</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modalTitle">Nueva acción</span>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">Acción *</label>
+          <textarea class="form-textarea" id="fAccion" rows="2" placeholder="Acción concreta"></textarea>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Objetivo</label>
+          <textarea class="form-textarea" id="fObjetivo" rows="2" placeholder="Resultado esperado"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sucursal</label>
+          <select class="form-select" id="fSucursal">
+            <option value="Dolores">Dolores</option>
+            <option value="Casa Central">Casa Central</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Responsable</label>
+          <input class="form-input" id="fResponsable" placeholder="Dueño de la acción">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select class="form-select" id="fEstado">
+            <option value="pendiente">Pendiente</option>
+            <option value="en_progreso">En progreso</option>
+            <option value="completada">Completada</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha inicio</label>
+          <input class="form-input" type="date" id="fInicio">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha fin</label>
+          <input class="form-input" type="date" id="fFin">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Seguimiento</label>
+          <input class="form-input" id="fSeguimiento" placeholder="Frecuencia + herramienta">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">KPI / Bloque DPO</label>
+          <input class="form-input" id="fKpi" placeholder="Indicador + bloque DPO">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="btnEliminar" style="display:none" onclick="eliminar()">Eliminar</button>
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-save" id="btnGuardar" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let DATA = [];
+let EDIT_ID = null;
+let SEDE = 'todas';
+
+function setSede(s) {
+  SEDE = s;
+  document.querySelectorAll('.suc-tab').forEach((b,i) => b.classList.toggle('on', ['todas','Dolores','Casa Central','Comité'][i] === s));
+  cargar();
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function fmtDate(d) {
+  if (!d) return '—';
+  const s = String(d).slice(0,10);
+  const [y,m,dd] = s.split('-');
+  if (!y || !m || !dd) return '—';
+  return dd + '/' + m + '/' + y.slice(2);
+}
+function estadoClass(e) {
+  if (e === 'pendiente') return 'status-pendiente';
+  if (e === 'en_progreso') return 'status-en_progreso';
+  if (e === 'completada') return 'status-completada';
+  return '';
+}
+function estadoLabel(e) {
+  if (e === 'pendiente') return 'Pendiente';
+  if (e === 'en_progreso') return 'En progreso';
+  if (e === 'completada') return 'Completada';
+  return e || '';
+}
+
+async function cargar() {
+  const params = new URLSearchParams();
+  if (SEDE !== 'todas') params.set('sucursal', SEDE);
+  let url = '/api/pda-gente?' + params;
+  try {
+    const r = await fetch(url);
+    DATA = await r.json();
+    buildKpiFilter();
+    render();
+  } catch(e) { console.error(e); }
+}
+
+function buildKpiFilter() {
+  const sel = document.getElementById('filtroKpi');
+  const prev = sel.value;
+  const kpis = [...new Set(DATA.map(d => d.kpi_bloque || '').filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todos los KPI / Bloque</option>' + kpis.map(k => '<option value="'+esc(k)+'">'+esc(k)+'</option>').join('');
+  sel.value = prev;
+}
+
+function render() {
+  const estado = document.getElementById('filtroEstado').value;
+  const kpi = document.getElementById('filtroKpi').value;
+  const orden = document.getElementById('filtroOrden').value;
+  let filtered = DATA.slice();
+  if (estado) filtered = filtered.filter(d => d.estado === estado);
+  if (kpi) filtered = filtered.filter(d => d.kpi_bloque === kpi);
+  if (orden) {
+    const campo = orden.startsWith('inicio') ? 'fecha_inicio' : 'fecha_fin';
+    const asc = orden.endsWith('_asc');
+    filtered.sort((a,b) => {
+      const va = a[campo] || '', vb = b[campo] || '';
+      return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+  }
+  const tbody = document.getElementById('tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No hay acciones registradas</td></tr>';
+  } else {
+    tbody.innerHTML = filtered.map(d => {
+      const esComite = d.origen === 'comite';
+      return `<tr class="${esComite ? 'row-comite' : ''}" ${esComite ? '' : 'onclick="abrirModal('+d.id+')"'} ${esComite ? 'title="Viene del Comité de Gente (solo lectura)"' : ''}>
+      <td><span class="sede-tag ${esComite ? 'sede-comite' : ''}">${esc(d.sucursal||'')}</span></td>
+      <td class="accion-col">${esc(d.accion||'')}</td>
+      <td class="obj-col">${esc(d.objetivo||'')}</td>
+      <td class="resp-col">${esc(d.responsable||'')}</td>
+      <td class="fecha-col">${fmtDate(d.fecha_inicio)}</td>
+      <td class="fecha-col">${fmtDate(d.fecha_fin)}</td>
+      <td class="seg-col">${esc(d.seguimiento||'')}</td>
+      <td class="kpi-col">${esc(d.kpi_bloque||'')}</td>
+      <td><span class="status-pill ${estadoClass(d.estado)}">${estadoLabel(d.estado)}</span></td>
+    </tr>`;
+    }).join('');
+  }
+  document.getElementById('tableCount').textContent = `Planes de acción (${filtered.length})`;
+  renderKpis(filtered);
+}
+
+function renderKpis(list) {
+  list = list || DATA;
+  const total = list.length;
+  const pendientes = list.filter(d => d.estado === 'pendiente').length;
+  const enProgreso = list.filter(d => d.estado === 'en_progreso').length;
+  const completadas = list.filter(d => d.estado === 'completada').length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi navy"><div class="kpi-label">Total</div><div class="kpi-val">${total}</div></div>
+    <div class="kpi orange"><div class="kpi-label">Pendientes</div><div class="kpi-val">${pendientes}</div></div>
+    <div class="kpi" style=""><div class="kpi-label">En progreso</div><div class="kpi-val" style="color:#2563A8">${enProgreso}</div></div>
+    <div class="kpi green"><div class="kpi-label">Completadas</div><div class="kpi-val">${completadas}</div><div class="kpi-sub">${total ? Math.round(completadas/total*100) : 0}% cumplimiento</div></div>
+  `;
+}
+
+function abrirModal(id) {
+  EDIT_ID = id || null;
+  document.getElementById('modalTitle').textContent = EDIT_ID ? 'Editar acción' : 'Nueva acción';
+  document.getElementById('btnEliminar').style.display = EDIT_ID ? '' : 'none';
+  if (EDIT_ID) {
+    const d = DATA.find(x => x.id === EDIT_ID);
+    if (!d) return;
+    document.getElementById('fSucursal').value = d.sucursal || 'Dolores';
+    document.getElementById('fAccion').value = d.accion || '';
+    document.getElementById('fObjetivo').value = d.objetivo || '';
+    document.getElementById('fResponsable').value = d.responsable || '';
+    document.getElementById('fEstado').value = d.estado || 'pendiente';
+    document.getElementById('fInicio').value = d.fecha_inicio ? String(d.fecha_inicio).slice(0,10) : '';
+    document.getElementById('fFin').value = d.fecha_fin ? String(d.fecha_fin).slice(0,10) : '';
+    document.getElementById('fSeguimiento').value = d.seguimiento || '';
+    document.getElementById('fKpi').value = d.kpi_bloque || '';
+  } else {
+    document.getElementById('fSucursal').value = SEDE !== 'todas' ? SEDE : 'Dolores';
+    document.getElementById('fAccion').value = '';
+    document.getElementById('fObjetivo').value = '';
+    document.getElementById('fResponsable').value = '';
+    document.getElementById('fEstado').value = 'pendiente';
+    document.getElementById('fInicio').value = '';
+    document.getElementById('fFin').value = '';
+    document.getElementById('fSeguimiento').value = '';
+    document.getElementById('fKpi').value = '';
+  }
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function cerrarModal() {
+  document.getElementById('modalBg').classList.remove('open');
+  EDIT_ID = null;
+}
+
+async function guardar() {
+  const accion = document.getElementById('fAccion').value.trim();
+  if (!accion) { alert('La acción es requerida'); return; }
+  const body = {
+    sucursal: document.getElementById('fSucursal').value,
+    accion,
+    objetivo: document.getElementById('fObjetivo').value.trim(),
+    responsable: document.getElementById('fResponsable').value.trim(),
+    estado: document.getElementById('fEstado').value,
+    fecha_inicio: document.getElementById('fInicio').value || null,
+    fecha_fin: document.getElementById('fFin').value || null,
+    seguimiento: document.getElementById('fSeguimiento').value.trim(),
+    kpi_bloque: document.getElementById('fKpi').value.trim(),
+  };
+  const btn = document.getElementById('btnGuardar');
+  btn.disabled = true;
+  try {
+    const url = EDIT_ID ? '/api/pda-gente/' + EDIT_ID : '/api/pda-gente';
+    const method = EDIT_ID ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) { const d = await r.json(); alert(d.error || 'Error'); btn.disabled = false; return; }
+    cerrarModal();
+    await cargar();
+  } catch(e) { alert('Error de conexión'); }
+  btn.disabled = false;
+}
+
+async function eliminar() {
+  if (!EDIT_ID) return;
+  if (!confirm('¿Eliminar esta acción? No se puede deshacer.')) return;
+  try {
+    await fetch('/api/pda-gente/' + EDIT_ID, { method: 'DELETE' });
+    cerrarModal();
+    await cargar();
+  } catch(e) { alert('Error de conexión'); }
+}
+
+cargar();
+</script>
+</body>
+</html>
