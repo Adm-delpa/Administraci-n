@@ -938,15 +938,12 @@ function generarQuickBtns() {
   for (let d = 1; d <= lastDay; d++) {
     const dt = new Date(y, m - 1, d);
     const dow = dt.getDay();
-    if (dow === 1 || (d === 1 && dow !== 0)) wStart = d;
-    if (dow === 5 || d === lastDay) {
+    if (dow === 1 || (d === 1 && dow !== 0 && dow !== 0)) wStart = d;
+    if (dow === 6 || d === lastDay) {
       if (wStart !== null) {
         weeks.push({ desde: wStart, hasta: d });
         wStart = null;
       }
-    }
-    if (dow === 0 && d === lastDay && wStart !== null) {
-      weeks.push({ desde: wStart, hasta: d });
     }
   }
 
