@@ -2003,7 +2003,8 @@ app.get('/api/asistencia/exportar', async (req, res) => {
           const tieneEnt = reg.hora_entrada && reg.hora_entrada !== '00:00:00';
           const tieneSal = reg.hora_salida && reg.hora_salida !== '00:00:00';
           if (reg.tipo === 'presente') {
-            if ((tieneEnt && !tieneSal) || (!tieneEnt && tieneSal)) inc++;
+            const turnoInc = reg.observaciones && reg.observaciones.includes('?');
+            if ((tieneEnt && !tieneSal) || (!tieneEnt && tieneSal) || turnoInc) inc++;
             else pr++;
           }
           else if (reg.tipo === 'vacaciones') va++;
@@ -2107,7 +2108,8 @@ app.get('/api/asistencia/exportar', async (req, res) => {
             const tieneEnt = reg.hora_entrada && reg.hora_entrada !== '00:00:00';
             const tieneSal = reg.hora_salida && reg.hora_salida !== '00:00:00';
             if (reg.tipo === 'presente') {
-              const incomp = (tieneEnt && !tieneSal) || (!tieneEnt && tieneSal);
+              const turnoInc = reg.observaciones && reg.observaciones.includes('?');
+              const incomp = (tieneEnt && !tieneSal) || (!tieneEnt && tieneSal) || turnoInc;
               estado = incomp ? 'Fichaje Incompleto' : 'Presente';
               rowColor = incomp ? colors.orange : colors.green;
             } else if (reg.tipo === 'vacaciones') { estado = 'Vacaciones'; rowColor = colors.vacBlue; }
