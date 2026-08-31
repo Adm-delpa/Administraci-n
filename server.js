@@ -2003,8 +2003,8 @@ app.get('/api/asistencia/exportar', async (req, res) => {
           const tieneEnt = reg.hora_entrada && reg.hora_entrada !== '00:00:00';
           const tieneSal = reg.hora_salida && reg.hora_salida !== '00:00:00';
           if (reg.tipo === 'presente') {
-            pr++;
             if ((tieneEnt && !tieneSal) || (!tieneEnt && tieneSal)) inc++;
+            else pr++;
           }
           else if (reg.tipo === 'vacaciones') va++;
           else if (reg.tipo === 'falta_justificada') fj++;

@@ -763,12 +763,12 @@ function renderGrilla() {
   thead.innerHTML = `<tr>
     <th class="col-nombre">Empleado</th>
     ${dias.map(d => `<th style="min-width:36px;${d.dow===0||d.dow===6?'color:#BFBDB6':''}">${dowNames[d.dow]}<br>${d.num}</th>`).join('')}
-    <th class="col-resumen">P</th><th class="col-resumen">V</th><th class="col-resumen">FJ</th><th class="col-resumen">FI</th><th class="col-resumen">Hs</th>
+    <th class="col-resumen">P</th><th class="col-resumen">V</th><th class="col-resumen">FJ</th><th class="col-resumen">FI</th><th class="col-resumen" title="Fichaje Incompleto">⚠</th><th class="col-resumen">Hs</th>
   </tr>`;
 
   const tbody = document.getElementById('grilla-body');
   if (!emps.length) {
-    tbody.innerHTML = '<tr><td colspan="' + (dias.length + 6) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados para mostrar</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="' + (dias.length + 7) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados para mostrar</td></tr>';
     actualizarStats(0, 0, 0, 0, 0, 0, 0, diasHabiles);
     return;
   }
@@ -793,7 +793,7 @@ function renderGrilla() {
         const tieneEnt = reg.hora_entrada && reg.hora_entrada !== '00:00:00';
         const tieneSal = reg.hora_salida && reg.hora_salida !== '00:00:00';
         const incompleto = reg.tipo === 'presente' && ((tieneEnt && !tieneSal) || (!tieneEnt && tieneSal));
-        if (incompleto) { cls = 'cel-incompleto'; txt = '⚠'; inc++; p++; }
+        if (incompleto) { cls = 'cel-incompleto'; txt = '⚠'; inc++; }
         else if (reg.tipo === 'presente') { cls = 'cel-presente'; txt = '✓'; p++; }
         else if (reg.tipo === 'vacaciones') { cls = 'cel-vacaciones'; txt = 'V'; v++; }
         else if (reg.tipo === 'falta_justificada') { cls = 'cel-justificada'; txt = 'FJ'; fj++; }
@@ -823,12 +823,13 @@ function renderGrilla() {
       <td class="col-resumen" style="color:#1E6FD9">${v}</td>
       <td class="col-resumen" style="color:#B45309">${fj}</td>
       <td class="col-resumen" style="color:#dc2626">${fi}</td>
+      <td class="col-resumen" style="color:#E65100">${inc||''}</td>
       <td class="col-resumen">${hs.toFixed(1)}</td>
     </tr>`);
   });
 
   if (!filas.length) {
-    tbody.innerHTML = '<tr><td colspan="' + (dias.length + 6) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados con el filtro seleccionado</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="' + (dias.length + 7) + '" style="padding:2rem;color:#9896A0;text-align:center">No hay empleados con el filtro seleccionado</td></tr>';
   } else {
     tbody.innerHTML = filas.join('');
   }
