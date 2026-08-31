@@ -208,6 +208,41 @@ label{font-size:12px;font-weight:600;color:#6B6876}
   </div>
 </div>
 
+<!-- MODAL EXPORTAR EXCEL -->
+<div class="modal-bg" id="modal-exportar">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3>Exportar Reporte Excel</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-exportar')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#6B6876;line-height:1.5">Genera un archivo Excel con una hoja <b>Resumen</b> y una hoja por cada empleado con el detalle día por día.</p>
+      <div class="form-group">
+        <label>Sector</label>
+        <select id="exp-sector" style="padding:8px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;color:#18181A;background:#fff"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Desde</label>
+          <input type="date" id="exp-desde">
+        </div>
+        <div class="form-group">
+          <label>Hasta</label>
+          <input type="date" id="exp-hasta">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="exp-quick-btns"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal('modal-exportar')">Cancelar</button>
+      <button class="btn-guardar" onclick="ejecutarExport()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Excel
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL SYNC FICHA YA -->
 <div class="modal-bg" id="modal-sync">
   <div class="modal" style="max-width:450px">
@@ -453,9 +488,15 @@ if (esAdminAsist) {
       Sincronizar Ficha Ya
     </button>
     <button class="btn-secondary" onclick="abrirImport()" style="font-size:12px">Importar Excel</button>
+    <button class="btn-secondary" onclick="abrirExportar()" style="font-size:12px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;vertical-align:-2px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Reporte
+    </button>
   `;
 } else {
-  accionesWrap.innerHTML = '<div style="font-size:12px;color:#9896A0;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:6px 14px">Sincronización automática: cada hora de 8 a 18 hs + 22 hs</div>';
+  accionesWrap.innerHTML = `<div style="font-size:12px;color:#9896A0;background:#fff;border:1px solid #DDDBD6;border-radius:8px;padding:6px 14px">Sincronización automática: cada hora de 8 a 18 hs + 22 hs</div>
+    <button class="btn-secondary" onclick="abrirExportar()" style="font-size:12px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;vertical-align:-2px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Reporte
+    </button>`;
 }
 
 const $mes = document.getElementById('fil-mes');
@@ -862,6 +903,81 @@ function abrirDetalle(empId, fecha) {
     adjWrap.dataset.url = '';
   }
   document.getElementById('modal-detalle').classList.add('open');
+}
+
+// ── EXPORTAR REPORTE ──
+function abrirExportar() {
+  const $sec = document.getElementById('exp-sector');
+  let areas = [...new Set(empleados.map(e => e.area).filter(Boolean))].sort();
+  if (sectoresPermitidos) areas = areas.filter(a => sectoresPermitidos.includes(a));
+  $sec.innerHTML = areas.map(a => `<option value="${a}"${a === sectorActivo ? ' selected' : ''}>${a}</option>`).join('');
+  if (sectorActivo && areas.includes(sectorActivo)) $sec.value = sectorActivo;
+
+  const mes = $mes.value;
+  const [y, m] = mes.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  document.getElementById('exp-desde').value = `${y}-${String(m).padStart(2,'0')}-01`;
+  document.getElementById('exp-hasta').value = `${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  generarQuickBtns();
+  document.getElementById('modal-exportar').classList.add('open');
+}
+
+function generarQuickBtns() {
+  const mes = $mes.value;
+  const [y, m] = mes.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+  const weeks = [];
+  let wStart = null;
+  for (let d = 1; d <= lastDay; d++) {
+    const dt = new Date(y, m - 1, d);
+    const dow = dt.getDay();
+    if (dow === 1 || (d === 1 && dow !== 0)) wStart = d;
+    if (dow === 5 || d === lastDay) {
+      if (wStart !== null) {
+        weeks.push({ desde: wStart, hasta: d });
+        wStart = null;
+      }
+    }
+    if (dow === 0 && d === lastDay && wStart !== null) {
+      weeks.push({ desde: wStart, hasta: d });
+    }
+  }
+
+  const $wrap = document.getElementById('exp-quick-btns');
+  let html = '';
+  weeks.forEach((w, i) => {
+    const dStr = `${y}-${String(m).padStart(2,'0')}-${String(w.desde).padStart(2,'0')}`;
+    const hStr = `${y}-${String(m).padStart(2,'0')}-${String(w.hasta).padStart(2,'0')}`;
+    html += `<button type="button" class="btn-secondary" style="font-size:11px;padding:5px 10px" onclick="setExpRango('${dStr}','${hStr}')">Sem ${i+1} (${w.desde}-${w.hasta} ${meses[m-1]})</button>`;
+  });
+  html += `<button type="button" class="btn-secondary" style="font-size:11px;padding:5px 10px;font-weight:700" onclick="setExpRango('${y}-${String(m).padStart(2,'0')}-01','${y}-${String(m).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}')">Mes completo</button>`;
+  $wrap.innerHTML = html;
+}
+
+function setExpRango(desde, hasta) {
+  document.getElementById('exp-desde').value = desde;
+  document.getElementById('exp-hasta').value = hasta;
+}
+
+function ejecutarExport() {
+  const sector = document.getElementById('exp-sector').value;
+  const desde = document.getElementById('exp-desde').value;
+  const hasta = document.getElementById('exp-hasta').value;
+  if (!sector) return toast('Seleccioná un sector', false);
+  if (!desde || !hasta) return toast('Seleccioná el rango de fechas', false);
+  if (desde > hasta) return toast('La fecha "desde" debe ser anterior a "hasta"', false);
+
+  const url = `/api/asistencia/exportar?sector=${encodeURIComponent(sector)}&desde=${desde}&hasta=${hasta}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Descargando reporte...');
+  cerrarModal('modal-exportar');
 }
 
 // ── IMPORT FICHA YA ──

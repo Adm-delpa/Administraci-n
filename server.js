@@ -1912,6 +1912,126 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/asistencia/exportar', async (req, res) => {
+  const { sector, desde, hasta } = req.query;
+  if (!sector || !desde || !hasta) return res.status(400).json({ error: 'Faltan parámetros: sector, desde, hasta' });
+  try {
+    const emps = await pool.query(
+      'SELECT * FROM asistencia_empleados WHERE activo=true AND area=$1 ORDER BY nombre', [sector]
+    );
+    if (!emps.rows.length) return res.status(404).json({ error: 'No hay empleados en ese sector' });
+
+    const regs = await pool.query(
+      `SELECT empleado_id, fecha::text, tipo, hora_entrada::text, hora_salida::text, hs_trabajadas, observaciones
+       FROM asistencia_registros WHERE fecha >= $1 AND fecha <= $2
+       ORDER BY fecha`, [desde, hasta]
+    );
+    const regMap = {};
+    regs.rows.forEach(r => { regMap[r.empleado_id + '_' + r.fecha] = r; });
+
+    const nls = await pool.query('SELECT fecha::text, motivo FROM asistencia_no_laborables');
+    const nlSet = new Set(nls.rows.map(d => d.fecha));
+
+    const d0 = new Date(desde + 'T12:00:00');
+    const d1 = new Date(hasta + 'T12:00:00');
+    const dias = [];
+    for (let d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) {
+      const f = d.toISOString().slice(0, 10);
+      dias.push({ fecha: f, dow: d.getDay() });
+    }
+    const diasHabiles = dias.filter(d => d.dow !== 0 && !nlSet.has(d.fecha)).length;
+    const hoyStr = new Date().toISOString().slice(0, 10);
+    const dowNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+    const wb = XLSX.utils.book_new();
+
+    const resumenData = [['Empleado','Legajo','Sector','Días hábiles','Presentes','Vacaciones','F. Justif.','F. Injustif.','Hs Totales','% Asistencia']];
+    const empStats = [];
+
+    emps.rows.forEach(emp => {
+      let pr=0, va=0, fj=0, fi=0, hs=0;
+      dias.forEach(d => {
+        if (d.dow === 0 || nlSet.has(d.fecha)) return;
+        const reg = regMap[emp.id + '_' + d.fecha];
+        if (reg) {
+          if (reg.tipo === 'presente') pr++;
+          else if (reg.tipo === 'vacaciones') va++;
+          else if (reg.tipo === 'falta_justificada') fj++;
+          else if (reg.tipo === 'falta_injustificada') fi++;
+          if (reg.hs_trabajadas) hs += parseFloat(reg.hs_trabajadas);
+        } else if (d.fecha < hoyStr) {
+          fi++;
+        }
+      });
+      const pct = diasHabiles > 0 ? Math.round((pr + va + fj) / diasHabiles * 100) : 0;
+      resumenData.push([emp.nombre, emp.legajo || '', sector, diasHabiles, pr, va, fj, fi, parseFloat(hs.toFixed(1)), pct + '%']);
+      empStats.push({ emp, pr, va, fj, fi, hs: parseFloat(hs.toFixed(1)), pct });
+    });
+
+    const totals = empStats.reduce((a, s) => ({ pr: a.pr+s.pr, va: a.va+s.va, fj: a.fj+s.fj, fi: a.fi+s.fi, hs: a.hs+s.hs }), { pr:0, va:0, fj:0, fi:0, hs:0 });
+    const totPct = (diasHabiles * emps.rows.length) > 0 ? Math.round((totals.pr + totals.va + totals.fj) / (diasHabiles * emps.rows.length) * 100) : 0;
+    resumenData.push(['TOTALES','','',diasHabiles * emps.rows.length, totals.pr, totals.va, totals.fj, totals.fi, parseFloat(totals.hs.toFixed(1)), totPct + '%']);
+
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+    wsResumen['!cols'] = [{wch:25},{wch:10},{wch:18},{wch:12},{wch:10},{wch:12},{wch:10},{wch:12},{wch:10},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+
+    emps.rows.forEach((emp, idx) => {
+      const s = empStats[idx];
+      const header = [
+        [emp.nombre],
+        [`Legajo: ${emp.legajo || '—'}  ·  Sector: ${sector}  ·  Período: ${desde.split('-').reverse().join('/')} al ${hasta.split('-').reverse().join('/')}`],
+        [],
+        ['Presentes', 'Vacaciones', 'F. Justif.', 'F. Injustif.', 'Hs Totales', '% Asistencia'],
+        [s.pr, s.va, s.fj, s.fi, s.hs, s.pct + '%'],
+        [],
+        ['Fecha','Día','Estado','Entrada','Salida','Hs','Observaciones']
+      ];
+
+      dias.forEach(d => {
+        const fFmt = d.fecha.split('-').reverse().join('/');
+        if (d.dow === 0) {
+          header.push([fFmt, dowNames[d.dow], 'Fin de semana', '—', '—', '—', '']);
+          return;
+        }
+        if (nlSet.has(d.fecha)) {
+          header.push([fFmt, dowNames[d.dow], 'Feriado', '—', '—', '—', '']);
+          return;
+        }
+        const reg = regMap[emp.id + '_' + d.fecha];
+        if (reg) {
+          const estado = reg.tipo === 'presente' ? 'Presente' : reg.tipo === 'vacaciones' ? 'Vacaciones' : reg.tipo === 'falta_justificada' ? 'Falta Justificada' : reg.tipo === 'falta_injustificada' ? 'Falta Injustificada' : reg.tipo;
+          const ent = reg.hora_entrada && reg.hora_entrada !== '00:00:00' ? reg.hora_entrada.slice(0,5) : '—';
+          const sal = reg.hora_salida && reg.hora_salida !== '00:00:00' ? reg.hora_salida.slice(0,5) : '—';
+          const h = reg.hs_trabajadas ? parseFloat(reg.hs_trabajadas) : '—';
+          header.push([fFmt, dowNames[d.dow], estado, ent, sal, h, reg.observaciones || '']);
+        } else if (d.fecha < hoyStr) {
+          header.push([fFmt, dowNames[d.dow], 'Falta Injustificada', '—', '—', '—', 'Sin fichaje']);
+        } else {
+          header.push([fFmt, dowNames[d.dow], '—', '—', '—', '—', '']);
+        }
+      });
+
+      const sheetName = (emp.nombre || 'Emp').replace(/[\\\/\?\*\[\]:]/g, '').slice(0, 31);
+      const wsEmp = XLSX.utils.aoa_to_sheet(header);
+      wsEmp['!cols'] = [{wch:12},{wch:12},{wch:20},{wch:8},{wch:8},{wch:6},{wch:35}];
+      XLSX.utils.book_append_sheet(wb, wsEmp, sheetName);
+    });
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const dFmt = desde.replace(/-/g, '').slice(6) + desde.replace(/-/g, '').slice(4,6);
+    const hFmt = hasta.replace(/-/g, '').slice(6) + hasta.replace(/-/g, '').slice(4,6);
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const dD = new Date(desde + 'T12:00:00');
+    const hD = new Date(hasta + 'T12:00:00');
+    const fname = `Asistencia_${sector}_${String(dD.getDate()).padStart(2,'0')}${meses[dD.getMonth()]}-${String(hD.getDate()).padStart(2,'0')}${meses[hD.getMonth()]}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+    res.send(buf);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/asistencia/adjunto', async (req, res) => {
   const { path } = req.query;
   if (!path || !path.startsWith('/media/legajos/adjunto/')) return res.status(400).json({ error: 'Ruta inválida' });
