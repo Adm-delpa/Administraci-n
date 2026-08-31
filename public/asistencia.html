@@ -217,9 +217,15 @@ label{font-size:12px;font-weight:600;color:#6B6876}
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:#6B6876;line-height:1.5">Genera un archivo Excel con una hoja <b>Resumen</b> y una hoja por cada empleado con el detalle día por día.</p>
-      <div class="form-group">
-        <label>Sector</label>
-        <select id="exp-sector" style="padding:8px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;color:#18181A;background:#fff"></select>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Sucursal</label>
+          <select id="exp-sucursal" style="padding:8px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;color:#18181A;background:#fff"></select>
+        </div>
+        <div class="form-group">
+          <label>Sector</label>
+          <select id="exp-sector" style="padding:8px 10px;border:1px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;color:#18181A;background:#fff"></select>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -907,11 +913,13 @@ function abrirDetalle(empId, fecha) {
 
 // ── EXPORTAR REPORTE ──
 function abrirExportar() {
+  const $expSuc = document.getElementById('exp-sucursal');
   const $sec = document.getElementById('exp-sector');
+  const sucursales = [...new Set(empleados.map(e => e.sucursal).filter(Boolean))].sort();
   let areas = [...new Set(empleados.map(e => e.area).filter(Boolean))].sort();
   if (sectoresPermitidos) areas = areas.filter(a => sectoresPermitidos.includes(a));
-  $sec.innerHTML = areas.map(a => `<option value="${a}"${a === sectorActivo ? ' selected' : ''}>${a}</option>`).join('');
-  if (sectorActivo && areas.includes(sectorActivo)) $sec.value = sectorActivo;
+  $expSuc.innerHTML = '<option value="">Todas</option>' + sucursales.map(s => `<option value="${s}"${s === $suc.value ? ' selected' : ''}>${s}</option>`).join('');
+  $sec.innerHTML = '<option value="">Todos</option>' + areas.map(a => `<option value="${a}"${a === sectorActivo ? ' selected' : ''}>${a}</option>`).join('');
 
   const mes = $mes.value;
   const [y, m] = mes.split('-').map(Number);
@@ -963,13 +971,16 @@ function setExpRango(desde, hasta) {
 
 function ejecutarExport() {
   const sector = document.getElementById('exp-sector').value;
+  const sucursal = document.getElementById('exp-sucursal').value;
   const desde = document.getElementById('exp-desde').value;
   const hasta = document.getElementById('exp-hasta').value;
-  if (!sector) return toast('Seleccioná un sector', false);
+  if (!sector && !sucursal) return toast('Seleccioná al menos un sector o sucursal', false);
   if (!desde || !hasta) return toast('Seleccioná el rango de fechas', false);
   if (desde > hasta) return toast('La fecha "desde" debe ser anterior a "hasta"', false);
 
-  const url = `/api/asistencia/exportar?sector=${encodeURIComponent(sector)}&desde=${desde}&hasta=${hasta}`;
+  let url = `/api/asistencia/exportar?desde=${desde}&hasta=${hasta}`;
+  if (sector) url += `&sector=${encodeURIComponent(sector)}`;
+  if (sucursal) url += `&sucursal=${encodeURIComponent(sucursal)}`;
   const a = document.createElement('a');
   a.href = url;
   a.download = '';

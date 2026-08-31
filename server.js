@@ -8,6 +8,7 @@ const zlib = require('zlib');
 const multer = require('multer');
 const XLSX = require('xlsx');
 const cron = require('node-cron');
+const ExcelJS = require('exceljs');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10*1024*1024 } });
 
 const app = express();
@@ -1913,18 +1914,21 @@ app.post('/api/asistencia/sync-fichaya', async (req, res) => {
 });
 
 app.get('/api/asistencia/exportar', async (req, res) => {
-  const { sector, desde, hasta } = req.query;
-  if (!sector || !desde || !hasta) return res.status(400).json({ error: 'Faltan parámetros: sector, desde, hasta' });
+  const { sector, sucursal, desde, hasta } = req.query;
+  if (!desde || !hasta) return res.status(400).json({ error: 'Faltan parámetros: desde, hasta' });
+  if (!sector && !sucursal) return res.status(400).json({ error: 'Falta sector o sucursal' });
   try {
-    const emps = await pool.query(
-      'SELECT * FROM asistencia_empleados WHERE activo=true AND area=$1 ORDER BY nombre', [sector]
-    );
-    if (!emps.rows.length) return res.status(404).json({ error: 'No hay empleados en ese sector' });
+    let empQuery = 'SELECT * FROM asistencia_empleados WHERE activo=true';
+    const params = [];
+    if (sector) { params.push(sector); empQuery += ` AND area=$${params.length}`; }
+    if (sucursal) { params.push(sucursal); empQuery += ` AND sucursal=$${params.length}`; }
+    empQuery += ' ORDER BY nombre';
+    const emps = await pool.query(empQuery, params);
+    if (!emps.rows.length) return res.status(404).json({ error: 'No hay empleados con ese filtro' });
 
     const regs = await pool.query(
       `SELECT empleado_id, fecha::text, tipo, hora_entrada::text, hora_salida::text, hs_trabajadas, observaciones
-       FROM asistencia_registros WHERE fecha >= $1 AND fecha <= $2
-       ORDER BY fecha`, [desde, hasta]
+       FROM asistencia_registros WHERE fecha >= $1 AND fecha <= $2 ORDER BY fecha`, [desde, hasta]
     );
     const regMap = {};
     regs.rows.forEach(r => { regMap[r.empleado_id + '_' + r.fecha] = r; });
@@ -1936,99 +1940,214 @@ app.get('/api/asistencia/exportar', async (req, res) => {
     const d1 = new Date(hasta + 'T12:00:00');
     const dias = [];
     for (let d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) {
-      const f = d.toISOString().slice(0, 10);
-      dias.push({ fecha: f, dow: d.getDay() });
+      dias.push({ fecha: d.toISOString().slice(0, 10), dow: d.getDay() });
     }
     const diasHabiles = dias.filter(d => d.dow !== 0 && !nlSet.has(d.fecha)).length;
     const hoyStr = new Date().toISOString().slice(0, 10);
     const dowNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const filterLabel = [sucursal, sector].filter(Boolean).join(' — ');
 
-    const wb = XLSX.utils.book_new();
+    const colors = {
+      blue: { bg: '0D4FA0', fg: 'FFFFFF' },
+      headerBg: 'E8ECF1',
+      green: { bg: 'D4F2E8', fg: '075C41' },
+      yellow: { bg: 'FEF3C7', fg: 'B45309' },
+      red: { bg: 'FEE2E2', fg: 'DC2626' },
+      vacBlue: { bg: 'DCE9FA', fg: '1E6FD9' },
+      orange: { bg: 'FFF3E0', fg: 'E65100' },
+      weekend: { bg: 'F2F1EE', fg: '9896A0' },
+      feriado: { bg: 'EDE5FA', fg: '6B3FC8' },
+      border: 'DDDBD6',
+      totBg: 'F5F5F3'
+    };
+    const thinBorder = { style: 'thin', color: { argb: colors.border } };
+    const allBorders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
 
-    const resumenData = [['Empleado','Legajo','Sector','Días hábiles','Presentes','Vacaciones','F. Justif.','F. Injustif.','Hs Totales','% Asistencia']];
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Distribuidora del Palacio S.A.';
+
+    // ── HOJA RESUMEN ──
+    const wsR = wb.addWorksheet('Resumen');
+    wsR.columns = [
+      { width: 28 }, { width: 10 }, { width: 16 }, { width: 16 },
+      { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 14 },
+      { width: 12 }, { width: 14 }
+    ];
+
+    const titleRow = wsR.addRow([`Reporte de Asistencia — ${filterLabel}`]);
+    titleRow.font = { bold: true, size: 14, color: { argb: colors.blue.bg } };
+    wsR.mergeCells('A1:K1');
+    const periodoRow = wsR.addRow([`Período: ${desde.split('-').reverse().join('/')} al ${hasta.split('-').reverse().join('/')}  ·  Días hábiles: ${diasHabiles}`]);
+    periodoRow.font = { size: 10, color: { argb: '6B6876' } };
+    wsR.mergeCells('A2:K2');
+    wsR.addRow([]);
+
+    const headerCols = ['Empleado','Legajo','Sector','Sucursal','Presentes','Vacaciones','F. Justif.','F. Injustif.','Fichaje Incompl.','Hs Totales','% Asistencia'];
+    const hRow = wsR.addRow(headerCols);
+    hRow.eachCell(c => {
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.blue.bg } };
+      c.font = { bold: true, size: 10, color: { argb: 'FFFFFF' } };
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+      c.border = allBorders;
+    });
+    hRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+    hRow.height = 22;
+
     const empStats = [];
-
     emps.rows.forEach(emp => {
-      let pr=0, va=0, fj=0, fi=0, hs=0;
+      let pr=0, va=0, fj=0, fi=0, hs=0, inc=0;
       dias.forEach(d => {
         if (d.dow === 0 || nlSet.has(d.fecha)) return;
         const reg = regMap[emp.id + '_' + d.fecha];
         if (reg) {
-          if (reg.tipo === 'presente') pr++;
+          const tieneEnt = reg.hora_entrada && reg.hora_entrada !== '00:00:00';
+          const tieneSal = reg.hora_salida && reg.hora_salida !== '00:00:00';
+          if (reg.tipo === 'presente') {
+            pr++;
+            if ((tieneEnt && !tieneSal) || (!tieneEnt && tieneSal)) inc++;
+          }
           else if (reg.tipo === 'vacaciones') va++;
           else if (reg.tipo === 'falta_justificada') fj++;
           else if (reg.tipo === 'falta_injustificada') fi++;
           if (reg.hs_trabajadas) hs += parseFloat(reg.hs_trabajadas);
-        } else if (d.fecha < hoyStr) {
-          fi++;
-        }
+        } else if (d.fecha < hoyStr) { fi++; }
       });
       const pct = diasHabiles > 0 ? Math.round((pr + va + fj) / diasHabiles * 100) : 0;
-      resumenData.push([emp.nombre, emp.legajo || '', sector, diasHabiles, pr, va, fj, fi, parseFloat(hs.toFixed(1)), pct + '%']);
-      empStats.push({ emp, pr, va, fj, fi, hs: parseFloat(hs.toFixed(1)), pct });
+      empStats.push({ emp, pr, va, fj, fi, inc, hs: parseFloat(hs.toFixed(1)), pct });
+
+      const row = wsR.addRow([emp.nombre, emp.legajo || '', emp.area || '', emp.sucursal || '', pr, va, fj, fi, inc, parseFloat(hs.toFixed(1)), pct / 100]);
+      row.eachCell(c => { c.border = allBorders; c.alignment = { vertical: 'middle' }; });
+      row.getCell(1).font = { bold: true, size: 10 };
+      row.getCell(5).font = { color: { argb: colors.green.fg } };
+      row.getCell(5).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.green.bg } };
+      row.getCell(6).font = { color: { argb: colors.vacBlue.fg } };
+      row.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.vacBlue.bg } };
+      row.getCell(7).font = { color: { argb: colors.yellow.fg } };
+      row.getCell(7).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.yellow.bg } };
+      row.getCell(8).font = { color: { argb: colors.red.fg } };
+      row.getCell(8).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.red.bg } };
+      row.getCell(9).font = { color: { argb: colors.orange.fg } };
+      if (inc > 0) row.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.orange.bg } };
+      for (let i = 5; i <= 11; i++) row.getCell(i).alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(11).numFmt = '0%';
     });
 
-    const totals = empStats.reduce((a, s) => ({ pr: a.pr+s.pr, va: a.va+s.va, fj: a.fj+s.fj, fi: a.fi+s.fi, hs: a.hs+s.hs }), { pr:0, va:0, fj:0, fi:0, hs:0 });
-    const totPct = (diasHabiles * emps.rows.length) > 0 ? Math.round((totals.pr + totals.va + totals.fj) / (diasHabiles * emps.rows.length) * 100) : 0;
-    resumenData.push(['TOTALES','','',diasHabiles * emps.rows.length, totals.pr, totals.va, totals.fj, totals.fi, parseFloat(totals.hs.toFixed(1)), totPct + '%']);
+    const totals = empStats.reduce((a, s) => ({ pr:a.pr+s.pr, va:a.va+s.va, fj:a.fj+s.fj, fi:a.fi+s.fi, inc:a.inc+s.inc, hs:a.hs+s.hs }), { pr:0, va:0, fj:0, fi:0, inc:0, hs:0 });
+    const totPct = (diasHabiles * emps.rows.length) > 0 ? (totals.pr + totals.va + totals.fj) / (diasHabiles * emps.rows.length) : 0;
+    const totRow = wsR.addRow(['TOTALES', '', '', '', totals.pr, totals.va, totals.fj, totals.fi, totals.inc, parseFloat(totals.hs.toFixed(1)), totPct]);
+    totRow.eachCell(c => {
+      c.border = allBorders;
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.totBg } };
+      c.font = { bold: true, size: 10 };
+      c.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    totRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+    totRow.getCell(11).numFmt = '0%';
+    totRow.height = 22;
 
-    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
-    wsResumen['!cols'] = [{wch:25},{wch:10},{wch:18},{wch:12},{wch:10},{wch:12},{wch:10},{wch:12},{wch:10},{wch:12}];
-    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+    wsR.autoFilter = { from: 'A4', to: `K${4 + emps.rows.length}` };
 
+    // ── HOJAS POR EMPLEADO ──
     emps.rows.forEach((emp, idx) => {
       const s = empStats[idx];
-      const header = [
-        [emp.nombre],
-        [`Legajo: ${emp.legajo || '—'}  ·  Sector: ${sector}  ·  Período: ${desde.split('-').reverse().join('/')} al ${hasta.split('-').reverse().join('/')}`],
-        [],
-        ['Presentes', 'Vacaciones', 'F. Justif.', 'F. Injustif.', 'Hs Totales', '% Asistencia'],
-        [s.pr, s.va, s.fj, s.fi, s.hs, s.pct + '%'],
-        [],
-        ['Fecha','Día','Estado','Entrada','Salida','Hs','Observaciones']
+      const sheetName = (emp.nombre || 'Emp').replace(/[\\\/\?\*\[\]:]/g, '').slice(0, 31);
+      const ws = wb.addWorksheet(sheetName);
+      ws.columns = [
+        { width: 14 }, { width: 14 }, { width: 20 }, { width: 10 }, { width: 10 }, { width: 8 }, { width: 38 }
       ];
+
+      const r1 = ws.addRow([emp.nombre]);
+      r1.font = { bold: true, size: 14, color: { argb: colors.blue.bg } };
+      ws.mergeCells('A1:G1');
+      const r2 = ws.addRow([`Legajo: ${emp.legajo || '—'}  ·  Sector: ${emp.area || '—'}  ·  Sucursal: ${emp.sucursal || '—'}  ·  Período: ${desde.split('-').reverse().join('/')} al ${hasta.split('-').reverse().join('/')}`]);
+      r2.font = { size: 10, color: { argb: '6B6876' } };
+      ws.mergeCells('A2:G2');
+      ws.addRow([]);
+
+      const statLabels = ws.addRow(['Presentes','Vacaciones','F. Justif.','F. Injustif.','Fichaje Incompl.','Hs Totales','% Asistencia']);
+      statLabels.eachCell(c => {
+        c.font = { bold: true, size: 9, color: { argb: '6B6876' } };
+        c.alignment = { horizontal: 'center' };
+      });
+      const statVals = ws.addRow([s.pr, s.va, s.fj, s.fi, s.inc, s.hs, s.pct / 100]);
+      statVals.getCell(1).font = { bold: true, size: 16, color: { argb: colors.green.fg } };
+      statVals.getCell(2).font = { bold: true, size: 16, color: { argb: colors.vacBlue.fg } };
+      statVals.getCell(3).font = { bold: true, size: 16, color: { argb: colors.yellow.fg } };
+      statVals.getCell(4).font = { bold: true, size: 16, color: { argb: colors.red.fg } };
+      statVals.getCell(5).font = { bold: true, size: 16, color: { argb: colors.orange.fg } };
+      statVals.getCell(6).font = { bold: true, size: 16 };
+      statVals.getCell(7).font = { bold: true, size: 16, color: { argb: colors.green.fg } };
+      statVals.getCell(7).numFmt = '0%';
+      statVals.eachCell(c => { c.alignment = { horizontal: 'center' }; });
+      statVals.height = 24;
+
+      ws.addRow([]);
+
+      const detHead = ws.addRow(['Fecha','Día','Estado','Entrada','Salida','Hs','Observaciones']);
+      detHead.eachCell(c => {
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.blue.bg } };
+        c.font = { bold: true, size: 10, color: { argb: 'FFFFFF' } };
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+        c.border = allBorders;
+      });
+      detHead.getCell(7).alignment = { horizontal: 'left', vertical: 'middle' };
+      detHead.height = 20;
 
       dias.forEach(d => {
         const fFmt = d.fecha.split('-').reverse().join('/');
+        let estado, ent='—', sal='—', h='—', obs='', rowColor=null;
+
         if (d.dow === 0) {
-          header.push([fFmt, dowNames[d.dow], 'Fin de semana', '—', '—', '—', '']);
-          return;
-        }
-        if (nlSet.has(d.fecha)) {
-          header.push([fFmt, dowNames[d.dow], 'Feriado', '—', '—', '—', '']);
-          return;
-        }
-        const reg = regMap[emp.id + '_' + d.fecha];
-        if (reg) {
-          const estado = reg.tipo === 'presente' ? 'Presente' : reg.tipo === 'vacaciones' ? 'Vacaciones' : reg.tipo === 'falta_justificada' ? 'Falta Justificada' : reg.tipo === 'falta_injustificada' ? 'Falta Injustificada' : reg.tipo;
-          const ent = reg.hora_entrada && reg.hora_entrada !== '00:00:00' ? reg.hora_entrada.slice(0,5) : '—';
-          const sal = reg.hora_salida && reg.hora_salida !== '00:00:00' ? reg.hora_salida.slice(0,5) : '—';
-          const h = reg.hs_trabajadas ? parseFloat(reg.hs_trabajadas) : '—';
-          header.push([fFmt, dowNames[d.dow], estado, ent, sal, h, reg.observaciones || '']);
-        } else if (d.fecha < hoyStr) {
-          header.push([fFmt, dowNames[d.dow], 'Falta Injustificada', '—', '—', '—', 'Sin fichaje']);
+          estado = 'Fin de semana'; rowColor = colors.weekend;
+        } else if (nlSet.has(d.fecha)) {
+          estado = 'Feriado'; rowColor = colors.feriado;
         } else {
-          header.push([fFmt, dowNames[d.dow], '—', '—', '—', '—', '']);
+          const reg = regMap[emp.id + '_' + d.fecha];
+          if (reg) {
+            const tieneEnt = reg.hora_entrada && reg.hora_entrada !== '00:00:00';
+            const tieneSal = reg.hora_salida && reg.hora_salida !== '00:00:00';
+            if (reg.tipo === 'presente') {
+              const incomp = (tieneEnt && !tieneSal) || (!tieneEnt && tieneSal);
+              estado = incomp ? 'Fichaje Incompleto' : 'Presente';
+              rowColor = incomp ? colors.orange : colors.green;
+            } else if (reg.tipo === 'vacaciones') { estado = 'Vacaciones'; rowColor = colors.vacBlue; }
+            else if (reg.tipo === 'falta_justificada') { estado = 'Falta Justificada'; rowColor = colors.yellow; }
+            else if (reg.tipo === 'falta_injustificada') { estado = 'Falta Injustificada'; rowColor = colors.red; }
+            else { estado = reg.tipo; }
+            ent = tieneEnt ? reg.hora_entrada.slice(0,5) : '—';
+            sal = tieneSal ? reg.hora_salida.slice(0,5) : '—';
+            h = reg.hs_trabajadas ? parseFloat(reg.hs_trabajadas) : '—';
+            obs = reg.observaciones || '';
+          } else if (d.fecha < hoyStr) {
+            estado = 'Falta Injustificada'; rowColor = colors.red; obs = 'Sin fichaje';
+          } else {
+            estado = '—';
+          }
+        }
+
+        const row = ws.addRow([fFmt, dowNames[d.dow], estado, ent, sal, h, obs]);
+        row.eachCell(c => {
+          c.border = allBorders;
+          c.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+        row.getCell(7).alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+
+        if (rowColor) {
+          row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowColor.bg } };
+          row.getCell(3).font = { bold: true, color: { argb: rowColor.fg } };
         }
       });
-
-      const sheetName = (emp.nombre || 'Emp').replace(/[\\\/\?\*\[\]:]/g, '').slice(0, 31);
-      const wsEmp = XLSX.utils.aoa_to_sheet(header);
-      wsEmp['!cols'] = [{wch:12},{wch:12},{wch:20},{wch:8},{wch:8},{wch:6},{wch:35}];
-      XLSX.utils.book_append_sheet(wb, wsEmp, sheetName);
     });
 
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    const dFmt = desde.replace(/-/g, '').slice(6) + desde.replace(/-/g, '').slice(4,6);
-    const hFmt = hasta.replace(/-/g, '').slice(6) + hasta.replace(/-/g, '').slice(4,6);
     const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const dD = new Date(desde + 'T12:00:00');
     const hD = new Date(hasta + 'T12:00:00');
-    const fname = `Asistencia_${sector}_${String(dD.getDate()).padStart(2,'0')}${meses[dD.getMonth()]}-${String(hD.getDate()).padStart(2,'0')}${meses[hD.getMonth()]}.xlsx`;
+    const fname = `Asistencia_${filterLabel.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ ]/g,'').replace(/ /g,'_')}_${String(dD.getDate()).padStart(2,'0')}${meses[dD.getMonth()]}-${String(hD.getDate()).padStart(2,'0')}${meses[hD.getMonth()]}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
-    res.send(buf);
+    const buf = await wb.xlsx.writeBuffer();
+    res.send(Buffer.from(buf));
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
