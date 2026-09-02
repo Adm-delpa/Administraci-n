@@ -1573,22 +1573,28 @@ async function procesar(){
     var cuitBco=extraerCUIT(b.desc);
     var match=null,nivel='NC',cliInfo=null,sugerido=null;
 
-    // Prioridad 1: CUIT del banco coincide con cliente del maestro + importe exacto + fecha dentro de 2 días hábiles
+    // Prioridad 1: CUIT del banco coincide con cliente del maestro + importe exacto + fecha dentro de ventana — elige fecha más cercana
     if(cuitBco&&cuitMap[cuitBco]){
       var cli=cuitMap[cuitBco];
+      var bestIdx1=-1,bestDif1=Infinity;
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
         if(codEq(chess[i].codCli,cli.c)&&Math.abs(chess[i].haber-b.importe)<0.01){
           var n1=ventana(chess[i].fecha,b.fecha,feriadosSet);
           var fechasEsp1=nDiasHabiles(chess[i].fecha,n1,feriadosSet);
           var fechasEsp1r=nDiasHabiles(b.fecha,n1,feriadosSet);
-          if(chess[i].fecha===b.fecha||fechasEsp1.indexOf(b.fecha)>=0||fechasEsp1r.indexOf(chess[i].fecha)>=0){match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=cli;break;}
+          if(chess[i].fecha===b.fecha||fechasEsp1.indexOf(b.fecha)>=0||fechasEsp1r.indexOf(chess[i].fecha)>=0){
+            var dif1=Math.abs((new Date(chess[i].fecha+'T00:00:00')-new Date(b.fecha+'T00:00:00'))/864e5);
+            if(dif1<bestDif1){bestDif1=dif1;bestIdx1=i;}
+          }
         }
       }
+      if(bestIdx1>=0){match=chess[bestIdx1];nivel='N1';sisUsado[bestIdx1]=true;cliInfo=cli;}
     }
 
-    // Prioridad 2: importe exacto + fecha Chess dentro de 2 días hábiles del banco
+    // Prioridad 2: importe exacto + fecha Chess dentro de ventana — elige fecha más cercana
     if(!match){
+      var bestIdx2=-1,bestDif2=Infinity;
       for(var i=0;i<chess.length;i++){
         if(sisUsado[i]) continue;
         if(Math.abs(chess[i].haber-b.importe)<0.01){
@@ -1596,10 +1602,12 @@ async function procesar(){
           var fechasEsperadas=nDiasHabiles(chess[i].fecha,n2,feriadosSet);
           var fechasEsperadasR=nDiasHabiles(b.fecha,n2,feriadosSet);
           if(chess[i].fecha===b.fecha||fechasEsperadas.indexOf(b.fecha)>=0||fechasEsperadasR.indexOf(chess[i].fecha)>=0){
-            match=chess[i];nivel='N1';sisUsado[i]=true;cliInfo=lookupCli(chess[i].codCli);break;
+            var dif2=Math.abs((new Date(chess[i].fecha+'T00:00:00')-new Date(b.fecha+'T00:00:00'))/864e5);
+            if(dif2<bestDif2){bestDif2=dif2;bestIdx2=i;}
           }
         }
       }
+      if(bestIdx2>=0){match=chess[bestIdx2];nivel='N1';sisUsado[bestIdx2]=true;cliInfo=lookupCli(chess[bestIdx2].codCli);}
     }
 
     // Verificar pendientes: banco coincide por importe; si además hay Chess del cliente → CONC, si no → PEND
