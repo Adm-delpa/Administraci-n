@@ -625,9 +625,8 @@ function toggleSegunda() {
 // Busca tarifa para empresa+origen+destino
 function buscarTarifa(empresa, origen, destino, mes) {
   if (!empresa || !origen || !destino) return null;
-  // Busca primero por mes exacto, luego sin mes (tarifas viejas sin campo mes)
-  var conMes = mes ? tarifas.find(function(t){ return t.empresa===empresa && t.origen===origen && t.destino===destino && t.mes===mes; }) : null;
-  return conMes || tarifas.find(function(t){ return t.empresa===empresa && t.origen===origen && t.destino===destino; }) || null;
+  if (!mes) return null;
+  return tarifas.find(function(t){ return t.empresa===empresa && t.origen===origen && t.destino===destino && t.mes===mes; }) || null;
 }
 
 // Autocompletar valor cuando cambian chofer/origen/destino
