@@ -822,19 +822,22 @@ function confirmarExportar(){
   var datos=registros.filter(function(r){ return (r.fecha||'').slice(0,7)===mes; });
   if(!datos.length){ alert('No hay viajes en ese mes'); return; }
   var BOM='﻿';
-  var cols=['Fecha','Factura','Remito','Inicio','Transportista','Descuento factura'];
+  var cols=['Fecha','Remito','Origen','Destino','Transportista','Env.Litro','Valor viaje','Pago','Pallets'];
   var rows=[cols.join(';')];
   datos.forEach(function(r){
-    var factura=[r.factura1,r.factura2].filter(Boolean).join(' / ');
     var remito=[r.remito1,r.remito2].filter(Boolean).join(' / ');
-    var descuento=parseFloat(r.descuento)||0;
+    var empresa=CHOFER_EMPRESA[r.chofer]||r.chofer||'';
+    var pallets=EMPRESA_PALLETS[empresa]||26;
     var row=[
       r.fecha||'',
-      factura,
       remito,
       r.origen||'',
-      CHOFER_EMPRESA[r.chofer]||r.chofer||'',
-      descuento?String(descuento).replace('.',','):''
+      r.destino||'',
+      empresa,
+      r.envase==='si'?'Sí':'No',
+      r.valor?String(r.valor).replace('.',','):'',
+      '',
+      String(pallets)
     ];
     rows.push(row.join(';'));
   });
