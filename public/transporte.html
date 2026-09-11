@@ -666,6 +666,19 @@ async function cargar() {
       guardarTarifasDB();
     }
     buildChoferMap();
+    // Limpieza única: borrar valores de agosto 2026 que vinieron de tarifas de julio
+    if(!localStorage.getItem('fix-ago26')){
+      var limpios=0;
+      registros.forEach(function(r){
+        if(!r.valor||!r.fecha) return;
+        if(r.fecha.slice(0,7)!=='2026-08') return;
+        var empresa=CHOFER_EMPRESA[r.chofer]||'';
+        var t=buscarTarifa(empresa,r.origen||'',r.destino||'','2026-08');
+        if(!t){ r.valor=''; limpios++; }
+      });
+      if(limpios) guardarRegistrosDB();
+      localStorage.setItem('fix-ago26','1');
+    }
   } catch(e) { registros = []; tarifas = []; }
   renderFiltroMes(true); renderFiltroEmpresa(); calcStats(); renderTabla();
 }
