@@ -2205,6 +2205,7 @@ app.get('/cuentas-pagar', (req, res) => res.sendFile(path.join(__dirname, 'publi
 app.get('/transporte', (req, res) => res.sendFile(path.join(__dirname, 'public', 'transporte.html')));
 app.get('/presupuesto', (req, res) => res.sendFile(path.join(__dirname, 'public', 'presupuesto.html')));
 app.get('/asistencia', (req, res) => res.sendFile(path.join(__dirname, 'public', 'asistencia.html')));
+app.get('/bancos', (req, res) => res.sendFile(path.join(__dirname, 'public', 'bancos.html')));
 
 // ── AUTO-SYNC CHESS CC (cron cada hora de 7 a 19 hs Argentina) ──────────────
 async function autoSyncChessCC() {

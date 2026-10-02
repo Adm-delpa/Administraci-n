@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bancos — Del Palacio S.A.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEb;color:#18181A;min-height:100vh;font-size:13px}
+
+.topbar{background:#0D4FA0;padding:.75rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-logo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.topbar-empresa{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.topbar-titulo{font-size:15px;font-weight:700;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.user-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:12px;color:rgba(255,255,255,.8);font-weight:500}
+.user-avatar{width:22px;height:22px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.rol-badge{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:700}
+.rol-admin{background:rgba(196,130,10,.3);color:#FCD34D}
+.rol-vista{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+.logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+
+.page{max-width:1300px;margin:0 auto;padding:1.5rem 1rem}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1rem;font-weight:500}
+.breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
+.breadcrumb-sep{color:#DDDBD6}
+
+.card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.6rem}
+.toolbar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.field label{display:block;font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
+select,input[type=text],input[type=number],input[type=search]{padding:.5rem .7rem;border:1.5px solid #DDDBD6;border-radius:7px;font-family:inherit;font-size:13px;outline:none;background:#fff;color:#18181A}
+select:focus,input:focus{border-color:#1E6FD9}
+.btn{padding:.55rem 1rem;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-primary{background:#1E6FD9;color:#fff}.btn-primary:hover:not(:disabled){background:#0D4FA0}
+.btn-green{background:#0F8A5F;color:#fff}.btn-green:hover:not(:disabled){background:#075C41}
+.btn-sec{background:#F2F1EE;color:#56555A}.btn-sec:hover:not(:disabled){background:#E6E4DF}
+.btn-sm{padding:.3rem .6rem;font-size:11px;border-radius:5px}
+.btn-link{background:none;border:none;color:#1E6FD9;font-weight:600;cursor:pointer;font-family:inherit;font-size:12px}
+.btn-danger-link{background:none;border:none;color:#C0392B;cursor:pointer;font-size:14px;font-family:inherit}
+.file-btn{position:relative;overflow:hidden}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.info-line{font-size:12px;color:#56555A;margin-top:.75rem;display:flex;gap:14px;flex-wrap:wrap}
+.info-line b{color:#18181A}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.stat{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.8rem 1rem}
+.stat-l{font-size:11px;font-weight:600;color:#9896A0;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.stat-v{font-size:17px;font-weight:700}
+
+.alert{border-radius:10px;padding:.85rem 1rem;margin-bottom:1rem;font-size:12px;border:1px solid}
+.alert-red{background:#FDF0F0;border-color:#F2C4C4;color:#8A1F1F}
+.alert-ok{background:#EAF7F1;border-color:#BFE6D4;color:#075C41}
+.alert-title{font-weight:700;font-size:13px;margin-bottom:.4rem}
+
+.tabs{display:flex;gap:4px;border-bottom:1.5px solid #DDDBD6;margin-bottom:1rem;overflow-x:auto}
+.tab{padding:.6rem 1rem;font-size:13px;font-weight:600;color:#9896A0;cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;font-family:inherit;white-space:nowrap}
+.tab.active{color:#0D4FA0;border-bottom-color:#1E6FD9}
+.tab .pill{display:inline-block;margin-left:5px;font-size:10px;padding:1px 6px;border-radius:10px;background:#FAE0E0;color:#8A1F1F}
+.panel{display:none}.panel.active{display:block}
+
+.tbl-wrap{background:#fff;border:1px solid #DDDBD6;border-radius:10px;overflow:auto;margin-bottom:1rem}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#F8F7F5;padding:8px 10px;text-align:left;font-weight:700;font-size:10.5px;color:#9896A0;border-bottom:1.5px solid #DDDBD6;white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
+td{padding:7px 10px;border-bottom:1px solid #F2F1EE;vertical-align:middle}
+tr:hover td{background:#FAFAF8}
+.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.neg{color:#B42318}
+.cod{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;background:#F2F1EE;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.cod-nosubir{background:#F2F1EE;color:#9896A0}
+.cod-ver{background:#FFF4DB;color:#7A4B00}
+tr.row-total td{font-weight:700;border-top:2px solid #DDDBD6;background:#F8F7F5}
+tr.row-revisar td{background:#FDF0F0;color:#8A1F1F;font-weight:600}
+tr.row-nosubir td{color:#9896A0}
+tr.row-sub td:first-child{padding-left:22px}
+.subir{font-weight:700;color:#0D4FA0}
+.muted{color:#9896A0}
+.empty{padding:2.5rem 1rem;text-align:center;color:#9896A0;font-size:13px}
+.note{font-size:11.5px;color:#6B6876;line-height:1.6;margin-top:.25rem}
+
+.cuadre{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+.cuadre .stat-v.ok{color:#0F8A5F}.cuadre .stat-v.bad{color:#B42318}
+
+.inp-num{width:120px;text-align:right;padding:.35rem .5rem;font-size:12px}
+.dif-ok{color:#0F8A5F;font-weight:700}.dif-bad{color:#B42318;font-weight:700}
+.tag-sug{font-size:9.5px;font-weight:700;background:#FFF4DB;color:#7A4B00;padding:1px 5px;border-radius:8px;margin-left:4px}
+.flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:1rem;align-items:start}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#18181A;color:#fff;padding:.7rem 1.1rem;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .25s;z-index:200;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.toast.err{background:#B42318}
+
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .topbar{padding:.75rem 1rem}
+  .stats,.cuadre{grid-template-columns:1fr 1fr}
+  .toolbar>*{flex:1 1 100%}
+  .toolbar select{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M12 3l9 7H3z"/><path d="M5 10v11M9.5 10v11M14.5 10v11M19 10v11"/></svg>
+    </div>
+    <div>
+      <div class="topbar-empresa">Distribuidora del Palacio S.A.</div>
+      <div class="topbar-titulo">Bancos</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-nombre">—</span>
+      <span class="rol-badge" id="rol-badge">—</span>
+    </div>
+    <button class="logout-btn" onclick="window.location.href='/panel'">Volver</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="/panel">Panel</a><span class="breadcrumb-sep">›</span><span>Bancos</span>
+  </div>
+
+  <!-- CARGA -->
+  <div class="card">
+    <div class="toolbar">
+      <div class="field">
+        <label>Banco</label>
+        <div class="flex">
+          <select id="sel-banco" onchange="cambiarBanco()"></select>
+          <button class="btn btn-sec btn-sm admin-only" onclick="nuevoBanco()" title="Agregar banco">+ Banco</button>
+        </div>
+      </div>
+      <label class="btn btn-primary file-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Subir extracto (Excel / CSV)
+        <input type="file" id="f-extracto" accept=".xlsx,.xls,.csv" onchange="subirExtracto(this)">
+      </label>
+      <div style="flex:1"></div>
+      <button class="btn btn-green admin-only" id="btn-guardar" onclick="guardarPeriodo()" disabled>Guardar período</button>
+      <button class="btn btn-sec" id="btn-excel" onclick="exportarExcel()" disabled>Descargar Excel</button>
+    </div>
+    <div class="info-line" id="info-line"><span class="muted">Elegí el banco y subí el extracto del mes tal cual lo descargás del homebanking.</span></div>
+  </div>
+
+  <div id="zona-resultado" style="display:none">
+    <div class="stats">
+      <div class="stat"><div class="stat-l">Movimientos</div><div class="stat-v" id="st-movs">—</div></div>
+      <div class="stat"><div class="stat-l">Créditos</div><div class="stat-v" id="st-cred">—</div></div>
+      <div class="stat"><div class="stat-l">Débitos</div><div class="stat-v neg" id="st-deb">—</div></div>
+      <div class="stat"><div class="stat-l">Neto del mes</div><div class="stat-v" id="st-neto">—</div></div>
+    </div>
+    <div id="alert-sinclasif"></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="resumen" onclick="verTab('resumen')">Resumen</button>
+    <button class="tab" data-tab="prestamos" onclick="verTab('prestamos')">Préstamos <span class="pill" id="pill-prest" style="display:none"></span></button>
+    <button class="tab" data-tab="movimientos" onclick="verTab('movimientos')">Movimientos</button>
+    <button class="tab" data-tab="equivalencias" onclick="verTab('equivalencias')">Equivalencias</button>
+    <button class="tab" data-tab="historial" onclick="verTab('historial')">Períodos guardados</button>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="panel active" id="panel-resumen">
+    <div id="resumen-cont"><div class="tbl-wrap"><div class="empty">Subí un extracto o abrí un período guardado para ver el resumen.</div></div></div>
+  </div>
+
+  <!-- PRESTAMOS -->
+  <div class="panel" id="panel-prestamos">
+    <div id="prest-cont"><div class="tbl-wrap"><div class="empty">Sin movimientos de préstamos.</div></div></div>
+  </div>
+
+  <!-- MOVIMIENTOS -->
+  <div class="panel" id="panel-movimientos">
+    <div class="flex" style="margin-bottom:.75rem">
+      <select id="mov-tipo" onchange="renderMovimientos()"><option value="">Todos los tipos</option></select>
+      <input type="search" id="mov-buscar" placeholder="Buscar descripción o importe…" oninput="renderMovimientos()" style="flex:1;min-width:200px">
+    </div>
+    <div id="mov-cont"><div class="tbl-wrap"><div class="empty">Subí un extracto para ver el detalle de movimientos.</div></div></div>
+  </div>
+
+  <!-- EQUIVALENCIAS -->
+  <div class="panel" id="panel-equivalencias">
+    <div class="card flex" style="justify-content:space-between">
+      <div>
+        <div style="font-size:15px;font-weight:700">Equivalencias del banco <span id="eq-banco" style="color:#E65100"></span></div>
+        <div class="note" style="margin:0">Cada banco tiene sus propias equivalencias y códigos. Para configurar otro banco, cambialo arriba en el selector <b>Banco</b>.</div>
+      </div>
+      <div class="flex admin-only">
+        <select id="eq-copiar-desde"></select>
+        <button class="btn btn-sec btn-sm" onclick="copiarEquivalencias()">Copiar de ese banco</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="card-title">1) Descripción del banco → Tipo de movimiento</div>
+        <div class="flex admin-only" style="margin-bottom:.6rem">
+          <input type="text" id="eq-new-desc" placeholder="Descripción tal cual figura en el extracto" style="flex:1;min-width:200px">
+          <select id="eq-new-tipo"></select>
+          <button class="btn btn-primary btn-sm" onclick="agregarEquivalencia()">Agregar</button>
+        </div>
+        <input type="search" id="eq-buscar" placeholder="Buscar…" oninput="renderEquivalencias()" style="width:100%;margin-bottom:.6rem">
+        <div class="tbl-wrap" id="eq-cont"></div>
+      </div>
+      <div>
+        <div class="card-title">2) Tipo de movimiento → Cómo subir al sistema</div>
+        <div class="tbl-wrap" id="tipos-cont"></div>
+        <div class="flex admin-only" style="margin-bottom:1rem">
+          <input type="text" id="tipo-new" placeholder="Nuevo tipo" style="flex:1">
+          <button class="btn btn-sec btn-sm" onclick="agregarTipo()">Agregar tipo</button>
+        </div>
+        <div class="card-title">Préstamos e impuestos</div>
+        <div class="card" id="param-cont"></div>
+        <div class="note">
+          <b>Cálculo especial</b>: el tipo con cálculo "Imp. crédito" sube el <b>% DEC 380/1</b> de su total. El tipo "Imp. débito" sube débito + crédito − DEC 380/1 (I.T.F.).
+          El tipo "Sueldos" abre una fila por cada fecha de pago. El tipo "Préstamos" se detalla en la solapa Préstamos.
+        </div>
+        <button class="btn btn-green admin-only" style="margin-top:1rem;width:100%" onclick="guardarEquivalencias()">Guardar equivalencias</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="panel" id="panel-historial">
+    <div class="tbl-wrap" id="hist-cont"><div class="empty">Cargando…</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ═══ USUARIO / PERMISOS ═══ */
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) { window.location.href = '/'; }
+const ROL_MOD = USER.modulos ? USER.modulos['bancos'] : (USER.rol === 'admin' ? 'admin' : 'vista');
+if (USER.modulos && !ROL_MOD && USER.rol !== 'admin') { window.location.href = '/panel'; }
+const IS_ADMIN = USER.rol === 'admin' || ROL_MOD === 'admin';
+document.getElementById('user-nombre').textContent = USER.nombre || USER.username;
+document.getElementById('user-avatar').textContent = (USER.nombre || USER.username).charAt(0).toUpperCase();
+document.getElementById('rol-badge').textContent = IS_ADMIN ? 'Admin' : 'Vista';
+document.getElementById('rol-badge').className = 'rol-badge ' + (IS_ADMIN ? 'rol-admin' : 'rol-vista');
+if (!IS_ADMIN) {
+  const st = document.createElement('style');
+  st.textContent = '.admin-only{display:none!important}';
+  document.head.appendChild(st);
+}
+
+/* ═══ CONFIGURACIÓN POR DEFECTO (de la plantilla Banco Provincia) ═══ */
+const REGLAS = [
+  {id:'normal',      label:'Normal'},
+  {id:'imp_credito', label:'Imp. crédito (DEC 380/1)'},
+  {id:'imp_debito',  label:'Imp. débito (I.T.F.)'},
+  {id:'sueldos',     label:'Sueldos (por fecha)'},
+  {id:'prestamos',   label:'Préstamos'},
+  {id:'no_subir',    label:'No subir'},
+];
+const TIPO_REVISAR = 'REVISAR - NO ESTA EN EQUIVALENCIAS';
+
+function configProvincia() {
+  return {
+    dec380: 0.34,
+    tipos: [
+      {tipo:'GASTOS',                      codigo:'3-6RAV-101-2',           regla:'normal'},
+      {tipo:'IMPUESTO CREDITO -LEY 25413', codigo:'ITF 4-NG-127-2',         regla:'imp_credito'},
+      {tipo:'IMPUESTO DEBITO -LEY 25413',  codigo:'DEC 380/1 12-NG-127-2',  regla:'imp_debito'},
+      {tipo:'INTERESES COBRADOS',          codigo:'17- NG',                 regla:'normal'},
+      {tipo:'PERCEPCION IIBB',             codigo:'16- SIRCREB',            regla:'normal'},
+      {tipo:'RETENCION ARBA',              codigo:'33 - SIRCREB',           regla:'normal'},
+      {tipo:'SUELDOS',                     codigo:'14-NG-1-2',              regla:'sueldos'},
+      {tipo:'PRESTAMOS',                   codigo:'VER TABLA DE PRESTAMOS', regla:'prestamos'},
+      {tipo:'NO CORRESPONDE',              codigo:'NO SUBIR',               regla:'no_subir'},
+    ],
+    prestamos: {
+      codCapital:'10-142-2-NG', codInteres:'13-103-2-NG', codIIBB:'16- SIRCREB',
+      codAcreditacion:'13- CREDITO-146-NG', textoAcreditacion:'ACREDITACION PRESTAMO',
+      tasaIIBB:0.019608
+    },
+    equivalencias: [
+      ['ACREDITACION PROVEEDORES','NO CORRESPONDE'],['BIP CR TRANSFERENCIA - CTATERC','NO CORRESPONDE'],
+      ['BIP DB TRANSFERENCIA','NO CORRESPONDE'],['CHEQUE','NO CORRESPONDE'],['CHEQUE/O.E. RECHAZADO','NO CORRESPONDE'],
+      ['COMIS.GESTION CHEQUE AL COBRO','GASTOS'],['COMISION CHEQUE RECHAZADO','NO CORRESPONDE'],
+      ['COMISION CONSULTA CLEARING','NO CORRESPONDE'],['COMISION CUENTA RELACIONADA','GASTOS'],
+      ['COMISION DATANET','GASTOS'],['COMISION INTERSUCURSALES','GASTOS'],['COMISION MANTENIMIENTO','GASTOS'],
+      ['COMISION MENSUAL TRANSFERENCIA','GASTOS'],['COMISION TRANSFERENCIA/GIRO','GASTOS'],
+      ['CREDITO CUENTA DNI','NO CORRESPONDE'],['CREDITO DEBIN','NO CORRESPONDE'],
+      ['CREDITO TRANSFERENCIA I','NO CORRESPONDE'],['CREDITO TRANSFERENCIA INTERBAN','NO CORRESPONDE'],
+      ['CREDITO TRASPASO CAJERO AUTOM.','NO CORRESPONDE'],['DEBITO PAGO DIRECTO','NO CORRESPONDE'],
+      ['DEBITO POR PAGO DE HABERES','SUELDOS'],['DEBITO TRANS.CAJERO AUT.TRAS.','NO CORRESPONDE'],
+      ['DEPOSITO CH. C/BANCOS','NO CORRESPONDE'],['DEPOSITO CH/OE N/CARGO','NO CORRESPONDE'],
+      ['DEPOSITO POR CAJA','NO CORRESPONDE'],['IMPUESTO CREDITO -LEY 25413','IMPUESTO CREDITO -LEY 25413'],
+      ['IMPUESTO DEBITO - LEY 25413','IMPUESTO DEBITO -LEY 25413'],['IMPUESTO I.BRUTOS - PERCEPCION','PERCEPCION IIBB'],
+      ['IMPUESTO SELLOS','NO CORRESPONDE'],['INTERESES COBRADOS','INTERESES COBRADOS'],
+      ['LIQUIDACION DE PRESTAMOS','GASTOS'],['PAGO CUOTA DE PRESTAMO','PRESTAMOS'],
+      ['PAGO SERVICIO POR ATM/HB/BEE','NO CORRESPONDE'],['PAGO VISA','NO CORRESPONDE'],
+      ['RETENCION ARBA','RETENCION ARBA'],['REV. IMP.CREDITO-LEY 25413','IMPUESTO CREDITO -LEY 25413'],
+      ['REV. IMP.DEBITO.-LEY 25413','IMPUESTO DEBITO -LEY 25413'],['REVERSA RETENCION ARBA','RETENCION ARBA'],
+      ['TRASP/ACREDITACION PRESTAMO','PRESTAMOS'],['ANULACION MOVIMIENTO DEBITO','NO CORRESPONDE'],
+      ['PAGO SERVICIOS VARIOS','NO CORRESPONDE'],['VALORES NEGOCIADOS','NO CORRESPONDE'],
+      ['INT. Y COMIS. DESCUENTO DOCUM.','INTERESES COBRADOS'],['COMISION DEP. EN EFECTIVO','GASTOS'],
+    ]
+  };
+}
+
+/* ═══ ESTADO ═══ */
+const state = {
+  config: { bancos: {} },
+  banco: 'PROVINCIA',
+  periodos: {},          // guardados en el servidor
+  movs: null,            // movimientos del extracto (null si se abrió desde historial)
+  archivo: null,
+  periodo: null,         // 'YYYY-MM'
+  resumen: null,         // {filas, totalClasif, totalDatos}
+  prestamos: [],
+  sinClasif: [],
+  fuente: null,          // 'extracto' | 'historial'
+};
+const cfg = () => state.config.bancos[state.banco];
+
+/* ═══ UTILS ═══ */
+const MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+const r2 = n => Math.round((Number(n) || 0) * 100) / 100;
+function fmtN(n) { return Number(n || 0).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtImp(n) { return '<span class="' + (n < 0 ? 'neg' : '') + '">' + fmtN(n) + '</span>'; }
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function norm(s) { return String(s || '').toUpperCase().replace(/\s+/g, ' ').trim(); }
+function fmtFecha(iso) { if (!iso || iso.length < 10) return iso || ''; const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function fmtPeriodo(ym) { if (!ym) return ''; const p = ym.split('-'); return MESES[+p[1] - 1] + ' ' + p[0]; }
+function fmtTs(iso) { if (!iso) return ''; const d = new Date(iso); return d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}); }
+function toast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3000);
+}
+function registrarAccion(accion, detalle) {
+  fetch('/api/log', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username:USER.username, nombre:USER.nombre, accion, detalle})}).catch(() => {});
+}
+function parseImporte(v) {
+  if (typeof v === 'number') return v;
+  let s = String(v == null ? '' : v).trim();
+  if (!s) return NaN;
+  let neg = /^\(.*\)$/.test(s) || /-$/.test(s);
+  s = s.replace(/[^\d.,-]/g, '');
+  if (s.indexOf('-') >= 0) { neg = true; s = s.replace(/-/g, ''); }
+  let n;
+  if (s.indexOf(',') > -1 && s.indexOf('.') > -1) {
+    n = s.lastIndexOf('.') > s.lastIndexOf(',') ? parseFloat(s.replace(/,/g, '')) : parseFloat(s.replace(/\./g, '').replace(',', '.'));
+  } else if (s.indexOf(',') > -1) {
+    n = parseFloat(s.replace(',', '.'));
+  } else {
+    n = parseFloat(s);
+  }
+  return neg ? -n : n;
+}
+function parseFecha(v) {
+  if (v instanceof Date) {
+    const d = new Date(v.getTime() + 43200000); // evita corrimientos de zona horaria
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  if (typeof v === 'number') {
+    const p = XLSX.SSF.parse_date_code(v);
+    return p ? p.y + '-' + String(p.m).padStart(2, '0') + '-' + String(p.d).padStart(2, '0') : '';
+  }
+  const s = String(v || '').trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  m = s.match(/^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
+  if (m) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return y + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0'); }
+  return '';
+}
+
+/* ═══ SERVIDOR ═══ */
+async function cargarDatos() {
+  try {
+    const r = await fetch('/api/datos/bancos');
+    const data = await r.json();
+    if (data._config && data._config.bancos) state.config = data._config;
+    delete data._config;
+    state.periodos = data;
+  } catch (e) {
+    toast('No se pudo conectar con el servidor', true);
+  }
+  if (!state.config.bancos.PROVINCIA && !Object.keys(state.config.bancos).length) {
+    state.config.bancos.PROVINCIA = configProvincia();
+  }
+  if (!state.config.bancos[state.banco]) state.banco = Object.keys(state.config.bancos)[0];
+}
+async function guardarConfig(mostrarToast) {
+  if (!IS_ADMIN) return;
+  try {
+    const r = await fetch('/api/datos/bancos', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({periodo:'_config', datos:state.config})});
+    if (!r.ok) throw new Error();
+    if (mostrarToast) toast('Equivalencias guardadas');
+  } catch (e) { toast('Error al guardar la configuración', true); }
+}
+
+async function guardarEquivalencias() {
+  await guardarConfig(true);
+  if (state.movs) calcular(true);
+  renderTodo();
+}
+
+/* ═══ BANCOS ═══ */
+function renderBancos() {
+  const sel = document.getElementById('sel-banco');
+  sel.innerHTML = Object.keys(state.config.bancos).sort().map(b =>
+    '<option value="' + esc(b) + '"' + (b === state.banco ? ' selected' : '') + '>' + esc(b) + '</option>').join('');
+}
+function cambiarBanco() {
+  state.banco = document.getElementById('sel-banco').value;
+  limpiarResultado();
+  renderTodo();
+}
+async function nuevoBanco() {
+  const nombre = norm(prompt('Nombre del banco (ej: GALICIA, SANTANDER, MACRO):') || '');
+  if (!nombre) return;
+  if (state.config.bancos[nombre]) { toast('Ese banco ya existe', true); return; }
+  const base = configProvincia();
+  base.equivalencias = []; // cada banco usa sus propias descripciones
+  state.config.bancos[nombre] = base;
+  state.banco = nombre;
+  await guardarConfig();
+  limpiarResultado();
+  renderTodo();
+  verTab('equivalencias');
+  toast('Banco ' + nombre + ' creado. Cargá sus equivalencias o subí un extracto y clasificá desde ahí.');
+}
+
+/* ═══ LECTURA DEL EXTRACTO ═══ */
+function subirExtracto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+      let movs = null, hoja = null;
+      for (const name of wb.SheetNames) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, raw:true, defval:null});
+        movs = leerMovimientos(rows);
+        if (movs) { hoja = name; break; }
+      }
+      if (!movs) { toast('No encontré las columnas Fecha / Importe / Descripción en el archivo', true); return; }
+      if (!movs.length) { toast('El archivo no tiene movimientos', true); return; }
+      state.movs = movs;
+      state.archivo = file.name;
+      state.fuente = 'extracto';
+      state.periodo = detectarPeriodo(movs);
+      calcular(true);
+      renderTodo();
+      verTab('resumen');
+      registrarAccion('bancos_extracto', 'Subió extracto ' + state.banco + ' ' + fmtPeriodo(state.periodo) + ': ' + movs.length + ' movimientos (' + file.name + ')');
+      toast(movs.length + ' movimientos leídos' + (wb.SheetNames.length > 1 ? ' (hoja ' + hoja + ')' : ''));
+    } catch (err) {
+      console.error(err);
+      toast('No se pudo leer el archivo: ' + err.message, true);
+    } finally { input.value = ''; }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function leerMovimientos(rows) {
+  // Buscar la fila de encabezados en las primeras 20 filas
+  let h = -1, col = null;
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const cells = (rows[i] || []).map(c => norm(c).normalize('NFD').replace(/[̀-ͯ]/g, ''));
+    const find = fn => cells.findIndex(fn);
+    const fecha = find(c => c === 'FECHA' || c === 'FECHA MOVIMIENTO' || c === 'FECHA OPERACION');
+    const importe = find(c => c === 'IMPORTE' || c === 'MONTO');
+    const debito = find(c => c.startsWith('DEBITO'));
+    const credito = find(c => c.startsWith('CREDITO'));
+    let desc = find(c => c === 'DESCRIPCION' || c === 'CONCEPTO');
+    if (desc < 0) desc = find(c => c.startsWith('DESCRIPCION') && c.indexOf('EXTENDIDA') < 0);
+    if (fecha >= 0 && desc >= 0 && (importe >= 0 || (debito >= 0 && credito >= 0))) {
+      col = {fecha, importe, debito, credito, desc,
+        descExt: find(c => c.indexOf('EXTENDIDA') >= 0 || c === 'DETALLE'),
+        seq: find(c => c.indexOf('SECUENCIA') >= 0 || c === 'COMPROBANTE' || c === 'REFERENCIA'),
+        saldo: find(c => c === 'SALDO')};
+      h = i; break;
+    }
+  }
+  if (h < 0) return null;
+  const out = [];
+  for (let i = h + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const fecha = parseFecha(r[col.fecha]);
+    let imp;
+    if (col.importe >= 0) imp = parseImporte(r[col.importe]);
+    else {
+      const d = parseImporte(r[col.debito]), c = parseImporte(r[col.credito]);
+      imp = (isNaN(c) ? 0 : Math.abs(c)) - (isNaN(d) ? 0 : Math.abs(d));
+      if (isNaN(d) && isNaN(c)) imp = NaN;
+    }
+    const desc = String(r[col.desc] == null ? '' : r[col.desc]).trim();
+    if (!fecha || isNaN(imp) || !desc) continue;
+    out.push({
+      fecha, importe: r2(imp), desc,
+      descExt: col.descExt >= 0 ? String(r[col.descExt] == null ? '' : r[col.descExt]).trim() : '',
+      seq: col.seq >= 0 && r[col.seq] != null ? String(r[col.seq]) : '',
+      saldo: col.saldo >= 0 ? parseImporte(r[col.saldo]) : null,
+    });
+  }
+  return out;
+}
+
+function detectarPeriodo(movs) {
+  const cnt = {};
+  movs.forEach(m => { const k = m.fecha.slice(0, 7); cnt[k] = (cnt[k] || 0) + 1; });
+  return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+}
+
+/* ═══ CÁLCULO ═══ */
+function mapaEquivalencias() {
+  const m = {};
+  cfg().equivalencias.forEach(([d, t]) => { m[norm(d)] = t; });
+  return m;
+}
+function tipoInfo(tipo) { return cfg().tipos.find(t => norm(t.tipo) === norm(tipo)); }
+
+function calcular(mantenerPrestamos) {
+  if (!state.movs) return;
+  const c = cfg();
+  const eq = mapaEquivalencias();
+  const prev = {};
+  // Conservar lo cargado a mano en Préstamos (del estado actual o del período guardado)
+  const guardado = state.periodos[claveP(state.banco, state.periodo)];
+  const fuentePrev = (mantenerPrestamos && state.prestamos.length) ? state.prestamos : (guardado ? guardado.prestamos || [] : []);
+  fuentePrev.forEach(p => { prev[p.key] = p; });
+
+  const totales = {};      // tipo normalizado -> total
+  const sueldos = {};      // fecha -> total
+  const sinClasif = {};
+  const prestamos = [];
+  const keyCount = {};
+  state.movs.forEach(m => {
+    const t = eq[norm(m.desc)];
+    const info = t ? tipoInfo(t) : null;
+    if (!info) {
+      m.tipo = TIPO_REVISAR;
+      const k = norm(m.desc);
+      if (!sinClasif[k]) sinClasif[k] = {desc: m.desc, cant: 0, total: 0, tipoEq: t || null};
+      sinClasif[k].cant++; sinClasif[k].total += m.importe;
+      return;
+    }
+    m.tipo = info.tipo;
+    totales[info.tipo] = (totales[info.tipo] || 0) + m.importe;
+    if (info.regla === 'sueldos') sueldos[m.fecha] = (sueldos[m.fecha] || 0) + m.importe;
+    if (info.regla === 'prestamos') {
+      const base = m.fecha + '|' + m.importe.toFixed(2) + '|' + norm(m.desc);
+      keyCount[base] = (keyCount[base] || 0) + 1;
+      const key = base + '|' + keyCount[base];
+      const esAcred = norm(m.desc).indexOf(norm(c.prestamos.textoAcreditacion)) >= 0;
+      const p = prev[key];
+      prestamos.push(p ? Object.assign({}, p, {fecha:m.fecha, desc:m.desc, importe:m.importe, acreditacion:esAcred})
+                       : sugerirPrestamo({key, fecha:m.fecha, desc:m.desc, importe:m.importe, acreditacion:esAcred}));
+    }
+  });
+  prestamos.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  state.prestamos = prestamos;
+  state.sinClasif = Object.values(sinClasif).sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
+  state.resumen = armarResumen(totales, sueldos, state.sinClasif.reduce((s, x) => s + x.total, 0));
+}
+
+function armarResumen(totales, sueldos, totalRevisar) {
+  const c = cfg();
+  const tCred = c.tipos.filter(t => t.regla === 'imp_credito').reduce((s, t) => s + (totales[t.tipo] || 0), 0);
+  const dec380 = tCred * (Number(c.dec380) || 0);
+  const filas = [];
+  c.tipos.forEach(t => {
+    const total = r2(totales[t.tipo] || 0);
+    if (t.regla === 'sueldos') {
+      const fechas = Object.keys(sueldos).sort();
+      if (!fechas.length) filas.push({tipo:t.tipo, total:0, codigo:t.codigo, subir:0, regla:t.regla});
+      fechas.forEach(f => filas.push({tipo:t.tipo + ' ' + fmtFecha(f), total:r2(sueldos[f]), codigo:t.codigo, subir:r2(sueldos[f]), regla:t.regla}));
+      return;
+    }
+    let subir = total;
+    if (t.regla === 'imp_credito') subir = r2(total * (Number(c.dec380) || 0));
+    if (t.regla === 'imp_debito') subir = r2(total + tCred - dec380);
+    if (t.regla === 'no_subir') subir = null;
+    filas.push({tipo:t.tipo, total, codigo:t.codigo, subir, regla:t.regla});
+  });
+  filas.push({tipo:TIPO_REVISAR, total:r2(totalRevisar), codigo:'', subir:r2(totalRevisar), regla:'revisar'});
+  const totalClasif = r2(filas.reduce((s, f) => s + f.total, 0));
+  const totalDatos = state.movs ? r2(state.movs.reduce((s, m) => s + m.importe, 0)) : totalClasif;
+  return {filas, totalClasif, totalDatos};
+}
+
+function sugerirPrestamo(p) {
+  // Capital, interés e IIBB se completan a mano con la impresión de cada cuota
+  p.capital = null; p.interes = null; p.iibb = null;
+  return p;
+}
+function difPrestamo(p) {
+  if (p.acreditacion) return 0;
+  return r2(p.importe + (Number(p.capital) || 0) + (Number(p.interes) || 0) + (Number(p.iibb) || 0));
+}
+
+/* ═══ RENDER ═══ */
+function renderTodo() {
+  renderBancos();
+  renderInfo();
+  renderResumen();
+  renderPrestamos();
+  renderMovTipos();
+  renderMovimientos();
+  renderEquivalencias();
+  renderTipos();
+  renderParametros();
+  renderHistorial();
+}
+function limpiarResultado() {
+  Object.assign(state, {movs:null, archivo:null, periodo:null, resumen:null, prestamos:[], sinClasif:[], fuente:null});
+}
+
+function renderInfo() {
+  const info = document.getElementById('info-line');
+  const zona = document.getElementById('zona-resultado');
+  const hay = !!state.resumen;
+  document.getElementById('btn-guardar').disabled = !hay;
+  document.getElementById('btn-excel').disabled = !hay;
+  if (!hay) {
+    zona.style.display = 'none';
+    info.innerHTML = '<span class="muted">Elegí el banco y subí el extracto del mes tal cual lo descargás del homebanking.</span>';
+    return;
+  }
+  zona.style.display = 'block';
+  const g = state.periodos[claveP(state.banco, state.periodo)];
+  let html = '<span>Banco: <b>' + esc(state.banco) + '</b></span><span>Período: <b>' + fmtPeriodo(state.periodo) + '</b></span>';
+  if (state.fuente === 'extracto') {
+    const fechas = state.movs.map(m => m.fecha).sort();
+    const fuera = state.movs.filter(m => m.fecha.slice(0, 7) !== state.periodo).length;
+    html += '<span>Archivo: <b>' + esc(state.archivo) + '</b></span>'
+         + '<span>Del <b>' + fmtFecha(fechas[0]) + '</b> al <b>' + fmtFecha(fechas[fechas.length - 1]) + '</b></span>';
+    if (fuera) html += '<span style="color:#B42318;font-weight:600">⚠ ' + fuera + ' movimientos de otro mes</span>';
+    if (g) html += '<span style="color:#7A4B00">Este período ya está guardado (' + fmtTs(g.savedAt) + '). Guardar lo reemplaza.</span>';
+  } else {
+    html += '<span>Abierto desde períodos guardados · ' + esc(g ? g.archivo : '') + ' · guardado ' + (g ? fmtTs(g.savedAt) + ' por ' + esc(g.savedBy) : '') + '</span>';
+  }
+  info.innerHTML = html;
+
+  // Stats
+  let cred = 0, deb = 0, n = 0;
+  if (state.movs) state.movs.forEach(m => { n++; if (m.importe >= 0) cred += m.importe; else deb += m.importe; });
+  else if (g && g.stats) ({cred, deb, n} = g.stats);
+  document.getElementById('st-movs').textContent = n.toLocaleString('es-AR');
+  document.getElementById('st-cred').textContent = fmtN(cred);
+  document.getElementById('st-deb').textContent = fmtN(deb);
+  document.getElementById('st-neto').innerHTML = fmtImp(cred + deb);
+
+  // Alerta sin clasificar
+  const al = document.getElementById('alert-sinclasif');
+  if (!state.sinClasif.length) {
+    al.innerHTML = state.fuente === 'extracto' ? '<div class="alert alert-ok"><b>✓ Todos los movimientos están clasificados.</b></div>' : '';
+    return;
+  }
+  const opts = cfg().tipos.map(t => '<option value="' + esc(t.tipo) + '">' + esc(t.tipo) + '</option>').join('');
+  al.innerHTML = '<div class="alert alert-red"><div class="alert-title">⚠ ' + (state.sinClasif.length === 1 ? '1 descripción nueva' : state.sinClasif.length + ' descripciones nuevas') + ' sin clasificar</div>'
+    + '<div style="margin-bottom:.6rem">Asignales un tipo de movimiento y quedan guardadas en Equivalencias para los meses siguientes.</div>'
+    + '<div class="tbl-wrap" style="margin:0"><table><thead><tr><th>Descripción del banco</th><th class="num">Cant.</th><th class="num">Total</th><th>Tipo de movimiento</th></tr></thead><tbody>'
+    + state.sinClasif.map((s, i) => '<tr><td>' + esc(s.desc) + (s.tipoEq ? '<div class="muted" style="font-size:11px">Figura como "' + esc(s.tipoEq) + '", que no existe en la Tabla 2</div>' : '') + '</td>'
+      + '<td class="num">' + s.cant + '</td><td class="num">' + fmtImp(s.total) + '</td>'
+      + '<td>' + (IS_ADMIN ? '<div class="flex"><select id="sc-' + i + '"><option value="">Elegir…</option>' + opts + '</select>'
+      + '<button class="btn btn-primary btn-sm" onclick="clasificar(' + i + ')">Asignar</button></div>' : '<span class="muted">Pedile a un admin que lo clasifique</span>') + '</td></tr>').join('')
+    + '</tbody></table></div></div>';
+}
+
+async function clasificar(i) {
+  const s = state.sinClasif[i];
+  const tipo = document.getElementById('sc-' + i).value;
+  if (!tipo) { toast('Elegí un tipo de movimiento', true); return; }
+  const eq = cfg().equivalencias;
+  const idx = eq.findIndex(e => norm(e[0]) === norm(s.desc));
+  if (idx >= 0) eq[idx][1] = tipo; else eq.push([s.desc, tipo]);
+  await guardarConfig();
+  calcular(true);
+  renderTodo();
+  toast('"' + s.desc + '" → ' + tipo);
+}
+
+function codHtml(f) {
+  if (f.regla === 'no_subir') return '<span class="cod cod-nosubir">' + esc(f.codigo || 'NO SUBIR') + '</span>';
+  if (f.regla === 'prestamos') return '<span class="cod cod-ver">' + esc(f.codigo) + '</span>';
+  if (f.regla === 'revisar') return f.total ? '<span style="color:#8A1F1F;font-size:11px">Hay movimientos sin tipo asignado</span>' : '';
+  return f.codigo ? '<span class="cod">' + esc(f.codigo) + '</span>' : '';
+}
+
+function renderResumen() {
+  const cont = document.getElementById('resumen-cont');
+  const R = state.resumen;
+  if (!R) { cont.innerHTML = '<div class="tbl-wrap"><div class="empty">Subí un extracto o abrí un período guardado para ver el resumen.</div></div>'; return; }
+  const dif = r2(R.totalDatos - R.totalClasif);
+  let html = '<div class="tbl-wrap"><table><thead><tr><th>Tipo de movimiento</th><th class="num">Total del mes</th><th>Cómo subir al sistema</th><th class="num">Importe a subir al sistema</th></tr></thead><tbody>';
+  R.filas.forEach(f => {
+    if (f.regla === 'revisar' && !f.total) return;
+    const cls = f.regla === 'revisar' ? 'row-revisar' : f.regla === 'no_subir' ? 'row-nosubir' : '';
+    html += '<tr class="' + cls + '"><td>' + esc(f.tipo) + '</td><td class="num">' + fmtImp(f.total) + '</td><td>' + codHtml(f) + '</td>'
+      + '<td class="num ' + (f.subir == null ? 'muted' : 'subir') + '">' + (f.subir == null ? '—' : fmtImp(f.subir)) + '</td></tr>';
+  });
+  html += '<tr class="row-total"><td>TOTAL</td><td class="num">' + fmtImp(R.totalClasif) + '</td><td></td><td></td></tr></tbody></table></div>';
+  html += '<div class="card-title">Control de cuadre</div><div class="cuadre">'
+    + '<div class="stat"><div class="stat-l">Total cargado (extracto)</div><div class="stat-v">' + fmtN(R.totalDatos) + '</div></div>'
+    + '<div class="stat"><div class="stat-l">Total clasificado</div><div class="stat-v">' + fmtN(R.totalClasif) + '</div></div>'
+    + '<div class="stat"><div class="stat-l">Diferencia (debe ser 0)</div><div class="stat-v ' + (Math.abs(dif) < 0.01 ? 'ok' : 'bad') + '">' + fmtN(dif) + '</div></div></div>';
+  const pend = state.prestamos.filter(p => Math.abs(difPrestamo(p)) >= 0.01).length;
+  if (pend) html += '<div class="alert alert-red">⚠ Faltan completar ' + pend + ' cuotas de préstamos (o tienen diferencia). Completalas en la solapa <a href="#" onclick="verTab(\'prestamos\');return false">Préstamos</a>.</div>';
+  html += '<div class="note">DEC 380/1 = Impuesto crédito del mes × ' + String((Number(cfg().dec380) || 0) * 100).replace('.', ',') + '%. '
+    + 'I.T.F. = Impuesto débito + Impuesto crédito − DEC 380/1. Los sueldos se abren en una fila por cada fecha de pago.</div>';
+  cont.innerHTML = html;
+}
+
+function renderPrestamos() {
+  const cont = document.getElementById('prest-cont');
+  const pill = document.getElementById('pill-prest');
+  const L = state.prestamos;
+  const pend = L.filter(p => Math.abs(difPrestamo(p)) >= 0.01).length;
+  pill.style.display = pend ? 'inline-block' : 'none';
+  pill.textContent = pend;
+  if (!L.length) { cont.innerHTML = '<div class="tbl-wrap"><div class="empty">Sin movimientos de préstamos en este período.</div></div>'; return; }
+  const P = cfg().prestamos;
+  const ro = IS_ADMIN ? '' : ' disabled';
+  const completos = L.filter(p => p.acreditacion || (Math.abs(difPrestamo(p)) < 0.01)).length;
+  let html = '<div class="flex" style="justify-content:space-between;margin-bottom:.75rem">'
+    + '<div class="note" style="margin:0">Movimientos de préstamos de ' + fmtPeriodo(state.periodo) + '. Completá Capital, Interés e IIBB con la impresión de cada cuota; la Diferencia tiene que dar 0. '
+    + 'Lo que cargues queda guardado al tocar <b>Guardar período</b>.</div>'
+    + '<div style="font-size:12px;font-weight:700;color:' + (completos === L.length ? '#0F8A5F' : '#B42318') + '">' + completos + ' de ' + L.length + ' completos</div></div>';
+  html += '<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Descripción</th><th class="num">Importe</th><th>Código especial</th>'
+    + '<th class="num">Capital<br><span class="cod">' + esc(P.codCapital) + '</span></th>'
+    + '<th class="num">Interés<br><span class="cod">' + esc(P.codInteres) + '</span></th>'
+    + '<th class="num">IIBB<br><span class="cod">' + esc(P.codIIBB) + '</span></th>'
+    + '<th class="num">Diferencia</th><th></th></tr></thead><tbody>';
+  const tot = {imp:0, cap:0, int:0, iibb:0};
+  L.forEach((p, i) => {
+    const d = difPrestamo(p);
+    tot.imp += p.importe;
+    if (!p.acreditacion) { tot.cap += +p.capital || 0; tot.int += +p.interes || 0; tot.iibb += +p.iibb || 0; }
+    const inp = (campo) => '<input type="number" step="0.01" class="inp-num" value="' + (p[campo] == null ? '' : p[campo]) + '"' + ro
+      + ' onchange="editPrest(' + i + ',\'' + campo + '\',this.value)">';
+    html += '<tr><td style="white-space:nowrap">' + fmtFecha(p.fecha) + '</td><td>' + esc(p.desc) + '</td>'
+      + '<td class="num">' + fmtImp(p.importe) + '</td>';
+    if (p.acreditacion) {
+      html += '<td><span class="cod">' + esc(P.codAcreditacion) + '</span></td><td colspan="3" class="muted">Se sube completo con el código especial</td><td class="num dif-ok">—</td><td></td>';
+    } else {
+      html += '<td></td><td class="num">' + inp('capital') + '</td><td class="num">' + inp('interes') + '</td><td class="num">' + inp('iibb') + '</td>'
+        + '<td class="num ' + (Math.abs(d) < 0.01 ? 'dif-ok' : 'dif-bad') + '">' + fmtN(d) + '</td>'
+        + '<td style="white-space:nowrap">' + (IS_ADMIN ? '<button class="btn btn-sec btn-sm" onclick="prestCapital(' + i + ')" title="Pasa todo el importe a Capital">Todo capital</button>' : '') + '</td>';
+    }
+    html += '</tr>';
+  });
+  html += '<tr class="row-total"><td colspan="2">TOTAL</td><td class="num">' + fmtImp(r2(tot.imp)) + '</td><td></td><td class="num">' + fmtN(tot.cap) + '</td><td class="num">' + fmtN(tot.int) + '</td><td class="num">' + fmtN(tot.iibb) + '</td><td></td><td></td></tr>';
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+function editPrest(i, campo, val) {
+  const p = state.prestamos[i];
+  p[campo] = val === '' ? null : r2(parseFloat(val));
+  renderPrestamos(); renderResumen();
+}
+function prestCapital(i) { const p = state.prestamos[i]; p.capital = r2(Math.abs(p.importe)); p.interes = null; p.iibb = null; renderPrestamos(); renderResumen(); }
+
+function renderMovTipos() {
+  const sel = document.getElementById('mov-tipo');
+  const v = sel.value;
+  sel.innerHTML = '<option value="">Todos los tipos</option>' + cfg().tipos.map(t => '<option>' + esc(t.tipo) + '</option>').join('')
+    + '<option>' + TIPO_REVISAR + '</option>';
+  sel.value = v;
+}
+function renderMovimientos() {
+  const cont = document.getElementById('mov-cont');
+  if (!state.movs) {
+    cont.innerHTML = '<div class="tbl-wrap"><div class="empty">' + (state.fuente === 'historial'
+      ? 'El detalle de movimientos no se guarda con el período. Volvé a subir el extracto para verlo.'
+      : 'Subí un extracto para ver el detalle de movimientos.') + '</div></div>';
+    return;
+  }
+  const tipo = document.getElementById('mov-tipo').value;
+  const q = norm(document.getElementById('mov-buscar').value);
+  const L = state.movs.filter(m => (!tipo || m.tipo === tipo) &&
+    (!q || norm(m.desc + ' ' + m.descExt).indexOf(q) >= 0 || fmtN(m.importe).indexOf(q) >= 0 || String(m.importe).indexOf(q) >= 0));
+  const tot = L.reduce((s, m) => s + m.importe, 0);
+  const MAX = 500;
+  let html = '<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Secuencia</th><th>Descripción</th><th>Descripción extendida</th><th class="num">Importe</th><th>Tipo de movimiento</th><th>Cómo subir</th></tr></thead><tbody>';
+  L.slice(0, MAX).forEach(m => {
+    const info = tipoInfo(m.tipo);
+    html += '<tr' + (m.tipo === TIPO_REVISAR ? ' class="row-revisar"' : '') + '><td style="white-space:nowrap">' + fmtFecha(m.fecha) + '</td><td class="muted">' + esc(m.seq) + '</td>'
+      + '<td>' + esc(m.desc) + '</td><td class="muted" style="font-size:11px">' + esc(m.descExt) + '</td><td class="num">' + fmtImp(m.importe) + '</td>'
+      + '<td style="font-size:11px">' + esc(m.tipo) + '</td><td>' + (info ? codHtml({codigo:info.codigo, regla:info.regla, total:1}) : '') + '</td></tr>';
+  });
+  html += '<tr class="row-total"><td colspan="4">' + L.length.toLocaleString('es-AR') + ' movimientos' + (L.length > MAX ? ' (se muestran los primeros ' + MAX + '; usá el buscador o el Excel)' : '') + '</td><td class="num">' + fmtImp(r2(tot)) + '</td><td colspan="2"></td></tr>';
+  cont.innerHTML = html + '</tbody></table></div>';
+}
+
+/* ═══ EQUIVALENCIAS ═══ */
+function optsTipos(sel) {
+  return cfg().tipos.map(t => '<option value="' + esc(t.tipo) + '"' + (norm(t.tipo) === norm(sel) ? ' selected' : '') + '>' + esc(t.tipo) + '</option>').join('');
+}
+async function copiarEquivalencias() {
+  const desde = document.getElementById('eq-copiar-desde').value;
+  if (!desde) return;
+  if (!confirm('¿Reemplazar las equivalencias y códigos de ' + state.banco + ' por los de ' + desde + '?')) return;
+  const src = JSON.parse(JSON.stringify(state.config.bancos[desde]));
+  state.config.bancos[state.banco] = src;
+  await guardarConfig();
+  if (state.movs) calcular(true);
+  renderTodo();
+  toast('Equivalencias copiadas de ' + desde + '. Ajustá lo que sea distinto en ' + state.banco + '.');
+}
+function renderEquivalencias() {
+  document.getElementById('eq-banco').textContent = state.banco;
+  const otros = Object.keys(state.config.bancos).filter(b => b !== state.banco).sort();
+  document.getElementById('eq-copiar-desde').innerHTML = otros.length
+    ? otros.map(b => '<option>' + esc(b) + '</option>').join('') : '<option value="">(no hay otros bancos)</option>';
+  document.getElementById('eq-new-tipo').innerHTML = optsTipos('');
+  const q = norm(document.getElementById('eq-buscar').value);
+  const eq = cfg().equivalencias.map((e, i) => ({d:e[0], t:e[1], i}))
+    .filter(e => !q || norm(e.d + ' ' + e.t).indexOf(q) >= 0)
+    .sort((a, b) => a.d.localeCompare(b.d));
+  const cont = document.getElementById('eq-cont');
+  if (!eq.length) { cont.innerHTML = '<div class="empty">Sin equivalencias' + (q ? ' para esa búsqueda' : '') + '.</div>'; return; }
+  cont.innerHTML = '<table><thead><tr><th>Descripción (como figura en el extracto)</th><th>Tipo de movimiento</th><th></th></tr></thead><tbody>'
+    + eq.map(e => '<tr><td>' + esc(e.d) + '</td><td>' + (IS_ADMIN
+        ? '<select onchange="cfg().equivalencias[' + e.i + '][1]=this.value" style="padding:.3rem .5rem;font-size:12px">' + optsTipos(e.t)
+          + (tipoInfo(e.t) ? '' : '<option selected>' + esc(e.t) + '</option>') + '</select>'
+        : esc(e.t)) + '</td><td>' + (IS_ADMIN ? '<button class="btn-danger-link" title="Quitar" onclick="quitarEquivalencia(' + e.i + ')">✕</button>' : '') + '</td></tr>').join('')
+    + '</tbody></table>';
+}
+function agregarEquivalencia() {
+  const d = document.getElementById('eq-new-desc').value.trim();
+  const t = document.getElementById('eq-new-tipo').value;
+  if (!d || !t) { toast('Completá la descripción', true); return; }
+  const eq = cfg().equivalencias;
+  const idx = eq.findIndex(e => norm(e[0]) === norm(d));
+  if (idx >= 0) eq[idx][1] = t; else eq.push([d, t]);
+  document.getElementById('eq-new-desc').value = '';
+  renderEquivalencias();
+  toast('Agregada. Acordate de tocar "Guardar equivalencias".');
+}
+function quitarEquivalencia(i) {
+  if (!confirm('¿Quitar "' + cfg().equivalencias[i][0] + '"?')) return;
+  cfg().equivalencias.splice(i, 1);
+  renderEquivalencias();
+}
+function renderTipos() {
+  const cont = document.getElementById('tipos-cont');
+  const T = cfg().tipos;
+  cont.innerHTML = '<table><thead><tr><th>Tipo</th><th>Cómo subir al sistema</th><th>Cálculo</th><th></th></tr></thead><tbody>'
+    + T.map((t, i) => '<tr><td style="font-size:11.5px">' + esc(t.tipo) + '</td><td>' + (IS_ADMIN
+        ? '<input type="text" value="' + esc(t.codigo) + '" onchange="cfg().tipos[' + i + '].codigo=this.value" style="width:100%;min-width:140px;padding:.3rem .5rem;font-size:12px">'
+        : '<span class="cod">' + esc(t.codigo) + '</span>') + '</td><td>' + (IS_ADMIN
+        ? '<select onchange="cfg().tipos[' + i + '].regla=this.value" style="padding:.3rem .5rem;font-size:11.5px">' + REGLAS.map(r => '<option value="' + r.id + '"' + (r.id === t.regla ? ' selected' : '') + '>' + r.label + '</option>').join('') + '</select>'
+        : (REGLAS.find(r => r.id === t.regla) || {}).label) + '</td><td>'
+        + (IS_ADMIN ? '<button class="btn-danger-link" title="Quitar" onclick="quitarTipo(' + i + ')">✕</button>' : '') + '</td></tr>').join('')
+    + '</tbody></table>';
+}
+function agregarTipo() {
+  const t = norm(document.getElementById('tipo-new').value);
+  if (!t) return;
+  if (tipoInfo(t)) { toast('Ese tipo ya existe', true); return; }
+  cfg().tipos.splice(cfg().tipos.length - 1, 0, {tipo:t, codigo:'', regla:'normal'});
+  document.getElementById('tipo-new').value = '';
+  renderTipos(); renderEquivalencias(); renderMovTipos();
+}
+function quitarTipo(i) {
+  const t = cfg().tipos[i];
+  const usos = cfg().equivalencias.filter(e => norm(e[1]) === norm(t.tipo)).length;
+  if (!confirm('¿Quitar el tipo "' + t.tipo + '"?' + (usos ? '\n' + usos + ' descripciones lo usan y van a quedar para revisar.' : ''))) return;
+  cfg().tipos.splice(i, 1);
+  renderTipos(); renderEquivalencias(); renderMovTipos();
+}
+function renderParametros() {
+  const P = cfg().prestamos, c = cfg();
+  const campo = (lbl, path, val, tipo) => '<div class="field" style="margin-bottom:.6rem"><label>' + lbl + '</label>'
+    + '<input type="' + (tipo || 'text') + '"' + (tipo === 'number' ? ' step="0.0001"' : '') + ' value="' + esc(val) + '"' + (IS_ADMIN ? '' : ' disabled')
+    + ' onchange="setParam(\'' + path + '\',this.value,' + (tipo === 'number') + ')" style="width:100%"></div>';
+  document.getElementById('param-cont').innerHTML =
+      campo('% DEC 380/1 sobre imp. crédito (0,34 = 34%)', 'dec380', c.dec380, 'number')
+    + campo('Código capital', 'prestamos.codCapital', P.codCapital)
+    + campo('Código interés', 'prestamos.codInteres', P.codInteres)
+    + campo('Código IIBB', 'prestamos.codIIBB', P.codIIBB)
+    + campo('Texto que identifica la acreditación de un préstamo', 'prestamos.textoAcreditacion', P.textoAcreditacion)
+    + campo('Código acreditación de préstamo', 'prestamos.codAcreditacion', P.codAcreditacion);
+}
+function setParam(path, val, num) {
+  const parts = path.split('.');
+  let o = cfg();
+  for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]];
+  o[parts[parts.length - 1]] = num ? parseFloat(val) || 0 : val;
+}
+
+/* ═══ PERÍODOS GUARDADOS ═══ */
+function claveP(banco, ym) { return banco + '__' + ym; }
+
+async function guardarPeriodo() {
+  if (!state.resumen) return;
+  if (state.sinClasif.length && !confirm('Hay descripciones sin clasificar. ¿Guardar igual?')) return;
+  const pend = state.prestamos.filter(p => Math.abs(difPrestamo(p)) >= 0.01).length;
+  if (pend && !confirm(pend + ' préstamos tienen diferencia distinta de 0. ¿Guardar igual?')) return;
+  const key = claveP(state.banco, state.periodo);
+  const prev = state.periodos[key];
+  let stats = prev && prev.stats;
+  if (state.movs) {
+    stats = {n:state.movs.length, cred:0, deb:0};
+    state.movs.forEach(m => { if (m.importe >= 0) stats.cred += m.importe; else stats.deb += m.importe; });
+    stats.cred = r2(stats.cred); stats.deb = r2(stats.deb);
+  }
+  const datos = {
+    banco: state.banco, periodo: state.periodo,
+    archivo: state.archivo || (prev && prev.archivo) || '',
+    savedAt: new Date().toISOString(), savedBy: USER.nombre || USER.username,
+    stats, resumen: state.resumen, prestamos: state.prestamos, sinClasif: state.sinClasif,
+  };
+  try {
+    const r = await fetch('/api/datos/bancos', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({periodo:key, datos})});
+    if (!r.ok) throw new Error();
+    state.periodos[key] = datos;
+    registrarAccion('bancos_guardar', 'Guardó período ' + state.banco + ' ' + fmtPeriodo(state.periodo));
+    renderInfo(); renderHistorial();
+    toast('Período ' + fmtPeriodo(state.periodo) + ' guardado');
+  } catch (e) { toast('Error al guardar el período', true); }
+}
+
+function renderHistorial() {
+  const cont = document.getElementById('hist-cont');
+  const L = Object.entries(state.periodos).filter(([k, v]) => v && v.banco).sort((a, b) => b[1].periodo.localeCompare(a[1].periodo) || a[1].banco.localeCompare(b[1].banco));
+  if (!L.length) { cont.innerHTML = '<div class="empty">Todavía no hay períodos guardados.</div>'; return; }
+  cont.innerHTML = '<table><thead><tr><th>Banco</th><th>Período</th><th>Archivo</th><th class="num">Movimientos</th><th class="num">Neto</th><th>Guardado</th><th></th></tr></thead><tbody>'
+    + L.map(([k, v]) => '<tr><td><b>' + esc(v.banco) + '</b></td><td>' + fmtPeriodo(v.periodo) + '</td><td class="muted">' + esc(v.archivo) + '</td>'
+      + '<td class="num">' + (v.stats ? v.stats.n.toLocaleString('es-AR') : '') + '</td><td class="num">' + (v.stats ? fmtImp(v.stats.cred + v.stats.deb) : '') + '</td>'
+      + '<td class="muted" style="font-size:11px">' + fmtTs(v.savedAt) + ' · ' + esc(v.savedBy) + '</td>'
+      + '<td style="white-space:nowrap"><button class="btn-link" onclick="abrirPeriodo(\'' + esc(k) + '\')">Abrir</button>'
+      + (IS_ADMIN ? ' <button class="btn-danger-link" title="Borrar" onclick="borrarPeriodo(\'' + esc(k) + '\')">✕</button>' : '') + '</td></tr>').join('')
+    + '</tbody></table>';
+}
+function abrirPeriodo(k) {
+  const v = state.periodos[k];
+  if (!v) return;
+  if (!state.config.bancos[v.banco]) { toast('El banco ' + v.banco + ' ya no está configurado', true); return; }
+  state.banco = v.banco;
+  Object.assign(state, {movs:null, archivo:v.archivo, periodo:v.periodo, fuente:'historial',
+    resumen: JSON.parse(JSON.stringify(v.resumen)), prestamos: JSON.parse(JSON.stringify(v.prestamos || [])), sinClasif: v.sinClasif || []});
+  renderTodo();
+  verTab('resumen');
+}
+async function borrarPeriodo(k) {
+  const v = state.periodos[k];
+  if (!confirm('¿Borrar el período guardado ' + v.banco + ' ' + fmtPeriodo(v.periodo) + '?')) return;
+  try {
+    const r = await fetch('/api/datos/bancos/' + encodeURIComponent(k), {method:'DELETE'});
+    if (!r.ok) throw new Error();
+    delete state.periodos[k];
+    registrarAccion('bancos_borrar', 'Borró período ' + v.banco + ' ' + fmtPeriodo(v.periodo));
+    renderHistorial(); renderInfo();
+    toast('Período borrado');
+  } catch (e) { toast('Error al borrar', true); }
+}
+
+/* ═══ EXPORTAR EXCEL ═══ */
+function exportarExcel() {
+  if (!state.resumen) return;
+  const wb = XLSX.utils.book_new();
+  const titulo = 'Banco: ' + state.banco + ' ' + fmtPeriodo(state.periodo);
+  const R = state.resumen;
+
+  const res = [['RESUMEN DEL MES — ' + titulo], [], ['Tipo de movimiento', 'Total del mes', 'Cómo subir al sistema', 'Importe a subir al sistema']];
+  R.filas.forEach(f => { if (f.regla !== 'revisar' || f.total) res.push([f.tipo, f.total, f.regla === 'revisar' ? 'REVISAR' : f.codigo, f.subir == null ? '' : f.subir]); });
+  res.push(['TOTAL', R.totalClasif], [], ['CONTROL DE CUADRE'], ['Total cargado en extracto', R.totalDatos], ['Total clasificado', R.totalClasif], ['Diferencia (debe ser 0)', r2(R.totalDatos - R.totalClasif)]);
+  const ws1 = XLSX.utils.aoa_to_sheet(res);
+  ws1['!cols'] = [{wch:40}, {wch:18}, {wch:26}, {wch:22}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+
+  const P = cfg().prestamos;
+  const pr = [['PRÉSTAMOS DEL MES — ' + titulo], [], ['', '', '', '', P.codCapital, P.codInteres, P.codIIBB],
+    ['Fecha', 'Descripción', 'Importe', 'Código especial', 'Capital', 'Interés', 'IIBB', 'Diferencia (debe ser 0)']];
+  state.prestamos.forEach(p => pr.push([fmtFecha(p.fecha), p.desc, p.importe, p.acreditacion ? P.codAcreditacion : '',
+    p.acreditacion ? '' : (p.capital ?? ''), p.acreditacion ? '' : (p.interes ?? ''), p.acreditacion ? '' : (p.iibb ?? ''), p.acreditacion ? '' : difPrestamo(p)]));
+  const ws2 = XLSX.utils.aoa_to_sheet(pr);
+  ws2['!cols'] = [{wch:12}, {wch:32}, {wch:16}, {wch:20}, {wch:16}, {wch:16}, {wch:14}, {wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Préstamos');
+
+  if (state.movs) {
+    const mv = [['Fecha', 'Número Secuencia', 'Importe', 'Descripción', 'Descripción Extendida', 'Tipo de movimiento', 'Cómo subir al sistema']];
+    state.movs.forEach(m => { const i = tipoInfo(m.tipo); mv.push([fmtFecha(m.fecha), m.seq, m.importe, m.desc, m.descExt, m.tipo, i ? i.codigo : '']); });
+    const ws3 = XLSX.utils.aoa_to_sheet(mv);
+    ws3['!cols'] = [{wch:12}, {wch:14}, {wch:16}, {wch:32}, {wch:40}, {wch:30}, {wch:24}];
+    XLSX.utils.book_append_sheet(wb, ws3, 'Movimientos');
+  }
+  XLSX.writeFile(wb, 'Bancos ' + state.banco + ' ' + fmtPeriodo(state.periodo) + '.xlsx');
+}
+
+/* ═══ TABS ═══ */
+function verTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + id));
+}
+
+/* ═══ INIT ═══ */
+(async function init() {
+  await cargarDatos();
+  renderTodo();
+})();
+</script>
+</body>
+</html>
