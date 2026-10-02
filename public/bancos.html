@@ -100,10 +100,12 @@ tr.row-sub td:first-child{padding-left:22px}
 /* Hoja de impresión: blanco y negro, sin recuadros */
 #print-area{display:none}
 @media print{
-  @page{size:A4 portrait;margin:14mm 12mm}
-  body{background:#fff}
+  /* Márgenes amplios (más a la izquierda) para que la impresora no corte el borde */
+  @page{size:A4 portrait;margin:15mm 15mm 15mm 22mm}
+  html,body{margin:0!important;padding:0!important;background:#fff;min-width:0!important}
   body>*:not(#print-area){display:none!important}
-  #print-area{display:block;color:#000;font-family:'Inter',Arial,sans-serif;font-size:10.5px}
+  #print-area{display:block;width:100%;max-width:170mm;margin:0 auto;box-sizing:border-box;color:#000;font-family:'Inter',Arial,sans-serif;font-size:10.5px}
+  #print-area table{table-layout:auto}
   #print-area .p-cab{border-bottom:1.5px solid #000;padding-bottom:5px;margin-bottom:12px}
   #print-area .p-emp{font-size:9px;letter-spacing:.06em;text-transform:uppercase}
   #print-area .p-tit{font-size:16px;font-weight:700;margin:2px 0}
