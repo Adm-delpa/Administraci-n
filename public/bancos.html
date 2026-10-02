@@ -97,25 +97,30 @@ tr.row-sub td:first-child{padding-left:22px}
 .toast.err{background:#B42318}
 
 .tachado{text-decoration:line-through;color:#9896A0}
-.print-only{display:none}
-
+/* Hoja de impresión: blanco y negro, sin recuadros */
+#print-area{display:none}
 @media print{
-  @page{size:A4 landscape;margin:12mm}
-  body{background:#fff;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .topbar,.breadcrumb,#card-carga,.tabs,#alert-sinclasif,.no-print,.alert,
-  #panel-movimientos,#panel-equivalencias,#panel-historial,.toast{display:none!important}
-  .page{max-width:none;padding:0}
-  .print-only{display:block}
-  .print-header{border-bottom:2px solid #18181A;padding-bottom:6px;margin-bottom:10px}
-  .print-seccion{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px}
-  .print-salto{break-before:page}
-  #panel-resumen,#panel-prestamos{display:block!important}
-  .stats{grid-template-columns:repeat(4,1fr)}
-  .stat,.tbl-wrap{border-color:#999;break-inside:auto}
-  tr{break-inside:avoid}
-  th{color:#333}
-  input.inp-num{border:none!important;padding:0;width:110px;font-size:11px;background:transparent;-moz-appearance:textfield;appearance:textfield}
-  .inp-num::-webkit-inner-spin-button,.inp-num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+  @page{size:A4 portrait;margin:14mm 12mm}
+  body{background:#fff}
+  body>*:not(#print-area){display:none!important}
+  #print-area{display:block;color:#000;font-family:'Inter',Arial,sans-serif;font-size:10.5px}
+  #print-area .p-cab{border-bottom:1.5px solid #000;padding-bottom:5px;margin-bottom:12px}
+  #print-area .p-emp{font-size:9px;letter-spacing:.06em;text-transform:uppercase}
+  #print-area .p-tit{font-size:16px;font-weight:700;margin:2px 0}
+  #print-area .p-sub{font-size:9px}
+  #print-area .p-sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 4px}
+  #print-area table{width:100%;border-collapse:collapse;font-size:10.5px}
+  #print-area th{text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #000;padding:4px 5px;vertical-align:bottom;background:none;color:#000;letter-spacing:0}
+  #print-area td{padding:4px 5px;border-bottom:.5px solid #ccc;vertical-align:middle}
+  #print-area .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  #print-area .cod{font-family:Consolas,monospace;font-size:9.5px;white-space:nowrap;background:none;padding:0}
+  #print-area .th-cod{display:block;font-family:Consolas,monospace;font-weight:400;text-transform:none;font-size:9px}
+  #print-area .tach{text-decoration:line-through}
+  #print-area .gris{color:#666}
+  #print-area .linea{display:inline-block;width:80px;border-bottom:.5px solid #000;height:10px}
+  #print-area tr.tot td{border-top:1px solid #000;border-bottom:none;font-weight:700}
+  #print-area tr{break-inside:avoid}
+  #print-area .p-nota{font-size:9px;margin-top:6px}
 }
 
 @media(max-width:900px){.grid2{grid-template-columns:1fr}}
@@ -180,12 +185,6 @@ tr.row-sub td:first-child{padding-left:22px}
     <div class="info-line" id="info-line"><span class="muted">Elegí el banco y subí el extracto del mes tal cual lo descargás del homebanking.</span></div>
   </div>
 
-  <div class="print-only print-header">
-    <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#56555A">Distribuidora del Palacio S.A.</div>
-    <div style="font-size:18px;font-weight:700" id="print-titulo"></div>
-    <div style="font-size:10px;color:#56555A" id="print-sub"></div>
-  </div>
-
   <div id="zona-resultado" style="display:none">
     <div class="stats">
       <div class="stat"><div class="stat-l">Movimientos</div><div class="stat-v" id="st-movs">—</div></div>
@@ -205,13 +204,11 @@ tr.row-sub td:first-child{padding-left:22px}
   </div>
 
   <!-- RESUMEN -->
-  <div class="print-only print-seccion">Resumen del mes</div>
   <div class="panel active" id="panel-resumen">
     <div id="resumen-cont"><div class="tbl-wrap"><div class="empty">Subí un extracto o abrí un período guardado para ver el resumen.</div></div></div>
   </div>
 
   <!-- PRESTAMOS -->
-  <div class="print-only print-seccion print-salto">Préstamos del mes</div>
   <div class="panel" id="panel-prestamos">
     <div id="prest-cont"><div class="tbl-wrap"><div class="empty">Sin movimientos de préstamos.</div></div></div>
   </div>
@@ -273,6 +270,7 @@ tr.row-sub td:first-child{padding-left:22px}
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="print-area"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
@@ -1044,11 +1042,57 @@ function exportarExcel() {
 }
 
 /* ═══ IMPRIMIR ═══ */
+function armarHojaImpresion() {
+  const R = state.resumen, P = cfg().prestamos;
+  const num = n => fmtN(Math.abs(n));
+  let h = '<div class="p-cab"><div class="p-emp">Distribuidora del Palacio S.A.</div>'
+    + '<div class="p-tit">Banco ' + esc(state.banco) + ' — ' + fmtPeriodo(state.periodo) + '</div>'
+    + '<div class="p-sub">' + (state.archivo ? 'Archivo: ' + esc(state.archivo) + ' · ' : '')
+    + 'Impreso el ' + new Date().toLocaleString('es-AR') + ' por ' + esc(USER.nombre || USER.username) + '</div></div>';
+
+  // Resumen: solo filas con movimiento
+  h += '<div class="p-sec">Resumen</div><table><thead><tr><th>Tipo de movimiento</th><th>Cómo subir al sistema</th><th class="n">Importe a subir</th></tr></thead><tbody>';
+  R.filas.filter(f => f.total).forEach(f => {
+    let imp, cod = esc(f.codigo);
+    if (f.regla === 'no_subir') imp = '<span class="gris">—</span>';
+    else if (f.regla === 'prestamos') { imp = '<span class="tach gris">' + num(f.subir) + '</span>'; cod = 'Ver préstamos'; }
+    else if (f.regla === 'revisar') { imp = num(f.subir); cod = 'REVISAR — sin clasificar'; }
+    else imp = num(f.subir);
+    h += '<tr><td>' + esc(f.tipo) + '</td><td class="cod">' + cod + '</td><td class="n">' + imp + '</td></tr>';
+  });
+  const dif = r2(R.totalDatos - R.totalClasif);
+  h += '</tbody></table><div class="p-nota">Control de cuadre: total extracto ' + fmtN(R.totalDatos) + ' · total clasificado ' + fmtN(R.totalClasif)
+    + ' · diferencia ' + fmtN(dif) + (Math.abs(dif) < 0.01 ? ' ✓' : ' ⚠') + '</div>';
+
+  // Préstamos: con el código de cada columna; lo vacío sale con línea para anotar
+  if (state.prestamos.length) {
+    const val = v => v == null || v === '' ? '<span class="linea"></span>' : fmtN(v);
+    h += '<div class="p-sec">Préstamos</div><table><thead><tr><th>Fecha</th><th>Descripción</th><th class="n">Importe</th>'
+      + '<th class="n">Capital<span class="th-cod">' + esc(P.codCapital) + '</span></th>'
+      + '<th class="n">Interés<span class="th-cod">' + esc(P.codInteres) + '</span></th>'
+      + '<th class="n">IIBB<span class="th-cod">' + esc(P.codIIBB) + '</span></th>'
+      + '<th class="n">Diferencia</th></tr></thead><tbody>';
+    const tot = {cap:0, int:0, iibb:0};
+    state.prestamos.forEach(p => {
+      h += '<tr><td>' + fmtFecha(p.fecha) + '</td><td>' + esc(p.desc) + '</td><td class="n">' + num(p.importe) + '</td>';
+      if (p.acreditacion) {
+        h += '<td colspan="4">Completo con <span class="cod">' + esc(P.codAcreditacion) + '</span></td>';
+      } else {
+        tot.cap += +p.capital || 0; tot.int += +p.interes || 0; tot.iibb += +p.iibb || 0;
+        const vacio = p.capital == null && p.interes == null && p.iibb == null;
+        h += '<td class="n">' + val(p.capital) + '</td><td class="n">' + val(p.interes) + '</td><td class="n">' + val(p.iibb) + '</td>'
+          + '<td class="n">' + (vacio ? '<span class="linea" style="width:55px"></span>' : fmtN(difPrestamo(p))) + '</td>';
+      }
+      h += '</tr>';
+    });
+    h += '<tr class="tot"><td colspan="3">Total a subir</td><td class="n">' + fmtN(tot.cap) + '</td><td class="n">' + fmtN(tot.int) + '</td><td class="n">' + fmtN(tot.iibb) + '</td><td></td></tr>';
+    h += '</tbody></table>';
+  }
+  document.getElementById('print-area').innerHTML = h;
+}
 function imprimir() {
   if (!state.resumen) return;
-  document.getElementById('print-titulo').textContent = 'Banco ' + state.banco + ' — ' + fmtPeriodo(state.periodo);
-  document.getElementById('print-sub').textContent = (state.archivo ? 'Archivo: ' + state.archivo + ' · ' : '')
-    + 'Impreso el ' + new Date().toLocaleString('es-AR') + ' por ' + (USER.nombre || USER.username);
+  armarHojaImpresion();
   const tit = document.title;
   document.title = 'Bancos ' + state.banco + ' ' + fmtPeriodo(state.periodo); // nombre sugerido del PDF
   window.print();
