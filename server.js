@@ -111,6 +111,7 @@ async function initDB() {
         updated_at TIMESTAMP DEFAULT NOW(),
         UNIQUE(modulo, periodo)
       );
+      ALTER TABLE datos_modulos ALTER COLUMN periodo TYPE VARCHAR(100);
 
       CREATE TABLE IF NOT EXISTS pendientes_acreditacion (
         id SERIAL PRIMARY KEY,
