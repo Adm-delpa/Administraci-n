@@ -728,6 +728,16 @@ function subirHtml(f) {
   if (f.regla === 'prestamos') return '<td class="num tachado" title="No se sube desde acá: usar la tabla de Préstamos">' + fmtN(Math.abs(f.subir)) + '</td>';
   return '<td class="num subir">' + fmtN(Math.abs(f.subir)) + '</td>';
 }
+// Filas del resumen con el IVA ubicado justo debajo de GASTOS
+function esFilaGastos(f) { return f.regla === 'gastos' || norm(f.tipo) === 'GASTOS'; }
+function filasOrdenadas(R) {
+  const iva = R.filas.filter(f => f.regla === 'iva');
+  const resto = R.filas.filter(f => f.regla !== 'iva');
+  let pos = -1;
+  resto.forEach((f, i) => { if (esFilaGastos(f)) pos = i; });
+  if (!iva.length || pos < 0) return R.filas;
+  return resto.slice(0, pos + 1).concat(iva, resto.slice(pos + 1));
+}
 // Verifica que el IVA cobrado sea el % configurado de los gastos (solo si el banco tiene un tipo con cálculo IVA)
 function verificarIVA(R) {
   const filasIva = R.filas.filter(f => f.regla === 'iva');
@@ -769,10 +779,13 @@ function renderResumen() {
   renderCuadre();
   if (!R) { cont.innerHTML = '<div class="tbl-wrap"><div class="empty">Subí un extracto o abrí un período guardado para ver el resumen.</div></div>'; return; }
   let html = '<div class="tbl-wrap"><table><thead><tr><th>Tipo de movimiento</th><th class="num">Total del mes</th><th>Cómo subir al sistema</th><th class="num">Importe a subir al sistema</th></tr></thead><tbody>';
-  R.filas.forEach(f => {
+  const V = verificarIVA(R);
+  filasOrdenadas(R).forEach(f => {
     if (f.regla === 'revisar' && !f.total) return;
     const cls = f.regla === 'revisar' ? 'row-revisar' : f.regla === 'no_subir' ? 'row-nosubir' : '';
-    html += '<tr class="' + cls + '"><td>' + esc(f.tipo) + '</td><td class="num">' + fmtImp(f.total) + '</td><td>' + codHtml(f) + '</td>'
+    const control = f.regla === 'iva' && V ? '<div style="font-size:11px;font-weight:600;color:' + (V.ok ? '#0F8A5F' : '#B42318') + '">'
+      + String(r2(V.tasa * 100)).replace('.', ',') + '% de los gastos: ' + fmtN(V.esperado) + (V.ok ? ' ✓' : ' ⚠ diferencia ' + fmtN(V.dif)) + '</div>' : '';
+    html += '<tr class="' + cls + '"><td>' + esc(f.tipo) + control + '</td><td class="num">' + fmtImp(f.total) + '</td><td>' + codHtml(f) + '</td>'
       + subirHtml(f) + '</tr>';
   });
   html += '<tr class="row-total"><td>TOTAL</td><td class="num">' + fmtImp(R.totalClasif) + '</td><td></td><td></td></tr></tbody></table></div>';
@@ -1036,7 +1049,7 @@ function exportarExcel() {
   const R = state.resumen;
 
   const res = [['RESUMEN DEL MES — ' + titulo], [], ['Tipo de movimiento', 'Total del mes', 'Cómo subir al sistema', 'Importe a subir al sistema']];
-  R.filas.forEach(f => { if (f.regla !== 'revisar' || f.total) res.push([f.tipo, f.total, f.regla === 'revisar' ? 'REVISAR' : f.codigo, f.subir == null || f.regla === 'prestamos' ? '' : Math.abs(f.subir)]); });
+  filasOrdenadas(R).forEach(f => { if (f.regla !== 'revisar' || f.total) res.push([f.tipo, f.total, f.regla === 'revisar' ? 'REVISAR' : f.codigo, f.subir == null || f.regla === 'prestamos' ? '' : Math.abs(f.subir)]); });
   res.push(['TOTAL', R.totalClasif], [], ['CONTROL DE CUADRE'], ['Total cargado en extracto', R.totalDatos], ['Total clasificado', R.totalClasif], ['Diferencia (debe ser 0)', r2(R.totalDatos - R.totalClasif)]);
   const ws1 = XLSX.utils.aoa_to_sheet(res);
   ws1['!cols'] = [{wch:40}, {wch:18}, {wch:26}, {wch:22}];
@@ -1072,7 +1085,7 @@ function armarHojaImpresion() {
 
   // Resumen: solo filas con movimiento
   h += '<div class="p-sec">Resumen</div><table><thead><tr><th>Tipo de movimiento</th><th>Cómo subir al sistema</th><th class="n">Importe a subir</th></tr></thead><tbody>';
-  R.filas.filter(f => f.total).forEach(f => {
+  filasOrdenadas(R).filter(f => f.total).forEach(f => {
     let imp, cod = esc(f.codigo);
     if (f.regla === 'no_subir') imp = '<span class="gris">—</span>';
     else if (f.regla === 'prestamos') { imp = '<span class="tach gris">' + num(f.subir) + '</span>'; cod = 'Ver préstamos'; }
