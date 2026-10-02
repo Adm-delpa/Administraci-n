@@ -186,12 +186,7 @@ tr.row-sub td:first-child{padding-left:22px}
   </div>
 
   <div id="zona-resultado" style="display:none">
-    <div class="stats">
-      <div class="stat"><div class="stat-l">Movimientos</div><div class="stat-v" id="st-movs">—</div></div>
-      <div class="stat"><div class="stat-l">Créditos</div><div class="stat-v" id="st-cred">—</div></div>
-      <div class="stat"><div class="stat-l">Débitos</div><div class="stat-v neg" id="st-deb">—</div></div>
-      <div class="stat"><div class="stat-l">Neto del mes</div><div class="stat-v" id="st-neto">—</div></div>
-    </div>
+    <div id="cuadre-cont"></div>
     <div id="alert-sinclasif"></div>
   </div>
 
@@ -686,15 +681,6 @@ function renderInfo() {
   }
   info.innerHTML = html;
 
-  // Stats
-  let cred = 0, deb = 0, n = 0;
-  if (state.movs) state.movs.forEach(m => { n++; if (m.importe >= 0) cred += m.importe; else deb += m.importe; });
-  else if (g && g.stats) ({cred, deb, n} = g.stats);
-  document.getElementById('st-movs').textContent = n.toLocaleString('es-AR');
-  document.getElementById('st-cred').textContent = fmtN(cred);
-  document.getElementById('st-deb').textContent = fmtN(deb);
-  document.getElementById('st-neto').innerHTML = fmtImp(cred + deb);
-
   // Alerta sin clasificar
   const al = document.getElementById('alert-sinclasif');
   if (!state.sinClasif.length) {
@@ -738,11 +724,25 @@ function subirHtml(f) {
   if (f.regla === 'prestamos') return '<td class="num tachado" title="No se sube desde acá: usar la tabla de Préstamos">' + fmtN(Math.abs(f.subir)) + '</td>';
   return '<td class="num subir">' + fmtN(Math.abs(f.subir)) + '</td>';
 }
+// Control de cuadre + aviso de préstamos, arriba de las solapas
+function renderCuadre() {
+  const cont = document.getElementById('cuadre-cont');
+  const R = state.resumen;
+  if (!R) { cont.innerHTML = ''; return; }
+  const dif = r2(R.totalDatos - R.totalClasif);
+  let html = '<div class="card-title">Control de cuadre</div><div class="cuadre">'
+    + '<div class="stat"><div class="stat-l">Total cargado (extracto)</div><div class="stat-v">' + fmtN(R.totalDatos) + '</div></div>'
+    + '<div class="stat"><div class="stat-l">Total clasificado</div><div class="stat-v">' + fmtN(R.totalClasif) + '</div></div>'
+    + '<div class="stat"><div class="stat-l">Diferencia (debe ser 0)</div><div class="stat-v ' + (Math.abs(dif) < 0.01 ? 'ok' : 'bad') + '">' + fmtN(dif) + '</div></div></div>';
+  const pend = state.prestamos.filter(p => Math.abs(difPrestamo(p)) >= 0.01).length;
+  if (pend) html += '<div class="alert alert-red">⚠ ' + (pend === 1 ? 'Falta completar 1 cuota' : 'Faltan completar ' + pend + ' cuotas') + ' de préstamos (o tienen diferencia). Completalas en la solapa <a href="#" onclick="verTab(\'prestamos\');return false">Préstamos</a>.</div>';
+  cont.innerHTML = html;
+}
 function renderResumen() {
   const cont = document.getElementById('resumen-cont');
   const R = state.resumen;
+  renderCuadre();
   if (!R) { cont.innerHTML = '<div class="tbl-wrap"><div class="empty">Subí un extracto o abrí un período guardado para ver el resumen.</div></div>'; return; }
-  const dif = r2(R.totalDatos - R.totalClasif);
   let html = '<div class="tbl-wrap"><table><thead><tr><th>Tipo de movimiento</th><th class="num">Total del mes</th><th>Cómo subir al sistema</th><th class="num">Importe a subir al sistema</th></tr></thead><tbody>';
   R.filas.forEach(f => {
     if (f.regla === 'revisar' && !f.total) return;
@@ -751,12 +751,6 @@ function renderResumen() {
       + subirHtml(f) + '</tr>';
   });
   html += '<tr class="row-total"><td>TOTAL</td><td class="num">' + fmtImp(R.totalClasif) + '</td><td></td><td></td></tr></tbody></table></div>';
-  html += '<div class="card-title">Control de cuadre</div><div class="cuadre">'
-    + '<div class="stat"><div class="stat-l">Total cargado (extracto)</div><div class="stat-v">' + fmtN(R.totalDatos) + '</div></div>'
-    + '<div class="stat"><div class="stat-l">Total clasificado</div><div class="stat-v">' + fmtN(R.totalClasif) + '</div></div>'
-    + '<div class="stat"><div class="stat-l">Diferencia (debe ser 0)</div><div class="stat-v ' + (Math.abs(dif) < 0.01 ? 'ok' : 'bad') + '">' + fmtN(dif) + '</div></div></div>';
-  const pend = state.prestamos.filter(p => Math.abs(difPrestamo(p)) >= 0.01).length;
-  if (pend) html += '<div class="alert alert-red">⚠ Faltan completar ' + pend + ' cuotas de préstamos (o tienen diferencia). Completalas en la solapa <a href="#" onclick="verTab(\'prestamos\');return false">Préstamos</a>.</div>';
   html += '<div class="note">DEC 380/1 = Impuesto crédito del mes × ' + String((Number(cfg().dec380) || 0) * 100).replace('.', ',') + '%. '
     + 'I.T.F. = Impuesto débito + Impuesto crédito − DEC 380/1. Los sueldos se abren en una fila por cada fecha de pago.</div>';
   cont.innerHTML = html;
