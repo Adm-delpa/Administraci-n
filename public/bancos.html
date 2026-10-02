@@ -219,6 +219,8 @@ tr.row-sub td:first-child{padding-left:22px}
 
   <!-- EQUIVALENCIAS -->
   <div class="panel" id="panel-equivalencias">
+    <div class="tbl-wrap" id="eq-sinbanco"><div class="empty">Elegí un banco arriba para ver o configurar sus equivalencias.</div></div>
+    <div id="eq-conbanco">
     <div class="card flex" style="justify-content:space-between">
       <div>
         <div style="font-size:15px;font-weight:700">Equivalencias del banco <span id="eq-banco" style="color:#E65100"></span></div>
@@ -255,6 +257,7 @@ tr.row-sub td:first-child{padding-left:22px}
         </div>
         <button class="btn btn-green admin-only" style="margin-top:1rem;width:100%" onclick="guardarEquivalencias()">Guardar equivalencias</button>
       </div>
+    </div>
     </div>
   </div>
 
@@ -347,7 +350,7 @@ function configProvincia() {
 /* ═══ ESTADO ═══ */
 const state = {
   config: { bancos: {} },
-  banco: 'PROVINCIA',
+  banco: '',             // sin banco elegido al abrir, para no confundir
   periodos: {},          // guardados en el servidor
   movs: null,            // movimientos del extracto (null si se abrió desde historial)
   archivo: null,
@@ -426,7 +429,6 @@ async function cargarDatos() {
   if (!state.config.bancos.PROVINCIA && !Object.keys(state.config.bancos).length) {
     state.config.bancos.PROVINCIA = configProvincia();
   }
-  if (!state.config.bancos[state.banco]) state.banco = Object.keys(state.config.bancos)[0];
 }
 async function guardarConfig(mostrarToast) {
   if (!IS_ADMIN) return;
@@ -447,7 +449,7 @@ async function guardarEquivalencias() {
 /* ═══ BANCOS ═══ */
 function renderBancos() {
   const sel = document.getElementById('sel-banco');
-  sel.innerHTML = Object.keys(state.config.bancos).sort().map(b =>
+  sel.innerHTML = '<option value=""' + (state.banco ? '' : ' selected') + '>Elegí un banco…</option>' + Object.keys(state.config.bancos).sort().map(b =>
     '<option value="' + esc(b) + '"' + (b === state.banco ? ' selected' : '') + '>' + esc(b) + '</option>').join('');
 }
 function cambiarBanco() {
@@ -475,6 +477,7 @@ async function nuevoBanco() {
 function subirExtracto(input) {
   const file = input.files[0];
   if (!file) return;
+  if (!state.banco) { toast('Primero elegí el banco del extracto', true); input.value = ''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -647,12 +650,16 @@ function renderTodo() {
   renderInfo();
   renderResumen();
   renderPrestamos();
-  renderMovTipos();
   renderMovimientos();
+  renderHistorial();
+  const hayBanco = !!cfg();
+  document.getElementById('eq-sinbanco').style.display = hayBanco ? 'none' : 'block';
+  document.getElementById('eq-conbanco').style.display = hayBanco ? 'block' : 'none';
+  if (!hayBanco) return;
+  renderMovTipos();
   renderEquivalencias();
   renderTipos();
   renderParametros();
-  renderHistorial();
 }
 function limpiarResultado() {
   Object.assign(state, {movs:null, archivo:null, periodo:null, resumen:null, prestamos:[], sinClasif:[], fuente:null});
