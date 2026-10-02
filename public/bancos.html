@@ -288,6 +288,8 @@ if (!IS_ADMIN) {
 /* ═══ CONFIGURACIÓN POR DEFECTO (de la plantilla Banco Provincia) ═══ */
 const REGLAS = [
   {id:'normal',      label:'Normal'},
+  {id:'gastos',      label:'Gastos (base del IVA)'},
+  {id:'iva',         label:'IVA (verifica % de gastos)'},
   {id:'imp_credito', label:'Imp. crédito (DEC 380/1)'},
   {id:'imp_debito',  label:'Imp. débito (I.T.F.)'},
   {id:'sueldos',     label:'Sueldos (por fecha)'},
@@ -299,8 +301,9 @@ const TIPO_REVISAR = 'REVISAR - NO ESTA EN EQUIVALENCIAS';
 function configProvincia() {
   return {
     dec380: 0.34,
+    tasaIVA: 0.21,
     tipos: [
-      {tipo:'GASTOS',                      codigo:'3-6RAV-101-2',           regla:'normal'},
+      {tipo:'GASTOS',                      codigo:'3-6RAV-101-2',           regla:'gastos'},
       {tipo:'IMPUESTO CREDITO -LEY 25413', codigo:'ITF 4-NG-127-2',         regla:'imp_credito'},
       {tipo:'IMPUESTO DEBITO -LEY 25413',  codigo:'DEC 380/1 12-NG-127-2',  regla:'imp_debito'},
       {tipo:'INTERESES COBRADOS',          codigo:'17- NG',                 regla:'normal'},
@@ -458,6 +461,7 @@ async function nuevoBanco() {
   if (state.config.bancos[nombre]) { toast('Ese banco ya existe', true); return; }
   const base = configProvincia();
   base.equivalencias = []; // cada banco usa sus propias descripciones
+  base.tipos.splice(1, 0, {tipo:'IVA 21%', codigo:'', regla:'iva'}); // Provincia no cobra IVA; los demás bancos sí
   state.config.bancos[nombre] = base;
   state.banco = nombre;
   await guardarConfig();
@@ -724,6 +728,19 @@ function subirHtml(f) {
   if (f.regla === 'prestamos') return '<td class="num tachado" title="No se sube desde acá: usar la tabla de Préstamos">' + fmtN(Math.abs(f.subir)) + '</td>';
   return '<td class="num subir">' + fmtN(Math.abs(f.subir)) + '</td>';
 }
+// Verifica que el IVA cobrado sea el % configurado de los gastos (solo si el banco tiene un tipo con cálculo IVA)
+function verificarIVA(R) {
+  const filasIva = R.filas.filter(f => f.regla === 'iva');
+  if (!filasIva.length) return null;
+  let filasBase = R.filas.filter(f => f.regla === 'gastos');
+  if (!filasBase.length) filasBase = R.filas.filter(f => norm(f.tipo) === 'GASTOS');
+  const tasa = cfg().tasaIVA == null ? 0.21 : Number(cfg().tasaIVA);
+  const gastos = Math.abs(filasBase.reduce((s, f) => s + f.total, 0));
+  const iva = Math.abs(filasIva.reduce((s, f) => s + f.total, 0));
+  const esperado = r2(gastos * tasa);
+  const dif = r2(iva - esperado);
+  return {gastos, iva, esperado, dif, tasa, ok: Math.abs(dif) <= 1};  // tolerancia $1 por redondeos línea a línea
+}
 // Control de cuadre + aviso de préstamos, arriba de las solapas
 function renderCuadre() {
   const cont = document.getElementById('cuadre-cont');
@@ -734,6 +751,14 @@ function renderCuadre() {
     + '<div class="stat"><div class="stat-l">Total cargado (extracto)</div><div class="stat-v">' + fmtN(R.totalDatos) + '</div></div>'
     + '<div class="stat"><div class="stat-l">Total clasificado</div><div class="stat-v">' + fmtN(R.totalClasif) + '</div></div>'
     + '<div class="stat"><div class="stat-l">Diferencia (debe ser 0)</div><div class="stat-v ' + (Math.abs(dif) < 0.01 ? 'ok' : 'bad') + '">' + fmtN(dif) + '</div></div></div>';
+  const V = verificarIVA(R);
+  if (V) {
+    const pct = String(r2(V.tasa * 100)).replace('.', ',') + '%';
+    html += '<div class="card-title">Control de IVA</div><div class="cuadre">'
+      + '<div class="stat"><div class="stat-l">IVA del extracto</div><div class="stat-v">' + fmtN(V.iva) + '</div></div>'
+      + '<div class="stat"><div class="stat-l">' + pct + ' de los gastos (' + fmtN(V.gastos) + ')</div><div class="stat-v">' + fmtN(V.esperado) + '</div></div>'
+      + '<div class="stat"><div class="stat-l">Diferencia (debe ser 0)</div><div class="stat-v ' + (V.ok ? 'ok' : 'bad') + '">' + fmtN(V.dif) + '</div></div></div>';
+  }
   const pend = state.prestamos.filter(p => Math.abs(difPrestamo(p)) >= 0.01).length;
   if (pend) html += '<div class="alert alert-red">⚠ ' + (pend === 1 ? 'Falta completar 1 cuota' : 'Faltan completar ' + pend + ' cuotas') + ' de préstamos (o tienen diferencia). Completalas en la solapa <a href="#" onclick="verTab(\'prestamos\');return false">Préstamos</a>.</div>';
   cont.innerHTML = html;
@@ -921,6 +946,7 @@ function renderParametros() {
     + ' onchange="setParam(\'' + path + '\',this.value,' + (tipo === 'number') + ')" style="width:100%"></div>';
   document.getElementById('param-cont').innerHTML =
       campo('% DEC 380/1 sobre imp. crédito (0,34 = 34%)', 'dec380', c.dec380, 'number')
+    + campo('% IVA sobre gastos (0,21 = 21%)', 'tasaIVA', c.tasaIVA == null ? 0.21 : c.tasaIVA, 'number')
     + campo('Código capital', 'prestamos.codCapital', P.codCapital)
     + campo('Código interés', 'prestamos.codInteres', P.codInteres)
     + campo('Código IIBB', 'prestamos.codIIBB', P.codIIBB)
@@ -1057,6 +1083,9 @@ function armarHojaImpresion() {
   const dif = r2(R.totalDatos - R.totalClasif);
   h += '</tbody></table><div class="p-nota">Control de cuadre: total extracto ' + fmtN(R.totalDatos) + ' · total clasificado ' + fmtN(R.totalClasif)
     + ' · diferencia ' + fmtN(dif) + (Math.abs(dif) < 0.01 ? ' ✓' : ' ⚠') + '</div>';
+  const V = verificarIVA(R);
+  if (V) h += '<div class="p-nota">Control de IVA: IVA del extracto ' + fmtN(V.iva) + ' · ' + String(r2(V.tasa * 100)).replace('.', ',')
+    + '% de los gastos ' + fmtN(V.esperado) + ' · diferencia ' + fmtN(V.dif) + (V.ok ? ' ✓' : ' ⚠') + '</div>';
 
   // Préstamos: con el código de cada columna; lo vacío sale con línea para anotar
   if (state.prestamos.length) {
