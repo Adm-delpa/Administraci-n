@@ -96,6 +96,28 @@ tr.row-sub td:first-child{padding-left:22px}
 .toast.show{opacity:1;transform:none}
 .toast.err{background:#B42318}
 
+.tachado{text-decoration:line-through;color:#9896A0}
+.print-only{display:none}
+
+@media print{
+  @page{size:A4 landscape;margin:12mm}
+  body{background:#fff;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .topbar,.breadcrumb,#card-carga,.tabs,#alert-sinclasif,.no-print,.alert,
+  #panel-movimientos,#panel-equivalencias,#panel-historial,.toast{display:none!important}
+  .page{max-width:none;padding:0}
+  .print-only{display:block}
+  .print-header{border-bottom:2px solid #18181A;padding-bottom:6px;margin-bottom:10px}
+  .print-seccion{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px}
+  .print-salto{break-before:page}
+  #panel-resumen,#panel-prestamos{display:block!important}
+  .stats{grid-template-columns:repeat(4,1fr)}
+  .stat,.tbl-wrap{border-color:#999;break-inside:auto}
+  tr{break-inside:avoid}
+  th{color:#333}
+  input.inp-num{border:none!important;padding:0;width:110px;font-size:11px;background:transparent;-moz-appearance:textfield;appearance:textfield}
+  .inp-num::-webkit-inner-spin-button,.inp-num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+}
+
 @media(max-width:900px){.grid2{grid-template-columns:1fr}}
 @media(max-width:700px){
   .topbar{padding:.75rem 1rem}
@@ -133,7 +155,7 @@ tr.row-sub td:first-child{padding-left:22px}
   </div>
 
   <!-- CARGA -->
-  <div class="card">
+  <div class="card" id="card-carga">
     <div class="toolbar">
       <div class="field">
         <label>Banco</label>
@@ -150,8 +172,18 @@ tr.row-sub td:first-child{padding-left:22px}
       <div style="flex:1"></div>
       <button class="btn btn-green admin-only" id="btn-guardar" onclick="guardarPeriodo()" disabled>Guardar período</button>
       <button class="btn btn-sec" id="btn-excel" onclick="exportarExcel()" disabled>Descargar Excel</button>
+      <button class="btn btn-sec" id="btn-imprimir" onclick="imprimir()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Imprimir / PDF
+      </button>
     </div>
     <div class="info-line" id="info-line"><span class="muted">Elegí el banco y subí el extracto del mes tal cual lo descargás del homebanking.</span></div>
+  </div>
+
+  <div class="print-only print-header">
+    <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#56555A">Distribuidora del Palacio S.A.</div>
+    <div style="font-size:18px;font-weight:700" id="print-titulo"></div>
+    <div style="font-size:10px;color:#56555A" id="print-sub"></div>
   </div>
 
   <div id="zona-resultado" style="display:none">
@@ -173,11 +205,13 @@ tr.row-sub td:first-child{padding-left:22px}
   </div>
 
   <!-- RESUMEN -->
+  <div class="print-only print-seccion">Resumen del mes</div>
   <div class="panel active" id="panel-resumen">
     <div id="resumen-cont"><div class="tbl-wrap"><div class="empty">Subí un extracto o abrí un período guardado para ver el resumen.</div></div></div>
   </div>
 
   <!-- PRESTAMOS -->
+  <div class="print-only print-seccion print-salto">Préstamos del mes</div>
   <div class="panel" id="panel-prestamos">
     <div id="prest-cont"><div class="tbl-wrap"><div class="empty">Sin movimientos de préstamos.</div></div></div>
   </div>
@@ -633,6 +667,7 @@ function renderInfo() {
   const hay = !!state.resumen;
   document.getElementById('btn-guardar').disabled = !hay;
   document.getElementById('btn-excel').disabled = !hay;
+  document.getElementById('btn-imprimir').disabled = !hay;
   if (!hay) {
     zona.style.display = 'none';
     info.innerHTML = '<span class="muted">Elegí el banco y subí el extracto del mes tal cual lo descargás del homebanking.</span>';
@@ -699,6 +734,12 @@ function codHtml(f) {
   return f.codigo ? '<span class="cod">' + esc(f.codigo) + '</span>' : '';
 }
 
+// Importe a subir: siempre en positivo. Préstamos se muestra tachado porque se sube desde la tabla de préstamos.
+function subirHtml(f) {
+  if (f.subir == null) return '<td class="num muted">—</td>';
+  if (f.regla === 'prestamos') return '<td class="num tachado" title="No se sube desde acá: usar la tabla de Préstamos">' + fmtN(Math.abs(f.subir)) + '</td>';
+  return '<td class="num subir">' + fmtN(Math.abs(f.subir)) + '</td>';
+}
 function renderResumen() {
   const cont = document.getElementById('resumen-cont');
   const R = state.resumen;
@@ -709,7 +750,7 @@ function renderResumen() {
     if (f.regla === 'revisar' && !f.total) return;
     const cls = f.regla === 'revisar' ? 'row-revisar' : f.regla === 'no_subir' ? 'row-nosubir' : '';
     html += '<tr class="' + cls + '"><td>' + esc(f.tipo) + '</td><td class="num">' + fmtImp(f.total) + '</td><td>' + codHtml(f) + '</td>'
-      + '<td class="num ' + (f.subir == null ? 'muted' : 'subir') + '">' + (f.subir == null ? '—' : fmtImp(f.subir)) + '</td></tr>';
+      + subirHtml(f) + '</tr>';
   });
   html += '<tr class="row-total"><td>TOTAL</td><td class="num">' + fmtImp(R.totalClasif) + '</td><td></td><td></td></tr></tbody></table></div>';
   html += '<div class="card-title">Control de cuadre</div><div class="cuadre">'
@@ -742,7 +783,7 @@ function renderPrestamos() {
     + '<th class="num">Capital<br><span class="cod">' + esc(P.codCapital) + '</span></th>'
     + '<th class="num">Interés<br><span class="cod">' + esc(P.codInteres) + '</span></th>'
     + '<th class="num">IIBB<br><span class="cod">' + esc(P.codIIBB) + '</span></th>'
-    + '<th class="num">Diferencia</th><th></th></tr></thead><tbody>';
+    + '<th class="num">Diferencia</th><th class="no-print"></th></tr></thead><tbody>';
   const tot = {imp:0, cap:0, int:0, iibb:0};
   L.forEach((p, i) => {
     const d = difPrestamo(p);
@@ -753,15 +794,15 @@ function renderPrestamos() {
     html += '<tr><td style="white-space:nowrap">' + fmtFecha(p.fecha) + '</td><td>' + esc(p.desc) + '</td>'
       + '<td class="num">' + fmtImp(p.importe) + '</td>';
     if (p.acreditacion) {
-      html += '<td><span class="cod">' + esc(P.codAcreditacion) + '</span></td><td colspan="3" class="muted">Se sube completo con el código especial</td><td class="num dif-ok">—</td><td></td>';
+      html += '<td><span class="cod">' + esc(P.codAcreditacion) + '</span></td><td colspan="3" class="muted">Se sube completo con el código especial</td><td class="num dif-ok">—</td><td class="no-print"></td>';
     } else {
       html += '<td></td><td class="num">' + inp('capital') + '</td><td class="num">' + inp('interes') + '</td><td class="num">' + inp('iibb') + '</td>'
         + '<td class="num ' + (Math.abs(d) < 0.01 ? 'dif-ok' : 'dif-bad') + '">' + fmtN(d) + '</td>'
-        + '<td style="white-space:nowrap">' + (IS_ADMIN ? '<button class="btn btn-sec btn-sm" onclick="prestCapital(' + i + ')" title="Pasa todo el importe a Capital">Todo capital</button>' : '') + '</td>';
+        + '<td class="no-print" style="white-space:nowrap">' + (IS_ADMIN ? '<button class="btn btn-sec btn-sm" onclick="prestCapital(' + i + ')" title="Pasa todo el importe a Capital">Todo capital</button>' : '') + '</td>';
     }
     html += '</tr>';
   });
-  html += '<tr class="row-total"><td colspan="2">TOTAL</td><td class="num">' + fmtImp(r2(tot.imp)) + '</td><td></td><td class="num">' + fmtN(tot.cap) + '</td><td class="num">' + fmtN(tot.int) + '</td><td class="num">' + fmtN(tot.iibb) + '</td><td></td><td></td></tr>';
+  html += '<tr class="row-total"><td colspan="2">TOTAL</td><td class="num">' + fmtImp(r2(tot.imp)) + '</td><td></td><td class="num">' + fmtN(tot.cap) + '</td><td class="num">' + fmtN(tot.int) + '</td><td class="num">' + fmtN(tot.iibb) + '</td><td></td><td class="no-print"></td></tr>';
   html += '</tbody></table></div>';
   cont.innerHTML = html;
 }
@@ -977,7 +1018,7 @@ function exportarExcel() {
   const R = state.resumen;
 
   const res = [['RESUMEN DEL MES — ' + titulo], [], ['Tipo de movimiento', 'Total del mes', 'Cómo subir al sistema', 'Importe a subir al sistema']];
-  R.filas.forEach(f => { if (f.regla !== 'revisar' || f.total) res.push([f.tipo, f.total, f.regla === 'revisar' ? 'REVISAR' : f.codigo, f.subir == null ? '' : f.subir]); });
+  R.filas.forEach(f => { if (f.regla !== 'revisar' || f.total) res.push([f.tipo, f.total, f.regla === 'revisar' ? 'REVISAR' : f.codigo, f.subir == null || f.regla === 'prestamos' ? '' : Math.abs(f.subir)]); });
   res.push(['TOTAL', R.totalClasif], [], ['CONTROL DE CUADRE'], ['Total cargado en extracto', R.totalDatos], ['Total clasificado', R.totalClasif], ['Diferencia (debe ser 0)', r2(R.totalDatos - R.totalClasif)]);
   const ws1 = XLSX.utils.aoa_to_sheet(res);
   ws1['!cols'] = [{wch:40}, {wch:18}, {wch:26}, {wch:22}];
@@ -1000,6 +1041,18 @@ function exportarExcel() {
     XLSX.utils.book_append_sheet(wb, ws3, 'Movimientos');
   }
   XLSX.writeFile(wb, 'Bancos ' + state.banco + ' ' + fmtPeriodo(state.periodo) + '.xlsx');
+}
+
+/* ═══ IMPRIMIR ═══ */
+function imprimir() {
+  if (!state.resumen) return;
+  document.getElementById('print-titulo').textContent = 'Banco ' + state.banco + ' — ' + fmtPeriodo(state.periodo);
+  document.getElementById('print-sub').textContent = (state.archivo ? 'Archivo: ' + state.archivo + ' · ' : '')
+    + 'Impreso el ' + new Date().toLocaleString('es-AR') + ' por ' + (USER.nombre || USER.username);
+  const tit = document.title;
+  document.title = 'Bancos ' + state.banco + ' ' + fmtPeriodo(state.periodo); // nombre sugerido del PDF
+  window.print();
+  document.title = tit;
 }
 
 /* ═══ TABS ═══ */
