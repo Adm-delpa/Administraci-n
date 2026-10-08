@@ -97,6 +97,23 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
 .seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:width .5s cubic-bezier(.4,0,.2,1)}
 .seg-blue{background:#1E6FD9;color:#fff}
 .seg-amber{background:#C4820A;color:#fff}
+.seg-green{background:#1D9E75;color:#fff}
+/* CONTROL TOPE 3% */
+.tope-card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:1rem 1.25rem;margin-top:10px;border-top:3px solid #E24B4A}
+.tope-card.ok{border-top-color:#1D9E75}
+.tope-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#FCEBEB;color:#A32D2D}
+.tope-card.ok .tope-badge{background:#E1F5EE;color:#085041}
+.tope-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:.65rem 0 .9rem}
+.tope-kpi{background:#F7F6F3;border-radius:7px;padding:.6rem .75rem}
+.tope-kpi-lbl{font-size:10px;color:#9896A0;font-weight:600}
+.tope-kpi-val{font-size:15px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.02em;color:#18181A}
+.tope-kpi-sub{font-size:10px;color:#9896A0;margin-top:1px}
+.tope-kpi.green{background:#E1F5EE}.tope-kpi.green .tope-kpi-lbl,.tope-kpi.green .tope-kpi-sub{color:#0F6E56}.tope-kpi.green .tope-kpi-val{color:#085041}
+.tope-kpi.red{background:#FCEBEB}.tope-kpi.red .tope-kpi-lbl,.tope-kpi.red .tope-kpi-sub{color:#A32D2D}.tope-kpi.red .tope-kpi-val{color:#791F1F}
+.tope-prog{height:10px;background:#EEECE8;border-radius:5px;overflow:hidden}
+.tope-prog div{height:100%;background:#1D9E75;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.tope-foot{display:flex;justify-content:space-between;font-size:12px;margin-top:.75rem;padding-top:.65rem;border-top:1px solid #EEECE8;color:#56555A}
+@media(max-width:700px){.tope-grid{grid-template-columns:1fr 1fr}}
 .bar-legend{display:flex;gap:16px;font-size:11px;color:#56555A;font-weight:500}
 .bar-legend span{display:flex;align-items:center;gap:5px}
 .ldot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
@@ -232,6 +249,25 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F0EEEB;color:#18181A;f
         <div class="total-bar-hdr"><span class="total-bar-lbl">Venta neta total</span><span class="total-bar-val" id="r-total">$ —</span></div>
         <div class="comp-bar"><div class="seg seg-blue" id="r-bar-ab" style="width:50%">—</div><div class="seg seg-amber" id="r-bar-pres" style="width:50%">—</div></div>
         <div class="bar-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Fact./NC/ND A y B</span><span><div class="ldot" style="background:#C4820A"></div>Presupuesto</span></div>
+      </div>
+      <div class="total-bar-card" style="margin-top:10px">
+        <div class="total-bar-hdr"><span class="total-bar-lbl">Total facturado</span><span class="total-bar-val" id="r-fact-total">$ —</span></div>
+        <div class="comp-bar"><div class="seg seg-blue" id="r-bar-otros" style="width:100%">—</div><div class="seg seg-green" id="r-bar-pv20" style="width:0%"></div></div>
+        <div class="bar-legend"><span><div class="ldot" style="background:#1E6FD9"></div>Otros puntos · <b id="r-otros-val">—</b></span><span><div class="ldot" style="background:#1D9E75"></div>Punto 20 · <b id="r-pv20-val">—</b></span></div>
+      </div>
+      <div class="tope-card" id="r-tope-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="total-bar-lbl">Control tope 3% presupuesto</span><span class="tope-badge" id="r-tope-badge">—</span>
+        </div>
+        <div class="tope-grid">
+          <div class="tope-kpi"><div class="tope-kpi-lbl">Tope permitido (3%)</div><div class="tope-kpi-val" id="r-tope-max">—</div></div>
+          <div class="tope-kpi"><div class="tope-kpi-lbl">Excedente a facturar</div><div class="tope-kpi-val" id="r-tope-exc">—</div><div class="tope-kpi-sub" id="r-tope-exc-sub"></div></div>
+          <div class="tope-kpi green"><div class="tope-kpi-lbl">Facturado punto 20</div><div class="tope-kpi-val" id="r-tope-fact">—</div><div class="tope-kpi-sub" id="r-tope-fact-sub"></div></div>
+          <div class="tope-kpi" id="r-tope-falta-box"><div class="tope-kpi-lbl">Falta facturar</div><div class="tope-kpi-val" id="r-tope-falta">—</div><div class="tope-kpi-sub" id="r-tope-falta-sub"></div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#56555A;margin-bottom:5px"><span>Avance sobre el excedente</span><span id="r-tope-av-txt" style="font-family:'JetBrains Mono',monospace"></span></div>
+        <div class="tope-prog"><div id="r-tope-prog" style="width:0%"></div></div>
+        <div class="tope-foot"><span>Presupuesto efectivo (presupuesto − punto 20)</span><span id="r-tope-efec" style="font-family:'JetBrains Mono',monospace;font-weight:700">—</span></div>
       </div>
       <div class="sec-label">Distribución por tipo de cliente</div>
       <div class="dist-grid">
@@ -390,6 +426,8 @@ function fmt(v){return '$ '+Math.round(v).toLocaleString('es-AR');}
 function fmtM(v){return '$'+(Math.round(Math.abs(v)/100000)/10).toLocaleString('es-AR')+'M';}
 function fmtPct(v){return (Math.round(v*100)/100).toFixed(2).replace('.',',')+'\u0025';}
 function n(v){return typeof v==='number'?v:parseFloat(v)||0;}
+const PV_REGULARIZA=20;   // talonario FAC B FISCAL MDA 20
+const TOPE_PRES=3;        // % máximo de presupuesto sobre la venta total
 
 // ── TABS ──
 var charts={};
@@ -454,19 +492,23 @@ function calcular(wbV,wbC,wbR){
   const colCond=Object.keys(sv).find(k=>k==='IVA')||'IVA';
   const colNetoV=Object.keys(sv).find(k=>k.toLowerCase().includes('neto gravado'))||'Neto Gravado';
   const colIVAV=Object.keys(sv).find(k=>k==='I.V.A.')||'I.V.A.';
-  let lv_neto=0,lv_iva=0;
+  const colSerie=Object.keys(sv).find(k=>k.trim().toLowerCase()==='serie')||'Serie';
+  let lv_neto=0,lv_iva=0,pv20_neto=0,pv20_cnt=0;
   const tc={FC:{neto:0,cnt:0},NC:{neto:0,cnt:0},ND:{neto:0,cnt:0}};
   const condAB={RI:0,MT:0,CF:0,EX:0,NC:0};
   let fechaMax=null;
   rowsV.forEach(r=>{
     const neto=n(r[colNetoV]),iva=n(r[colIVAV]);
-    lv_neto+=neto;lv_iva+=iva;
+    const f=r['Fecha'];
+    if(f){const d=f instanceof Date?f:new Date(f);if(!isNaN(d)&&(!fechaMax||d>fechaMax))fechaMax=d;}
+    lv_iva+=iva;
+    // Punto 20 (FAC B FISCAL MDA 20): regulariza presupuesto, no suma a A/B para no duplicar la venta
+    if(parseInt(r[colSerie],10)===PV_REGULARIZA){pv20_neto+=neto;pv20_cnt++;return;}
+    lv_neto+=neto;
     const t=(r[colTC]||'').toString().trim().toUpperCase();
     if(tc[t]){tc[t].neto+=neto;tc[t].cnt++;}else{tc['FC'].neto+=neto;tc['FC'].cnt++;}
     const c=(r[colCond]||'').toString().trim().toUpperCase();
     if(condAB[c]!==undefined)condAB[c]+=neto;else condAB['NC']+=neto;
-    const f=r['Fecha'];
-    if(f){const d=f instanceof Date?f:new Date(f);if(!isNaN(d)&&(!fechaMax||d>fechaMax))fechaMax=d;}
   });
   const sc=rowsC[0]||{};
   const colIVAC=Object.keys(sc).find(k=>k==='I.V.A.')||'I.V.A.';
@@ -506,7 +548,7 @@ function calcular(wbV,wbC,wbR){
     if(tipo==='PRVTA'||tipo==='PRDVO') venNegro_rows.push(row);
   });
   const pres_neto=prvta+prdvo;
-  return{lv_neto,lv_iva,tc,condAB,compAB:rowsV.length,prvta_neto:prvta,prdvo_neto:prdvo,pres_neto,condPres,compPres,venNegro_rows,comprobantes_rows,total_venta:lv_neto+pres_neto,iva_compras,perc3337,iva_fin:lv_iva-iva_compras-perc3337,_fechaMax:fechaMax?fechaMax.toISOString().slice(0,10):null};
+  return{lv_neto,lv_iva,tc,condAB,compAB:rowsV.length-pv20_cnt,pv20_neto,pv20_cnt,prvta_neto:prvta,prdvo_neto:prdvo,pres_neto,condPres,compPres,venNegro_rows,comprobantes_rows,total_venta:lv_neto+pres_neto,iva_compras,perc3337,iva_fin:lv_iva-iva_compras-perc3337,_fechaMax:fechaMax?fechaMax.toISOString().slice(0,10):null};
 }
 
 // ── RENDER ──
@@ -581,6 +623,7 @@ function renderDatos(){
   document.getElementById('r-total').textContent=fmt(d.total_venta);
   const bab=document.getElementById('r-bar-ab');bab.style.width=pAB.toFixed(2)+'%';bab.textContent=fmtPct(pAB);
   const bpr=document.getElementById('r-bar-pres');bpr.style.width=pP.toFixed(2)+'%';bpr.textContent=fmtPct(pP);
+  renderTope(d);
   const tc=d.tc||{FC:{neto:0,cnt:0},NC:{neto:0,cnt:0},ND:{neto:0,cnt:0}};
   document.getElementById('tc-breakdown').innerHTML=`
     <div class="tc-cell tc-blue"><div class="tc-cell-lbl">Facturas</div><div class="tc-cell-val">${fmtM(tc.FC.neto)}</div><div class="tc-cell-cnt">${(tc.FC.cnt||0).toLocaleString('es-AR')} comp.</div></div>
@@ -597,6 +640,41 @@ function renderDatos(){
   document.getElementById('r-iva-c').textContent='− '+fmt(d.iva_compras);
   document.getElementById('r-perc').textContent='− '+fmt(d.perc3337);
   document.getElementById('r-iva-fin').textContent=fmt(d.iva_fin);
+}
+
+// Total facturado (otros puntos vs punto 20) + control del tope de presupuesto
+function renderTope(d){
+  const $=id=>document.getElementById(id);
+  const pv20=d.pv20_neto||0,cnt20=d.pv20_cnt||0;
+  const factTot=d.lv_neto+pv20;
+  const p20=factTot?pv20/factTot*100:0;
+  $('r-fact-total').textContent=fmt(factTot);
+  const bo=$('r-bar-otros');bo.style.width=(100-p20).toFixed(2)+'%';bo.textContent='Otros puntos · '+fmtPct(100-p20);
+  const b20=$('r-bar-pv20');b20.style.width=p20.toFixed(2)+'%';b20.style.minWidth=pv20?'46px':'0';b20.textContent=pv20?fmtPct(p20):'';
+  $('r-otros-val').textContent=fmt(d.lv_neto);
+  $('r-pv20-val').textContent=fmt(pv20);
+
+  const tot=d.total_venta||0;
+  const tope=tot*TOPE_PRES/100;
+  const exc=Math.max(0,d.pres_neto-tope);
+  const falta=Math.max(0,exc-pv20);
+  const efec=d.pres_neto-pv20;
+  const pEfec=tot?efec/tot*100:0;
+  const ok=falta<=0;
+  const av=exc?Math.min(100,pv20/exc*100):100;
+  $('r-tope-card').classList.toggle('ok',ok);
+  $('r-tope-badge').textContent=(ok?'Dentro del tope · ':'Sobre el tope · ')+fmtPct(pEfec);
+  $('r-tope-max').textContent=fmt(tope);
+  $('r-tope-exc').textContent=fmt(exc);
+  $('r-tope-exc-sub').textContent=exc?fmtPct(tot?d.pres_neto/tot*100:0)+' − '+TOPE_PRES+'% = '+fmtPct(exc/tot*100):'Presupuesto dentro del tope';
+  $('r-tope-fact').textContent=fmt(pv20);
+  $('r-tope-fact-sub').textContent=cnt20.toLocaleString('es-AR')+' comp.'+(exc?' · '+Math.round(av)+'% del excedente':'');
+  $('r-tope-falta').textContent=fmt(falta);
+  $('r-tope-falta-sub').textContent=falta?fmtPct(falta/tot*100)+' de la venta':'Completo';
+  const fb=$('r-tope-falta-box');fb.classList.toggle('red',!ok);fb.classList.toggle('green',ok);
+  $('r-tope-av-txt').textContent=fmt(pv20)+' / '+fmt(exc);
+  $('r-tope-prog').style.width=av.toFixed(1)+'%';
+  const ef=$('r-tope-efec');ef.textContent=fmt(efec)+' · '+fmtPct(pEfec);ef.style.color=ok?'#0F6E56':'#A32D2D';
 }
 
 function setMes(k){mesActivo=k;renderChips();renderDatos();}
