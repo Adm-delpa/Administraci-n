@@ -2264,8 +2264,8 @@ async function autoSyncChessCC() {
     // 5. Guardar en DB
     const payload = { data: res.data, multi: res.multi, grupos: res.grupos, fecha: res.fecha, detalleClientes: res.detalleClientes || {}, _savedAt: new Date().toISOString() };
     await pool.query(
-      `INSERT INTO datos (modulo, periodo, datos) VALUES ($1, $2, $3)
-       ON CONFLICT (modulo, periodo) DO UPDATE SET datos = $3`,
+      `INSERT INTO datos_modulos (modulo, periodo, datos, updated_at) VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (modulo, periodo) DO UPDATE SET datos = $3, updated_at = NOW()`,
       ['cobranzas', 'current', JSON.stringify(payload)]
     );
     console.log('[chess-cron] OK — ' + res.data.length + ' clientes sincronizados a las ' + new Date().toLocaleTimeString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }));
