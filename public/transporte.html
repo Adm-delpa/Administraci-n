@@ -378,6 +378,14 @@ label{font-size:12px;font-weight:600;color:#6B6876}
         <label>Mes a exportar</label>
         <input type="month" id="exp-mes" style="width:100%;padding:8px 10px;border:1.5px solid #DDDBD6;border-radius:8px;font-family:inherit;font-size:14px">
       </div>
+      <div class="form-group">
+        <label>Columnas a incluir</label>
+        <div id="exp-cols" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <a href="#" onclick="toggleAllExpCols(true);return false" style="font-size:12px;color:#2563eb">Seleccionar todas</a>
+          <a href="#" onclick="toggleAllExpCols(false);return false" style="font-size:12px;color:#2563eb">Deseleccionar todas</a>
+        </div>
+      </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button onclick="cerrarModalExportar()" style="padding:7px 14px;border:1.5px solid #DDDBD6;background:none;border-radius:7px;font-family:inherit;font-size:13px;cursor:pointer;color:#6B6876">Cancelar</button>
         <button onclick="confirmarExportar()" style="padding:7px 16px;background:#16a34a;color:#fff;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Descargar</button>
@@ -822,35 +830,82 @@ function renderTabla() {
   document.getElementById('tbl-body').innerHTML=html;
 }
 
+var EXP_COLUMNAS=[
+  {key:'fecha',label:'Fecha'},
+  {key:'factura',label:'Factura(s)'},
+  {key:'remito',label:'Remito(s)'},
+  {key:'origen',label:'Origen'},
+  {key:'destino',label:'Destino'},
+  {key:'transportista',label:'Transportista'},
+  {key:'envlitro',label:'Env. litro'},
+  {key:'valor',label:'Valor viaje'},
+  {key:'descuento',label:'Descuento factura'},
+  {key:'rdf',label:'RDF esperado'},
+  {key:'estado',label:'Estado RDF'}
+];
+function buildExpCols(){
+  var container=document.getElementById('exp-cols');
+  container.innerHTML=EXP_COLUMNAS.map(function(c){
+    return '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" checked data-col="'+c.key+'" style="accent-color:#16a34a"> '+c.label+'</label>';
+  }).join('');
+}
+function toggleAllExpCols(on){
+  document.querySelectorAll('#exp-cols input[type=checkbox]').forEach(function(cb){cb.checked=on;});
+}
+function getSelectedExpCols(){
+  var sel=[];
+  document.querySelectorAll('#exp-cols input[type=checkbox]:checked').forEach(function(cb){sel.push(cb.dataset.col);});
+  return sel;
+}
 function exportarExcel(){
   var mes=document.getElementById('f-mes-fil').value;
   document.getElementById('exp-mes').value=mes||'';
+  buildExpCols();
   document.getElementById('modal-exportar').classList.add('open');
 }
 function cerrarModalExportar(){ document.getElementById('modal-exportar').classList.remove('open'); }
 function confirmarExportar(){
   var mes=document.getElementById('exp-mes').value;
   if(!mes){ alert('Seleccioná un mes'); return; }
+  var selCols=getSelectedExpCols();
+  if(!selCols.length){ alert('Seleccioná al menos una columna'); return; }
   var datos=registros.filter(function(r){ return (r.fecha||'').slice(0,7)===mes; });
   if(!datos.length){ alert('No hay viajes en ese mes'); return; }
   var BOM='﻿';
-  var cols=['Fecha','Remito','Origen','Destino','Transportista','Env.Litro','Valor viaje','Pago','Pallets'];
-  var rows=[cols.join(';')];
+  var colMap={};
+  EXP_COLUMNAS.forEach(function(c){ colMap[c.key]=c.label; });
+  var headers=selCols.map(function(k){ return colMap[k]; });
+  var rows=[headers.join(';')];
   datos.forEach(function(r){
+    var factura=[r.factura1,r.factura2].filter(Boolean).join(' / ');
     var remito=[r.remito1,r.remito2].filter(Boolean).join(' / ');
     var empresa=CHOFER_EMPRESA[r.chofer]||r.chofer||'';
     var pallets=EMPRESA_PALLETS[empresa]||26;
-    var row=[
-      r.fecha||'',
-      remito,
-      r.origen||'',
-      r.destino||'',
-      empresa,
-      r.envase==='si'?'Sí':'No',
-      r.valor?String(r.valor).replace('.',','):'',
-      '',
-      String(pallets)
-    ];
+    var mesr=(r.fecha||'').slice(0,7);
+    var rdfMes=getRdfMes(mesr);
+    var valorPallet=rdfMes?getValorRdfOrigen(rdfMes,r.origen):null;
+    var rdfEsperado=(rdfMes&&valorPallet)?(valorPallet*pallets):null;
+    var descuento=parseFloat(r.descuento)||0;
+    var estadoRdf='Sin RDF';
+    if(rdfEsperado){
+      if(!descuento) estadoRdf='Pendiente';
+      else if(Math.abs(descuento-rdfEsperado)<1) estadoRdf='Coincide';
+      else estadoRdf='Dif: $'+fmtN(descuento-rdfEsperado);
+    }
+    var all={
+      fecha:r.fecha||'',
+      factura:factura,
+      remito:remito,
+      origen:r.origen||'',
+      destino:r.destino||'',
+      transportista:empresa,
+      envlitro:r.envase==='si'?'Sí':'No',
+      valor:r.valor?String(r.valor).replace('.',','):'',
+      descuento:descuento?String(descuento).replace('.',','):'',
+      rdf:rdfEsperado?String(rdfEsperado).replace('.',','):'Sin RDF',
+      estado:estadoRdf
+    };
+    var row=selCols.map(function(k){ return all[k]||''; });
     rows.push(row.join(';'));
   });
   var csv=BOM+rows.join('\r\n');
