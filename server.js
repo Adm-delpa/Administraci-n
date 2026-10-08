@@ -2396,11 +2396,12 @@ function processChessRows(rows) {
   return { data, multi: {}, grupos, fecha, detalleClientes: detalleMap };
 }
 
-// Cron: cada hora de 7 a 19 hs (Argentina = UTC-3)
-// UTC 10-22 = Argentina 7-19
-cron.schedule('0 10-22 * * *', () => {
-  autoSyncChessCC();
-}, { timezone: 'America/Argentina/Buenos_Aires' });
+// Cron Chess CC: cada hora de 7 a 19 hs Argentina (UTC 10-22)
+cron.schedule('0 10-22 * * *', async () => {
+  const arHour = new Date().getUTCHours() - 3;
+  console.log(`[chess-cron] Cron disparado — ${arHour}:00 AR`);
+  try { await autoSyncChessCC(); } catch(e) { console.error('[chess-cron] Error cron:', e.message); }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
