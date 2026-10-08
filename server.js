@@ -2411,4 +2411,11 @@ app.listen(PORT, async () => {
   } catch (err) {
     console.error('Error al inicializar DB:', err.message);
   }
+  // Sync Chess CC al arrancar si estamos en horario (7-19 AR)
+  const arH = new Date().getUTCHours() - 3;
+  console.log('[chess-cron] Hora AR actual:', arH, '— CHESS_PASS:', process.env.CHESS_PASS ? 'configurada' : 'NO configurada');
+  if (arH >= 7 && arH < 20 && process.env.CHESS_PASS) {
+    console.log('[chess-cron] Ejecutando sync inicial al arrancar...');
+    autoSyncChessCC().catch(e => console.error('[chess-cron] Error sync inicial:', e.message));
+  }
 });
