@@ -84,6 +84,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const anioActual = new Date().getFullYear();
@@ -266,6 +268,7 @@ function updatePctRow() {
 }
 
 async function toggleMesNa(mes) {
+  if (!IS_ADMIN) return;
   const preg = PREGUNTAS.filter(p => p.gop === GOP_ACTIVO);
   const allNa = preg.every(p => getValor(p.id, mes) === 'N/A');
   const nuevoValor = allNa ? '' : 'N/A';
@@ -283,6 +286,7 @@ async function toggleMesNa(mes) {
 }
 
 async function toggleResp(pid, mes, btn) {
+  if (!IS_ADMIN) return;
   const current = getValor(pid, mes);
   const cycle = ['', 'OK', 'NO OK', 'N/A'];
   const next = cycle[(cycle.indexOf(current) + 1) % cycle.length];

@@ -143,7 +143,7 @@ svg.chart-svg{width:100%;display:block;overflow:visible}
 <body>
 
 <div class="topbar">
-  <button class="btn-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <button class="btn-back" onclick="window.location.href='/reclu-hub'">← Volver</button>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Análisis de Tendencias de la Fuerza Laboral</span>
 </div>
@@ -164,7 +164,7 @@ svg.chart-svg{width:100%;display:block;overflow:visible}
     <span class="anio-lbl" id="lbl-anio">2026</span>
     <button class="anio-btn" onclick="cambiarAnio(1)">›</button>
   </div>
-  <button class="btn-nuevo-periodo" onclick="abrirModalCarga()">＋ Cargar período</button>
+  <button class="btn-nuevo-periodo admin-only" onclick="abrirModalCarga()">＋ Cargar período</button>
 </div>
 
 <!-- Upload modal -->
@@ -231,6 +231,8 @@ svg.chart-svg{width:100%;display:block;overflow:visible}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const MESES_L = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MESES_C = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -293,6 +295,7 @@ function setMes(m) {
 }
 
 function abrirModalCarga() {
+  if (!IS_ADMIN) return;
   document.getElementById('upload-modal-bg').classList.add('open');
 }
 function cerrarModalCarga(e) {
@@ -307,6 +310,7 @@ function onFile(input) {
 }
 
 async function subirArchivo() {
+  if (!IS_ADMIN) return;
   const file  = document.getElementById('file-input').files[0];
   const mes   = parseInt(document.getElementById('sel-mes').value);
   const anioU = parseInt(document.getElementById('inp-anio-up').value);
@@ -355,7 +359,7 @@ async function renderPeriodos() {
     const periodos = await fetch('/api/tendencias/periods').then(r=>r.json());
     const wrap = document.getElementById('periodos-wrap');
     if (!periodos.length) { wrap.innerHTML=''; return; }
-    const chips = periodos.map(p=>`<span class="periodo-chip">${MESES_C[p.mes-1]} ${p.anio}<button class="periodo-del" onclick="eliminarPeriodo(${p.anio},${p.mes})" title="Eliminar">✕</button></span>`).join('');
+    const chips = periodos.map(p=>`<span class="periodo-chip">${MESES_C[p.mes-1]} ${p.anio}<button class="periodo-del admin-only" onclick="eliminarPeriodo(${p.anio},${p.mes})" title="Eliminar">✕</button></span>`).join('');
     wrap.innerHTML = `<div class="periodos-label">Períodos cargados</div><div class="periodos-chips">${chips}</div>`;
     // Suggest missing years for comparison
     const aniosDisponibles = [...new Set(periodos.map(p=>p.anio))].filter(a=>!COMP_ANIOS.includes(a));
@@ -551,6 +555,7 @@ function renderTendencias() {
 }
 
 async function eliminarPeriodo(anio, mes) {
+  if (!IS_ADMIN) return;
   if (!confirm(`¿Eliminás los datos de ${MESES_L[mes-1]} ${anio}?`)) return;
   try {
     await fetch(`/api/tendencias/${anio}/${mes}`, { method: 'DELETE' });
@@ -566,6 +571,7 @@ async function eliminarPeriodo(anio, mes) {
 }
 
 function agregarAnio(a) {
+  if (!IS_ADMIN) return;
   if (!COMP_ANIOS.includes(a) && COMP_ANIOS.length < 4) {
     COMP_ANIOS.push(a);
     if (!ALL_SNAPS[a]) { cargarAnio(a).then(renderTendencias); return; }
@@ -573,6 +579,7 @@ function agregarAnio(a) {
   }
 }
 function quitarAnio(a) {
+  if (!IS_ADMIN) return;
   if (COMP_ANIOS.length <= 1) return;
   COMP_ANIOS = COMP_ANIOS.filter(x=>x!==a);
   renderTendencias();

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Calor — Sucesión</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-header{background:linear-gradient(135deg,#1B3F72 0%,#2A5A9E 100%);padding:20px 24px;position:relative;overflow:hidden}
+.page-header::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06)}
+.page-header h1{font-size:16px;font-weight:700;color:#fff;position:relative;z-index:1}
+.page-header p{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;position:relative;z-index:1}
+
+.wrap{max-width:1400px;margin:0 auto;padding:24px 20px}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:16px;text-align:center}
+.kpi-val{font-size:26px;font-weight:800}
+.kpi-label{font-size:10.5px;font-weight:600;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.kpi-green .kpi-val{color:#059669}
+.kpi-amber .kpi-val{color:#D97706}
+.kpi-red .kpi-val{color:#DC2626}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-sel{padding:8px 10px;border:1px solid #D8DEE8;border-radius:7px;font-size:12px;color:#18243A;background:#fff;cursor:pointer;font-family:inherit}
+.spacer{flex:1}
+.btn{padding:8px 16px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#163260}
+
+/* HEATMAP GRID */
+.card{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
+.grid-wrap{overflow-x:auto;padding:16px}
+.hm-grid{display:grid;gap:3px;min-width:820px}
+.hm-hdr{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;text-align:center;background:#FAFBFD;border-radius:4px}
+.hm-hdr.left{text-align:left}
+.hm-puesto{padding:10px 12px;display:flex;flex-direction:column;justify-content:center;border-radius:4px;background:#FAFBFD}
+.hm-puesto-name{font-size:12px;font-weight:700;color:#18243A}
+.hm-puesto-tag{font-size:10px;color:#8A97AA;margin-top:1px}
+.hm-cell{border-radius:4px;padding:8px 6px;text-align:center;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.hm-cell.cell-green{background:#D1FAE5;color:#065F46}
+.hm-cell.cell-amber{background:#FEF3C7;color:#92400E}
+.hm-cell.cell-red{background:#FEE2E2;color:#991B1B}
+.hm-cell.cell-gray{background:#F1F5F9;color:#64748B}
+.hm-cell.cell-risk-bajo{background:#D1FAE5;color:#065F46}
+.hm-cell.cell-risk-medio{background:#FEF3C7;color:#92400E}
+.hm-cell.cell-risk-alto{background:#FEE2E2;color:#991B1B}
+.hm-cell.cell-risk-critico{background:#7F1D1D;color:#FECACA}
+.hm-name{border-radius:4px;padding:8px 6px;display:flex;align-items:center;justify-content:center}
+.person-link{color:#2563A8;font-weight:600;cursor:pointer;text-decoration:none;border:none;background:none;font-size:11.5px;font-family:inherit;padding:0}
+.person-link:hover{text-decoration:underline}
+.hm-actions{border-radius:4px;padding:6px;display:flex;align-items:center;justify-content:center;gap:4px}
+.btn-row{padding:3px 7px;border:1px solid #D8DEE8;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;background:#fff;color:#5A6880;white-space:nowrap}
+.btn-row:hover{background:#F7F8FB}
+.btn-row.danger:hover{background:#FEE2E2;border-color:#FECACA;color:#B91C1C}
+
+.footer{padding:12px 14px;font-size:11.5px;color:#8A97AA;border-top:1px solid #EEF0F6}
+.empty{color:#8A97AA;font-size:12.5px;padding:40px 0;text-align:center}
+.loading{color:#8A97AA;font-size:12.5px;padding:40px 0;text-align:center}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:min(620px,95vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;background:#1B3F72;flex-shrink:0}
+.modal-titulo{font-size:13.5px;font-weight:700;color:#fff}
+.modal-close{background:none;border:none;font-size:18px;color:rgba(255,255,255,.6);cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#fff}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.one{grid-template-columns:1fr}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{padding:8px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;background:#fff;font-family:inherit}
+.form-input:focus,.form-select:focus{outline:none;border-color:#2563A8}
+.form-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #EEF0F6}
+.btn-cancel{padding:7px 14px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#5A6880;cursor:pointer}
+.btn-save{padding:7px 16px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:#1B3F72;color:#fff;cursor:pointer}
+.btn-save:hover{background:#163260}
+
+.section-label{font-size:11px;font-weight:700;color:#1B3F72;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid #EEF0F6}
+
+/* INFO POPUP */
+.info-grid{display:flex;flex-direction:column;gap:12px}
+.info-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.info-item{display:flex;flex-direction:column;gap:2px}
+.info-label{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em}
+.info-val{font-size:13px;font-weight:600;color:#18243A}
+
+@media(max-width:768px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .form-row,.form-row.three{grid-template-columns:1fr}
+  .info-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/reclu-hub'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Mapa de Calor — Sucesión de Puestos Clave</span>
+</div>
+
+<div class="page-header">
+  <h1>Mapa de Calor</h1>
+  <p>Seguimiento de cobertura y sucesión de puestos clave</p>
+</div>
+
+<div class="wrap">
+  <div class="kpi-row" id="kpis"></div>
+
+  <div class="toolbar">
+    <select class="filter-sel" id="fSuc"><option value="">Todas las sucursales</option></select>
+    <select class="filter-sel" id="fArea"><option value="">Todas las áreas</option></select>
+    <span class="spacer"></span>
+    <button class="btn admin-only" id="btnAdd">+ Agregar puesto</button>
+  </div>
+
+  <div class="card">
+    <div class="grid-wrap">
+      <div class="hm-grid" id="hmGrid"></div>
+    </div>
+    <div class="footer" id="footer"></div>
+  </div>
+</div>
+
+<!-- FORM MODAL -->
+<div class="modal-bg" id="modalForm">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modalFormTitle">Agregar puesto</span>
+      <button class="modal-close" onclick="closeForm()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fId">
+
+      <div class="section-label">Puesto</div>
+      <div class="form-row three">
+        <div class="form-group"><label class="form-label">Puesto *</label><input class="form-input" id="fPuesto"></div>
+        <div class="form-group"><label class="form-label">Área</label><input class="form-input" id="fAreaI"></div>
+        <div class="form-group"><label class="form-label">Sucursal</label><input class="form-input" id="fSucI"></div>
+      </div>
+
+      <div class="section-label">Titular</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="fTitNombre"></div>
+        <div class="form-group"><label class="form-label">Fecha nacimiento</label><input class="form-input" type="date" id="fTitNac"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Ingreso distribuidor</label><input class="form-input" type="date" id="fTitIngDist"></div>
+        <div class="form-group"><label class="form-label">Ingreso posición</label><input class="form-input" type="date" id="fTitIngPos"></div>
+      </div>
+
+      <div class="section-label">Sucesor</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="fSucNombre"></div>
+        <div class="form-group"><label class="form-label">Posición actual</label><input class="form-input" id="fSucPosActual"></div>
+        <div class="form-group"><label class="form-label">Fecha nacimiento</label><input class="form-input" type="date" id="fSucNac"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Ingreso distribuidor</label><input class="form-input" type="date" id="fSucIngDist"></div>
+        <div class="form-group"><label class="form-label">Ingreso posición</label><input class="form-input" type="date" id="fSucIngPos"></div>
+      </div>
+
+      <div class="section-label">Estado</div>
+      <div class="form-row three">
+        <div class="form-group">
+          <label class="form-label">Preparación</label>
+          <select class="form-select" id="fPrep">
+            <option value="sin_definir">Sin definir</option>
+            <option value="listo">Listo</option>
+            <option value="en_desarrollo">En desarrollo</option>
+            <option value="no_listo">No listo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Plan de desarrollo</label>
+          <select class="form-select" id="fPlan">
+            <option value="sin_plan">Sin plan</option>
+            <option value="activo">Activo</option>
+            <option value="parcial">Parcial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Riesgo</label>
+          <select class="form-select" id="fRiesgo">
+            <option value="sin_definir">Sin definir</option>
+            <option value="bajo">Bajo</option>
+            <option value="medio">Medio</option>
+            <option value="alto">Alto</option>
+            <option value="critico">Crítico</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="closeForm()">Cancelar</button>
+        <button class="btn-save" onclick="saveForm()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INFO MODAL -->
+<div class="modal-bg" id="modalInfo">
+  <div class="modal" style="width:min(440px,95vw)">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modalInfoTitle">Información</span>
+      <button class="modal-close" onclick="document.getElementById('modalInfo').classList.remove('open')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid" id="infoGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user'));
+if(!USER) window.location.href='/';
+const IS_ADMIN = USER && USER.admin;
+if(!IS_ADMIN) document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+
+let DATA = [];
+
+async function load(){
+  try {
+    const r = await fetch('/api/mapa-calor');
+    DATA = await r.json();
+  } catch(e){ DATA = []; }
+  populateFilters();
+  render();
+}
+
+function populateFilters(){
+  const sucs = [...new Set(DATA.map(d=>d.sucursal).filter(Boolean))].sort();
+  const areas = [...new Set(DATA.map(d=>d.area).filter(Boolean))].sort();
+  const fS = document.getElementById('fSuc');
+  const fA = document.getElementById('fArea');
+  const sv = fS.value, av = fA.value;
+  fS.innerHTML = '<option value="">Todas las sucursales</option>' + sucs.map(s=>`<option>${s}</option>`).join('');
+  fA.innerHTML = '<option value="">Todas las áreas</option>' + areas.map(a=>`<option>${a}</option>`).join('');
+  fS.value = sv; fA.value = av;
+}
+
+function filtered(){
+  let d = DATA;
+  const sv = document.getElementById('fSuc').value;
+  const av = document.getElementById('fArea').value;
+  if(sv) d = d.filter(r=>r.sucursal===sv);
+  if(av) d = d.filter(r=>r.area===av);
+  return d;
+}
+
+function render(){
+  const rows = filtered();
+  // KPIs
+  const total = rows.length;
+  const conSucesor = rows.filter(r=>r.sucesor_nombre&&r.sucesor_nombre.trim()).length;
+  const listo = rows.filter(r=>r.preparacion==='listo').length;
+  const enDes = rows.filter(r=>r.preparacion==='en_desarrollo').length;
+  const sinCob = rows.filter(r=>!r.sucesor_nombre||!r.sucesor_nombre.trim()).length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-label">Puestos clave</div></div>
+    <div class="kpi kpi-green"><div class="kpi-val">${listo}</div><div class="kpi-label">Con sucesor listo</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-val">${enDes}</div><div class="kpi-label">En desarrollo</div></div>
+    <div class="kpi kpi-red"><div class="kpi-val">${sinCob}</div><div class="kpi-label">Sin cobertura</div></div>`;
+
+  const grid = document.getElementById('hmGrid');
+  if(!rows.length){ grid.innerHTML='<div class="empty" style="grid-column:1/-1">No hay puestos cargados</div>'; document.getElementById('footer').textContent=''; return; }
+
+  const cols = IS_ADMIN ? 8 : 7;
+  grid.style.gridTemplateColumns = IS_ADMIN ? '180px 1fr 1fr repeat(4, 90px) 90px' : '180px 1fr 1fr repeat(4, 90px)';
+
+  let html = '';
+  html += '<div class="hm-hdr left">Puesto</div>';
+  html += '<div class="hm-hdr">Titular</div>';
+  html += '<div class="hm-hdr">Sucesor</div>';
+  html += '<div class="hm-hdr">Tiene sucesor</div>';
+  html += '<div class="hm-hdr">Preparación</div>';
+  html += '<div class="hm-hdr">Plan</div>';
+  html += '<div class="hm-hdr">Riesgo</div>';
+  if(IS_ADMIN) html += '<div class="hm-hdr">Acciones</div>';
+
+  rows.forEach(r=>{
+    const hasSuc = r.sucesor_nombre && r.sucesor_nombre.trim();
+
+    const sucCls = hasSuc ? 'cell-green' : 'cell-red';
+    const sucTxt = hasSuc ? 'Sí' : 'No';
+
+    let prepCls = 'cell-gray', prepTxt = '—';
+    if(hasSuc){
+      if(r.preparacion==='listo'){ prepCls='cell-green'; prepTxt='Listo'; }
+      else if(r.preparacion==='en_desarrollo'){ prepCls='cell-amber'; prepTxt='En desarrollo'; }
+      else if(r.preparacion==='no_listo'){ prepCls='cell-red'; prepTxt='No listo'; }
+    }
+
+    let planCls = 'cell-gray', planTxt = '—';
+    if(hasSuc){
+      if(r.plan_desarrollo==='activo'){ planCls='cell-green'; planTxt='Activo'; }
+      else if(r.plan_desarrollo==='parcial'){ planCls='cell-amber'; planTxt='Parcial'; }
+      else if(r.plan_desarrollo==='sin_plan'){ planCls='cell-red'; planTxt='Sin plan'; }
+    }
+
+    let rCls = 'cell-gray', rTxt = '—';
+    if(r.riesgo==='bajo'){ rCls='cell-risk-bajo'; rTxt='Bajo'; }
+    else if(r.riesgo==='medio'){ rCls='cell-risk-medio'; rTxt='Medio'; }
+    else if(r.riesgo==='alto'){ rCls='cell-risk-alto'; rTxt='Alto'; }
+    else if(r.riesgo==='critico'){ rCls='cell-risk-critico'; rTxt='Crítico'; }
+
+    const titBtn = r.titular_nombre ? `<button class="person-link" onclick="showInfo(${r.id},'titular')">${esc(r.titular_nombre)}</button>` : '—';
+    const sucBtn = hasSuc ? `<button class="person-link" onclick="showInfo(${r.id},'sucesor')">${esc(r.sucesor_nombre)}</button>` : '<span style="color:#8A97AA">—</span>';
+
+    html += `<div class="hm-puesto"><div class="hm-puesto-name">${esc(r.puesto)}</div><div class="hm-puesto-tag">${esc(r.area||'')}${r.area&&r.sucursal?' · ':''}${esc(r.sucursal||'')}</div></div>`;
+    html += `<div class="hm-name">${titBtn}</div>`;
+    html += `<div class="hm-name">${sucBtn}</div>`;
+    html += `<div class="hm-cell ${sucCls}">${sucTxt}</div>`;
+    html += `<div class="hm-cell ${prepCls}">${prepTxt}</div>`;
+    html += `<div class="hm-cell ${planCls}">${planTxt}</div>`;
+    html += `<div class="hm-cell ${rCls}">${rTxt}</div>`;
+    if(IS_ADMIN) html += `<div class="hm-actions"><button class="btn-row" onclick="editRow(${r.id})">Editar</button><button class="btn-row danger" onclick="delRow(${r.id})">Borrar</button></div>`;
+  });
+
+  grid.innerHTML = html;
+  document.getElementById('footer').textContent = `${rows.length} puesto${rows.length!==1?'s':''} clave`;
+}
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function parseDateLocal(fecha){
+  if(!fecha) return null;
+  const p = fecha.slice(0,10).split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+
+function calcEdad(fecha){
+  if(!fecha) return '—';
+  const d = parseDateLocal(fecha), hoy = new Date();
+  let a = hoy.getFullYear()-d.getFullYear();
+  if(hoy.getMonth()<d.getMonth()||(hoy.getMonth()===d.getMonth()&&hoy.getDate()<d.getDate())) a--;
+  return a + ' años';
+}
+
+function calcTiempo(fecha){
+  if(!fecha) return '—';
+  const d = parseDateLocal(fecha), hoy = new Date();
+  let m = (hoy.getFullYear()-d.getFullYear())*12 + hoy.getMonth()-d.getMonth();
+  if(hoy.getDate()<d.getDate()) m--;
+  if(m<0) m=0;
+  const a = Math.floor(m/12), rm = m%12;
+  if(a===0) return rm + (rm===1?' mes':' meses');
+  return a + (a===1?' año':' años') + (rm ? ', '+rm+(rm===1?' mes':' meses') : '');
+}
+
+function fmtDate(d){ if(!d) return '—'; const p=d.slice(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+
+function showInfo(id, tipo){
+  const r = DATA.find(x=>x.id===id);
+  if(!r) return;
+  const pre = tipo==='titular' ? 'titular' : 'sucesor';
+  const nombre = r[pre+'_nombre'] || '—';
+  const nac = r[pre+'_nacimiento'];
+  const ingDist = r[pre+'_ingreso_distribuidor'];
+  const ingPos = r[pre+'_ingreso_posicion'];
+  document.getElementById('modalInfoTitle').textContent = nombre;
+  document.getElementById('infoGrid').innerHTML = `
+    <div class="info-row">
+      <div class="info-item"><span class="info-label">Nombre</span><span class="info-val">${esc(nombre)}</span></div>
+      <div class="info-item"><span class="info-label">Posición</span><span class="info-val">${esc(tipo==='titular' ? (r.puesto||'—') : (r.sucesor_posicion_actual||'—'))}</span></div>
+    </div>
+    <div class="info-row">
+      <div class="info-item"><span class="info-label">Fecha de nacimiento</span><span class="info-val">${fmtDate(nac)}</span></div>
+      <div class="info-item"><span class="info-label">Edad</span><span class="info-val">${calcEdad(nac)}</span></div>
+    </div>
+    <div class="info-row">
+      <div class="info-item"><span class="info-label">Ingreso al distribuidor</span><span class="info-val">${fmtDate(ingDist)}</span></div>
+      <div class="info-item"><span class="info-label">Tiempo en distribuidor</span><span class="info-val">${calcTiempo(ingDist)}</span></div>
+    </div>
+    <div class="info-row">
+      <div class="info-item"><span class="info-label">Ingreso a la posición</span><span class="info-val">${fmtDate(ingPos)}</span></div>
+      <div class="info-item"><span class="info-label">Tiempo en posición</span><span class="info-val">${calcTiempo(ingPos)}</span></div>
+    </div>
+  `;
+  document.getElementById('modalInfo').classList.add('open');
+}
+
+document.getElementById('fSuc').onchange = render;
+document.getElementById('fArea').onchange = render;
+
+document.getElementById('btnAdd').onclick = () => openForm();
+
+function openForm(row){
+  document.getElementById('fId').value = row ? row.id : '';
+  document.getElementById('modalFormTitle').textContent = row ? 'Editar puesto' : 'Agregar puesto';
+  document.getElementById('fPuesto').value = row ? row.puesto : '';
+  document.getElementById('fAreaI').value = row ? (row.area||'') : '';
+  document.getElementById('fSucI').value = row ? (row.sucursal||'') : '';
+  document.getElementById('fTitNombre').value = row ? (row.titular_nombre||'') : '';
+  document.getElementById('fTitNac').value = row ? (row.titular_nacimiento||'').slice(0,10) : '';
+  document.getElementById('fTitIngDist').value = row ? (row.titular_ingreso_distribuidor||'').slice(0,10) : '';
+  document.getElementById('fTitIngPos').value = row ? (row.titular_ingreso_posicion||'').slice(0,10) : '';
+  document.getElementById('fSucNombre').value = row ? (row.sucesor_nombre||'') : '';
+  document.getElementById('fSucPosActual').value = row ? (row.sucesor_posicion_actual||'') : '';
+  document.getElementById('fSucNac').value = row ? (row.sucesor_nacimiento||'').slice(0,10) : '';
+  document.getElementById('fSucIngDist').value = row ? (row.sucesor_ingreso_distribuidor||'').slice(0,10) : '';
+  document.getElementById('fSucIngPos').value = row ? (row.sucesor_ingreso_posicion||'').slice(0,10) : '';
+  document.getElementById('fPrep').value = row ? (row.preparacion||'sin_definir') : 'sin_definir';
+  document.getElementById('fPlan').value = row ? (row.plan_desarrollo||'sin_plan') : 'sin_plan';
+  document.getElementById('fRiesgo').value = row ? (row.riesgo||'sin_definir') : 'sin_definir';
+  document.getElementById('modalForm').classList.add('open');
+}
+
+function closeForm(){ document.getElementById('modalForm').classList.remove('open'); }
+
+function editRow(id){ const r = DATA.find(x=>x.id===id); if(r) openForm(r); }
+
+async function delRow(id){
+  if(!confirm('¿Eliminar este puesto?')) return;
+  await fetch('/api/mapa-calor/'+id, {method:'DELETE'});
+  load();
+}
+
+async function saveForm(){
+  const id = document.getElementById('fId').value;
+  const body = {
+    puesto: document.getElementById('fPuesto').value.trim(),
+    area: document.getElementById('fAreaI').value.trim(),
+    sucursal: document.getElementById('fSucI').value.trim(),
+    titular_nombre: document.getElementById('fTitNombre').value.trim(),
+    titular_nacimiento: document.getElementById('fTitNac').value || null,
+    titular_ingreso_distribuidor: document.getElementById('fTitIngDist').value || null,
+    titular_ingreso_posicion: document.getElementById('fTitIngPos').value || null,
+    sucesor_nombre: document.getElementById('fSucNombre').value.trim(),
+    sucesor_posicion_actual: document.getElementById('fSucPosActual').value.trim(),
+    sucesor_nacimiento: document.getElementById('fSucNac').value || null,
+    sucesor_ingreso_distribuidor: document.getElementById('fSucIngDist').value || null,
+    sucesor_ingreso_posicion: document.getElementById('fSucIngPos').value || null,
+    preparacion: document.getElementById('fPrep').value,
+    plan_desarrollo: document.getElementById('fPlan').value,
+    riesgo: document.getElementById('fRiesgo').value,
+  };
+  if(!body.puesto){ alert('El puesto es obligatorio'); return; }
+  const url = id ? '/api/mapa-calor/'+id : '/api/mapa-calor';
+  const method = id ? 'PUT' : 'POST';
+  await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  closeForm();
+  load();
+}
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento 3R — DPO Gente</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#F3F4F6;color:#1e293b;min-height:100vh}
+
+.topbar{background:#1B3F72;color:#fff;padding:10px 24px;display:flex;align-items:center;gap:12px}
+.topbar-back{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit}
+.topbar-back:hover{background:rgba(255,255,255,.1)}
+.topbar h1{font-size:18px;font-weight:700}
+
+.header{background:#1B3F72;color:#fff;padding:28px 24px 22px;text-align:center}
+.header h2{font-size:22px;font-weight:800;margin-bottom:4px}
+.header p{opacity:.8;font-size:13px}
+
+.wrap{max-width:1300px;margin:0 auto;padding:24px}
+
+.filters{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;margin-bottom:18px}
+.filter-group{display:flex;gap:6px}
+.filter-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-right:4px;align-self:center}
+
+.year-nav{display:flex;align-items:center;gap:10px}
+.year-nav button{background:#1B3F72;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit}
+.year-nav button:hover{background:#15325b}
+.year-nav span{font-size:18px;font-weight:800;color:#1B3F72}
+
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid #d1d5db;background:#fff;color:#475569;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+.tab-btn:hover{border-color:#1B3F72;color:#1B3F72}
+.tab-btn.active{background:#1B3F72;color:#fff;border-color:#1B3F72}
+
+.admin-bar{display:flex;justify-content:flex-end;margin-bottom:12px}
+.btn-cargar{background:#1B3F72;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-cargar:hover{background:#15325b}
+
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #e5e7eb;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#1B3F72;color:#fff;padding:11px 10px;font-weight:600;text-align:center;white-space:nowrap;position:sticky;top:0}
+thead th:first-child{text-align:left;min-width:190px}
+tbody td{padding:9px 8px;text-align:center;border-bottom:1px solid #e5e7eb;font-variant-numeric:tabular-nums;position:relative;cursor:default}
+tbody td:first-child{text-align:left;font-weight:600;color:#1e293b;white-space:nowrap;cursor:default}
+tbody tr:last-child td{border-bottom:none}
+.peso{color:#94a3b8;font-weight:400;font-size:11px}
+
+.section-row td{background:#F3F4F6;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;padding:8px 10px}
+
+.cell{display:inline-flex;align-items:center;gap:2px}
+.arrow{font-size:16px;font-weight:800;line-height:1}
+.arrow-up{color:#16A34A}
+.arrow-down{color:#DC2626}
+.arrow-equal{color:#94a3b8}
+.val-best{color:#16A34A;font-weight:700}
+.val-worst{color:#DC2626;font-weight:700}
+
+.admin-only{display:none}
+td.editable{cursor:pointer}
+td.editable:hover{background:#eff6ff}
+
+/* Links */
+.links-section{margin-top:28px}
+.links-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.links-header h3{font-size:16px;font-weight:700;color:#1B3F72}
+.links-list{display:flex;flex-wrap:wrap;gap:10px}
+.link-chip{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e7eb;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;color:#1B3F72;transition:box-shadow .15s}
+.link-chip:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.link-chip .lc-icon{font-size:16px}
+.link-chip .btn-del-link{background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:0 0 0 4px}
+.btn-add-link{background:#1B3F72;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-add-link:hover{background:#15325b}
+
+/* Modals */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;width:90%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.modal h3{font-size:18px;font-weight:700;color:#1B3F72;margin-bottom:16px}
+.modal label{display:block;font-size:13px;font-weight:600;color:#475569;margin-bottom:4px;margin-top:12px}
+.modal input[type=text],.modal input[type=number],.modal select{width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.modal-btns button{padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none}
+.btn-cancel{background:#f1f5f9;color:#475569}
+.btn-save{background:#1B3F72;color:#fff}
+.btn-save:hover{background:#15325b}
+
+@media(max-width:700px){
+  .wrap{padding:12px}
+  thead th:first-child{min-width:130px}
+  thead th{padding:9px 6px;font-size:12px}
+  tbody td{padding:7px 5px;font-size:12px}
+  .filters{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">&#8592; Volver</button>
+  <h1>Seguimiento 3R</h1>
+</div>
+
+<div class="header">
+  <h2>Seguimiento 3R</h2>
+  <p>Recursos &middot; Reconocimientos &middot; Responsabilidades &mdash; Evoluci&oacute;n mensual</p>
+</div>
+
+<div class="wrap">
+  <div class="filters">
+    <span class="filter-label">Ranking:</span>
+    <div class="filter-group" id="rankingTabs"></div>
+    <span class="filter-label" style="margin-left:10px">Sucursal:</span>
+    <div class="filter-group" id="sucursalTabs"></div>
+    <div class="year-nav">
+      <button onclick="changeYear(-1)">&#9664;</button>
+      <span id="yearLabel">2026</span>
+      <button onclick="changeYear(1)">&#9654;</button>
+    </div>
+  </div>
+
+  <div class="admin-bar admin-only">
+    <button class="btn-cargar" onclick="openModal()">+ Cargar datos</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Indicador</th>
+          <th>Ene</th><th>Feb</th><th>Mar</th><th>Abr</th><th>May</th><th>Jun</th>
+          <th>Jul</th><th>Ago</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dic</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Links -->
+  <div class="links-section">
+    <div class="links-header">
+      <h3>&#128206; Documentos y enlaces</h3>
+      <button class="btn-add-link admin-only" onclick="openLinkModal()">+ Agregar enlace</button>
+    </div>
+    <div class="links-list" id="linksList"><span style="color:#94a3b8;font-size:13px">Cargando...</span></div>
+  </div>
+</div>
+
+<!-- Modal cargar dato -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Cargar dato</h3>
+    <label>Indicador</label>
+    <select id="fInd"></select>
+    <label>Mes</label>
+    <select id="fMes"></select>
+    <label>Valor</label>
+    <input type="number" id="fVal" step="0.01" placeholder="Ej: 1.21">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="save()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal link -->
+<div class="modal-overlay" id="linkModal">
+  <div class="modal">
+    <h3>Agregar enlace</h3>
+    <label>T&iacute;tulo</label>
+    <input type="text" id="fLinkTitulo" placeholder="Ej: Ranking Entrega Agosto">
+    <label>URL</label>
+    <input type="text" id="fLinkUrl" placeholder="https://...">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeLinkModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveLink()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+const IS_ADMIN = USER && USER.admin;
+if (IS_ADMIN) document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+const RANKINGS = {
+  entrega: {
+    nombre: 'Entrega',
+    indicadores: [
+      { key: 'incidentes_seguridad', nombre: 'Incidentes de seguridad', seccion: 'pasa', formato: 'int', mejorSiBaja: true },
+      { key: 'inasistencias', nombre: 'Inasistencias', seccion: 'pasa', formato: 'int', mejorSiBaja: true },
+      { key: 'rechazo_total', nombre: 'Rechazo Total', peso: '30%', seccion: 'kpi', formato: 'pct', mejorSiBaja: true },
+      { key: 'adherencia_click', nombre: 'Adherencia al Click', peso: '25%', seccion: 'kpi', formato: 'pct', mejorSiBaja: false },
+      { key: 'dispersion_km', nombre: 'Dispersión de KM', peso: '25%', seccion: 'kpi', formato: 'pct', mejorSiBaja: true },
+      { key: 'errores_admin', nombre: 'Errores ADMIN', peso: '20%', seccion: 'kpi', formato: 'pct', mejorSiBaja: true },
+    ]
+  },
+  almacen: {
+    nombre: 'Almacén',
+    indicadores: [
+      { key: 'incidentes_seguridad', nombre: 'Incidentes de seguridad', seccion: 'pasa', formato: 'int', mejorSiBaja: true },
+      { key: 'inasistencias', nombre: 'Inasistencias', seccion: 'pasa', formato: 'int', mejorSiBaja: true },
+      { key: 'efectividad_picking', nombre: 'Efectividad Picking', seccion: 'kpi', formato: 'int', mejorSiBaja: false },
+      { key: 'rotura', nombre: 'Rotura', seccion: 'kpi', formato: 'int', mejorSiBaja: true },
+    ]
+  },
+};
+
+const SUCURSALES = { dolores: 'Dolores', casa_central: 'Casa Central' };
+
+let currentRanking = 'entrega';
+let currentSucursal = 'dolores';
+let currentYear = 2026;
+let DATA = [];
+
+function renderTabs() {
+  document.getElementById('rankingTabs').innerHTML = Object.keys(RANKINGS).map(k =>
+    '<button class="tab-btn' + (k === currentRanking ? ' active' : '') + '" onclick="switchRanking(\'' + k + '\')">' + RANKINGS[k].nombre + '</button>'
+  ).join('');
+  document.getElementById('sucursalTabs').innerHTML = Object.keys(SUCURSALES).map(k =>
+    '<button class="tab-btn' + (k === currentSucursal ? ' active' : '') + '" onclick="switchSucursal(\'' + k + '\')">' + SUCURSALES[k] + '</button>'
+  ).join('');
+}
+
+function switchRanking(k) { currentRanking = k; renderTabs(); load(); }
+function switchSucursal(k) { currentSucursal = k; renderTabs(); load(); }
+function changeYear(d) { currentYear += d; load(); }
+
+async function load() {
+  const r = await fetch('/api/seguimiento-3r?anio=' + currentYear + '&ranking=' + currentRanking + '&sucursal=' + currentSucursal);
+  DATA = await r.json();
+  render();
+}
+
+function getVal(indicador, mes) {
+  const row = DATA.find(d => d.indicador === indicador && d.mes === mes);
+  return row ? parseFloat(row.valor) : null;
+}
+
+function fmtVal(v, formato) {
+  if (v === null || v === undefined) return '—';
+  if (formato === 'int') return Math.round(v).toString();
+  return v.toFixed(2) + '%';
+}
+
+function arrowHTML(curr, prev, mejorSiBaja) {
+  if (curr === null || prev === null) return '';
+  if (curr === prev) return '<span class="arrow arrow-equal">=</span>';
+  const improved = mejorSiBaja ? curr < prev : curr > prev;
+  if (improved) return '<span class="arrow arrow-up">↑</span>';
+  return '<span class="arrow arrow-down">↓</span>';
+}
+
+function bestWorst(ind) {
+  const vals = [];
+  for (let m = 1; m <= 12; m++) {
+    const v = getVal(ind.key, m);
+    if (v !== null) vals.push({ m, v });
+  }
+  if (vals.length < 2) return { best: null, worst: null };
+  const sorted = [...vals].sort((a, b) => a.v - b.v);
+  if (ind.mejorSiBaja) return { best: sorted[0].m, worst: sorted[sorted.length - 1].m };
+  return { best: sorted[sorted.length - 1].m, worst: sorted[0].m };
+}
+
+function render() {
+  document.getElementById('yearLabel').textContent = currentYear;
+  const indicadores = RANKINGS[currentRanking].indicadores;
+  let html = '';
+  let lastSeccion = '';
+
+  indicadores.forEach(ind => {
+    if (ind.seccion !== lastSeccion) {
+      lastSeccion = ind.seccion;
+      const label = ind.seccion === 'pasa'
+        ? '⚠️ Pasa / No pasa (requisitos mínimos)'
+        : '🏆 KPIs ponderados (100%)';
+      html += '<tr class="section-row"><td colspan="13">' + label + '</td></tr>';
+    }
+
+    const bw = bestWorst(ind);
+    const pesoStr = ind.peso ? ' <span class="peso">(' + ind.peso + ')</span>' : '';
+
+    html += '<tr><td>' + ind.nombre + pesoStr + '</td>';
+    for (let m = 1; m <= 12; m++) {
+      const v = getVal(ind.key, m);
+      const prev = m > 1 ? getVal(ind.key, m - 1) : null;
+      const arrow = arrowHTML(v, prev, ind.mejorSiBaja);
+      let cls = '';
+      if (bw.best === m) cls = ' val-best';
+      else if (bw.worst === m) cls = ' val-worst';
+
+      const clickAttr = IS_ADMIN ? ' class="editable" onclick="openModal(\'' + ind.key + '\',' + m + ')"' : '';
+      html += '<td' + clickAttr + '><span class="cell">' + arrow + '<span class="' + cls + '">' + fmtVal(v, ind.formato) + '</span></span></td>';
+    }
+    html += '</tr>';
+  });
+
+  document.getElementById('tbody').innerHTML = html;
+}
+
+function openModal(indicador, mes) {
+  const indicadores = RANKINGS[currentRanking].indicadores;
+  const selInd = document.getElementById('fInd');
+  selInd.innerHTML = indicadores.map(i => '<option value="' + i.key + '">' + i.nombre + '</option>').join('');
+  if (indicador) selInd.value = indicador;
+
+  const selMes = document.getElementById('fMes');
+  selMes.innerHTML = MESES.map((m, i) => '<option value="' + (i + 1) + '">' + m + '</option>').join('');
+  if (mes) selMes.value = mes;
+
+  const existing = indicador ? getVal(indicador, mes) : null;
+  document.getElementById('fVal').value = existing !== null ? existing : '';
+  document.getElementById('modal').classList.add('active');
+  document.getElementById('fVal').focus();
+}
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+async function save() {
+  const indicador = document.getElementById('fInd').value;
+  const mes = parseInt(document.getElementById('fMes').value);
+  const val = document.getElementById('fVal').value;
+  if (val === '') return alert('Ingresá un valor');
+  await fetch('/api/seguimiento-3r', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ranking: currentRanking, sucursal: currentSucursal, indicador, mes, anio: currentYear, valor: parseFloat(val) })
+  });
+  closeModal();
+  load();
+}
+
+// --- Links ---
+let LINKS = [];
+async function loadLinks() {
+  const r = await fetch('/api/seguimiento-3r-links');
+  LINKS = await r.json();
+  renderLinks();
+}
+function renderLinks() {
+  const c = document.getElementById('linksList');
+  if (!LINKS.length) { c.innerHTML = '<span style="color:#94a3b8;font-size:13px">No hay documentos cargados</span>'; return; }
+  c.innerHTML = LINKS.map(l => {
+    const del = IS_ADMIN ? '<button class="btn-del-link" onclick="event.preventDefault();delLink(' + l.id + ')">&times;</button>' : '';
+    return '<a class="link-chip" href="' + l.url + '" target="_blank" rel="noopener"><span class="lc-icon">📄</span>' + l.titulo + del + '</a>';
+  }).join('');
+}
+function openLinkModal() { document.getElementById('linkModal').classList.add('active'); }
+function closeLinkModal() { document.getElementById('linkModal').classList.remove('active'); }
+async function saveLink() {
+  const titulo = document.getElementById('fLinkTitulo').value.trim();
+  const url = document.getElementById('fLinkUrl').value.trim();
+  if (!titulo || !url) return alert('Completá título y URL');
+  await fetch('/api/seguimiento-3r-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo, url }) });
+  document.getElementById('fLinkTitulo').value = '';
+  document.getElementById('fLinkUrl').value = '';
+  closeLinkModal();
+  loadLinks();
+}
+async function delLink(id) {
+  if (!confirm('Eliminar este enlace?')) return;
+  await fetch('/api/seguimiento-3r-links/' + id, { method: 'DELETE' });
+  loadLinks();
+}
+
+renderTabs();
+load();
+loadLinks();
+</script>
+</body>
+</html>

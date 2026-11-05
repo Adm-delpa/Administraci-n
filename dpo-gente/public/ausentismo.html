@@ -109,7 +109,7 @@ td.pct{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 </head>
 <body>
 <div class="topbar">
-  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <button class="topbar-back" onclick="window.location.href='/ambiente-hub'">← Volver</button>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Ausentismo — DPO Gente 2026</span>
   <button class="btn-upload-top" id="btnSyncFicha" onclick="syncFichaYa()" style="display:none;background:#0B7A4B">⟳ Sincronizar FichaYa</button>
@@ -129,7 +129,7 @@ td.pct{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
       <div class="setup-icon">📋</div>
       <div class="setup-title">Configuración inicial</div>
       <div class="setup-desc">Para comenzar, cargá el listado de empleados activos exportado desde Ficha. Solo necesitás hacerlo una vez; después actualizás los datos de asistencia cada mes.</div>
-      <button class="btn btn-primary" onclick="abrirModalEmpleados()">Cargar empleados</button>
+      <button class="btn btn-primary admin-only" onclick="abrirModalEmpleados()">Cargar empleados</button>
     </div>
   </div>
 
@@ -382,6 +382,8 @@ td.pct{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const CATS_COMP = ['Lic. Enfermedad (menor a 20 dias)','Rechazo de ART','In Itineres','Lic. Pedida con menos de 48hs','Dias de duelo','Faltas no programadas'];
 const CATS_JUST = ['Vacaciones','Lic. Anses','Lic. Enfermedad (mayor a 20 dias)','Dias gremiales','Dias compensatorios','Tramites','Suspensión','Falta con aviso (mayor a 48hs)','Lic. Por Accidente'];
@@ -397,11 +399,13 @@ async function init() {
   const r = await fetch('/api/ausentismo/empleados/count').then(r=>r.json());
   if (!r.count) { show('setupView'); hide('mainView'); return; }
   hide('setupView'); show('mainView');
-  document.getElementById('btnSyncFicha').style.display = '';
-  document.getElementById('btnUploadTop').style.display = '';
-  document.getElementById('btnReEmp').style.display = '';
-  document.getElementById('btnSuc').style.display = '';
-  document.getElementById('btnExcl').style.display = '';
+  if (IS_ADMIN) {
+    document.getElementById('btnSyncFicha').style.display = '';
+    document.getElementById('btnUploadTop').style.display = '';
+    document.getElementById('btnReEmp').style.display = '';
+    document.getElementById('btnSuc').style.display = '';
+    document.getElementById('btnExcl').style.display = '';
+  }
   await Promise.all([cargarMeses(), cargarSucursales()]);
 }
 
@@ -589,6 +593,7 @@ function renderCalendario() {
 }
 
 function clickDia(fecha, esNL) {
+  if (!IS_ADMIN) return;
   pendNL = fecha;
   const [,m,d] = fecha.split('-');
   el('noLabTitle').textContent = `Día ${+d} de ${MESES[+m-1]}`;

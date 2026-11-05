@@ -312,6 +312,8 @@ input.dh-inp:focus{border-color:#2563A8}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user')||'null');
 if(!USER) window.location.href='/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const params = new URLSearchParams(location.search);
 const SUCURSAL = params.get('sucursal')||'dolores';
@@ -381,12 +383,17 @@ function renderNomina(){
           <option value=""></option><option value="X"${v==='X'?' selected':''}>X</option><option value="-"${v==='-'?' selected':''}>-</option>
         </select></td>`;
       }
-      html+=`<td><button class="btn-del-row" onclick="eliminarPersona('${key}')">✕</button></td>`;
+      html+=`<td><button class="btn-del-row admin-only" onclick="eliminarPersona('${key}')">✕</button></td>`;
       html+='</tr>';
     });
-    html+=`<tr><td colspan="14"><button class="btn-add-persona" onclick="agregarPersona('${rol}','${tipo}')">+ Agregar persona</button></td></tr>`;
+    html+=`<tr><td colspan="14"><button class="btn-add-persona admin-only" onclick="agregarPersona('${rol}','${tipo}')">+ Agregar persona</button></td></tr>`;
   });
   tb.innerHTML=html;
+  if(!IS_ADMIN) aplicarSoloLectura(tb);
+}
+function aplicarSoloLectura(container){
+  container.querySelectorAll('input,select,textarea').forEach(el=>{ el.disabled=true; });
+  container.querySelectorAll('.btn-del-row,.btn-add-persona,.btn-add-vac').forEach(el=>{ el.style.display='none'; });
 }
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
 
@@ -410,6 +417,7 @@ function getNominaFromDOM(){
 function markDirtyNom(){document.getElementById('st-nom').textContent='Cambios sin guardar.';document.getElementById('st-nom').className='save-st';}
 
 function agregarPersona(rol,tipo){
+  if (!IS_ADMIN) return;
   const p=getNominaFromDOM();
   const meses={};for(let m=1;m<=12;m++)meses[m]='';
   p.push({rol,tipo,nombre:'',meses});
@@ -419,6 +427,7 @@ function agregarPersona(rol,tipo){
 }
 
 function eliminarPersona(key){
+  if (!IS_ADMIN) return;
   const [rol,tipo,pi]=key.split('|');
   const p=getNominaFromDOM();
   const idx=p.filter((x,i)=>x.rol===rol&&x.tipo===tipo).findIndex((_,i)=>String(i)===pi);
@@ -429,6 +438,7 @@ function eliminarPersona(key){
 }
 
 async function guardarNomina(){
+  if (!IS_ADMIN) return;
   const btn=event.target;btn.disabled=true;btn.textContent='Guardando…';
   NOM_DATA=getNominaFromDOM();
   try{
@@ -494,6 +504,7 @@ function cerrarComment(){
 }
 
 function guardarComment(){
+  if (!IS_ADMIN) return;
   if(!COMMENT_TARGET)return;
   const {g,m}=COMMENT_TARGET;
   const txt=document.getElementById('comment-textarea').value.trim();
@@ -517,6 +528,7 @@ function actualizarCeldaDsv(g,m){
 }
 
 async function guardarComments(){
+  if (!IS_ADMIN) return;
   await fetch(`/api/plan-comentarios/${SUCURSAL}/${ANIO}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({comments:COMMENTS})}).catch(()=>{});
 }
 
@@ -609,6 +621,7 @@ function renderPlan(){
     recalcPlan();
     document.getElementById('st-plan').textContent='Cambios sin guardar.';document.getElementById('st-plan').className='save-st';
   }));
+  if(!IS_ADMIN) aplicarSoloLectura(tb);
   actualizarKPIs();
 }
 
@@ -639,6 +652,7 @@ function recalcPlan(){
 }
 
 async function guardarPlan(){
+  if (!IS_ADMIN) return;
   const btn=event.target;btn.disabled=true;btn.textContent='Guardando…';
   const data={};
   document.querySelectorAll('input.n.presup').forEach(i=>{
@@ -666,6 +680,7 @@ function renderDiasHabiles(){
     html+=`<span class="dh-label">${MESES[m-1]}</span><input class="dh-inp" type="number" min="0" max="31" data-m="${m}" value="${v}" oninput="actualizarDH()">`;
   }
   grid.innerHTML=html;
+  if(!IS_ADMIN) aplicarSoloLectura(grid);
 }
 
 function actualizarDH(){
@@ -674,6 +689,7 @@ function actualizarDH(){
 }
 
 async function guardarDiasHabiles(){
+  if (!IS_ADMIN) return;
   const dias={};
   document.querySelectorAll('input.dh-inp').forEach(i=>{ dias[parseInt(i.dataset.m)]=parseInt(i.value)||0; });
   DH_DATA=dias;
@@ -740,6 +756,7 @@ function renderVac(){
     }
   });
   tb.innerHTML=html;
+  if(!IS_ADMIN) aplicarSoloLectura(tb);
 }
 
 function recalcVacRow(rol,m){
@@ -754,6 +771,7 @@ function recalcVacRow(rol,m){
 function markDirtyVac(){document.getElementById('st-vac').textContent='Cambios sin guardar.';document.getElementById('st-vac').className='save-st';}
 
 async function guardarVac(){
+  if (!IS_ADMIN) return;
   const btn=event.target;btn.disabled=true;btn.textContent='Guardando…';
   VAC_DATA=getVacFromDOM();
   try{

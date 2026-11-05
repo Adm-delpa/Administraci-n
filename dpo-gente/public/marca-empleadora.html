@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marca Empleadora — DPO Gente</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#F3F4F6;color:#1e293b;min-height:100vh}
+
+.topbar{background:#1B3F72;color:#fff;padding:10px 24px;display:flex;align-items:center;gap:12px}
+.topbar-back{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit}
+.topbar-back:hover{background:rgba(255,255,255,.1)}
+.topbar h1{font-size:18px;font-weight:700}
+
+.page-header{background:#1B3F72;color:#fff;padding:28px 24px 22px;text-align:center}
+.page-header h2{font-size:24px;font-weight:800;margin-bottom:4px}
+.page-header p{opacity:.8;font-size:14px}
+
+.container{max-width:900px;margin:0 auto;padding:24px}
+
+.admin-only{display:none}
+.btn-add{background:#1B3F72;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:20px}
+.btn-add:hover{background:#15325b}
+
+.item-list{display:flex;flex-direction:column;gap:12px}
+.item-card{background:#fff;border-radius:10px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;transition:box-shadow .15s,transform .1s;cursor:pointer;border:1px solid #e5e7eb}
+.item-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1);transform:translateY(-1px)}
+.item-icon{font-size:28px;flex-shrink:0}
+.item-info{flex:1;min-width:0}
+.item-title{font-size:15px;font-weight:700;color:#1B3F72}
+.item-desc{font-size:13px;color:#64748b;margin-top:2px}
+.item-arrow{color:#94a3b8;font-size:18px;flex-shrink:0}
+.item-edit{background:none;border:none;color:#1B3F72;cursor:pointer;font-size:15px;padding:4px 8px;border-radius:6px;flex-shrink:0}
+.item-edit:hover{background:#eff6ff}
+.item-del{background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;flex-shrink:0}
+.item-del:hover{background:#fef2f2}
+
+.empty{text-align:center;color:#94a3b8;padding:40px;font-size:14px}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;width:90%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.modal h3{font-size:18px;font-weight:700;color:#1B3F72;margin-bottom:16px}
+.modal label{display:block;font-size:13px;font-weight:600;color:#475569;margin-bottom:4px;margin-top:12px}
+.modal input[type=text],.modal textarea{width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit}
+.modal textarea{resize:vertical}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.modal-btns button{padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none}
+.btn-cancel{background:#f1f5f9;color:#475569}
+.btn-save{background:#1B3F72;color:#fff}
+.btn-save:hover{background:#15325b}
+
+@media(max-width:600px){
+  .container{padding:14px}
+  .page-header{padding:20px 16px 16px}
+  .page-header h2{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/reclu-hub'">&larr; Volver</button>
+  <h1>Marca Empleadora</h1>
+</div>
+
+<div class="page-header">
+  <h2>Marca Empleadora</h2>
+  <p>Enlaces y recursos de marca empleadora</p>
+</div>
+
+<div class="container">
+  <button class="btn-add admin-only" onclick="openModal()">+ Agregar link</button>
+  <div class="item-list" id="list"><div class="empty">Cargando...</div></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Agregar link</h3>
+    <label>T&iacute;tulo</label>
+    <input type="text" id="fTitulo" placeholder="Ej: Publicaci&oacute;n LinkedIn">
+    <label>URL</label>
+    <input type="text" id="fUrl" placeholder="https://...">
+    <label>Descripci&oacute;n (opcional)</label>
+    <textarea id="fDesc" rows="2" placeholder="Breve descripci&oacute;n"></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="save()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+const IS_ADMIN = USER && USER.admin;
+if (IS_ADMIN) document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+
+let DATA = [];
+
+async function load(){
+  const r = await fetch('/api/marca-empleadora');
+  DATA = await r.json();
+  render();
+}
+
+function render(){
+  const c = document.getElementById('list');
+  if(!DATA.length){ c.innerHTML='<div class="empty">No hay links cargados. Us&aacute; el bot&oacute;n "+ Agregar link" para empezar.</div>'; return; }
+  c.innerHTML = DATA.map(s => {
+    const actions = IS_ADMIN ? '<button class="item-edit" onclick="event.preventDefault();event.stopPropagation();openModal('+s.id+')" title="Editar">&#9998;</button><button class="item-del" onclick="event.preventDefault();event.stopPropagation();del('+s.id+')" title="Eliminar">&times;</button>' : '';
+    return '<a class="item-card" href="'+s.url+'" target="_blank" rel="noopener">'
+      + '<div class="item-icon">&#128279;</div>'
+      + '<div class="item-info">'
+      + '<div class="item-title">'+s.titulo+'</div>'
+      + (s.descripcion ? '<div class="item-desc">'+s.descripcion+'</div>' : '')
+      + '</div>'
+      + actions
+      + '<div class="item-arrow">&#8599;</div>'
+      + '</a>';
+  }).join('');
+}
+
+let editId = null;
+function openModal(id){
+  editId = id || null;
+  if(id){
+    const s = DATA.find(x=>x.id===id);
+    document.querySelector('#modal h3').textContent='Editar link';
+    document.getElementById('fTitulo').value=s.titulo;
+    document.getElementById('fUrl').value=s.url;
+    document.getElementById('fDesc').value=s.descripcion||'';
+  } else {
+    document.querySelector('#modal h3').textContent='Agregar link';
+    document.getElementById('fTitulo').value='';
+    document.getElementById('fUrl').value='';
+    document.getElementById('fDesc').value='';
+  }
+  document.getElementById('modal').classList.add('active');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('active'); editId=null; }
+
+async function save(){
+  const titulo = document.getElementById('fTitulo').value.trim();
+  const url = document.getElementById('fUrl').value.trim();
+  const descripcion = document.getElementById('fDesc').value.trim();
+  if(!titulo || !url) return alert('Completá título y URL');
+  const endpoint = editId ? '/api/marca-empleadora/'+editId : '/api/marca-empleadora';
+  const method = editId ? 'PUT' : 'POST';
+  await fetch(endpoint,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo,url,descripcion})});
+  closeModal();
+  load();
+}
+
+async function del(id){
+  if(!confirm('Eliminar este link?')) return;
+  await fetch('/api/marca-empleadora/'+id,{method:'DELETE'});
+  load();
+}
+
+load();
+</script>
+</body>
+</html>

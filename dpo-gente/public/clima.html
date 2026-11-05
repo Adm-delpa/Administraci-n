@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encuesta de Clima — DPO Gente</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px;text-decoration:none}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:20px 24px 22px}
+.page-header h1{font-size:18px;font-weight:800;color:#fff}
+.page-header p{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px 20px 60px}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
+select.per-sel{border:1px solid #D8DEE8;border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;background:#fff;color:#18243A;cursor:pointer}
+
+/* Tabs */
+.vista-tabs{display:flex;gap:0;margin-bottom:18px;border-bottom:1px solid #E8ECF2}
+.vista-tab{padding:8px 18px;border:none;font-size:12.5px;font-weight:600;cursor:pointer;background:transparent;color:#8A97AA;border-bottom:2px solid transparent;font-family:inherit}
+.vista-tab.active{color:#1B3F72;border-bottom-color:#1B3F72}
+
+/* Cards */
+.card{background:#fff;border-radius:12px;border:1px solid #E2E8F0;padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:700;color:#1B3F72;margin-bottom:14px}
+
+/* Engagement circle */
+.eng-wrap{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+.eng-circle{position:relative;width:160px;height:160px;flex-shrink:0}
+.eng-circle svg{transform:rotate(-90deg)}
+.eng-circle-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.eng-score{font-size:38px;font-weight:800;line-height:1}
+.eng-label{font-size:11px;color:#8A97AA;margin-top:4px;font-weight:600}
+.eng-dims{flex:1;min-width:260px}
+
+/* Dimension bars */
+.dim-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dim-name{width:220px;font-size:12px;font-weight:600;color:#374151;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dim-bar-wrap{flex:1;height:26px;background:#F1F5F9;border-radius:6px;overflow:hidden;position:relative}
+.dim-bar{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;min-width:36px;transition:width .4s}
+.dim-bar span{font-size:11px;font-weight:700;color:#fff}
+
+/* Comparativas */
+.comp-section{margin-top:20px}
+.comp-title{font-size:13px;font-weight:700;color:#18243A;margin-bottom:12px}
+.comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.comp-card{background:#FAFBFD;border:1px solid #E8ECF2;border-radius:10px;padding:14px}
+.comp-card-title{font-size:12px;font-weight:700;color:#1B3F72;margin-bottom:10px}
+.comp-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.comp-label{width:120px;font-size:11px;font-weight:600;color:#64748B;text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.comp-bar-wrap{flex:1;height:20px;background:#F1F5F9;border-radius:5px;position:relative;overflow:hidden}
+.comp-bar{height:100%;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:30px}
+.comp-bar span{font-size:10px;font-weight:700;color:#fff}
+
+/* Por Pregunta */
+.dim-group{margin-bottom:20px}
+.dim-group-header{font-size:13px;font-weight:700;color:#1B3F72;padding:10px 0;border-bottom:2px solid #E8ECF2;margin-bottom:10px}
+.preg-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F5F6FA;flex-wrap:wrap}
+.preg-text{flex:1;font-size:12px;color:#374151;min-width:200px}
+.preg-scores{display:flex;gap:6px;flex-wrap:wrap}
+.score-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.score-chip-label{font-weight:500;opacity:.8}
+.sc-green{background:#DCFCE7;color:#15803D}
+.sc-amber{background:#FEF3C7;color:#A16207}
+.sc-red{background:#FEE2E2;color:#DC2626}
+
+/* Heatmap */
+.heatmap-wrap{overflow-x:auto;margin-bottom:20px}
+.heatmap{width:100%;border-collapse:collapse;font-size:12px}
+.heatmap th{background:#1B3F72;color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:9px 10px;text-align:center;border-right:1px solid rgba(255,255,255,.12);white-space:nowrap}
+.heatmap th:first-child{text-align:left;min-width:160px}
+.heatmap td{padding:8px 10px;text-align:center;font-weight:700;border-bottom:1px solid #F1F5F9;border-right:1px solid #F5F6FA}
+.heatmap td:first-child{text-align:left;font-weight:600;color:#374151;white-space:nowrap}
+.hm-green{background:#DCFCE7;color:#15803D}
+.hm-amber{background:#FEF3C7;color:#A16207}
+.hm-red{background:#FEE2E2;color:#DC2626}
+.hm-na{background:#F8FAFC;color:#CBD5E1}
+
+/* Respuestas */
+.resp-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.resp-filters select{border:1px solid #D8DEE8;border-radius:7px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff;color:#18243A;cursor:pointer}
+.resp-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.resp-col-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.resp-col-mejora .resp-col-title{color:#DC2626}
+.resp-col-gusta .resp-col-title{color:#15803D}
+.resp-item{background:#FAFBFD;border:1px solid #E8ECF2;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.resp-text{font-size:12px;color:#374151;line-height:1.55}
+.resp-meta{font-size:10.5px;color:#8A97AA;margin-top:5px;display:flex;gap:10px;flex-wrap:wrap}
+.resp-meta span{display:inline-flex;align-items:center;gap:3px}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;background:#1E293B;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Evidencia */
+.ev-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #F5F6FA}
+.ev-item:last-child{border-bottom:none}
+.ev-link{font-size:12.5px;color:#2563A8;text-decoration:none;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-link:hover{text-decoration:underline}
+.ev-actions{display:flex;gap:4px}
+.ev-btn{background:none;border:none;cursor:pointer;font-size:11px;padding:3px 6px;border-radius:4px;color:#64748B}
+.ev-btn:hover{background:#F1F5F9}
+.ev-btn-del:hover{color:#DC2626;background:#FEE2E2}
+
+/* Empty */
+.empty-state{text-align:center;padding:60px 20px;color:#94A3B8}
+.empty-state p{font-size:14px}
+
+/* Responsive */
+@media(max-width:768px){
+  .eng-wrap{flex-direction:column;align-items:stretch}
+  .eng-circle{margin:0 auto}
+  .dim-name{width:100px;font-size:11px}
+  .comp-grid{grid-template-columns:1fr}
+  .resp-cols{grid-template-columns:1fr}
+  .preg-row{flex-direction:column;align-items:flex-start}
+  .preg-scores{margin-top:4px}
+  .toolbar{flex-direction:column;align-items:stretch}
+  .toolbar-left{flex-direction:column}
+  .vista-tab{padding:6px 12px;font-size:11.5px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/pilar-gente" class="topbar-back">&#8592; Volver</a>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Encuesta de Clima</span>
+</div>
+
+<div class="page-header">
+  <h1>Encuesta de Clima</h1>
+  <p>Resultados, dimensiones y respuestas abiertas</p>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <select class="per-sel" id="selPeriodo"><option value="">Cargando...</option></select>
+    </div>
+  </div>
+
+  <div class="vista-tabs" id="tabs">
+    <button class="vista-tab active" data-tab="resumen">Resumen</button>
+    <button class="vista-tab" data-tab="preguntas">Por Pregunta</button>
+    <button class="vista-tab" data-tab="jefes">Por Jefe</button>
+    <button class="vista-tab" data-tab="respuestas">Respuestas</button>
+  </div>
+
+  <div id="tab-resumen"></div>
+  <div id="tab-preguntas" style="display:none"></div>
+  <div id="tab-jefes" style="display:none"></div>
+  <div id="tab-respuestas" style="display:none"></div>
+
+  <!-- Evidencia Drive -->
+  <div id="evidenciaSection" class="card" style="margin-top:8px;display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Evidencia en Drive</div>
+      <button class="admin-only btn btn-primary" onclick="addEvidencia()" style="font-size:11px;padding:5px 12px">+ Agregar link</button>
+    </div>
+    <div id="evidenciaList"></div>
+    <div id="evidenciaEmpty" style="font-size:12px;color:#94A3B8;display:none">No hay links de evidencia cargados.</div>
+  </div>
+
+  <div id="emptyState" class="empty-state" style="display:none">
+    <p>No hay encuestas cargadas.</p>
+    <p style="font-size:12px;margin-top:8px;color:#64748B">Las encuestas se cargan desde el modulo de Engagement.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Admin detection ── */
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+const IS_ADMIN_FLAG = !!(USER && USER.admin);
+if (!IS_ADMIN_FLAG) document.head.insertAdjacentHTML('beforeend','<style>.admin-only{display:none!important}</style>');
+
+/* ── State ── */
+let encuestas = [];
+let resultados = [];
+let textos = [];
+let currentTab = 'resumen';
+
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  setupTabs();
+  await loadEncuestas();
+}
+
+function setupTabs() {
+  document.querySelectorAll('.vista-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.vista-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      ['resumen','preguntas','jefes','respuestas'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = t === currentTab ? '' : 'none';
+      });
+    });
+  });
+}
+
+async function loadEncuestas() {
+  try {
+    const res = await fetch('/api/engagement/encuestas');
+    encuestas = await res.json();
+  } catch(e) { encuestas = []; }
+
+  const sel = document.getElementById('selPeriodo');
+  sel.innerHTML = '';
+
+  if (!encuestas.length) {
+    sel.innerHTML = '<option value="">Sin encuestas</option>';
+    document.getElementById('emptyState').style.display = '';
+    hideAllTabs();
+    return;
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+  encuestas.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = e.periodo + (e.descripcion ? ' — ' + e.descripcion : '');
+    sel.appendChild(opt);
+  });
+
+  sel.value = encuestas[0].id;
+  sel.onchange = () => loadDatos(sel.value);
+  await loadDatos(encuestas[0].id);
+}
+
+function hideAllTabs() {
+  document.getElementById('tabs').style.display = 'none';
+  ['resumen','preguntas','jefes','respuestas'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = 'none';
+  });
+}
+
+async function loadDatos(encuestaId) {
+  if (!encuestaId) return;
+  document.getElementById('tabs').style.display = '';
+  try {
+    const [resR, resT] = await Promise.all([
+      fetch('/api/engagement/resultados/' + encuestaId),
+      fetch('/api/engagement/textos/' + encuestaId),
+    ]);
+    resultados = await resR.json();
+    textos = await resT.json();
+  } catch(e) { resultados = []; textos = []; }
+  renderAll();
+  loadEvidencias(encuestaId);
+}
+
+/* ── Helpers ── */
+function scoreColor(v) {
+  if (v == null || isNaN(v)) return '#CBD5E1';
+  if (v >= 75) return '#15803D';
+  if (v >= 60) return '#A16207';
+  return '#DC2626';
+}
+function scoreClass(v) {
+  if (v == null || isNaN(v)) return 'hm-na';
+  if (v >= 75) return 'hm-green';
+  if (v >= 60) return 'hm-amber';
+  return 'hm-red';
+}
+function chipClass(v) {
+  if (v == null || isNaN(v)) return '';
+  if (v >= 75) return 'sc-green';
+  if (v >= 60) return 'sc-amber';
+  return 'sc-red';
+}
+function fmt(v) { return (v == null || isNaN(v)) ? '—' : Math.round(v); }
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Data pivot helpers ── */
+function getDimensions() {
+  const dims = resultados.filter(r => r.nivel === 'dimension' && r.corte_tipo === 'total');
+  return dims.map(d => d.dimension);
+}
+
+function getDimScore(dimension, corte_tipo, corte_valor) {
+  const r = resultados.find(r =>
+    r.nivel === 'dimension' && r.dimension === dimension &&
+    r.corte_tipo === corte_tipo &&
+    (corte_valor ? r.corte_valor === corte_valor : true)
+  );
+  return r ? r.puntaje : null;
+}
+
+function getCorteValues(corte_tipo) {
+  const vals = new Set();
+  resultados.filter(r => r.corte_tipo === corte_tipo).forEach(r => vals.add(r.corte_valor));
+  return [...vals].sort();
+}
+
+function getPreguntasByDim() {
+  const groups = {};
+  resultados.filter(r => r.nivel === 'pregunta' && r.corte_tipo === 'total').forEach(r => {
+    if (!groups[r.dimension]) groups[r.dimension] = [];
+    if (!groups[r.dimension].find(p => p.pregunta === r.pregunta)) {
+      groups[r.dimension].push({ pregunta: r.pregunta });
+    }
+  });
+  return groups;
+}
+
+function getPregScore(dimension, pregunta, corte_tipo, corte_valor) {
+  const r = resultados.find(r =>
+    r.nivel === 'pregunta' && r.dimension === dimension && r.pregunta === pregunta &&
+    r.corte_tipo === corte_tipo &&
+    (corte_valor ? r.corte_valor === corte_valor : true)
+  );
+  return r ? r.puntaje : null;
+}
+
+/* ── Render ── */
+function renderAll() {
+  renderResumen();
+  renderPreguntas();
+  renderJefes();
+  renderRespuestas();
+  ['resumen','preguntas','jefes','respuestas'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === currentTab ? '' : 'none';
+  });
+}
+
+/* ── TAB 1: Resumen ── */
+function renderResumen() {
+  const dims = getDimensions();
+  if (!dims.length) { document.getElementById('tab-resumen').innerHTML = '<div class="empty-state"><p>Sin datos.</p></div>'; return; }
+
+  const engDim = dims.find(d => /engagement/i.test(d)) || dims[0];
+  const engScore = getDimScore(engDim, 'total') || 0;
+  const circleR = 62, circleC = 2 * Math.PI * circleR;
+  const dashLen = circleC * (engScore / 100);
+  const eColor = scoreColor(engScore);
+
+  let html = '<div class="card"><div class="eng-wrap">';
+  html += `<div class="eng-circle">
+    <svg width="160" height="160" viewBox="0 0 160 160">
+      <circle cx="80" cy="80" r="${circleR}" fill="none" stroke="#F1F5F9" stroke-width="14"/>
+      <circle cx="80" cy="80" r="${circleR}" fill="none" stroke="${eColor}" stroke-width="14"
+        stroke-dasharray="${dashLen} ${circleC}" stroke-linecap="round"/>
+    </svg>
+    <div class="eng-circle-text">
+      <span class="eng-score" style="color:${eColor}">${engScore}</span>
+      <span class="eng-label">Engagement</span>
+    </div>
+  </div>`;
+
+  html += '<div class="eng-dims">';
+  dims.forEach(d => {
+    const s = getDimScore(d, 'total') || 0;
+    html += `<div class="dim-row">
+      <span class="dim-name" title="${d}">${d}</span>
+      <div class="dim-bar-wrap">
+        <div class="dim-bar" style="width:${Math.max(s, 5)}%;background:${scoreColor(s)}"><span>${s}</span></div>
+      </div>
+    </div>`;
+  });
+  html += '</div></div></div>';
+
+  // Comparativas por corte
+  html += '<div class="comp-section"><div class="comp-title">Comparativas</div><div class="comp-grid">';
+
+  const cortes = [
+    { tipo: 'sector', titulo: 'Por Sector' },
+    { tipo: 'posicion', titulo: 'Por Posicion' },
+    { tipo: 'genero', titulo: 'Por Genero' },
+  ];
+
+  cortes.forEach(corte => {
+    const vals = getCorteValues(corte.tipo);
+    if (!vals.length) return;
+    html += `<div class="comp-card"><div class="comp-card-title">${corte.titulo}</div>`;
+    dims.forEach(dim => {
+      html += `<div style="font-size:11px;font-weight:600;color:#94A3B8;margin:8px 0 4px">${dim}</div>`;
+      vals.forEach(v => {
+        const s = getDimScore(dim, corte.tipo, v) || 0;
+        html += `<div class="comp-row">
+          <span class="comp-label" title="${v}">${v}</span>
+          <div class="comp-bar-wrap"><div class="comp-bar" style="width:${Math.max(s,5)}%;background:${scoreColor(s)}"><span>${s}</span></div></div>
+        </div>`;
+      });
+    });
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  document.getElementById('tab-resumen').innerHTML = html;
+}
+
+/* ── TAB 2: Por Pregunta ── */
+function renderPreguntas() {
+  const groups = getPreguntasByDim();
+  const dimNames = Object.keys(groups);
+  if (!dimNames.length) {
+    document.getElementById('tab-preguntas').innerHTML = '<div class="empty-state"><p>Sin datos de preguntas.</p></div>';
+    return;
+  }
+
+  const sectors = getCorteValues('sector');
+  const generos = getCorteValues('genero');
+
+  let html = '<div class="card">';
+  dimNames.forEach(dim => {
+    html += `<div class="dim-group"><div class="dim-group-header">${dim}</div>`;
+    groups[dim].forEach(p => {
+      const total = getPregScore(dim, p.pregunta, 'total');
+      html += `<div class="preg-row">
+        <span class="preg-text">${escHtml(p.pregunta)}</span>
+        <div class="preg-scores">
+          <span class="score-chip ${chipClass(total)}"><span class="score-chip-label">Total</span> ${fmt(total)}</span>`;
+      sectors.forEach(s => {
+        const v = getPregScore(dim, p.pregunta, 'sector', s);
+        if (v != null) html += `<span class="score-chip ${chipClass(v)}"><span class="score-chip-label">${s.slice(0,4)}</span> ${fmt(v)}</span>`;
+      });
+      generos.forEach(g => {
+        const v = getPregScore(dim, p.pregunta, 'genero', g);
+        if (v != null) html += `<span class="score-chip ${chipClass(v)}"><span class="score-chip-label">${g.slice(0,3)}</span> ${fmt(v)}</span>`;
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('tab-preguntas').innerHTML = html;
+}
+
+/* ── TAB 3: Por Jefe ── */
+function renderJefes() {
+  const jefes = getCorteValues('jefe');
+  const dims = getDimensions();
+  if (!jefes.length) {
+    document.getElementById('tab-jefes').innerHTML = '<div class="empty-state"><p>Sin datos de jefes.</p></div>';
+    return;
+  }
+
+  // Clean jefe names for display (remove DNI)
+  function shortJefe(j) { return j.replace(/\.\s*DNI:?\s*\d+/i, '').trim(); }
+
+  // Heatmap dimensiones
+  let html = '<div class="card"><div class="card-title">Heatmap por Dimension</div>';
+  html += '<div class="heatmap-wrap"><table class="heatmap"><thead><tr><th>Jefe</th>';
+  dims.forEach(d => { html += `<th>${d.replace(/^[A-Z] - /,'')}</th>`; });
+  html += '</tr></thead><tbody>';
+  jefes.forEach(jefe => {
+    html += `<tr><td>${shortJefe(jefe)}</td>`;
+    dims.forEach(d => {
+      const v = getDimScore(d, 'jefe', jefe);
+      html += `<td class="${scoreClass(v)}">${fmt(v)}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  // Heatmap preguntas per jefe
+  const groups = getPreguntasByDim();
+  const allPregs = [];
+  Object.keys(groups).forEach(dim => {
+    groups[dim].forEach(p => allPregs.push({ dim, pregunta: p.pregunta }));
+  });
+
+  if (allPregs.length) {
+    html += '<div class="card"><div class="card-title">Detalle por Pregunta</div>';
+    html += '<div class="heatmap-wrap"><table class="heatmap"><thead><tr><th>Jefe</th>';
+    allPregs.forEach(p => {
+      const short = p.pregunta.length > 30 ? p.pregunta.slice(0,30) + '…' : p.pregunta;
+      html += `<th title="${escHtml(p.pregunta)}">${escHtml(short)}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    jefes.forEach(jefe => {
+      html += `<tr><td>${shortJefe(jefe)}</td>`;
+      allPregs.forEach(p => {
+        const v = getPregScore(p.dim, p.pregunta, 'jefe', jefe);
+        html += `<td class="${scoreClass(v)}">${fmt(v)}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  document.getElementById('tab-jefes').innerHTML = html;
+}
+
+/* ── TAB 4: Respuestas ── */
+function renderRespuestas() {
+  if (!textos.length) {
+    document.getElementById('tab-respuestas').innerHTML = '<div class="empty-state"><p>Sin respuestas abiertas.</p></div>';
+    return;
+  }
+
+  const preguntas = [...new Set(textos.map(t => t.pregunta))];
+  const corteValores = [...new Set(textos.map(t => t.corte_valor).filter(Boolean))].sort();
+
+  let html = '<div class="card">';
+  html += '<div class="resp-filters">';
+  html += '<select id="fltCorte" onchange="filterRespuestas()"><option value="">Todos</option>';
+  corteValores.forEach(v => { html += `<option value="${escHtml(v)}">${escHtml(v)}</option>`; });
+  html += '</select>';
+  html += '</div>';
+  html += '<div class="resp-cols" id="respCols"></div>';
+  html += '</div>';
+
+  document.getElementById('tab-respuestas').innerHTML = html;
+  filterRespuestas();
+}
+
+function filterRespuestas() {
+  const fltEl = document.getElementById('fltCorte');
+  if (!fltEl) return;
+  const flt = fltEl.value;
+
+  const filtered = textos.filter(t => {
+    if (flt && t.corte_valor !== flt) return false;
+    return true;
+  });
+
+  const preguntas = [...new Set(filtered.map(t => t.pregunta))];
+  // Classify: first question = mejora, second = gusta (by order in data)
+  const allPreguntas = [...new Set(textos.map(t => t.pregunta))];
+  const mejoraPregunta = allPreguntas.find(p => /cambio|mejor/i.test(p));
+  const gustaPregunta = allPreguntas.find(p => /gusta|valora|destac/i.test(p));
+
+  const mejoran = filtered.filter(r => r.pregunta === mejoraPregunta);
+  const gustan = filtered.filter(r => r.pregunta === gustaPregunta);
+  const otros = filtered.filter(r => r.pregunta !== mejoraPregunta && r.pregunta !== gustaPregunta);
+
+  let html = '';
+  html += '<div class="resp-col-mejora">';
+  html += `<div class="resp-col-title">Que mejorarian (${mejoran.length})</div>`;
+  if (!mejoran.length) html += '<div style="font-size:12px;color:#94A3B8">Sin respuestas.</div>';
+  mejoran.forEach(r => {
+    html += `<div class="resp-item">
+      <div class="resp-text">${escHtml(r.respuesta)}</div>
+      <div class="resp-meta">
+        ${r.corte_tipo && r.corte_tipo !== 'total' ? '<span>' + escHtml(r.corte_tipo) + ': ' + escHtml(r.corte_valor) + '</span>' : ''}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  html += '<div class="resp-col-gusta">';
+  html += `<div class="resp-col-title">Que les gusta (${gustan.length})</div>`;
+  if (!gustan.length) html += '<div style="font-size:12px;color:#94A3B8">Sin respuestas.</div>';
+  gustan.forEach(r => {
+    html += `<div class="resp-item">
+      <div class="resp-text">${escHtml(r.respuesta)}</div>
+      <div class="resp-meta">
+        ${r.corte_tipo && r.corte_tipo !== 'total' ? '<span>' + escHtml(r.corte_tipo) + ': ' + escHtml(r.corte_valor) + '</span>' : ''}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  if (otros.length) {
+    html += '<div style="grid-column:1/-1;margin-top:12px">';
+    html += `<div class="resp-col-title" style="color:#1B3F72">Otras respuestas (${otros.length})</div>`;
+    otros.forEach(r => {
+      html += `<div class="resp-item">
+        <div class="resp-text">${escHtml(r.respuesta)}</div>
+        <div class="resp-meta"><span>${escHtml(r.pregunta || '')}</span>
+          ${r.corte_tipo && r.corte_tipo !== 'total' ? '<span>' + escHtml(r.corte_tipo) + ': ' + escHtml(r.corte_valor) + '</span>' : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('respCols').innerHTML = html;
+}
+
+/* ── Evidencias ── */
+let evidencias = [];
+
+async function loadEvidencias(encuestaId) {
+  if (!encuestaId) { evidencias = []; renderEvidencias(); return; }
+  try {
+    const res = await fetch('/api/clima/evidencias?encuesta_id=' + encuestaId);
+    evidencias = await res.json();
+  } catch(e) { evidencias = []; }
+  renderEvidencias();
+}
+
+function renderEvidencias() {
+  const section = document.getElementById('evidenciaSection');
+  const list = document.getElementById('evidenciaList');
+  const empty = document.getElementById('evidenciaEmpty');
+  const sel = document.getElementById('selPeriodo');
+
+  if (!sel.value) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  if (!evidencias.length) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = evidencias.map(ev => `<div class="ev-item">
+    <a href="${escHtml(ev.url)}" target="_blank" class="ev-link" title="${escHtml(ev.url)}">${escHtml(ev.label)}</a>
+    <div class="ev-actions admin-only">
+      <button class="ev-btn" onclick="editEvidencia(${ev.id},'${escHtml(ev.label).replace(/'/g,"\\'")}','${escHtml(ev.url).replace(/'/g,"\\'")}')">Editar</button>
+      <button class="ev-btn ev-btn-del" onclick="deleteEvidencia(${ev.id})">Eliminar</button>
+    </div>
+  </div>`).join('');
+}
+
+async function addEvidencia() {
+  const label = prompt('Nombre del link:');
+  if (!label) return;
+  const url = prompt('URL (link de Drive):');
+  if (!url) return;
+  const encuestaId = document.getElementById('selPeriodo').value;
+  try {
+    await fetch('/api/clima/evidencias', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ encuesta_id: encuestaId, label, url })
+    });
+    toast('Link agregado');
+    await loadEvidencias(encuestaId);
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function editEvidencia(id, oldLabel, oldUrl) {
+  const label = prompt('Nombre del link:', oldLabel);
+  if (!label) return;
+  const url = prompt('URL:', oldUrl);
+  if (!url) return;
+  try {
+    await fetch('/api/clima/evidencias/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label, url })
+    });
+    toast('Link actualizado');
+    await loadEvidencias(document.getElementById('selPeriodo').value);
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+async function deleteEvidencia(id) {
+  if (!confirm('Eliminar este link?')) return;
+  try {
+    await fetch('/api/clima/evidencias/' + id, { method: 'DELETE' });
+    toast('Link eliminado');
+    await loadEvidencias(document.getElementById('selPeriodo').value);
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

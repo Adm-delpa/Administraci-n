@@ -98,6 +98,24 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 .btn-save:disabled{opacity:.5;cursor:not-allowed}
 .btn-delete{padding:7px 14px;border:1.5px solid #FCA5A5;background:#fff;border-radius:7px;font-size:12.5px;font-weight:600;color:#DC2626;cursor:pointer;margin-right:auto}
 .btn-delete:hover{background:#FEE2E2}
+
+.notas-section{display:none;border-top:1px solid #EEF0F6;padding:16px 18px}
+.notas-title{font-size:11px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.notas-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto}
+.nota-item{background:#F8FAFC;border:1px solid #EEF0F6;border-radius:8px;padding:10px 12px;position:relative}
+.nota-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.nota-autor{font-size:10px;font-weight:700;color:#1B3F72}
+.nota-fecha{font-size:10px;color:#8A97AA}
+.nota-texto{font-size:12px;color:#18243A;line-height:1.5;white-space:pre-wrap}
+.nota-del{position:absolute;top:6px;right:8px;background:none;border:none;color:#CCC;cursor:pointer;font-size:14px;line-height:1;padding:2px}
+.nota-del:hover{color:#DC2626}
+.notas-empty{font-size:11.5px;color:#8A97AA;text-align:center;padding:14px 0}
+.nota-add{display:flex;gap:8px;align-items:flex-end}
+.nota-add textarea{flex:1;padding:7px 10px;border:1.5px solid #D8DEE8;border-radius:6px;font-size:12px;color:#18243A;font-family:inherit;resize:vertical;min-height:50px}
+.nota-add textarea:focus{outline:none;border-color:#2563A8}
+.nota-add button{padding:7px 14px;background:#1B3F72;color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;height:fit-content}
+.nota-add button:hover{background:#2563A8}
+.nota-add button:disabled{opacity:.5;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -136,7 +154,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
     <option value="fin_asc">Fin más antiguo</option>
     <option value="fin_desc">Fin más reciente</option>
   </select>
-  <button class="btn-nueva" onclick="abrirModal()">+ Nueva acción</button>
+  <button class="btn-nueva admin-only" onclick="abrirModal()">+ Nueva acción</button>
 </div>
 
 <div class="main">
@@ -219,17 +237,30 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
         </div>
       </div>
     </div>
+    <div class="notas-section" id="notasSection">
+      <div class="notas-title">📝 Notas de avance</div>
+      <div class="notas-list" id="notasList"></div>
+      <div class="nota-add admin-only">
+        <textarea id="notaTexto" placeholder="Escribir nota de avance..."></textarea>
+        <button id="btnAddNota" onclick="agregarNota()">Agregar</button>
+      </div>
+    </div>
     <div class="modal-footer">
-      <button class="btn-delete" id="btnEliminar" style="display:none" onclick="eliminar()">Eliminar</button>
+      <button class="btn-delete admin-only" id="btnEliminar" style="display:none" onclick="eliminar()">Eliminar</button>
       <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-save" id="btnGuardar" onclick="guardar()">Guardar</button>
+      <button class="btn-save admin-only" id="btnGuardar" onclick="guardar()">Guardar</button>
     </div>
   </div>
 </div>
 
 <script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 let DATA = [];
 let EDIT_ID = null;
+let EDIT_ORIGEN = 'propio';
+let EDIT_SUCURSAL = '';
 let SEDE = 'todas';
 
 function setSede(s) {
@@ -271,9 +302,15 @@ async function cargar() {
   } catch(e) { console.error(e); }
 }
 
+function normalizeKpi(s) {
+  if (!s) return '';
+  return s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
+
 function buildKpiFilter() {
   const sel = document.getElementById('filtroKpi');
   const prev = sel.value;
+  DATA.forEach(d => { if (d.kpi_bloque) d.kpi_bloque = normalizeKpi(d.kpi_bloque); });
   const kpis = [...new Set(DATA.map(d => d.kpi_bloque || '').filter(Boolean))].sort();
   sel.innerHTML = '<option value="">Todos los KPI / Bloque</option>' + kpis.map(k => '<option value="'+esc(k)+'">'+esc(k)+'</option>').join('');
   sel.value = prev;
@@ -300,7 +337,7 @@ function render() {
   } else {
     tbody.innerHTML = filtered.map(d => {
       const esComite = d.origen === 'comite';
-      return `<tr class="${esComite ? 'row-comite' : ''}" ${esComite ? '' : 'onclick="abrirModal('+d.id+')"'} ${esComite ? 'title="Viene del Comité de Gente (solo lectura)"' : ''}>
+      return `<tr class="${esComite ? 'row-comite' : ''}" onclick="abrirModal(${d.id}, '${d.origen||'propio'}', '${esc(d.sucursal||'')}')">
       <td><span class="sede-tag ${esComite ? 'sede-comite' : ''}">${esc(d.sucursal||'')}</span></td>
       <td class="accion-col">${esc(d.accion||'')}</td>
       <td class="obj-col">${esc(d.objetivo||'')}</td>
@@ -331,14 +368,21 @@ function renderKpis(list) {
   `;
 }
 
-function abrirModal(id) {
+function abrirModal(id, origen, sucursal) {
+  if (!IS_ADMIN && !id) return;
   EDIT_ID = id || null;
+  EDIT_ORIGEN = origen || 'propio';
+  EDIT_SUCURSAL = sucursal || '';
   document.getElementById('modalTitle').textContent = EDIT_ID ? 'Editar acción' : 'Nueva acción';
   document.getElementById('btnEliminar').style.display = EDIT_ID ? '' : 'none';
+  const sucSel = document.getElementById('fSucursal');
+  const sucGroup = sucSel.closest('.form-group');
   if (EDIT_ID) {
-    const d = DATA.find(x => x.id === EDIT_ID);
+    const d = DATA.find(x => x.id === EDIT_ID && x.origen === EDIT_ORIGEN);
     if (!d) return;
-    document.getElementById('fSucursal').value = d.sucursal || 'Dolores';
+    sucGroup.style.display = EDIT_ORIGEN === 'comite' ? 'none' : '';
+    sucSel.value = d.sucursal || 'Dolores';
+    if (!sucSel.value || sucSel.selectedIndex < 0) sucSel.value = 'Dolores';
     document.getElementById('fAccion').value = d.accion || '';
     document.getElementById('fObjetivo').value = d.objetivo || '';
     document.getElementById('fResponsable').value = d.responsable || '';
@@ -348,7 +392,9 @@ function abrirModal(id) {
     document.getElementById('fSeguimiento').value = d.seguimiento || '';
     document.getElementById('fKpi').value = d.kpi_bloque || '';
   } else {
-    document.getElementById('fSucursal').value = SEDE !== 'todas' ? SEDE : 'Dolores';
+    EDIT_ORIGEN = 'propio';
+    sucGroup.style.display = '';
+    sucSel.value = SEDE !== 'todas' && SEDE !== 'Comité' ? SEDE : 'Dolores';
     document.getElementById('fAccion').value = '';
     document.getElementById('fObjetivo').value = '';
     document.getElementById('fResponsable').value = '';
@@ -359,6 +405,13 @@ function abrirModal(id) {
     document.getElementById('fKpi').value = '';
   }
   document.getElementById('modalBg').classList.add('open');
+  const notasSection = document.getElementById('notasSection');
+  if (EDIT_ID) {
+    notasSection.style.display = '';
+    cargarNotas();
+  } else {
+    notasSection.style.display = 'none';
+  }
 }
 
 function cerrarModal() {
@@ -366,24 +419,46 @@ function cerrarModal() {
   EDIT_ID = null;
 }
 
+function buildBody() {
+  const accion = document.getElementById('fAccion').value.trim();
+  const responsable = document.getElementById('fResponsable').value.trim();
+  const estado = document.getElementById('fEstado').value;
+  const fecha_inicio = document.getElementById('fInicio').value || null;
+  const fecha_fin = document.getElementById('fFin').value || null;
+  const seguimiento = document.getElementById('fSeguimiento').value.trim();
+  const kpi = document.getElementById('fKpi').value.trim();
+
+  if (EDIT_ORIGEN === 'propio' || !EDIT_ID) {
+    return {
+      sucursal: document.getElementById('fSucursal').value,
+      accion, objetivo: document.getElementById('fObjetivo').value.trim(),
+      responsable, estado, fecha_inicio, fecha_fin,
+      seguimiento, kpi_bloque: kpi,
+    };
+  }
+  if (EDIT_SUCURSAL.includes('CC')) {
+    const statusMap = { pendiente: 'PENDIENTE', en_progreso: 'EN PROGRESO', completada: 'COMPLETO' };
+    return { accion, responsable, bloque: kpi, fecha_inicio, fecha_limite: fecha_fin, status: statusMap[estado] || 'PENDIENTE', notas: '' };
+  }
+  const estMap = { en_progreso: 'en_curso' };
+  return { accion, responsable, bloque: kpi, gop: seguimiento, fecha_compromiso: fecha_fin, estado: estMap[estado] || estado, prioridad: 'media', evidencia: null };
+}
+
+function getApiUrl() {
+  if (!EDIT_ID || EDIT_ORIGEN === 'propio') return EDIT_ID ? '/api/pda-gente/' + EDIT_ID : '/api/pda-gente';
+  if (EDIT_SUCURSAL.includes('CC')) return '/api/cg/pda/' + EDIT_ID;
+  return '/api/comite/pda/' + EDIT_ID;
+}
+
 async function guardar() {
+  if (!IS_ADMIN) return;
   const accion = document.getElementById('fAccion').value.trim();
   if (!accion) { alert('La acción es requerida'); return; }
-  const body = {
-    sucursal: document.getElementById('fSucursal').value,
-    accion,
-    objetivo: document.getElementById('fObjetivo').value.trim(),
-    responsable: document.getElementById('fResponsable').value.trim(),
-    estado: document.getElementById('fEstado').value,
-    fecha_inicio: document.getElementById('fInicio').value || null,
-    fecha_fin: document.getElementById('fFin').value || null,
-    seguimiento: document.getElementById('fSeguimiento').value.trim(),
-    kpi_bloque: document.getElementById('fKpi').value.trim(),
-  };
+  const body = buildBody();
   const btn = document.getElementById('btnGuardar');
   btn.disabled = true;
   try {
-    const url = EDIT_ID ? '/api/pda-gente/' + EDIT_ID : '/api/pda-gente';
+    const url = getApiUrl();
     const method = EDIT_ID ? 'PUT' : 'POST';
     const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!r.ok) { const d = await r.json(); alert(d.error || 'Error'); btn.disabled = false; return; }
@@ -394,13 +469,71 @@ async function guardar() {
 }
 
 async function eliminar() {
+  if (!IS_ADMIN) return;
   if (!EDIT_ID) return;
   if (!confirm('¿Eliminar esta acción? No se puede deshacer.')) return;
   try {
-    await fetch('/api/pda-gente/' + EDIT_ID, { method: 'DELETE' });
+    await fetch(getApiUrl(), { method: 'DELETE' });
     cerrarModal();
     await cargar();
   } catch(e) { alert('Error de conexión'); }
+}
+
+async function cargarNotas() {
+  if (!EDIT_ID) return;
+  const list = document.getElementById('notasList');
+  try {
+    const r = await fetch('/api/pda-notas/' + EDIT_ID + '?origen=' + encodeURIComponent(EDIT_ORIGEN));
+    const notas = await r.json();
+    if (!notas.length) {
+      list.innerHTML = '<div class="notas-empty">Sin notas de avance todavía</div>';
+      return;
+    }
+    list.innerHTML = notas.map(n => {
+      const fecha = new Date(n.created_at);
+      const dd = String(fecha.getDate()).padStart(2,'0');
+      const mm = String(fecha.getMonth()+1).padStart(2,'0');
+      const yy = String(fecha.getFullYear()).slice(2);
+      const hh = String(fecha.getHours()).padStart(2,'0');
+      const mi = String(fecha.getMinutes()).padStart(2,'0');
+      return `<div class="nota-item">
+        <div class="nota-meta">
+          ${n.autor ? '<span class="nota-autor">' + esc(n.autor) + '</span>' : ''}
+          <span class="nota-fecha">${dd}/${mm}/${yy} ${hh}:${mi}</span>
+        </div>
+        <div class="nota-texto">${esc(n.nota)}</div>
+        ${IS_ADMIN ? '<button class="nota-del admin-only" onclick="borrarNota('+n.id+')" title="Eliminar">×</button>' : ''}
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML = '<div class="notas-empty">Error al cargar notas</div>'; }
+}
+
+async function agregarNota() {
+  if (!IS_ADMIN || !EDIT_ID) return;
+  const textarea = document.getElementById('notaTexto');
+  const nota = textarea.value.trim();
+  if (!nota) return;
+  const btn = document.getElementById('btnAddNota');
+  btn.disabled = true;
+  try {
+    await fetch('/api/pda-notas/' + EDIT_ID, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ origen: EDIT_ORIGEN, nota, autor: USER ? USER.nombre || '' : '' })
+    });
+    textarea.value = '';
+    await cargarNotas();
+  } catch(e) { alert('Error al agregar nota'); }
+  btn.disabled = false;
+}
+
+async function borrarNota(id) {
+  if (!IS_ADMIN) return;
+  if (!confirm('¿Eliminar esta nota?')) return;
+  try {
+    await fetch('/api/pda-notas/' + id, { method: 'DELETE' });
+    await cargarNotas();
+  } catch(e) { alert('Error al eliminar nota'); }
 }
 
 cargar();

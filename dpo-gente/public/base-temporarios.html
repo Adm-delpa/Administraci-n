@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base de Personal Temporario</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-header{background:linear-gradient(135deg,#1B3F72 0%,#2A5A9E 100%);padding:20px 24px;position:relative;overflow:hidden}
+.page-header::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06)}
+.page-header h1{font-size:16px;font-weight:700;color:#fff;position:relative;z-index:1}
+.page-header p{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;position:relative;z-index:1}
+
+.wrap{max-width:1200px;margin:0 auto;padding:24px 20px}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.search-input{padding:8px 12px;border:1px solid #D8DEE8;border-radius:7px;font-size:12.5px;color:#18243A;background:#fff;font-family:inherit;min-width:220px;flex:1}
+.search-input:focus{outline:none;border-color:#2563A8}
+.filter-sel{padding:8px 10px;border:1px solid #D8DEE8;border-radius:7px;font-size:12px;color:#18243A;background:#fff;cursor:pointer;font-family:inherit}
+.spacer{flex:1}
+.btn{padding:8px 16px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#163260}
+.btn.ghost{background:#fff;color:#1B3F72;border:1px solid #D8DEE8}
+.btn.ghost:hover{background:#F7F8FB}
+
+/* CARD / TABLE */
+.card{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:820px}
+thead th{text-align:left;padding:10px 14px;border-bottom:1px solid #EEF0F6;font-size:10.5px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;background:#FAFBFD;white-space:nowrap}
+tbody td{padding:10px 14px;border-bottom:1px solid #F5F6FA;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFBFD}
+.nombre-cell{font-weight:600;color:#18243A}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap}
+.pill-suc-dolores{background:#EFF6FF;color:#1D4ED8}
+.pill-suc-central{background:#EDE9FE;color:#5B21B6}
+.pill-area-distribucion{background:#D1FAE5;color:#065F46}
+.pill-area-almacen{background:#FEF3C7;color:#92400E}
+.obs-cell{color:#5A6880;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acciones{display:flex;gap:5px}
+.btn-row{padding:4px 9px;border:1px solid #D8DEE8;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#5A6880;white-space:nowrap}
+.btn-row:hover{background:#F7F8FB}
+.btn-row.danger:hover{background:#FEE2E2;border-color:#FECACA;color:#B91C1C}
+
+.footer{padding:12px 14px;font-size:11.5px;color:#8A97AA;border-top:1px solid #EEF0F6}
+
+.empty{color:#8A97AA;font-size:12.5px;padding:40px 0;text-align:center}
+.loading{color:#8A97AA;font-size:12.5px;padding:40px 0;text-align:center}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:min(560px,95vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:14px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;background:#1B3F72;flex-shrink:0}
+.modal-titulo{font-size:13.5px;font-weight:700;color:#fff}
+.modal-close{background:none;border:none;font-size:18px;color:rgba(255,255,255,.6);cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#fff}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.one{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{padding:8px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;background:#fff;font-family:inherit}
+.form-input:focus,.form-select:focus{outline:none;border-color:#2563A8}
+.form-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #EEF0F6}
+.btn-cancel{padding:7px 14px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#5A6880;cursor:pointer}
+.btn-save{padding:7px 16px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:#1B3F72;color:#fff;cursor:pointer}
+.btn-save:hover{background:#163260}
+
+@media(max-width:768px){
+  .toolbar{flex-direction:column;align-items:stretch}
+  .search-input{min-width:0}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/reclu-hub'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Base de Personal Temporario</span>
+</div>
+
+<div class="page-header">
+  <h1>Base de Personal Temporario</h1>
+  <p>Registro de trabajadores temporarios por temporada, sucursal y área</p>
+</div>
+
+<div class="wrap">
+  <div class="toolbar">
+    <input class="search-input" id="f-search" type="text" placeholder="Buscar por nombre o DNI..." oninput="render()">
+    <select class="filter-sel" id="f-sucursal" onchange="render()">
+      <option value="">Todas las sucursales</option>
+      <option value="Dolores">Dolores</option>
+      <option value="Casa Central">Casa Central</option>
+    </select>
+    <select class="filter-sel" id="f-area" onchange="render()">
+      <option value="">Todas las áreas</option>
+      <option value="Distribución">Distribución</option>
+      <option value="Almacén">Almacén</option>
+    </select>
+    <select class="filter-sel" id="f-temporada" onchange="render()">
+      <option value="">Todas las temporadas</option>
+    </select>
+    <div class="spacer"></div>
+    <button class="btn ghost admin-only" onclick="exportarCSV()">⬇ Exportar</button>
+    <button class="btn admin-only" onclick="abrirNuevo()">+ Agregar</button>
+  </div>
+
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>DNI</th>
+            <th>Temporada</th>
+            <th>Sucursal</th>
+            <th>Área</th>
+            <th>Observaciones</th>
+            <th class="admin-only">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="7"><div class="loading">Cargando...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="footer" id="footer">—</div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modal-titulo">Agregar persona</span>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row one">
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-nombre" placeholder="Nombre y apellido"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">DNI</label><input class="form-input" id="f-dni" placeholder="Ej: 30123456"></div>
+        <div class="form-group"><label class="form-label">Temporada</label>
+          <select class="form-select" id="f-mod-temporada"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Sucursal</label>
+          <select class="form-select" id="f-mod-sucursal">
+            <option value="Dolores">Dolores</option>
+            <option value="Casa Central">Casa Central</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Área</label>
+          <select class="form-select" id="f-mod-area">
+            <option value="Distribución">Distribución</option>
+            <option value="Almacén">Almacén</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group"><label class="form-label">Observaciones</label><input class="form-input" id="f-obs" placeholder="Opcional"></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-save" onclick="guardar()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user')||'null');
+if(!USER) window.location.href='/';
+const IS_ADMIN = !!(USER && USER.admin);
+if(!IS_ADMIN) document.head.insertAdjacentHTML('beforeend','<style>.admin-only{display:none!important}</style>');
+
+let DATA = [];
+let EDIT_ID = null;
+const ANIO_ACTUAL = new Date().getFullYear();
+const ANIOS = [];
+for (let a = 2024; a <= ANIO_ACTUAL + 1; a++) ANIOS.push(a);
+
+function poblarTemporadas() {
+  const selFiltro = document.getElementById('f-temporada');
+  selFiltro.innerHTML = '<option value="">Todas las temporadas</option>' + ANIOS.map(a => '<option value="'+a+'">'+a+'</option>').join('');
+  const selModal = document.getElementById('f-mod-temporada');
+  selModal.innerHTML = ANIOS.map(a => '<option value="'+a+'">'+a+'</option>').join('');
+}
+
+async function cargar() {
+  try {
+    DATA = await fetch('/api/temporarios').then(r => r.json());
+    render();
+  } catch(e) {
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="7"><div class="empty">Error al cargar datos</div></td></tr>';
+  }
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+function filtrar() {
+  const q = document.getElementById('f-search').value.trim().toLowerCase();
+  const suc = document.getElementById('f-sucursal').value;
+  const area = document.getElementById('f-area').value;
+  const temp = document.getElementById('f-temporada').value;
+  return DATA.filter(p => {
+    if (q && !((p.nombre||'').toLowerCase().includes(q) || (p.dni||'').toLowerCase().includes(q))) return false;
+    if (suc && p.sucursal !== suc) return false;
+    if (area && p.area !== area) return false;
+    if (temp && String(p.temporada) !== temp) return false;
+    return true;
+  });
+}
+
+function pillSucursal(s) {
+  const cls = s === 'Casa Central' ? 'pill-suc-central' : 'pill-suc-dolores';
+  return '<span class="pill '+cls+'">'+esc(s||'—')+'</span>';
+}
+function pillArea(a) {
+  const cls = a === 'Almacén' ? 'pill-area-almacen' : 'pill-area-distribucion';
+  return '<span class="pill '+cls+'">'+esc(a||'—')+'</span>';
+}
+
+function render() {
+  const data = filtrar();
+  const tbody = document.getElementById('tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty">No hay personas que coincidan con los filtros.</div></td></tr>';
+  } else {
+    tbody.innerHTML = data.map(p => (
+      '<tr>'
+      +'<td class="nombre-cell">'+esc(p.nombre)+'</td>'
+      +'<td>'+esc(p.dni||'—')+'</td>'
+      +'<td>'+esc(p.temporada||'—')+'</td>'
+      +'<td>'+pillSucursal(p.sucursal)+'</td>'
+      +'<td>'+pillArea(p.area)+'</td>'
+      +'<td class="obs-cell" title="'+esc(p.observaciones||'')+'">'+esc(p.observaciones||'—')+'</td>'
+      +'<td class="admin-only"><div class="acciones">'
+      +'<button class="btn-row" onclick="editar('+p.id+')">✎ Editar</button>'
+      +'<button class="btn-row danger" onclick="borrar('+p.id+')">✕ Borrar</button>'
+      +'</div></td>'
+      +'</tr>'
+    )).join('');
+  }
+  document.getElementById('footer').textContent = data.length + ' persona' + (data.length !== 1 ? 's' : '') + ' de ' + DATA.length + ' en total';
+}
+
+function abrirNuevo() {
+  EDIT_ID = null;
+  document.getElementById('modal-titulo').textContent = 'Agregar persona';
+  document.getElementById('f-nombre').value = '';
+  document.getElementById('f-dni').value = '';
+  document.getElementById('f-mod-temporada').value = ANIO_ACTUAL;
+  document.getElementById('f-mod-sucursal').value = 'Dolores';
+  document.getElementById('f-mod-area').value = 'Distribución';
+  document.getElementById('f-obs').value = '';
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function editar(id) {
+  const p = DATA.find(x => x.id === id);
+  if (!p) return;
+  EDIT_ID = id;
+  document.getElementById('modal-titulo').textContent = 'Editar persona';
+  document.getElementById('f-nombre').value = p.nombre || '';
+  document.getElementById('f-dni').value = p.dni || '';
+  document.getElementById('f-mod-temporada').value = p.temporada || ANIO_ACTUAL;
+  document.getElementById('f-mod-sucursal').value = p.sucursal || 'Dolores';
+  document.getElementById('f-mod-area').value = p.area || 'Distribución';
+  document.getElementById('f-obs').value = p.observaciones || '';
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function cerrarModal() { document.getElementById('modal-bg').classList.remove('open'); }
+
+async function guardar() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  if (!nombre) { alert('Ingresá el nombre'); return; }
+  const body = {
+    nombre,
+    dni: document.getElementById('f-dni').value.trim(),
+    temporada: parseInt(document.getElementById('f-mod-temporada').value) || null,
+    sucursal: document.getElementById('f-mod-sucursal').value,
+    area: document.getElementById('f-mod-area').value,
+    observaciones: document.getElementById('f-obs').value.trim()
+  };
+  try {
+    const url = EDIT_ID ? '/api/temporarios/' + EDIT_ID : '/api/temporarios';
+    const method = EDIT_ID ? 'PUT' : 'POST';
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    cerrarModal();
+    cargar();
+  } catch(e) { alert('Error al guardar'); }
+}
+
+async function borrar(id) {
+  if (!confirm('¿Eliminar esta persona del registro?')) return;
+  try {
+    await fetch('/api/temporarios/' + id, { method: 'DELETE' });
+    cargar();
+  } catch(e) { alert('Error al borrar'); }
+}
+
+function exportarCSV() {
+  const data = filtrar();
+  if (!data.length) { alert('No hay datos para exportar'); return; }
+  let csv = 'Nombre,DNI,Temporada,Sucursal,Área,Observaciones\n';
+  data.forEach(p => {
+    csv += '"'+(p.nombre||'').replace(/"/g,'""')+'","'+(p.dni||'')+'","'+(p.temporada||'')+'","'+(p.sucursal||'')+'","'+(p.area||'')+'","'+(p.observaciones||'').replace(/"/g,'""')+'"\n';
+  });
+  const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'personal-temporario.csv';
+  a.click();
+}
+
+poblarTemporadas();
+cargar();
+</script>
+</body>
+</html>

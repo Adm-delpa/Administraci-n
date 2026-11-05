@@ -220,9 +220,10 @@ const GRUPOS = [
 async function abrirPlan(){
   abrirModal('Plan de Demanda','<div class="loading">Cargando…</div>');
   try{
+    const isCC = SUCURSAL === 'central';
     const [rp, rc] = await Promise.all([
-      fetch(`/api/plan-demanda/${SUCURSAL}/${ANIO}`).then(r=>r.json()),
-      fetch(`/api/plan-comentarios/${SUCURSAL}/${ANIO}`).then(r=>r.json())
+      fetch(isCC ? `/api/plan-demanda-cc/central/${ANIO}` : `/api/plan-demanda/${SUCURSAL}/${ANIO}`).then(r=>r.json()),
+      fetch(isCC ? `/api/plan-comentarios-cc/central/${ANIO}` : `/api/plan-comentarios/${SUCURSAL}/${ANIO}`).then(r=>r.json())
     ]);
     const COMMENTS={};
     (rc||[]).forEach(row=>{ if(!COMMENTS[row.grupo]) COMMENTS[row.grupo]={}; COMMENTS[row.grupo][row.mes]={estado:row.estado||'sin_justificar'}; });
@@ -254,7 +255,7 @@ async function abrirPlan(){
       });
       html+='</tbody></table>';
     } else { html+='<div class="empty">Sin desvíos en meses cerrados.</div>'; }
-    html += `<a class="modal-link" href="/plan-demanda?sucursal=${SUCURSAL}">Ver plan completo →</a>`;
+    html += `<a class="modal-link" href="${isCC ? '/plan-demanda-cc' : '/plan-demanda?sucursal=dolores'}">Ver plan completo →</a>`;
     document.getElementById('modal-body').innerHTML = html;
   }catch(e){ document.getElementById('modal-body').innerHTML='<div class="empty">No se pudo cargar.</div>'; }
 }
@@ -267,9 +268,10 @@ async function getBadges(paginas, recluId){
   try{ const l=await fetch('/api/candidatos').then(r=>r.json()); badges['cand']=l.length; }catch(e){ badges['cand']=0; }
   // plan desvíos
   try{
+    const _isCC = SUCURSAL === 'central';
     const [rp,rc]=await Promise.all([
-      fetch(`/api/plan-demanda/${SUCURSAL}/${ANIO}`).then(r=>r.json()),
-      fetch(`/api/plan-comentarios/${SUCURSAL}/${ANIO}`).then(r=>r.json())
+      fetch(_isCC ? `/api/plan-demanda-cc/central/${ANIO}` : `/api/plan-demanda/${SUCURSAL}/${ANIO}`).then(r=>r.json()),
+      fetch(_isCC ? `/api/plan-comentarios-cc/central/${ANIO}` : `/api/plan-comentarios/${SUCURSAL}/${ANIO}`).then(r=>r.json())
     ]);
     const COM={};
     (rc||[]).forEach(row=>{ if(!COM[row.grupo]) COM[row.grupo]={}; COM[row.grupo][row.mes]={estado:row.estado||'sin_justificar'}; });
@@ -317,7 +319,7 @@ async function init(){
         badgeHtml = sinj>0
           ? `<span class="mod-badge badge-red">${sinj} desvío${sinj!==1?'s':''} sin justificar</span>`
           : `<span class="mod-badge badge-green">Sin desvíos pendientes</span>`;
-        destino = `/plan-demanda?sucursal=${SUCURSAL}`;
+        destino = SUCURSAL === 'central' ? '/plan-demanda-cc' : '/plan-demanda?sucursal=dolores';
       } else {
         const n = (hijo.bloques||[]).filter(b=>b.tipo==='embed').length;
         badgeHtml = n>0
@@ -338,6 +340,66 @@ async function init(){
         <div class="mod-footer">${badgeHtml}<span class="mod-arr">Abrir →</span></div>`;
       grid.appendChild(card);
     });
+
+    // Plan de Demanda CC (card fijo)
+    const cardPDCC = document.createElement('button');
+    cardPDCC.className = 'mod-card';
+    cardPDCC.style.setProperty('--accent','#DC2626');
+    cardPDCC.onclick = () => window.location.href = '/plan-demanda-cc';
+    cardPDCC.innerHTML = `
+      <div class="mod-icon">📊</div>
+      <div class="mod-title">Plan de Demanda — Casa Central</div>
+      <div class="mod-desc">Nómina mensual, presupuesto vs. real y seguimiento de vacaciones.</div>
+      <div class="mod-footer"><span class="mod-badge badge-navy">Casa Central</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardPDCC);
+
+    // Base de personal temporario
+    const cardTemp = document.createElement('button');
+    cardTemp.className = 'mod-card';
+    cardTemp.style.setProperty('--accent','#D97706');
+    cardTemp.onclick = () => window.location.href = '/base-temporarios';
+    cardTemp.innerHTML = `
+      <div class="mod-icon">👷</div>
+      <div class="mod-title">Base de personal temporario</div>
+      <div class="mod-desc">Registro de personal temporario por temporada, sucursal y área.</div>
+      <div class="mod-footer"><span class="mod-badge badge-gray">Registro</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardTemp);
+
+    // Mapa de Calor
+    const cardMC = document.createElement('button');
+    cardMC.className = 'mod-card';
+    cardMC.style.setProperty('--accent','#DC2626');
+    cardMC.onclick = () => window.location.href = '/mapa-calor';
+    cardMC.innerHTML = `
+      <div class="mod-icon">🔥</div>
+      <div class="mod-title">Mapa de Calor</div>
+      <div class="mod-desc">Seguimiento de cobertura y sucesión de puestos clave.</div>
+      <div class="mod-footer"><span class="mod-badge badge-red">Sucesión</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardMC);
+
+    // Marca Empleadora
+    const cardME = document.createElement('button');
+    cardME.className = 'mod-card';
+    cardME.style.setProperty('--accent','#E67E22');
+    cardME.onclick = () => window.location.href = '/marca-empleadora';
+    cardME.innerHTML = `
+      <div class="mod-icon">🏷️</div>
+      <div class="mod-title">Marca Empleadora</div>
+      <div class="mod-desc">Enlaces y recursos de marca empleadora.</div>
+      <div class="mod-footer"><span class="mod-badge badge-navy">Links</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardME);
+
+    // Simuladores de Dimensionamiento
+    const cardSD = document.createElement('button');
+    cardSD.className = 'mod-card';
+    cardSD.style.setProperty('--accent','#7C3AED');
+    cardSD.onclick = () => window.location.href = '/simuladores-dimensionamiento';
+    cardSD.innerHTML = `
+      <div class="mod-icon">📐</div>
+      <div class="mod-title">Simuladores de Dimensionamiento</div>
+      <div class="mod-desc">Enlaces a simuladores y herramientas de dimensionamiento.</div>
+      <div class="mod-footer"><span class="mod-badge badge-purple">Links</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardSD);
 
     // Tendencias al final (anteúltimo)
     const cardTend = document.createElement('button');

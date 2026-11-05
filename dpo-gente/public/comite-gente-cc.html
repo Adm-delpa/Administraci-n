@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comité de Gente Casa Central — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px;font-family:inherit}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:22px 24px}
+.page-header h1{font-size:18px;font-weight:800;color:#fff}
+.page-header p{font-size:11.5px;color:rgba(255,255,255,.55);margin-top:4px}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px 20px;display:flex;flex-direction:column;gap:16px}
+
+/* Tabs principales */
+.tabs{display:flex;gap:0;border-bottom:2px solid #D8DEE8;overflow-x:auto;flex-shrink:0}
+.tab{padding:10px 18px;font-size:12.5px;font-weight:600;color:#8A97AA;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
+.tab:hover{color:#2563A8}
+.tab.active{color:#2563A8;border-bottom-color:#2563A8}
+
+/* Sub-tabs GOPs */
+.subtabs{display:flex;gap:0;border-bottom:1.5px solid #E5E7EB;overflow-x:auto;margin-bottom:16px}
+.subtab{padding:8px 14px;font-size:11.5px;font-weight:600;color:#8A97AA;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .15s;white-space:nowrap}
+.subtab:hover{color:#1B3F72}
+.subtab.active{color:#1B3F72;border-bottom-color:#1B3F72}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Cards y componentes */
+.card{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h3{font-size:14px;font-weight:700;color:#1B3F72;margin-bottom:12px}
+.card-subtitle{font-size:11px;color:#8A97AA;margin-bottom:12px}
+
+.field-group{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:16px}
+.field label{display:block;font-size:10.5px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid #D8DEE8;border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;color:#18243A;background:#fff}
+.field textarea{resize:vertical;min-height:60px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#2563A8}
+
+.btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#1B3F72;color:#fff}
+.btn-primary:hover{background:#163560}
+.btn-secondary{background:#fff;border:1.5px solid #D8DEE8;color:#18243A}
+.btn-secondary:hover{background:#F5F7FB}
+.btn-danger{background:#DC2626;color:#fff}
+.btn-danger:hover{background:#B91C1C}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-success{background:#16A34A;color:#fff}
+.btn-success:hover{background:#15803D}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* Tabla genérica */
+.tbl-wrap{overflow-x:auto}
+table.tbl{border-collapse:collapse;width:100%;min-width:600px}
+.tbl th,.tbl td{border:1px solid #EEF0F6;padding:8px 10px;font-size:12px;text-align:left}
+.tbl th{background:#F5F7FB;font-weight:700;color:#5E6E89;position:sticky;top:0;z-index:1}
+.tbl tr:nth-child(even){background:#FAFBFD}
+.tbl td.center{text-align:center}
+
+/* Status badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.02em}
+.badge-ok{background:#DCFCE7;color:#166534}
+.badge-nook{background:#FEE2E2;color:#991B1B}
+.badge-na{background:#F3F4F6;color:#6B7280}
+.badge-pending{background:#FEF3C7;color:#92400E}
+.badge-progress{background:#DBEAFE;color:#1E40AF}
+.badge-complete{background:#DCFCE7;color:#166534}
+
+/* GOP select */
+.gop-sel{width:100%;border:none;background:transparent;font-size:11px;font-family:inherit;padding:4px;cursor:pointer;text-align:center;font-weight:600;border-radius:4px}
+.gop-sel.ok{background:#DCFCE7;color:#166534}
+.gop-sel.nook{background:#FEE2E2;color:#991B1B}
+.gop-sel.na{background:#F3F4F6;color:#6B7280}
+.gop-sel.empty{background:#fff;color:#ccc}
+
+/* KPI stat cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.kpi-val{font-size:24px;font-weight:800;color:#18243A;line-height:1}
+.kpi-sub{font-size:10.5px;color:#8A97AA;margin-top:3px}
+
+/* Fases equipos autónomos */
+.fase-bar{display:flex;gap:2px;height:22px;margin:6px 0}
+.fase-bar .fase{flex:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;cursor:default}
+.fase.f0{background:#D1D5DB;color:#6B7280}.fase.f1{background:#93C5FD;color:#1E3A5F}.fase.f2{background:#60A5FA;color:#fff}.fase.f3{background:#2563EB;color:#fff}.fase.f4{background:#1E40AF;color:#fff}
+.fase.current{outline:3px solid #F59E0B;outline-offset:-1px}
+
+/* GOP % gauge */
+.gauge{width:100%;height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;margin-top:4px}
+.gauge-fill{height:100%;border-radius:4px;transition:width .3s}
+.gauge-fill.green{background:#16A34A}
+.gauge-fill.yellow{background:#D97706}
+.gauge-fill.red{background:#DC2626}
+
+.pct-good{color:#16A34A;font-weight:800}
+.pct-warn{color:#D97706;font-weight:800}
+.pct-bad{color:#DC2626;font-weight:800}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sel{background:#fff;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:#18243A;cursor:pointer;font-family:inherit}
+
+.loading{text-align:center;padding:40px;color:#8A97AA;font-size:13px}
+.empty-state{text-align:center;padding:40px;color:#8A97AA;font-size:13px}
+
+/* P/A selector */
+.pa-sel{width:40px;border:none;background:transparent;font-size:12px;font-weight:700;font-family:inherit;text-align:center;cursor:pointer;padding:4px 2px;border-radius:4px}
+.pa-sel.presente{background:#DCFCE7;color:#166534}
+.pa-sel.ausente{background:#FEE2E2;color:#991B1B}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:560px;max-width:95vw;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:16px;color:#1B3F72}
+.modal .field{margin-bottom:12px}
+
+@media(max-width:768px){
+  .field-group{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .tabs{gap:0}
+  .tab{padding:8px 12px;font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="location.href='/comite-gente-hub'">&#8592; Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Comité de Gente Casa Central</span>
+</div>
+
+<div class="page-header">
+  <h1>Comité de Gente Casa Central</h1>
+  <p>Seguimiento integral: TOR, Asistencia, KPIs, Equipos Autónomos, GOPs y Plan de Acción</p>
+</div>
+
+<div class="wrap">
+  <div class="tabs" id="mainTabs">
+    <div class="tab active" data-tab="tor">TOR</div>
+    <div class="tab" data-tab="asistencia">Asistencia</div>
+    <div class="tab" data-tab="farol">Farol KPIs</div>
+    <div class="tab" data-tab="equipos">Eq. Autónomos</div>
+    <div class="tab" data-tab="gops">GOPs</div>
+    <div class="tab" data-tab="pda">PDA</div>
+  </div>
+
+  <!-- ═══ TOR ═══ -->
+  <div class="tab-content active" id="tab-tor">
+    <div class="card">
+      <h3>Temas de Referencia (TOR) — <span id="tor-anio">2026</span></h3>
+      <div id="tor-view"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary admin-only" onclick="editTOR()">Editar TOR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ASISTENCIA ═══ -->
+  <div class="tab-content" id="tab-asistencia">
+    <div class="card">
+      <h3>Asistencia al Comité</h3>
+      <p class="card-subtitle">Registrá la presencia (P) o ausencia (A) de cada miembro por mes</p>
+      <div class="toolbar">
+        <select class="sel" id="asis-anio" onchange="loadAsistencia()">
+          <option value="2026">2026</option><option value="2025">2025</option>
+        </select>
+        <button class="btn btn-primary btn-sm admin-only" onclick="addMiembro()">+ Agregar miembro</button>
+      </div>
+      <div class="tbl-wrap" id="asis-table"></div>
+    </div>
+  </div>
+
+  <!-- ═══ FAROL KPIs ═══ -->
+  <div class="tab-content" id="tab-farol">
+    <div class="card">
+      <h3>Farol de Gente — Principales KPIs</h3>
+      <div class="toolbar">
+        <select class="sel" id="kpi-anio" onchange="loadKpis()">
+          <option value="2026">2026</option><option value="2025">2025</option>
+        </select>
+        <button class="btn btn-primary btn-sm admin-only" onclick="addKpi()">+ Agregar KPI</button>
+      </div>
+      <div class="tbl-wrap" id="kpi-table"></div>
+    </div>
+  </div>
+
+  <!-- ═══ EQUIPOS AUTÓNOMOS ═══ -->
+  <div class="tab-content" id="tab-equipos">
+    <div class="card">
+      <h3>Equipos Autónomos — Evaluación por Dimensión</h3>
+      <div class="toolbar">
+        <select class="sel" id="eq-anio" onchange="loadEquipos()">
+          <option value="2026">2026</option><option value="2025">2025</option>
+        </select>
+        <button class="btn btn-primary btn-sm admin-only" onclick="addEquipo()">+ Agregar dimensión</button>
+      </div>
+      <div id="equipos-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══ GOPs ═══ -->
+  <div class="tab-content" id="tab-gops">
+    <div class="card">
+      <h3>GOPs — Gestión Operacional de Personas</h3>
+      <p class="card-subtitle">Meta de alineamiento recomendada: ≥ 80%. Evaluá OK / NO OK / NA por mes para cada pregunta.</p>
+      <div class="toolbar">
+        <select class="sel" id="gop-anio" onchange="if(document.getElementById('gop-dashboard').style.display!=='none') loadGOPDashboard(); else loadGOP();">
+          <option value="2026">2026</option><option value="2025">2025</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="seedGOPs()">Cargar preguntas estándar</button>
+        <button class="btn btn-secondary btn-sm" id="btn-gop-back" style="display:none" onclick="loadGOPDashboard()">← Volver al resumen</button>
+      </div>
+      <div id="gop-dashboard"></div>
+      <div class="subtabs" id="gopTabs" style="display:none">
+        <div class="subtab" data-gop="di">D&I</div>
+        <div class="subtab" data-gop="reconocimiento">Reconocimiento</div>
+        <div class="subtab" data-gop="jornada">Jornada</div>
+        <div class="subtab" data-gop="estructura">Estructura</div>
+        <div class="subtab" data-gop="remuneracion">Remuneración</div>
+        <div class="subtab" data-gop="turnover">Turnover</div>
+        <div class="subtab" data-gop="ausentismo">Ausentismo</div>
+      </div>
+      <div id="gop-summary"></div>
+      <div class="tbl-wrap" id="gop-table"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PDA ═══ -->
+  <div class="tab-content" id="tab-pda">
+    <div class="card">
+      <h3>Plan de Acción (PDA)</h3>
+      <div class="toolbar">
+        <select class="sel" id="pda-anio" onchange="loadPDA()">
+          <option value="2026">2026</option><option value="2025">2025</option>
+        </select>
+        <button class="btn btn-primary btn-sm admin-only" onclick="addPDA()">+ Nueva acción</button>
+      </div>
+      <div id="pda-summary"></div>
+      <div class="tbl-wrap" id="pda-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal genérico -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
+function fmtDate(d) { const s = (d||'').split('T')[0].split('-'); return s.length===3 ? `${parseInt(s[2])}/${parseInt(s[1])}/${s[0]}` : '-'; }
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const GOP_LABELS = { di:'D&I', reconocimiento:'Reconocimiento', jornada:'Jornada', estructura:'Estructura', remuneracion:'Remuneración', turnover:'Turnover', ausentismo:'Ausentismo' };
+
+let currentGOP = 'di';
+let gopPreguntas = [];
+let gopRespuestas = [];
+
+// ── Tabs ──
+document.querySelectorAll('#mainTabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#mainTabs .tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    if (t.dataset.tab === 'tor') loadTOR();
+    if (t.dataset.tab === 'asistencia') loadAsistencia();
+    if (t.dataset.tab === 'farol') loadKpis();
+    if (t.dataset.tab === 'equipos') loadEquipos();
+    if (t.dataset.tab === 'gops') loadGOPDashboard();
+    if (t.dataset.tab === 'pda') loadPDA();
+  });
+});
+
+document.querySelectorAll('#gopTabs .subtab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('#gopTabs .subtab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    currentGOP = t.dataset.gop;
+    document.getElementById('gop-dashboard').style.display = 'none';
+    document.getElementById('gop-summary').style.display = '';
+    document.getElementById('gop-table').style.display = '';
+    loadGOP();
+  });
+});
+
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+function openModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalBg').classList.add('show');
+}
+document.getElementById('modalBg').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+function pctClass(v) { return v >= 80 ? 'pct-good' : v >= 50 ? 'pct-warn' : 'pct-bad'; }
+function gaugeClass(v) { return v >= 80 ? 'green' : v >= 50 ? 'yellow' : 'red'; }
+
+// ══════════════════════════════════════════
+// ── TOR ──────────────────────────────────
+// ══════════════════════════════════════════
+let torData = {};
+
+async function loadTOR() {
+  const r = await fetch('/api/cg/tor');
+  torData = await r.json();
+  renderTOR();
+}
+
+function renderTOR() {
+  const d = torData;
+  const agenda = d.agenda || [];
+  document.getElementById('tor-anio').textContent = d.anio || 2026;
+  document.getElementById('tor-view').innerHTML = `
+    <div class="field-group">
+      <div class="field"><label>Reunión</label><div style="font-size:13px;font-weight:600">Comité de Gente Casa Central</div></div>
+      <div class="field"><label>Dueño</label><div style="font-size:13px">${d.dueno || '<span style="color:#ccc">Sin definir</span>'}</div></div>
+      <div class="field"><label>Duración</label><div style="font-size:13px">${d.duracion || '90 min'}</div></div>
+      <div class="field"><label>Frecuencia</label><div style="font-size:13px">${d.frecuencia || 'Mensual'}</div></div>
+      <div class="field"><label>Local</label><div style="font-size:13px">${d.local_lugar || '<span style="color:#ccc">Sin definir</span>'}</div></div>
+    </div>
+    <div class="field" style="margin-bottom:14px"><label>Objetivo</label><div style="font-size:13px;line-height:1.6;white-space:pre-line">${d.objetivo || '<span style="color:#ccc">Sin definir</span>'}</div></div>
+    <div class="field" style="margin-bottom:14px"><label>Sueño del Distribuidor</label><div style="font-size:13px;line-height:1.6;white-space:pre-line">${d.sueno || '<span style="color:#ccc">Sin definir</span>'}</div></div>
+    <div class="field" style="margin-bottom:14px"><label>Participantes</label><div style="font-size:13px;white-space:pre-line">${d.participantes || '<span style="color:#ccc">Sin definir</span>'}</div></div>
+    <div class="field" style="margin-bottom:14px"><label>Reglas Básicas</label><div style="font-size:13px;white-space:pre-line">${d.reglas || '<span style="color:#ccc">Sin definir</span>'}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="field"><label>Inputs</label><div style="font-size:12px;white-space:pre-line">${d.inputs || '-'}</div></div>
+      <div class="field"><label>Outputs</label><div style="font-size:12px;white-space:pre-line">${d.outputs || '-'}</div></div>
+      <div class="field"><label>KPIs</label><div style="font-size:12px;white-space:pre-line">${d.kpis || '-'}</div></div>
+    </div>
+    ${agenda.length ? `<div class="field"><label>Agenda</label>
+      <table class="tbl"><tr><th style="width:40px">#</th><th>Tema</th><th style="width:220px">Responsable</th></tr>
+      ${agenda.map((a, i) => `<tr><td class="center">${i + 1}</td><td>${a.tema || ''}</td><td>${a.who || ''}</td></tr>`).join('')}
+      </table></div>` : ''}
+  `;
+}
+
+function editTOR() {
+  const d = torData;
+  const agenda = d.agenda || [];
+  openModal(`
+    <h3>Editar TOR</h3>
+    <div class="field"><label>Año</label><input id="m-anio" type="number" value="${d.anio || 2026}"></div>
+    <div class="field"><label>Objetivo</label><textarea id="m-objetivo" rows="4">${d.objetivo || ''}</textarea></div>
+    <div class="field"><label>Sueño del Distribuidor</label><textarea id="m-sueno" rows="3">${d.sueno || ''}</textarea></div>
+    <div class="field"><label>Dueño</label><input id="m-dueno" value="${d.dueno || ''}"></div>
+    <div class="field"><label>Participantes (uno por línea)</label><textarea id="m-participantes" rows="4">${d.participantes || ''}</textarea></div>
+    <div class="field"><label>Duración</label><input id="m-duracion" value="${d.duracion || '90 min'}"></div>
+    <div class="field"><label>Frecuencia</label><input id="m-frecuencia" value="${d.frecuencia || 'Mensual'}"></div>
+    <div class="field"><label>Local</label><input id="m-local" value="${d.local_lugar || ''}"></div>
+    <div class="field"><label>Reglas Básicas (una por línea)</label><textarea id="m-reglas" rows="4">${d.reglas || ''}</textarea></div>
+    <div class="field"><label>Inputs</label><textarea id="m-inputs" rows="3">${d.inputs || ''}</textarea></div>
+    <div class="field"><label>Outputs</label><textarea id="m-outputs" rows="3">${d.outputs || ''}</textarea></div>
+    <div class="field"><label>KPIs</label><textarea id="m-kpis" rows="3">${d.kpis || ''}</textarea></div>
+    <div class="field"><label>Agenda</label>
+      <div id="agenda-rows">
+        ${agenda.map((a, i) => `<div class="agenda-row" style="display:grid;grid-template-columns:1fr 200px 32px;gap:8px;margin-bottom:6px;align-items:center">
+          <input placeholder="Tema" value="${(a.tema || '').replace(/"/g, '&quot;')}" class="ag-tema">
+          <input placeholder="Responsable" value="${(a.who || '').replace(/"/g, '&quot;')}" class="ag-who">
+          <button class="btn btn-secondary" style="padding:2px 6px;font-size:16px" onclick="this.parentElement.remove()">×</button>
+        </div>`).join('')}
+      </div>
+      <button class="btn btn-secondary admin-only" style="font-size:12px;margin-top:4px" onclick="document.getElementById('agenda-rows').insertAdjacentHTML('beforeend','<div class=\\'agenda-row\\' style=\\'display:grid;grid-template-columns:1fr 200px 32px;gap:8px;margin-bottom:6px;align-items:center\\'><input placeholder=\\'Tema\\' class=\\'ag-tema\\'><input placeholder=\\'Responsable\\' class=\\'ag-who\\'><button class=\\'btn btn-secondary\\' style=\\'padding:2px 6px;font-size:16px\\' onclick=\\'this.parentElement.remove()\\'>×</button></div>')">+ Agregar punto</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary admin-only" onclick="saveTOR()">Guardar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `);
+}
+
+async function saveTOR() {
+  if (!IS_ADMIN) return;
+  const rows = document.querySelectorAll('#agenda-rows .agenda-row');
+  const agenda = Array.from(rows).map(r => ({
+    tema: r.querySelector('.ag-tema').value.trim(),
+    who: r.querySelector('.ag-who').value.trim()
+  })).filter(a => a.tema);
+  const body = {
+    anio: +document.getElementById('m-anio').value,
+    objetivo: document.getElementById('m-objetivo').value,
+    sueno: document.getElementById('m-sueno').value,
+    dueno: document.getElementById('m-dueno').value,
+    participantes: document.getElementById('m-participantes').value,
+    duracion: document.getElementById('m-duracion').value,
+    frecuencia: document.getElementById('m-frecuencia').value,
+    local_lugar: document.getElementById('m-local').value,
+    reglas: document.getElementById('m-reglas').value,
+    inputs: document.getElementById('m-inputs').value,
+    outputs: document.getElementById('m-outputs').value,
+    kpis: document.getElementById('m-kpis').value,
+    agenda
+  };
+  await fetch('/api/cg/tor', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  closeModal();
+  loadTOR();
+}
+
+// ══════════════════════════════════════════
+// ── ASISTENCIA ───────────────────────────
+// ══════════════════════════════════════════
+let asisData = [];
+let fechasReunion = {};
+
+async function loadAsistencia() {
+  const anio = document.getElementById('asis-anio').value;
+  const [r, torR] = await Promise.all([
+    fetch('/api/cg/asistencia?anio=' + anio),
+    fetch('/api/cg/tor')
+  ]);
+  asisData = await r.json();
+  const tor = await torR.json();
+  fechasReunion = tor.fechas_reunion || {};
+  renderAsistencia();
+}
+
+function renderAsistencia() {
+  if (!asisData.length) {
+    document.getElementById('asis-table').innerHTML = '<div class="empty-state">No hay miembros registrados. Agregá miembros con el botón de arriba.</div>';
+    return;
+  }
+  let html = '<table class="tbl"><tr><th style="min-width:180px">Nombre</th><th style="min-width:120px">Cargo</th>';
+  MESES.forEach(m => { html += `<th class="center" style="width:50px">${m}</th>`; });
+  html += '<th class="center" style="width:50px">%</th><th style="width:40px"></th></tr>';
+  html += '<tr style="background:#F0F4F8"><td colspan="2" style="font-weight:700;font-size:11px;color:#1B3F72">Fecha reunión</td>';
+  for (let i = 1; i <= 12; i++) {
+    const val = fechasReunion[i] || '';
+    const day = val ? parseInt(val.split('-')[2]) : '';
+    html += `<td class="center" style="position:relative;cursor:pointer" onclick="this.querySelector('input').showPicker()">
+      <span style="font-size:12px;font-weight:600;color:${day ? '#1B3F72' : '#ccc'}">${day || '-'}</span>
+      <input type="date" value="${val}" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="updateFechaReunion(${i},this.value);this.parentElement.querySelector('span').textContent=this.value?parseInt(this.value.split('-')[2]):'-';this.parentElement.querySelector('span').style.color=this.value?'#1B3F72':'#ccc'">
+    </td>`;
+  }
+  html += '<td></td><td></td></tr>';
+  asisData.forEach(row => {
+    const meses = row.meses || {};
+    let total = 0, presentes = 0;
+    for (let i = 1; i <= 12; i++) {
+      if (meses[i]) { total++; if (meses[i] === 'P') presentes++; }
+    }
+    const pct = total > 0 ? Math.round(presentes / total * 100) : 0;
+    html += `<tr><td>${row.nombre}</td><td>${row.cargo || ''}</td>`;
+    for (let i = 1; i <= 12; i++) {
+      const v = meses[i] || '';
+      const cls = v === 'P' ? 'presente' : v === 'A' ? 'ausente' : '';
+      html += `<td class="center"><select class="pa-sel ${cls}" onchange="updateAsis(${row.id}, ${i}, this.value)">
+        <option value="" ${!v ? 'selected' : ''}></option>
+        <option value="P" ${v === 'P' ? 'selected' : ''}>P</option>
+        <option value="A" ${v === 'A' ? 'selected' : ''}>A</option>
+      </select></td>`;
+    }
+    html += `<td class="center"><span class="${pctClass(pct)}">${pct}%</span></td>`;
+    html += `<td class="center"><button class="btn btn-danger btn-sm admin-only" onclick="delAsis(${row.id})" title="Eliminar">&#10005;</button></td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById('asis-table').innerHTML = html;
+}
+
+async function updateFechaReunion(mes, fecha) {
+  if (!IS_ADMIN) return;
+  fechasReunion[mes] = fecha;
+  await fetch('/api/cg/tor/fechas-reunion', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mes, fecha }) });
+}
+
+async function updateAsis(id, mes, valor) {
+  if (!IS_ADMIN) return;
+  const row = asisData.find(r => r.id === id);
+  const meses = { ...(row.meses || {}) };
+  if (valor) meses[mes] = valor; else delete meses[mes];
+  await fetch('/api/cg/asistencia/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meses }) });
+  row.meses = meses;
+  renderAsistencia();
+}
+
+function addMiembro() {
+  if (!IS_ADMIN) return;
+  openModal(`
+    <h3>Agregar miembro</h3>
+    <div class="field"><label>Nombre</label><input id="m-nombre"></div>
+    <div class="field"><label>Cargo</label><input id="m-cargo"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary admin-only" onclick="saveMiembro()">Agregar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `);
+}
+
+async function saveMiembro() {
+  if (!IS_ADMIN) return;
+  const nombre = document.getElementById('m-nombre').value.trim();
+  if (!nombre) return;
+  const anio = document.getElementById('asis-anio').value;
+  await fetch('/api/cg/asistencia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ anio, nombre, cargo: document.getElementById('m-cargo').value }) });
+  closeModal();
+  loadAsistencia();
+}
+
+async function delAsis(id) {
+  if (!IS_ADMIN) return;
+  if (!confirm('¿Eliminar este miembro?')) return;
+  await fetch('/api/cg/asistencia/' + id, { method: 'DELETE' });
+  loadAsistencia();
+}
+
+// ══════════════════════════════════════════
+// ── FAROL KPIs ───────────────────────────
+// ══════════════════════════════════════════
+let kpisData = [];
+
+async function loadKpis() {
+  const anio = document.getElementById('kpi-anio').value;
+  const r = await fetch('/api/cg/kpis?anio=' + anio);
+  kpisData = await r.json();
+  renderKpis();
+}
+
+function renderKpis() {
+  if (!kpisData.length) {
+    document.getElementById('kpi-table').innerHTML = '<div class="empty-state">No hay KPIs cargados.</div>';
+    return;
+  }
+  let html = '<table class="tbl"><tr><th>Categoría</th><th>Fuente</th><th>KPI Sueño</th><th>Indicador</th><th>UM</th><th>Target</th>';
+  MESES.forEach(m => { html += `<th class="center" style="min-width:55px">${m}</th>`; });
+  html += '<th style="width:40px"></th></tr>';
+  kpisData.forEach(row => {
+    const meses = row.meses || {};
+    html += `<tr><td>${row.categoria}</td><td>${row.fuente || ''}</td><td>${row.kpi_sueno || ''}</td><td>${row.indicador}</td><td class="center">${row.unidad || ''}</td><td class="center">${row.target_anual || ''}</td>`;
+    for (let i = 1; i <= 12; i++) {
+      const v = meses[i] !== undefined ? meses[i] : '';
+      html += `<td class="center"><input type="text" style="width:55px;border:1px solid #E5E7EB;border-radius:4px;padding:3px 4px;font-size:11px;text-align:center;font-family:inherit" value="${v}" onchange="updateKpiMes(${row.id}, ${i}, this.value)"></td>`;
+    }
+    html += `<td class="center"><button class="btn btn-danger btn-sm admin-only" onclick="delKpi(${row.id})" title="Eliminar">&#10005;</button></td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById('kpi-table').innerHTML = html;
+}
+
+async function updateKpiMes(id, mes, valor) {
+  if (!IS_ADMIN) return;
+  const row = kpisData.find(r => r.id === id);
+  const meses = { ...(row.meses || {}) };
+  if (valor !== '') meses[mes] = valor; else delete meses[mes];
+  await fetch('/api/cg/kpis/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meses }) });
+  row.meses = meses;
+}
+
+function addKpi() {
+  if (!IS_ADMIN) return;
+  openModal(`
+    <h3>Agregar KPI</h3>
+    <div class="field"><label>Categoría (ej: TOTAL CD, Dolores)</label><input id="m-cat"></div>
+    <div class="field"><label>Fuente</label><input id="m-fuente"></div>
+    <div class="field"><label>KPI Sueño</label><input id="m-ksueno"></div>
+    <div class="field"><label>Indicador</label><input id="m-ind"></div>
+    <div class="field"><label>Unidad</label><input id="m-um" value="%"></div>
+    <div class="field"><label>Target Anual</label><input id="m-target"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary admin-only" onclick="saveKpi()">Agregar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `);
+}
+
+async function saveKpi() {
+  if (!IS_ADMIN) return;
+  const anio = document.getElementById('kpi-anio').value;
+  await fetch('/api/cg/kpis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    anio, categoria: document.getElementById('m-cat').value, fuente: document.getElementById('m-fuente').value,
+    kpi_sueno: document.getElementById('m-ksueno').value, indicador: document.getElementById('m-ind').value,
+    unidad: document.getElementById('m-um').value, target_anual: document.getElementById('m-target').value
+  })});
+  closeModal();
+  loadKpis();
+}
+
+async function delKpi(id) {
+  if (!IS_ADMIN) return;
+  if (!confirm('¿Eliminar este KPI?')) return;
+  await fetch('/api/cg/kpis/' + id, { method: 'DELETE' });
+  loadKpis();
+}
+
+// ══════════════════════════════════════════
+// ── EQUIPOS AUTÓNOMOS ────────────────────
+// ══════════════════════════════════════════
+let equiposData = [];
+const FASES_DESC = {
+  'Multifuncionalidad': ['No tienen Matriz', 'Matriz >30%', 'Matriz >50%', 'Matriz 100%', 'Matriz 100% + multifunc. WH'],
+  'Cultura de Seguridad': ['No reporta', 'Reporta incorrecto', 'Reporta pocos', 'Reporta correcto + PA', 'Reporta + PA + Safety Champions'],
+  'Campeón de DPO': ['DPO no implantado', 'Rutinas 100% líderes', 'Operativo lidera TRs', 'Operativo + 5 porqués', 'Operativo + capacitaciones'],
+  'Foco en el Cliente': ['Sin percepción', 'Informados', 'Identifican problemas', 'Mejoran percepción', 'Detectan y reportan GAPs']
+};
+
+async function loadEquipos() {
+  const anio = document.getElementById('eq-anio').value;
+  const r = await fetch('/api/cg/equipos?anio=' + anio);
+  equiposData = await r.json();
+  renderEquipos();
+}
+
+function renderEquipos() {
+  if (!equiposData.length) {
+    document.getElementById('equipos-content').innerHTML = '<div class="empty-state">No hay dimensiones cargadas. Agregá las 4 dimensiones estándar.</div>';
+    return;
+  }
+  const promedioAnt = equiposData.reduce((s, e) => s + (e.fase_anterior || 0), 0) / equiposData.length;
+  const promedioAct = equiposData.reduce((s, e) => s + (e.fase_actual || 0), 0) / equiposData.length;
+
+  const REF_FASES = {
+    'Multifuncionalidad': ['No tienen aplicada la Matriz de Habilidades','Tienen aplicada la Matriz a >30% del Equipo','Tienen aplicada la Matriz a > 50% del Equipo','Tienen aplicada la Matriz al 100% del Equipo','Tienen la Matriz al 100% del Equipo y se gestiona activamente'],
+    'Cultura de Seguridad - Reporte de Incidentes': ['No reporta Incidentes','Reporta incidentes pero de forma incorrecta','Reporta Incidentes pero son muy pocos en relación','Reporta Incidentes correctamente','Reportan Incidentes Correctamente y se gestionan'],
+    'Campeón de DPO': ['DPO aún no está bien implantado','Las rutinas se encuentran 100% a manos de supervisión','Equipo Operativo Lidera TRs, sabe expresar resultados','Equipo Operativo Lidera TRs y realiza 5S','Equipo Operativo Lidera TRs, realiza 5S y gestiona mejoras'],
+    'Foco en el Cliente': ['No tienen ninguna percepción sobre las necesidades de los consumidores','Están informados sobre las necesidades de los clientes','Logran identificar los problemas clave de los clientes','Mejoran a través de sus acciones la percepción de los clientes','Detectan y reportan a los líderes GAPs con los clientes']
+  };
+  let html = `<div style="overflow-x:auto;margin-bottom:16px">
+    <table class="tbl" style="font-size:11px">
+      <tr style="background:#1B3F72;color:#fff"><th style="min-width:100px">Fases</th><th>Multifuncionalidad</th><th>Cultura de Seguridad - Reporte de Incidentes</th><th>Campeón de DPO</th><th>Foco en el Cliente</th></tr>
+      ${[0,1,2,3,4].map(f => `<tr>
+        <td style="font-weight:700;background:${['#C00','#FC0','#FC0','#0A0','#0A0'][f]};color:${f===0?'#fff':'#000'}">Fase ${f}</td>
+        ${Object.keys(REF_FASES).map(k => `<td>${REF_FASES[k][f]}</td>`).join('')}
+      </tr>`).join('')}
+    </table>
+  </div>`;
+
+  html += `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Promedio Anterior</div><div class="kpi-val">${promedioAnt.toFixed(2)}</div></div>
+    <div class="kpi"><div class="kpi-label">Promedio Actual</div><div class="kpi-val">${promedioAct.toFixed(2)}</div></div>
+    <div class="kpi"><div class="kpi-label">Variación</div><div class="kpi-val ${promedioAct >= promedioAnt ? 'pct-good' : 'pct-bad'}">${(promedioAct - promedioAnt) > 0 ? '+' : ''}${(promedioAct - promedioAnt).toFixed(2)}</div></div>
+  </div>`;
+
+  equiposData.forEach(eq => {
+    const diff = eq.fase_actual - eq.fase_anterior;
+    const diffLabel = diff > 0 ? 'Mejora significativa' : diff === 0 ? 'Mantiene' : 'Baja';
+    const diffClass = diff > 0 ? 'badge-ok' : diff === 0 ? 'badge-pending' : 'badge-nook';
+    html += `<div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h3 style="margin-bottom:0">${eq.dimension}</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="badge ${diffClass}">${diffLabel}</span>
+          <button class="btn btn-danger btn-sm admin-only" onclick="delEquipo(${eq.id})" title="Eliminar">&#10005;</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:8px">
+        <div><span style="font-size:11px;color:#8A97AA">Año anterior:</span> <strong>${eq.fase_anterior}</strong></div>
+        <div><span style="font-size:11px;color:#8A97AA">Año actual:</span> <strong>${eq.fase_actual}</strong></div>
+        <div><span style="font-size:11px;color:#8A97AA">VS AA:</span> <strong>${diff > 0 ? '+' : ''}${diff}</strong></div>
+      </div>
+      <div class="fase-bar">
+        ${[0,1,2,3,4].map(f => `<div class="fase f${f} ${f === eq.fase_actual ? 'current' : ''}" title="Fase ${f}">F${f}</div>`).join('')}
+      </div>
+      <div style="margin-top:8px">
+        <label style="font-size:10.5px;font-weight:700;color:#5E6E89">Justificación:</label>
+        <div style="font-size:12px;line-height:1.5;white-space:pre-line;margin-top:4px">${eq.justificacion || '<span style="color:#ccc">Sin justificación</span>'}</div>
+      </div>
+      <div class="btn-row"><button class="btn btn-secondary btn-sm admin-only" onclick="editEquipo(${eq.id})">Editar</button></div>
+    </div>`;
+  });
+  document.getElementById('equipos-content').innerHTML = html;
+}
+
+function addEquipo() {
+  if (!IS_ADMIN) return;
+  openModal(`
+    <h3>Agregar dimensión</h3>
+    <div class="field"><label>Dimensión</label><input id="m-dim" placeholder="Ej: Multifuncionalidad"></div>
+    <div class="field"><label>Fase año anterior (0-4)</label><input id="m-fant" type="number" min="0" max="4" value="0"></div>
+    <div class="field"><label>Fase año actual (0-4)</label><input id="m-fact" type="number" min="0" max="4" value="0"></div>
+    <div class="field"><label>Justificación</label><textarea id="m-just" rows="4"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary admin-only" onclick="saveEquipo()">Agregar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `);
+}
+
+async function saveEquipo() {
+  if (!IS_ADMIN) return;
+  const anio = document.getElementById('eq-anio').value;
+  await fetch('/api/cg/equipos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    anio, dimension: document.getElementById('m-dim').value, fase_anterior: +document.getElementById('m-fant').value,
+    fase_actual: +document.getElementById('m-fact').value, justificacion: document.getElementById('m-just').value
+  })});
+  closeModal();
+  loadEquipos();
+}
+
+function editEquipo(id) {
+  const eq = equiposData.find(e => e.id === id);
+  openModal(`
+    <h3>Editar: ${eq.dimension}</h3>
+    <div class="field"><label>Dimensión</label><input id="m-dim" value="${eq.dimension}"></div>
+    <div class="field"><label>Fase año anterior (0-4)</label><input id="m-fant" type="number" min="0" max="4" value="${eq.fase_anterior}"></div>
+    <div class="field"><label>Fase año actual (0-4)</label><input id="m-fact" type="number" min="0" max="4" value="${eq.fase_actual}"></div>
+    <div class="field"><label>Justificación</label><textarea id="m-just" rows="4">${eq.justificacion || ''}</textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary admin-only" onclick="updateEquipo(${id})">Guardar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `);
+}
+
+async function updateEquipo(id) {
+  if (!IS_ADMIN) return;
+  await fetch('/api/cg/equipos/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    dimension: document.getElementById('m-dim').value, fase_anterior: +document.getElementById('m-fant').value,
+    fase_actual: +document.getElementById('m-fact').value, justificacion: document.getElementById('m-just').value
+  })});
+  closeModal();
+  loadEquipos();
+}
+
+async function delEquipo(id) {
+  if (!IS_ADMIN) return;
+  if (!confirm('¿Eliminar esta dimensión?')) return;
+  await fetch('/api/cg/equipos/' + id, { method: 'DELETE' });
+  loadEquipos();
+}
+
+// ══════════════════════════════════════════
+// ── GOPs ─────────────────────────────────
+// ══════════════════════════════════════════
+async function seedGOPs() {
+  if (!confirm('¿Cargar las preguntas estándar del Excel? (solo si no hay preguntas cargadas)')) return;
+  const r = await fetch('/api/cg/gop/seed', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+  const data = await r.json();
+  alert(data.msg || `Cargadas ${data.total} preguntas`);
+  loadGOP();
+}
+
+const GOP_TYPES = ['di','reconocimiento','jornada','estructura','remuneracion','turnover','ausentismo'];
+
+async function loadGOPDashboard() {
+  const anio = document.getElementById('gop-anio').value;
+  document.getElementById('gop-dashboard').style.display = '';
+  document.getElementById('gop-dashboard').innerHTML = '<div style="text-align:center;padding:30px;color:#9896A0">Cargando resumen...</div>';
+  document.getElementById('gopTabs').style.display = 'none';
+  document.getElementById('gop-summary').style.display = 'none';
+  document.getElementById('gop-table').style.display = 'none';
+  document.querySelectorAll('#gopTabs .subtab').forEach(x => x.classList.remove('active'));
+
+  const results = [];
+  for (const gop of GOP_TYPES) {
+    const [pRes, rRes] = await Promise.all([
+      fetch('/api/cg/gop/preguntas?gop_tipo=' + gop),
+      fetch('/api/cg/gop/respuestas?gop_tipo=' + gop + '&anio=' + anio)
+    ]);
+    const preguntas = await pRes.json();
+    const respuestas = await rRes.json();
+    const respMap = {};
+    respuestas.forEach(r => { respMap[r.pregunta_id + '_' + r.mes] = r.valor; });
+    const monthPcts = [];
+    for (let m = 1; m <= 12; m++) {
+      let total = 0, oks = 0;
+      preguntas.forEach(p => {
+        const v = respMap[p.id + '_' + m];
+        if (v === 'OK' || v === 'NO OK') { total++; if (v === 'OK') oks++; }
+      });
+      monthPcts.push(total > 0 ? Math.round(oks / total * 100) : null);
+    }
+    let lastIdx = -1;
+    for (let i = 11; i >= 0; i--) { if (monthPcts[i] !== null) { lastIdx = i; break; } }
+    const nook = [];
+    if (lastIdx >= 0) {
+      const m = lastIdx + 1;
+      preguntas.forEach(p => { if (respMap[p.id + '_' + m] === 'NO OK') nook.push(p.pregunta); });
+    }
+    results.push({
+      gop, label: GOP_LABELS[gop], preguntas: preguntas.length,
+      lastPct: lastIdx >= 0 ? monthPcts[lastIdx] : null,
+      lastMes: lastIdx >= 0 ? MESES[lastIdx] : null,
+      nook
+    });
+  }
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:16px">';
+  results.forEach(r => {
+    const pct = r.lastPct;
+    const ok = pct !== null && pct >= 80;
+    const color = pct === null ? '#BBBAB5' : ok ? '#27AE60' : '#E74C3C';
+    const bg = pct === null ? '#F8F9FA' : ok ? '#EAFAF1' : '#FDF2F2';
+    html += `<div class="card" style="border-left:4px solid ${color};background:${bg};cursor:pointer;margin-bottom:0" onclick="openGOPDetail('${r.gop}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h3 style="margin:0;font-size:14px">${r.label}</h3>
+        ${pct !== null ? `<span style="font-size:11px;color:#8A97AA">${r.lastMes}</span>` : ''}
+      </div>
+      <div style="font-size:28px;font-weight:800;color:${color};margin-bottom:4px">${pct !== null ? pct + '%' : 'Sin datos'}</div>
+      ${pct !== null ? `<div class="gauge" style="margin-bottom:8px"><div class="gauge-fill ${gaugeClass(pct)}" style="width:${pct}%"></div></div>` : ''}
+      <div style="font-size:11px;color:#8A97AA">${r.preguntas} preguntas</div>
+      ${r.nook.length ? `<div style="margin-top:8px;border-top:1px solid rgba(0,0,0,.08);padding-top:6px">
+        <div style="font-size:10px;font-weight:700;color:#E74C3C;margin-bottom:4px">NO OK (${r.nook.length}):</div>
+        ${r.nook.map(q => `<div style="font-size:11px;color:#555;line-height:1.4;padding-left:8px">• ${q}</div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+
+  const evaluated = results.filter(r => r.lastPct !== null);
+  const avgAll = evaluated.length ? Math.round(evaluated.reduce((s, r) => s + r.lastPct, 0) / evaluated.length) : 0;
+  const belowTarget = results.filter(r => r.lastPct !== null && r.lastPct < 80);
+
+  const summary = `<div class="kpi-row" style="margin-bottom:16px">
+    <div class="kpi"><div class="kpi-label">Alineamiento General</div><div class="kpi-val ${pctClass(avgAll)}">${avgAll}%</div>
+      <div class="gauge"><div class="gauge-fill ${gaugeClass(avgAll)}" style="width:${avgAll}%"></div></div>
+    </div>
+    <div class="kpi"><div class="kpi-label">Meta</div><div class="kpi-val">80%</div></div>
+    <div class="kpi"><div class="kpi-label">GOPs evaluadas</div><div class="kpi-val">${evaluated.length} / 7</div></div>
+    <div class="kpi"><div class="kpi-label">Debajo de meta</div><div class="kpi-val ${belowTarget.length ? 'pct-bad' : 'pct-good'}">${belowTarget.length}</div></div>
+  </div>`;
+
+  document.getElementById('gop-dashboard').innerHTML = summary + html;
+  document.getElementById('btn-gop-back').style.display = 'none';
+}
+
+function openGOPDetail(gop) {
+  currentGOP = gop;
+  document.getElementById('gop-dashboard').style.display = 'none';
+  document.getElementById('gopTabs').style.display = '';
+  document.getElementById('gop-summary').style.display = '';
+  document.getElementById('gop-table').style.display = '';
+  document.getElementById('btn-gop-back').style.display = '';
+  document.querySelectorAll('#gopTabs .subtab').forEach(x => {
+    x.classList.toggle('active', x.dataset.gop === gop);
+  });
+  loadGOP();
+}
+
+async function loadGOP() {
+  const anio = document.getElementById('gop-anio').value;
+  const [pRes, rRes] = await Promise.all([
+    fetch('/api/cg/gop/preguntas?gop_tipo=' + currentGOP),
+    fetch('/api/cg/gop/respuestas?gop_tipo=' + currentGOP + '&anio=' + anio)
+  ]);
+  gopPreguntas = await pRes.json();
+  gopRespuestas = await rRes.json();
+  renderGOP();
+}
+
+function renderGOP() {
+  if (!gopPreguntas.length) {
+    document.getElementById('gop-table').innerHTML = '<div class="empty-state">No hay preguntas cargadas para esta GOP. Usá "Cargar preguntas estándar".</div>';
+    document.getElementById('gop-summary').innerHTML = '';
+    return;
+  }
+
+  const respMap = {};
+  gopRespuestas.forEach(r => { respMap[r.pregunta_id + '_' + r.mes] = r.valor; });
+
+  // Calculate per-month % alignment
+  const monthPcts = [];
+  for (let m = 1; m <= 12; m++) {
+    let total = 0, oks = 0;
+    gopPreguntas.forEach(p => {
+      const v = respMap[p.id + '_' + m];
+      if (v === 'OK' || v === 'NO OK') { total++; if (v === 'OK') oks++; }
+    });
+    monthPcts.push(total > 0 ? Math.round(oks / total * 100) : null);
+  }
+
+  // Summary — último mes evaluado
+  const filledMonths = monthPcts.filter(p => p !== null);
+  let lastIdx = -1;
+  for (let i = 11; i >= 0; i--) { if (monthPcts[i] !== null) { lastIdx = i; break; } }
+  const lastPct = lastIdx >= 0 ? monthPcts[lastIdx] : 0;
+  const lastMesName = lastIdx >= 0 ? MESES[lastIdx] : '-';
+  document.getElementById('gop-summary').innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">% Alineamiento (${lastMesName})</div><div class="kpi-val ${pctClass(lastPct)}">${lastPct}%</div>
+        <div class="gauge"><div class="gauge-fill ${gaugeClass(lastPct)}" style="width:${lastPct}%"></div></div>
+      </div>
+      <div class="kpi"><div class="kpi-label">Meta</div><div class="kpi-val">80%</div></div>
+      <div class="kpi"><div class="kpi-label">Preguntas</div><div class="kpi-val">${gopPreguntas.length}</div></div>
+      <div class="kpi"><div class="kpi-label">Meses evaluados</div><div class="kpi-val">${filledMonths.length}</div></div>
+    </div>
+  `;
+
+  // Group by bloque
+  const bloques = {};
+  gopPreguntas.forEach(p => { if (!bloques[p.bloque]) bloques[p.bloque] = []; bloques[p.bloque].push(p); });
+
+  let html = '<table class="tbl"><tr><th style="min-width:300px">Pregunta</th>';
+  MESES.forEach(m => { html += `<th class="center" style="min-width:55px">${m}</th>`; });
+  html += '</tr>';
+
+  // Month % row
+  html += '<tr style="background:#F0F4FF"><td style="font-weight:700;color:#1B3F72">% Alineamiento</td>';
+  monthPcts.forEach(p => {
+    html += `<td class="center">${p !== null ? `<span class="${pctClass(p)}">${p}%</span>` : '-'}</td>`;
+  });
+  html += '</tr>';
+
+  for (const [bloque, pregs] of Object.entries(bloques)) {
+    // Bloque % per month
+    html += `<tr style="background:#EEF0F6"><td colspan="${13}" style="font-weight:700;color:#1B3F72;font-size:11.5px">${bloque}</td></tr>`;
+    pregs.forEach(p => {
+      html += `<tr><td style="font-size:11.5px">${p.pregunta}</td>`;
+      for (let m = 1; m <= 12; m++) {
+        const v = respMap[p.id + '_' + m] || '';
+        const cls = v === 'OK' ? 'ok' : v === 'NO OK' ? 'nook' : v === 'NA' ? 'na' : 'empty';
+        html += `<td class="center"><select class="gop-sel ${cls}" onchange="updateGOPResp(${p.id}, ${m}, this.value, this)">
+          <option value="" ${!v ? 'selected' : ''}></option>
+          <option value="OK" ${v === 'OK' ? 'selected' : ''}>OK</option>
+          <option value="NO OK" ${v === 'NO OK' ? 'selected' : ''}>NO OK</option>
+          <option value="NA" ${v === 'NA' ? 'selected' : ''}>NA</option>
+        </select></td>`;
+      }
+      html += '</tr>';
+    });
+  }
+  html += '</table>';
+  document.getElementById('gop-table').innerHTML = html;
+}
+
+async function updateGOPResp(preguntaId, mes, valor, el) {
+  if (!IS_ADMIN) return;
+  const anio = document.getElementById('gop-anio').value;
+  await fetch('/api/cg/gop/respuestas', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pregunta_id: preguntaId, anio, mes, valor })
+  });
+  el.className = 'gop-sel ' + (valor === 'OK' ? 'ok' : valor === 'NO OK' ? 'nook' : valor === 'NA' ? 'na' : 'empty');
+  // Update summary
+  const key = preguntaId + '_' + mes;
+  const existing = gopRespuestas.find(r => r.pregunta_id === preguntaId && r.mes === mes);
+  if (existing) existing.valor = valor;
+  else gopRespuestas.push({ pregunta_id: preguntaId, mes, valor });
+  // Recalc month pcts in summary
+  const monthPcts = [];
+  for (let m = 1; m <= 12; m++) {
+    let total = 0, oks = 0;
+    gopPreguntas.forEach(p => {
+      const v2 = gopRespuestas.find(r => r.pregunta_id === p.id && r.mes === m);
+      if (v2 && (v2.valor === 'OK' || v2.valor === 'NO OK')) { total++; if (v2.valor === 'OK') oks++; }
+    });
+    monthPcts.push(total > 0 ? Math.round(oks / total * 100) : null);
+  }
+  const filledMonths = monthPcts.filter(p => p !== null);
+  let lastIdx2 = -1;
+  for (let i = 11; i >= 0; i--) { if (monthPcts[i] !== null) { lastIdx2 = i; break; } }
+  const lastPct = lastIdx2 >= 0 ? monthPcts[lastIdx2] : 0;
+  const lastMesName2 = lastIdx2 >= 0 ? MESES[lastIdx2] : '-';
+  const kpiVals = document.querySelectorAll('#gop-summary .kpi-val');
+  if (kpiVals[0]) {
+    kpiVals[0].textContent = lastPct + '%';
+    kpiVals[0].className = 'kpi-val ' + pctClass(lastPct);
+  }
+  const kpiLabel = document.querySelector('#gop-summary .kpi-label');
+  if (kpiLabel) kpiLabel.textContent = '% Alineamiento (' + lastMesName2 + ')';
+  if (kpiVals[3]) kpiVals[3].textContent = filledMonths.length;
+  const gauge = document.querySelector('#gop-summary .gauge-fill');
+  if (gauge) {
+    gauge.style.width = lastPct + '%';
+    gauge.className = 'gauge-fill ' + gaugeClass(lastPct);
+  }
+  // Update % row
+  const pctCells = document.querySelectorAll('#gop-table tr:nth-child(2) td');
+  if (pctCells.length > 1) {
+    monthPcts.forEach((p, i) => {
+      if (pctCells[i + 1]) pctCells[i + 1].innerHTML = p !== null ? `<span class="${pctClass(p)}">${p}%</span>` : '-';
+    });
+  }
+}
+
+// ══════════════════════════════════════════
+// ── PDA ──────────────────────────────────
+// ══════════════════════════════════════════
+let pdaData = [];
+
+async function loadPDA() {
+  const anio = document.getElementById('pda-anio').value;
+  const r = await fetch('/api/cg/pda?anio=' + anio);
+  pdaData = await r.json();
+  renderPDA();
+}
+
+let pdaShowCompletos = false;
+
+function renderPDA() {
+  const total = pdaData.length;
+  const completos = pdaData.filter(p => p.status === 'COMPLETO').length;
+  const enProgreso = pdaData.filter(p => p.status === 'EN PROGRESO').length;
+  const pendientes = pdaData.filter(p => p.status === 'PENDIENTE').length;
+
+  document.getElementById('pda-summary').innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Total Acciones</div><div class="kpi-val">${total}</div></div>
+      <div class="kpi"><div class="kpi-label">Completas</div><div class="kpi-val pct-good">${completos}</div></div>
+      <div class="kpi"><div class="kpi-label">En Progreso</div><div class="kpi-val" style="color:#2563EB">${enProgreso}</div></div>
+      <div class="kpi"><div class="kpi-label">Pendientes</div><div class="kpi-val pct-warn">${pendientes}</div></div>
+    </div>
+  `;
+
+  if (!pdaData.length) {
+    document.getElementById('pda-table').innerHTML = '<div class="empty-state">No hay acciones registradas.</div>';
+    return;
+  }
+
+  const sortByFecha = (a, b) => {
+    const fa = a.fecha_limite || '9999-12-31';
+    const fb = b.fecha_limite || '9999-12-31';
+    return fa.localeCompare(fb);
+  };
+
+  const activas = pdaData.filter(p => p.status !== 'COMPLETO').sort(sortByFecha);
+  const completadas = pdaData.filter(p => p.status === 'COMPLETO').sort(sortByFecha);
+
+  function buildRows(items) {
+    return items.map(p => {
+      const stCls = p.status === 'COMPLETO' ? 'badge-complete' : p.status === 'EN PROGRESO' ? 'badge-progress' : 'badge-pending';
+      const hoy = new Date().toISOString().split('T')[0];
+      const vencida = p.fecha_limite && p.fecha_limite.split('T')[0] < hoy && p.status !== 'COMPLETO';
+      const rowStyle = vencida ? 'background:#FFF5F5' : '';
+      return `<tr style="${rowStyle}">
+        <td>${p.accion}${vencida ? ' <span style="color:#E74C3C;font-size:10px;font-weight:700">VENCIDA</span>' : ''}</td>
+        <td>${p.responsable || ''}</td>
+        <td>${p.bloque || ''}</td>
+        <td class="center">${p.fecha_inicio ? fmtDate(p.fecha_inicio) : '-'}</td>
+        <td class="center">${p.fecha_limite ? fmtDate(p.fecha_limite) : '-'}</td>
+        <td class="center"><span class="badge ${stCls}">${p.status}</span></td>
+        <td style="font-size:11px">${p.notas || ''}</td>
+        <td class="center">
+          <button class="btn btn-secondary btn-sm admin-only" onclick="editPDA(${p.id})" title="Editar">&#9998;</button>
+          <button class="btn btn-danger btn-sm admin-only" onclick="delPDA(${p.id})" title="Eliminar">&#10005;</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  let html = '<table class="tbl"><tr><th>Acción</th><th>Responsable</th><th>Bloque</th><th>Fecha Inicio</th><th>Fecha Límite</th><th>Status</th><th>Notas</th><th style="width:80px"></th></tr>';
+  html += buildRows(activas);
+  html += '</table>';
+
+  if (completadas.length) {
+    html += `<div style="margin-top:16px">
+      <button class="btn btn-secondary btn-sm" onclick="pdaShowCompletos=!pdaShowCompletos;renderPDA()">
+        ${pdaShowCompletos ? '▲ Ocultar' : '▼ Ver'} completas (${completadas.length})
+      </button>
+    </div>`;
+    if (pdaShowCompletos) {
+      html += '<table class="tbl" style="margin-top:8px;opacity:.75"><tr><th>Acción</th><th>Responsable</th><th>Bloque</th><th>Fecha Inicio</th><th>Fecha Límite</th><th>Status</th><th>Notas</th><th style="width:80px"></th></tr>';
+      html += buildRows(completadas);
+      html += '</table>';
+    }
+  }
+
+  document.getElementById('pda-table').innerHTML = html;
+}
+
+function addPDA() {
+  if (!IS_ADMIN) return;
+  openModal(`
+    <h3>Nueva Acción</h3>
+    <div class="field"><label>Acción</label><textarea id="m-accion" rows="3"></textarea></div>
+    <div class="field"><label>Responsable</label><input id="m-resp"></div>
+    <div class="field"><label>Bloque (ej: Reconocimientos, Estructura, Equipos Autónomos)</label><input id="m-bloque"></div>
+    <div class="field"><label>Fecha Inicio</label><input id="m-fecha-inicio" type="date"></div>
+    <div class="field"><label>Fecha Límite</label><input id="m-fecha" type="date"></div>
+    <div class="field"><label>Status</label><select id="m-status">
+      <option value="PENDIENTE">Pendiente</option>
+      <option value="EN PROGRESO">En Progreso</option>
+      <option value="COMPLETO">Completo</option>
+    </select></div>
+    <div class="field"><label>Notas</label><textarea id="m-notas" rows="2"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary admin-only" onclick="savePDA()">Agregar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `);
+}
+
+async function savePDA() {
+  if (!IS_ADMIN) return;
+  const anio = document.getElementById('pda-anio').value;
+  await fetch('/api/cg/pda', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    anio, accion: document.getElementById('m-accion').value, responsable: document.getElementById('m-resp').value,
+    bloque: document.getElementById('m-bloque').value, fecha_inicio: document.getElementById('m-fecha-inicio').value || null,
+    fecha_limite: document.getElementById('m-fecha').value || null,
+    status: document.getElementById('m-status').value, notas: document.getElementById('m-notas').value
+  })});
+  closeModal();
+  loadPDA();
+}
+
+function editPDA(id) {
+  const p = pdaData.find(x => x.id === id);
+  const fechaIniVal = p.fecha_inicio ? p.fecha_inicio.split('T')[0] : '';
+  const fechaVal = p.fecha_limite ? p.fecha_limite.split('T')[0] : '';
+  openModal(`
+    <h3>Editar Acción</h3>
+    <div class="field"><label>Acción</label><textarea id="m-accion" rows="3">${p.accion}</textarea></div>
+    <div class="field"><label>Responsable</label><input id="m-resp" value="${p.responsable || ''}"></div>
+    <div class="field"><label>Bloque</label><input id="m-bloque" value="${p.bloque || ''}"></div>
+    <div class="field"><label>Fecha Inicio</label><input id="m-fecha-inicio" type="date" value="${fechaIniVal}"></div>
+    <div class="field"><label>Fecha Límite</label><input id="m-fecha" type="date" value="${fechaVal}"></div>
+    <div class="field"><label>Status</label><select id="m-status">
+      <option value="PENDIENTE" ${p.status === 'PENDIENTE' ? 'selected' : ''}>Pendiente</option>
+      <option value="EN PROGRESO" ${p.status === 'EN PROGRESO' ? 'selected' : ''}>En Progreso</option>
+      <option value="COMPLETO" ${p.status === 'COMPLETO' ? 'selected' : ''}>Completo</option>
+    </select></div>
+    <div class="field"><label>Notas</label><textarea id="m-notas" rows="2">${p.notas || ''}</textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary admin-only" onclick="updatePDA(${id})">Guardar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    </div>
+  `);
+}
+
+async function updatePDA(id) {
+  if (!IS_ADMIN) return;
+  await fetch('/api/cg/pda/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    accion: document.getElementById('m-accion').value, responsable: document.getElementById('m-resp').value,
+    bloque: document.getElementById('m-bloque').value, fecha_inicio: document.getElementById('m-fecha-inicio').value || null,
+    fecha_limite: document.getElementById('m-fecha').value || null,
+    status: document.getElementById('m-status').value, notas: document.getElementById('m-notas').value
+  })});
+  closeModal();
+  loadPDA();
+}
+
+async function delPDA(id) {
+  if (!IS_ADMIN) return;
+  if (!confirm('¿Eliminar esta acción?')) return;
+  await fetch('/api/cg/pda/' + id, { method: 'DELETE' });
+  loadPDA();
+}
+
+// ── INIT ──
+loadTOR();
+</script>
+</body>
+</html>

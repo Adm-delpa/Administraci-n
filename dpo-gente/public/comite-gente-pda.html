@@ -110,7 +110,7 @@ textarea{resize:vertical;min-height:60px}
       <option value="completada">Completada</option>
       <option value="cancelada">Cancelada</option>
     </select>
-    <button class="btn-primary ml-auto" onclick="abrirNueva()">+ Nueva acción</button>
+    <button class="btn-primary ml-auto admin-only" onclick="abrirNueva()">+ Nueva acción</button>
   </div>
 
   <div id="tablaWrap"></div>
@@ -195,6 +195,8 @@ textarea{resize:vertical;min-height:60px}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const MESES_NOMBRE = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const anioActual = new Date().getFullYear();
@@ -263,8 +265,8 @@ function renderTabla() {
         <td><span class="estado-badge estado-${a.estado}">${a.estado.replace('_',' ')}</span></td>
         <td>
           <div class="acciones-btns">
-            <button class="btn-edit" onclick="abrirEditar(${a.id})" title="Editar">✏️</button>
-            <button class="btn-del" onclick="eliminarDirecto(${a.id})" title="Eliminar">🗑</button>
+            <button class="btn-edit admin-only" onclick="abrirEditar(${a.id})" title="Editar">✏️</button>
+            <button class="btn-del admin-only" onclick="eliminarDirecto(${a.id})" title="Eliminar">🗑</button>
           </div>
         </td>
       </tr>`;
@@ -273,6 +275,7 @@ function renderTabla() {
 }
 
 function abrirNueva(gop, bloque) {
+  if (!IS_ADMIN) return;
   _editId = null;
   document.getElementById('modalTitle').textContent = 'Nueva Acción';
   document.getElementById('fAccion').value = '';
@@ -288,6 +291,7 @@ function abrirNueva(gop, bloque) {
 }
 
 function abrirEditar(id) {
+  if (!IS_ADMIN) return;
   const a = DATA.find(x => x.id === id);
   if (!a) return;
   _editId = id;
@@ -305,6 +309,7 @@ function abrirEditar(id) {
 }
 
 async function guardar() {
+  if (!IS_ADMIN) return;
   const accion = document.getElementById('fAccion').value.trim();
   if (!accion) { alert('Ingresá la acción.'); return; }
   const body = {
@@ -329,6 +334,7 @@ async function guardar() {
 }
 
 async function eliminar() {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar esta acción?')) return;
   await fetch('/api/comite/pda/' + _editId, { method:'DELETE' });
   cerrarModal();
@@ -336,6 +342,7 @@ async function eliminar() {
 }
 
 async function eliminarDirecto(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar esta acción?')) return;
   await fetch('/api/comite/pda/' + id, { method:'DELETE' });
   cargar();

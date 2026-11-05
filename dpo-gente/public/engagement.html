@@ -109,7 +109,7 @@ tr:hover td{background:#FAFBFC}
 </head>
 <body>
 <div class="topbar">
-  <button class="topbar-back" onclick="window.location.href='/engagement'">← Volver</button>
+  <button class="topbar-back" onclick="window.location.href='/engagement-hub'">← Volver</button>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Engagement — Encuesta de Clima</span>
 </div>
@@ -237,6 +237,8 @@ tr:hover td{background:#FAFBFC}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 let encuestas = [], resultados = [], textos = [], periodoActual = null, compMode = false, allResults = [];
 
@@ -744,6 +746,7 @@ async function cargarAdjuntos() {
 }
 
 async function subirAdjunto() {
+  if (!IS_ADMIN) return;
   const file = el('inpAdj').files[0];
   if (!file || !periodoActual) return;
   const fd = new FormData();
@@ -758,6 +761,7 @@ async function subirAdjunto() {
 }
 
 async function eliminarAdjunto(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar este documento?')) return;
   await fetch(`/api/engagement/adjuntos/file/${id}`, {
     method: 'DELETE',
@@ -774,10 +778,12 @@ function switchTab(name, btn) {
   if (compMode && ['total','sector','posicion','jefe'].includes(name)) mostrarContenidoComp(name);
 }
 
-function abrirModalSubir() { el('modalSubir').classList.remove('hidden'); }
+function abrirModalSubir() {
+  if (!IS_ADMIN) return; el('modalSubir').classList.remove('hidden'); }
 function cerrarModal() { el('modalSubir').classList.add('hidden'); el('uploadMsg').style.display='none'; }
 
 async function subirEncuesta() {
+  if (!IS_ADMIN) return;
   const periodo = el('inpPeriodo').value.trim();
   const file = el('inpFile').files[0];
   if (!periodo) { showMsg('Indicá el período.'); return; }
@@ -809,6 +815,7 @@ async function subirEncuesta() {
 function showMsg(msg) { el('uploadMsg').textContent=msg; el('uploadMsg').style.display=''; }
 
 async function eliminarEncuesta() {
+  if (!IS_ADMIN) return;
   const id = el('selPeriodo').value;
   if (!id) return;
   const enc = encuestas.find(e=>String(e.id)===id);

@@ -204,6 +204,22 @@ body.focused-mode #focused-topbar{display:flex!important}
     </div>
     <span id="storageBarTxt" style="font-size:11px;font-weight:700;color:#5A6880"></span>
   </div>
+  <div id="bellWrap" style="display:none;position:relative;margin-right:4px">
+    <button id="bellBtn" onclick="toggleRecordatorios()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 6px;position:relative;line-height:1">🔔
+      <span id="bellBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:#DC2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px">0</span>
+    </button>
+    <div id="bellPanel" style="display:none;position:absolute;top:36px;right:0;width:360px;background:#fff;border:1px solid #D8DEE8;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.15);z-index:50;max-height:480px;overflow-y:auto">
+      <div style="padding:14px 16px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:700;color:#18243A">📋 Pendientes del mes</span>
+        <span id="bellMes" style="font-size:11px;font-weight:600;color:#8A97AA"></span>
+      </div>
+      <div id="bellFormsList" style="padding:0"></div>
+      <div id="bellList" style="padding:8px"></div>
+      <div style="padding:10px 16px;border-top:1px solid #EEF0F6;text-align:center">
+        <span id="bellResumen" style="font-size:11px;font-weight:600;color:#8A97AA"></span>
+      </div>
+    </div>
+  </div>
   <span class="topbar-user" id="sidebar-user">—</span>
   <button class="topbar-logout" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
 </header>
@@ -235,10 +251,12 @@ body.focused-mode #focused-topbar{display:flex!important}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) { window.location.href = '/'; }
+const IS_ADMIN = !!(USER && USER.admin);
 document.getElementById('sidebar-user').textContent = USER.nombre || USER.username;
 
-// Indicador de almacenamiento
-fetch('/api/storage').then(r=>r.json()).then(d=>{
+// Indicador de almacenamiento (solo admin)
+if (!USER.admin) document.getElementById('storageBar').remove();
+else fetch('/api/storage').then(r=>r.json()).then(d=>{
   const bar = document.getElementById('storageBar');
   const fill = document.getElementById('storageBarFill');
   const txt  = document.getElementById('storageBarTxt');
@@ -256,6 +274,126 @@ fetch('/api/storage').then(r=>r.json()).then(d=>{
     setTimeout(()=>warn.remove(), 8000);
   }
 }).catch(()=>{});
+
+// Recordatorios mensuales (solo admin)
+if (USER.admin) {
+  const MESES_NOMBRE = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const bellWrap = document.getElementById('bellWrap');
+  bellWrap.style.display = 'block';
+  let recData = [];
+
+  let recAtrasados = [];
+
+  let formsNotif = [];
+  async function cargarFormsNotif() {
+    try {
+      const data = await fetch('/api/notif-forms').then(r => r.json());
+      formsNotif = data.filter(n => !n.visto);
+      const container = document.getElementById('bellFormsList');
+      if (!formsNotif.length) { container.innerHTML = ''; return; }
+      let html = '<div style="padding:6px 10px;font-size:10px;font-weight:700;color:#6D28D9;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #EDE9FE;margin-bottom:4px">📬 Nuevas respuestas de formularios</div>';
+      formsNotif.forEach(n => {
+        const fecha = new Date(n.fecha);
+        const fechaStr = fecha.toLocaleDateString('es-AR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#F5F3FF;cursor:pointer" onmouseenter="this.style.background=\'#EDE9FE\'" onmouseleave="this.style.background=\'#F5F3FF\'" onclick="marcarFormVisto('+n.id+')">' +
+          '<span style="font-size:16px;flex-shrink:0">📋</span>' +
+          '<div style="flex:1"><span style="font-size:12px;font-weight:600;color:#4C1D95">' + n.fuente + ': ' + n.nuevos + ' nueva' + (n.nuevos>1?'s':'') + '</span>' +
+          '<div style="font-size:10px;color:#7C3AED;margin-top:1px">' + fechaStr + '</div></div>' +
+          '<span style="font-size:10px;color:#A78BFA;cursor:pointer" title="Marcar como visto">✕</span></div>';
+      });
+      html += '<div style="text-align:center;padding:6px"><button onclick="marcarTodasVistas()" style="font-size:10px;color:#7C3AED;background:none;border:none;cursor:pointer;text-decoration:underline">Marcar todas como vistas</button></div>';
+      html += '<div style="height:4px;border-bottom:1px solid #EEF0F6;margin-bottom:4px"></div>';
+      container.innerHTML = html;
+    } catch(e) {}
+  }
+  window.marcarFormVisto = async function(id) {
+    await fetch('/api/notif-forms/'+id+'/visto', { method:'PUT' });
+    cargarFormsNotif(); actualizarBadge();
+  };
+  window.marcarTodasVistas = async function() {
+    await fetch('/api/notif-forms/marcar-vistas', { method:'PUT' });
+    cargarFormsNotif(); actualizarBadge();
+  };
+  function actualizarBadge() {
+    const pendientes = recData.filter(r => !r.hecho).length;
+    const totalPend = pendientes + recAtrasados.length + formsNotif.filter(n=>!n.visto).length;
+    const badge = document.getElementById('bellBadge');
+    badge.textContent = totalPend;
+    badge.style.display = totalPend > 0 ? 'flex' : 'none';
+  }
+
+  async function cargarRecordatorios() {
+    try {
+      const now = new Date();
+      const anio = now.getFullYear(), mes = now.getMonth() + 1;
+      const data = await fetch('/api/recordatorios?anio=' + anio + '&mes=' + mes).then(r => r.json());
+      recData = data.actual;
+      recAtrasados = data.atrasados || [];
+      await cargarFormsNotif();
+      const pendientes = recData.filter(r => !r.hecho).length;
+      const totalPend = pendientes + recAtrasados.length + formsNotif.length;
+      const badge = document.getElementById('bellBadge');
+      badge.textContent = totalPend;
+      badge.style.display = totalPend > 0 ? 'flex' : 'none';
+      document.getElementById('bellMes').textContent = MESES_NOMBRE[mes] + ' ' + anio;
+      document.getElementById('bellResumen').textContent = (recData.length - pendientes) + '/' + recData.length + ' completados este mes' + (recAtrasados.length ? ' · ' + recAtrasados.length + ' atrasado' + (recAtrasados.length > 1 ? 's' : '') : '');
+      const list = document.getElementById('bellList');
+      let html = '';
+      if (recAtrasados.length) {
+        html += '<div style="padding:6px 10px;font-size:10px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #FEE2E2;margin-bottom:4px">⚠ Atrasados de meses anteriores</div>';
+        recAtrasados.forEach((a, i) => {
+          html += '<label style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;cursor:pointer;background:#FEF2F2" onmouseenter="this.style.background=\'#FEE2E2\'" onmouseleave="this.style.background=\'#FEF2F2\'">' +
+            '<input type="checkbox" onchange="toggleRecAtrasado(' + i + ',this.checked)" style="width:16px;height:16px;accent-color:#DC2626;cursor:pointer;flex-shrink:0">' +
+            '<div style="flex:1"><span style="font-size:12px;font-weight:600;color:#991B1B">' + a.tarea + '</span>' +
+            '<div style="font-size:10px;color:#DC2626;margin-top:1px">' + MESES_NOMBRE[a.mes] + ' ' + a.anio + '</div></div>' +
+          '</label>';
+        });
+        html += '<div style="height:8px;border-bottom:1px solid #EEF0F6;margin-bottom:4px"></div>';
+        html += '<div style="padding:6px 10px;font-size:10px;font-weight:700;color:#1B3F72;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">' + MESES_NOMBRE[mes] + ' ' + anio + '</div>';
+      }
+      html += recData.map((r, i) => {
+        return '<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .1s;' + (r.hecho ? 'opacity:.6' : '') + '" onmouseenter="this.style.background=\'#F7F8FB\'" onmouseleave="this.style.background=\'transparent\'">' +
+          '<input type="checkbox" ' + (r.hecho ? 'checked' : '') + ' onchange="toggleRec(' + i + ',this.checked)" style="width:16px;height:16px;accent-color:#1B3F72;cursor:pointer;flex-shrink:0">' +
+          '<span style="font-size:12.5px;font-weight:' + (r.hecho ? '500' : '600') + ';color:' + (r.hecho ? '#8A97AA' : '#18243A') + ';' + (r.hecho ? 'text-decoration:line-through' : '') + '">' + r.tarea + '</span>' +
+        '</label>';
+      }).join('');
+      list.innerHTML = html;
+    } catch(e) {}
+  }
+
+  window.toggleRecordatorios = function() {
+    const panel = document.getElementById('bellPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  };
+  document.addEventListener('click', function(e) {
+    if (!document.getElementById('bellWrap').contains(e.target)) {
+      document.getElementById('bellPanel').style.display = 'none';
+    }
+  });
+
+  window.toggleRec = async function(idx, checked) {
+    const r = recData[idx];
+    const now = new Date();
+    await fetch('/api/recordatorios', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tarea: r.tarea, hecho: checked, anio: now.getFullYear(), mes: now.getMonth() + 1 })
+    });
+    cargarRecordatorios();
+  };
+
+  window.toggleRecAtrasado = async function(idx, checked) {
+    const a = recAtrasados[idx];
+    await fetch('/api/recordatorios', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tarea: a.tarea, hecho: checked, anio: a.anio, mes: a.mes })
+    });
+    cargarRecordatorios();
+  };
+
+  cargarRecordatorios();
+}
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
@@ -363,6 +501,7 @@ function renderNavNode(p, depth){
 }
 
 async function eliminarSeccion(id, titulo){
+  if (!IS_ADMIN) return;
   if(!confirm('¿Eliminar "'+titulo+'" y todo su contenido?')) return;
   await fetch('/api/paginas/'+id, {method:'DELETE'});
   if(VISTA===id){ VISTA=null; EDITANDO=false; EDIT_STATE=null; }
@@ -371,6 +510,7 @@ async function eliminarSeccion(id, titulo){
 }
 
 async function moverSeccion(id, dir){
+  if (!IS_ADMIN) return;
   await fetch('/api/paginas/'+id+'/mover', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({direccion:dir})});
   await cargarTodo();
   renderNav();
@@ -396,13 +536,36 @@ const MODULOS_DIRECTOS = {
   'Entorno Laboral': '/entorno-laboral',
   'Negociación Sindical': '/negociacion-sindical',
   'Plan de Comunicaciones': '/plan-comunicaciones',
-  'Comité de Gente': '/comite-gente',
+  'Comité de Gente Dolores': '/comite-gente',
+  'Comité de Gente CC': '/comite-gente-cc',
+  'PAC Casa Central': '/pac-cc',
+  'PDA - GENTE': '/pda-gente',
+  '9. PDA - GENTE': '/pda-gente',
+  'Bees Academy': '/galaxia-pac-ventas',
+  'PAC Fuerza de Ventas': '/galaxia-pac-fdv',
+  '5.4.2 PAC Staff B2B': '/galaxia-pac-staff',
+  'OPR': '/opr',
+  '3.3 OPR': '/opr',
+  '5.3.3 OPR': '/opr',
+  'Encuesta de Clima': '/clima',
+  '5.3.4 Encuesta de Clima': '/clima',
+  'Clima': '/clima',
+  'Gestión por Objetivos DPO': '/objetivos-mando',
+  '3.1 Gestión por Objetivos DPO': '/objetivos-mando',
+  'SOPs': '/sops',
+  '3.2 SOPs': '/sops',
+  'Seguimiento 3R': '/seguimiento-3r',
+  '3.3 Seguimiento 3R': '/seguimiento-3r',
+  'Seguimiento T1': '/seguimiento-t1',
+  'Paquete de Beneficios': '/paquete-beneficios',
+  '3.4 Paquete de Beneficios': '/paquete-beneficios',
+  'Marca Empleadora': '/marca-empleadora',
+  'Simuladores de Dimensionamiento': '/simuladores-dimensionamiento',
 };
 
 function seleccionarPagina(id){
   const p = paginaById(id);
   if(p && MODULOS_DIRECTOS[p.titulo]){ window.location.href = MODULOS_DIRECTOS[p.titulo]; return; }
-  if(p && /comit.? de gente/i.test(p.titulo)){ window.location.href = '/comite-gente'; return; }
   if(p && p.bloques && p.bloques.length===1 && p.bloques[0].tipo==='embed'){
     const url = (p.bloques[0].data.url||'');
     if(url.startsWith('/') && url.length > 1){ window.location.href = url; return; }
@@ -416,6 +579,7 @@ function seleccionarPagina(id){
 }
 
 async function nuevaPagina(parentId){
+  if (!IS_ADMIN) return;
   const titulo = prompt(parentId ? 'Título de la nueva subsección' : 'Título de la nueva sección (ej: "8. Beneficios")');
   if(!titulo || !titulo.trim()) return;
   try{
@@ -430,6 +594,7 @@ async function nuevaPagina(parentId){
 }
 
 async function borrarPagina(id){
+  if (!IS_ADMIN) return;
   const hijos = hijosDe(id);
   const msg = hijos.length>0
     ? '¿Eliminar esta sección y sus '+hijos.length+' subsección(es)? Esta acción no se puede deshacer.'
@@ -444,6 +609,7 @@ async function borrarPagina(id){
 }
 
 function toggleEdit(){
+  if (!IS_ADMIN) return;
   if(EDITANDO){ EDITANDO = false; EDIT_STATE = null; renderMain(); return; }
   EDITANDO = true;
   if(VISTA === 'inicio'){
@@ -476,6 +642,7 @@ function editSyncInicioFromInputs(){
 }
 
 async function guardarInicio(){
+  if (!IS_ADMIN) return;
   editSyncInicioFromInputs();
   try{
     const r = await fetch('/api/config',{method:'PUT',headers:{'Content-Type':'application/json'}, body:JSON.stringify(EDIT_STATE)});
@@ -515,6 +682,7 @@ function toggleInsertarMenu(){
 }
 
 function editAgregarBloque(tipo){
+  if (!IS_ADMIN) return;
   editSyncPaginaFromInputs();
   const defaults = { titulo:{texto:''}, texto:{texto:''}, imagen:{url:'',caption:''}, embed:{url:'',titulo:''}, columnas:{izq_titulo:'',izq_texto:'',izq_link:'',der_titulo:'',der_texto:'',der_link:''} };
   EDIT_STATE.bloques.push({ tipo, data: defaults[tipo] });
@@ -523,6 +691,7 @@ function editAgregarBloque(tipo){
 }
 
 function editBorrarBloque(i){
+  if (!IS_ADMIN) return;
   editSyncPaginaFromInputs();
   EDIT_STATE.bloques.splice(i,1);
   renderMain();
@@ -551,6 +720,7 @@ function blockDragEnd(){
 }
 
 async function guardarPagina(){
+  if (!IS_ADMIN) return;
   editSyncPaginaFromInputs();
   const titulo = EDIT_STATE.titulo.trim();
   if(!titulo){ alert('Ingresá un título.'); return; }
@@ -616,6 +786,16 @@ const SECCION_ICONOS = {
   'cultura':'🌱','reclutamiento':'🎯','recompensas':'🏆','aprendizaje':'📚',
   'ambiente':'🏢','talento':'🌟','comite':'👥','comité':'👥','galaxia':'🌌'
 };
+var SECCION_ICONOS_HTML = {
+  'bees academy': '<div style="width:38px;height:38px;border-radius:8px;background:#F5E600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px"><span style="font-size:11px;font-weight:900;color:#000;letter-spacing:.5px;line-height:1;font-family:Inter,system-ui,sans-serif">BEES</span><span style="font-size:6px;font-weight:700;color:#000;letter-spacing:.3px;line-height:1;font-family:Inter,system-ui,sans-serif">academy</span></div>',
+  'pac fuerza de ventas': '<div style="width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,#1B3F72,#2A5A9E);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px"><span style="font-size:15px;line-height:1">📋</span><span style="font-size:5.5px;font-weight:800;color:#fff;letter-spacing:.3px;line-height:1;font-family:Inter,system-ui,sans-serif;margin-top:1px">PAC FDV</span></div>',
+  'pac staff b2b': '<div style="width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,#2A5A9E,#4A7DC4);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3px"><span style="font-size:14px;line-height:1">👥</span><span style="font-size:5.5px;font-weight:800;color:#fff;letter-spacing:.3px;line-height:1;font-family:Inter,system-ui,sans-serif;margin-top:1px">STAFF</span></div>'
+};
+function seccionIconoHTML(titulo){
+  const t = titulo.toLowerCase();
+  for(const k of Object.keys(SECCION_ICONOS_HTML)){ if(t.includes(k)) return SECCION_ICONOS_HTML[k]; }
+  return null;
+}
 function seccionIcono(titulo){
   const t = titulo.toLowerCase();
   for(const k of Object.keys(SECCION_ICONOS)){ if(t.includes(k)) return SECCION_ICONOS[k]; }
@@ -631,7 +811,11 @@ function seccionNombreLimpio(titulo){
 function puedeVerSeccion(p){
   if(USER.admin) return true;
   const mods = USER.modulos||[];
-  return mods.includes('p_'+p.id);
+  if(mods.includes('p_'+p.id)) return true;
+  if(p.parent_id && mods.includes('p_'+p.parent_id)) return true;
+  var padre = PAGINAS.find(function(x){ return x.id === p.parent_id; });
+  if(padre && padre.parent_id && mods.includes('p_'+padre.parent_id)) return true;
+  return false;
 }
 
 function renderInicioView(){
@@ -717,8 +901,9 @@ function renderPaginaView(p){
         +'<div class="seccion-sub">🔒 Sin acceso</div>'
         +'</div>'
         +'</div>';
+      var customIcon = seccionIconoHTML(h.titulo);
       return '<div class="seccion-card" onclick="seleccionarPagina('+h.id+')">'
-        +'<div style="font-size:28px;line-height:1">'+seccionIcono(h.titulo)+'</div>'
+        +'<div style="font-size:28px;line-height:1">'+(customIcon || seccionIcono(h.titulo))+'</div>'
         +'<div>'
         +(seccionNumero(h.titulo)?'<div class="seccion-num">'+seccionNumero(h.titulo)+'</div>':'')
         +'<div class="seccion-titulo">'+esc(seccionNombreLimpio(h.titulo))+'</div>'
@@ -827,13 +1012,27 @@ cargarTodo();
 // ── MÓDULOS ──
 const MODULOS_DEF = [
   { key:'ausentismo', nombre:'Ausentismo', icono:'📊', url:'/ausentismo', desc:'Ausencias y jornada laboral' },
-  { key:'pac', nombre:'PAC', icono:'📅', url:'/pac', desc:'Plan Anual de Capacitación' },
+  { key:'pac', nombre:'PAC Dolores', icono:'📅', url:'/pac', desc:'Plan Anual de Capacitación — Dolores' },
+  { key:'pac-cc', nombre:'PAC Casa Central', icono:'🏢', url:'/pac-cc', desc:'Plan Anual de Capacitación — Casa Central' },
   { key:'reclutamiento', nombre:'Reclutamiento', icono:'🎯', url:'/reclu-hub', desc:'Vacantes y selección de personal' },
   { key:'aprendizaje', nombre:'Aprendizaje', icono:'📚', url:'/aprendizaje-hub', desc:'Inducciones y desarrollo' },
   { key:'engagement', nombre:'Engagement', icono:'💬', url:'/engagement', desc:'Encuestas y clima laboral' },
   { key:'talento', nombre:'Talento y Crecimiento', icono:'🌱', url:'/talento-hub', desc:'Ciclo de gente y desarrollo' },
   { key:'comite-gente', nombre:'Comité de Gente', icono:'🤝', url:'/comite-gente', desc:'Equipos autónomos, GOPs y seguimiento' },
+  { key:'comite-gente-cc', nombre:'Comité Gente CC', icono:'🏢', url:'/comite-gente-cc', desc:'Comité de Gente Casa Central — GOPs, TOR y PDA' },
   { key:'kpi-ausentismo', nombre:'KPI Ausentismo', icono:'📋', url:'/kpi-ausentismo', desc:'Grilla diaria y KPI de ausentismo' },
+  { key:'kpi-ausentismo-cc', nombre:'KPI Ausentismo CC', icono:'📋', url:'/kpi-ausentismo-cc', desc:'Grilla diaria y KPI de ausentismo — Casa Central' },
+  { key:'pda-gente', nombre:'PDA - GENTE', icono:'📌', url:'/pda-gente', desc:'Planes de Acción de Gente' },
+  { key:'galaxia-pac-ventas', nombre:'PAC Fuerza de Ventas', icono:'🌌', url:'/galaxia-pac-ventas', desc:'Galaxia Q — Capacitaciones Fuerza de Ventas' },
+  { key:'base-temporarios', nombre:'Personal Temporario', icono:'👷', url:'/base-temporarios', desc:'Registro de personal temporario por temporada' },
+  { key:'mapa-calor', nombre:'Mapa de Calor', icono:'🔥', url:'/mapa-calor', desc:'Seguimiento de cobertura y sucesión de puestos clave' },
+  { key:'objetivos-mando', nombre:'Objetivos Mandos', icono:'🎯', url:'/objetivos-mando', desc:'Gestión por objetivos DPO — Auditoría H1/H2' },
+  { key:'sops', nombre:'SOPs', icono:'📋', url:'/sops', desc:'Procedimientos operativos estándar' },
+  { key:'seguimiento-3r', nombre:'Seguimiento 3R', icono:'📊', url:'/seguimiento-3r', desc:'Ranking de Entrega — Evolución mensual de KPIs' },
+  { key:'seguimiento-t1', nombre:'Seguimiento T1', icono:'🚛', url:'/seguimiento-t1', desc:'Control de descanso entre viajes — Transporte tercerizado' },
+  { key:'paquete-beneficios', nombre:'Paquete de Beneficios', icono:'🎁', url:'/paquete-beneficios', desc:'Documentos y enlaces del paquete de beneficios' },
+  { key:'marca-empleadora', nombre:'Marca Empleadora', icono:'🏷️', url:'/marca-empleadora', desc:'Enlaces y recursos de marca empleadora' },
+  { key:'simuladores-dimensionamiento', nombre:'Simuladores de Dimensionamiento', icono:'📐', url:'/simuladores-dimensionamiento', desc:'Enlaces a simuladores y herramientas de dimensionamiento' },
 ];
 
 function renderModulos() {

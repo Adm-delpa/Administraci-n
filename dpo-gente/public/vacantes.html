@@ -190,7 +190,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 <body>
 
 <div class="topbar">
-  <button class="btn-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <button class="btn-back" onclick="window.location.href='/reclu-hub'">← Volver</button>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Vacancy Fulfillment</span>
 </div>
@@ -218,7 +218,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
     <option value="Ok">Ok</option>
     <option value="No ok">No ok</option>
   </select>
-  <button class="btn-nueva" onclick="abrirNuevaVacante()">+ Nueva vacante</button>
+  <button class="btn-nueva admin-only" onclick="abrirNuevaVacante()">+ Nueva vacante</button>
 </div>
 
 <div class="main">
@@ -343,10 +343,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
     <div class="detalle-body">
       <div class="detalle-actions">
         <button class="btn-sm" onclick="exportarCandidatos()" style="border-color:#217346;color:#217346">⬇ Exportar Excel</button>
-        <button class="btn-sm primary" onclick="abrirModalCandidato()">+ Agregar candidato</button>
+        <button class="btn-sm primary admin-only" onclick="abrirModalCandidato()">+ Agregar candidato</button>
         <button class="btn-sm" id="btn-preguntas" onclick="abrirModalPreguntas()">Preguntas</button>
-        <button class="btn-sm" onclick="editarVacanteActual()">Editar vacante</button>
-        <button class="btn-sm danger" onclick="eliminarVacanteActual()">Eliminar</button>
+        <button class="btn-sm admin-only" onclick="editarVacanteActual()">Editar vacante</button>
+        <button class="btn-sm danger admin-only" onclick="eliminarVacanteActual()">Eliminar</button>
       </div>
 
       <div class="cands-section">
@@ -466,6 +466,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const HOY = new Date(); HOY.setHours(0,0,0,0);
 let SEDE = 'todas';
@@ -577,6 +579,7 @@ function renderTabla() {
 
 // ── MODAL VACANTE ──
 function abrirNuevaVacante() {
+  if (!IS_ADMIN) return;
   VAC_EDIT_ID = null;
   document.getElementById('modal-vacante-title').textContent = 'Nueva vacante';
   ['v-sede','v-tipo','v-posicion','v-sector','v-status','v-apertura','v-inicio','v-finalizacion','v-mes','v-anio'].forEach(id => {
@@ -613,6 +616,7 @@ function cerrarModalVacante(e) {
 }
 
 async function guardarVacante() {
+  if (!IS_ADMIN) return;
   const btn = document.getElementById('btn-guardar-vac');
   btn.disabled = true;
   const body = {
@@ -790,12 +794,13 @@ function renderPreguntas() {
   el.innerHTML = PREGUNTAS.map(p => `
     <div class="preg-item" data-pid="${p.id}">
       <span class="preg-text">${p.pregunta}</span>
-      <button class="btn-xs" onclick="editarPregunta(${p.id}, this)">Editar</button>
-      <button class="btn-xs danger" onclick="eliminarPregunta(${p.id})">✕</button>
+      <button class="btn-xs admin-only" onclick="editarPregunta(${p.id}, this)">Editar</button>
+      <button class="btn-xs danger admin-only" onclick="eliminarPregunta(${p.id})">✕</button>
     </div>`).join('');
 }
 
 async function agregarPregunta() {
+  if (!IS_ADMIN) return;
   const texto = prompt('Nueva pregunta de entrevista:');
   if (!texto || !texto.trim()) return;
   try {
@@ -810,6 +815,7 @@ async function agregarPregunta() {
 }
 
 async function editarPregunta(pid, btn) {
+  if (!IS_ADMIN) return;
   const p = PREGUNTAS.find(x => x.id === pid);
   if (!p) return;
   const nuevo = prompt('Editar pregunta:', p.pregunta);
@@ -825,6 +831,7 @@ async function editarPregunta(pid, btn) {
 }
 
 async function eliminarPregunta(pid) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminás esta pregunta? Se perderán todas las respuestas asociadas.')) return;
   try {
     await fetch(`/api/vacantes/${VAC_ACTIVA}/preguntas/${pid}`, { method: 'DELETE' });
@@ -895,6 +902,7 @@ function cerrarModalCandidato(e) {
 }
 
 async function guardarCandidato() {
+  if (!IS_ADMIN) return;
   const btn = document.getElementById('btn-guardar-cand');
   btn.disabled = true;
   const body = {
@@ -938,6 +946,7 @@ async function guardarCandidato() {
 }
 
 async function eliminarCandidato(cid, vacId) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminás este candidato?')) return;
   await fetch(`/api/vacantes/${vacId}/candidatos/${cid}`, { method:'DELETE' });
   await cargarCandidatos(vacId);
@@ -945,6 +954,7 @@ async function eliminarCandidato(cid, vacId) {
 }
 
 async function eliminarVacanteActual() {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminás esta vacante y todos sus candidatos?')) return;
   await fetch(`/api/vacantes/${VAC_ACTIVA}`, { method:'DELETE' });
   document.getElementById('detalle-bg').classList.remove('open');

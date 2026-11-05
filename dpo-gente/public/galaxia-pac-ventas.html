@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAC Fuerza de Ventas — Galaxia Q</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+body.embedded .topbar,body.embedded .page-header{display:none}
+body.embedded .wrap{padding-top:10px}
+body.embedded{background:transparent}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40;flex-wrap:wrap}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.topbar-btn{padding:6px 13px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.topbar-btn:hover{background:#163260}
+.topbar-btn.ghost{background:#fff;color:#1B3F72;border:1px solid #D8DEE8}
+.topbar-btn.ghost:hover{background:#F7F8FB}
+
+.page-header{background:#1B3F72;padding:16px 24px 18px;display:flex;align-items:center;gap:16px}
+.page-header-logo{width:48px;height:48px;border-radius:10px;background:#F5E600;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;padding:4px}
+.page-header-logo .logo-bees{font-size:14px;font-weight:900;color:#000;letter-spacing:1px;line-height:1;font-family:'Inter',system-ui,sans-serif}
+.page-header-logo .logo-academy{font-size:7.5px;font-weight:700;color:#000;letter-spacing:.5px;line-height:1;font-family:'Inter',system-ui,sans-serif;text-transform:lowercase}
+.page-header h1{font-size:15px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px}
+.kpi-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi-val{font-size:24px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.kpi.navy .kpi-val{color:#1B3F72}
+.kpi.green .kpi-val{color:#10B981}
+.kpi.red .kpi-val{color:#DC2626}
+.kpi.orange .kpi-val{color:#D97706}
+.kpi-meta{font-size:10px;color:#8A97AA;margin-top:3px}
+.kpi-bar{height:4px;border-radius:2px;background:#EEF0F6;margin-top:8px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .3s}
+
+/* FILTROS */
+.filters{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.filter-sel{padding:6px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;color:#18243A;background:#fff;cursor:pointer}
+
+/* TARJETA MES */
+.mes-section{margin-bottom:14px}
+.mes-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:#fff;border:1px solid #EEF0F6;border-radius:8px;cursor:pointer;user-select:none;transition:background .1s}
+.mes-hdr:hover{background:#FAFBFD}
+.mes-hdr.collapsed{border-radius:8px}
+.mes-hdr.open{border-radius:8px 8px 0 0}
+.mes-nombre{font-size:13px;font-weight:700;color:#18243A;display:flex;align-items:center;gap:8px}
+.mes-chevron{font-size:10px;color:#8A97AA;transition:transform .2s;display:inline-block}
+.mes-chevron.open{transform:rotate(90deg)}
+.mes-stats{display:flex;gap:12px;align-items:center}
+.mes-stat{font-size:11px;color:#5A6880;font-variant-numeric:tabular-nums}
+.mes-pct{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.pct-green{background:#D1FAE5;color:#065F46}
+.pct-orange{background:#FEF3C7;color:#92400E}
+.pct-red{background:#FEE2E2;color:#B91C1C}
+
+.mes-body{background:#fff;border:1px solid #EEF0F6;border-top:none;border-radius:0 0 8px 8px;overflow:hidden}
+
+/* CURSO DENTRO DEL MES */
+.curso-row{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid #F5F6FA;cursor:pointer;transition:background .1s}
+.curso-row:last-child{border-bottom:none}
+.curso-row:hover{background:#F7F8FB}
+.curso-nombre{font-size:12px;font-weight:600;color:#18243A;flex:1}
+.curso-stats{display:flex;gap:12px;align-items:center}
+.curso-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* DETALLE PERSONAS */
+.personas-detail{background:#FAFBFD;border-top:1px solid #EEF0F6;display:none}
+.personas-detail.open{display:block}
+.persona-row{display:flex;align-items:center;gap:10px;padding:7px 16px 7px 32px;border-bottom:1px solid #F0F2F7;font-size:11.5px}
+.persona-row:last-child{border-bottom:none}
+.persona-nombre{font-weight:600;flex:1;color:#18243A}
+.persona-rol{font-size:10px;color:#8A97AA;min-width:70px}
+.persona-estado{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.estado-completado{background:#D1FAE5;color:#065F46}
+.estado-pendiente{background:#FEE2E2;color:#B91C1C}
+.estado-curso{background:#FEF3C7;color:#92400E}
+
+/* IMPORT */
+.import-zone{background:#fff;border:2px dashed #D8DEE8;border-radius:10px;padding:30px 20px;text-align:center;margin-bottom:20px;transition:border-color .2s}
+.import-zone.dragover{border-color:#1B3F72;background:#EBF2FA}
+.import-icon{font-size:32px;margin-bottom:8px}
+.import-text{font-size:13px;color:#5A6880;margin-bottom:10px}
+.import-btn{display:inline-block;padding:8px 18px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer}
+.import-btn:hover{background:#163260}
+.import-meta{font-size:10px;color:#8A97AA;margin-top:10px}
+.import-meta b{color:#18243A}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 20px}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.empty-title{font-size:16px;font-weight:700;color:#18243A;margin-bottom:6px}
+.empty-desc{font-size:12px;color:#8A97AA;max-width:400px;margin:0 auto}
+
+/* AUDITORÍA INDICATOR */
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:min(500px,95vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:13px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;background:#1B3F72}
+.modal-titulo{font-size:13.5px;font-weight:700;color:#fff}
+.modal-close{background:none;border:none;font-size:18px;color:rgba(255,255,255,.6);cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#fff}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-select{padding:8px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;background:#fff;font-family:inherit}
+.form-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #EEF0F6}
+.btn-cancel{padding:7px 14px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#5A6880;cursor:pointer}
+.btn-save{padding:7px 16px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:#1B3F72;color:#fff;cursor:pointer}
+.btn-save:hover{background:#163260}
+
+.loading{text-align:center;padding:40px;color:#8A97AA;font-size:13px}
+
+@media(max-width:768px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-btn ghost" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-title">🌌 Galaxia Q — 5.4.1 PAC Fuerza de Ventas</span>
+  <select id="selAnio" class="filter-sel" onchange="cargarDatos()"></select>
+  <button class="topbar-btn" onclick="abrirImport()">📥 Importar Excel</button>
+</div>
+
+<div class="page-header">
+  <div class="page-header-logo"><span class="logo-bees">BEES</span><span class="logo-academy">academy</span></div>
+  <div><h1>Plan Anual de Capacitaciones — Fuerza de Ventas</h1>
+  <p>Bees Academy · Importar datos desde el Excel descargado</p></div>
+</div>
+
+<div class="wrap">
+  <div id="embedControls" style="display:none;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <select id="selAnioEmbed" class="filter-sel" onchange="document.getElementById('selAnio').value=this.value;cargarDatos()"></select>
+      <button class="topbar-btn" onclick="abrirImport()" style="font-size:11px;padding:5px 12px">📥 Importar Excel</button>
+    </div>
+  </div>
+  <div id="auditBox"></div>
+  <div id="kpiRow"></div>
+  <div id="filters"></div>
+  <div id="content"><div class="loading">Cargando...</div></div>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal-bg" id="modalImport">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo">Importar Excel de Bees Academy</span>
+      <button class="modal-close" onclick="cerrarImport()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Año</label>
+        <select id="importAnio" class="form-select"></select>
+      </div>
+      <div class="import-zone" id="dropZone">
+        <div class="import-icon">📄</div>
+        <div class="import-text">Arrastrá el archivo Excel aquí o hacé clic para seleccionar</div>
+        <button class="import-btn" onclick="document.getElementById('fileInput').click()">Seleccionar archivo</button>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
+        <div id="fileName" style="margin-top:8px;font-size:12px;font-weight:600;color:#1B3F72"></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="cerrarImport()">Cancelar</button>
+        <button class="btn-save" id="btnImportar" onclick="importar()" disabled>Importar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if(window !== window.top){
+  document.body.classList.add('embedded');
+  document.getElementById('embedControls').style.display = 'block';
+}
+const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let DATA = [];
+let LAST_IMPORT = null;
+let EXPANDED_MESES = new Set();
+let EXPANDED_CURSOS = new Set();
+let FILTRO_ROL = '';
+let selectedFile = null;
+
+// Año selector
+(function(){
+  const sel = document.getElementById('selAnio');
+  const importSel = document.getElementById('importAnio');
+  const embedSel = document.getElementById('selAnioEmbed');
+  const currentYear = new Date().getFullYear();
+  for(let y = currentYear; y >= currentYear - 2; y--){
+    sel.innerHTML += '<option value="'+y+'">'+y+'</option>';
+    importSel.innerHTML += '<option value="'+y+'">'+y+'</option>';
+    if(embedSel) embedSel.innerHTML += '<option value="'+y+'">'+y+'</option>';
+  }
+})();
+
+function getAnio(){ return parseInt(document.getElementById('selAnio').value); }
+
+async function cargarDatos(){
+  try {
+    const r = await fetch('/api/galaxia/pac-ventas/data?anio=' + getAnio());
+    const d = await r.json();
+    DATA = d.rows || [];
+    LAST_IMPORT = d.lastImport;
+    render();
+  } catch(e){ document.getElementById('content').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Error al cargar datos</div></div>'; }
+}
+
+function filteredData(){
+  if(!FILTRO_ROL) return DATA;
+  return DATA.filter(r => r.rol === FILTRO_ROL);
+}
+
+function render(){
+  const data = filteredData();
+  if(!data.length){
+    document.getElementById('auditBox').innerHTML = '';
+    document.getElementById('kpiRow').innerHTML = '';
+    document.getElementById('filters').innerHTML = '';
+    document.getElementById('content').innerHTML = '<div class="empty-state">'
+      +'<div class="empty-icon">📥</div>'
+      +'<div class="empty-title">Sin datos importados</div>'
+      +'<div class="empty-desc">Importá el Excel de Bees Academy para ver las capacitaciones de la fuerza de ventas</div>'
+      +'</div>';
+    return;
+  }
+  renderAudit(data);
+  renderKPIs(data);
+  renderFilters();
+  renderMeses(data);
+}
+
+function renderAudit(data){
+  const personas = [...new Set(data.map(r => r.nombre))];
+  const completaron = personas.filter(p => {
+    const cursos = data.filter(r => r.nombre === p);
+    return cursos.every(c => c.estado === 'Completado');
+  });
+  document.getElementById('auditBox').innerHTML = '';
+}
+
+function renderKPIs(data){
+  const cursos = [...new Set(data.map(r => r.curso))];
+  const personas = [...new Set(data.map(r => r.nombre))];
+  const completados = data.filter(r => r.estado === 'Completado').length;
+  const pctCompl = data.length ? Math.round(completados / data.length * 100) : 0;
+  const meses = [...new Set(data.map(r => r.mes))].filter(m => m > 0);
+
+  let importMeta = '';
+  if(LAST_IMPORT){
+    const d = new Date(LAST_IMPORT.created_at);
+    importMeta = 'Última importación: <b>'+d.toLocaleDateString('es-AR')+'</b> ('+LAST_IMPORT.registros+' registros)';
+  }
+
+  document.getElementById('kpiRow').innerHTML = '<div class="kpi-row">'
+    +'<div class="kpi navy"><div class="kpi-label">Personas</div><div class="kpi-val">'+personas.length+'</div><div class="kpi-meta">en la fuerza de ventas</div></div>'
+    +'<div class="kpi navy"><div class="kpi-label">Cursos</div><div class="kpi-val">'+cursos.length+'</div><div class="kpi-meta">'+meses.length+' meses con actividad</div></div>'
+    +'<div class="kpi '+(pctCompl>=85?'green':pctCompl>=60?'orange':'red')+'"><div class="kpi-label">Completados</div><div class="kpi-val">'+pctCompl+'%</div>'
+    +'<div class="kpi-bar"><div class="kpi-bar-fill" style="width:'+pctCompl+'%;background:'+(pctCompl>=85?'#10B981':pctCompl>=60?'#D97706':'#DC2626')+'"></div></div></div>'
+    +'<div class="kpi navy"><div class="kpi-label">Registros</div><div class="kpi-val">'+data.length+'</div><div class="kpi-meta">'+(importMeta||'sin importar aún')+'</div></div>'
+    +'</div>';
+}
+
+function renderFilters(){
+  const roles = [...new Set(DATA.map(r => r.rol))].filter(Boolean).sort();
+  if(roles.length <= 1){ document.getElementById('filters').innerHTML = ''; return; }
+  document.getElementById('filters').innerHTML = '<div class="filters">'
+    +'<select class="filter-sel" onchange="FILTRO_ROL=this.value;render()">'
+    +'<option value="">Todos los roles</option>'
+    +roles.map(r => '<option value="'+r+'"'+(FILTRO_ROL===r?' selected':'')+'>'+r+'</option>').join('')
+    +'</select>'
+    +'</div>';
+}
+
+function renderMeses(data){
+  const mesesSet = [...new Set(data.map(r => r.mes))].sort((a,b) => a - b);
+  if(!mesesSet.length){ document.getElementById('content').innerHTML = ''; return; }
+
+  let html = '';
+  for(const mes of mesesSet){
+    const mesData = data.filter(r => r.mes === mes);
+    const cursos = [...new Set(mesData.map(r => r.curso))];
+    const completados = mesData.filter(r => r.estado === 'Completado').length;
+    const pct = mesData.length ? Math.round(completados / mesData.length * 100) : 0;
+    const isOpen = EXPANDED_MESES.has(mes);
+    const mesNombre = mes > 0 && mes <= 12 ? MESES[mes] : 'Mes ' + mes;
+
+    html += '<div class="mes-section">'
+      +'<div class="mes-hdr '+(isOpen?'open':'collapsed')+'" onclick="toggleMes('+mes+')">'
+      +'<div class="mes-nombre"><span class="mes-chevron '+(isOpen?'open':'')+'">▸</span> '+mesNombre+'</div>'
+      +'<div class="mes-stats">'
+      +'<span class="mes-stat">'+cursos.length+' cursos</span>'
+      +'<span class="mes-stat">'+[...new Set(mesData.map(r=>r.nombre))].length+' personas</span>'
+      +'<span class="mes-pct '+(pct>=85?'pct-green':pct>=60?'pct-orange':'pct-red')+'">'+pct+'%</span>'
+      +'</div>'
+      +'</div>';
+
+    if(isOpen){
+      html += '<div class="mes-body">';
+      for(const curso of cursos){
+        const cursoData = mesData.filter(r => r.curso === curso);
+        const cCompl = cursoData.filter(r => r.estado === 'Completado').length;
+        const cPct = cursoData.length ? Math.round(cCompl / cursoData.length * 100) : 0;
+        const cursoKey = mes + '_' + curso;
+        const cursoOpen = EXPANDED_CURSOS.has(cursoKey);
+
+        html += '<div>'
+          +'<div class="curso-row" onclick="toggleCurso(\''+esc(cursoKey)+'\')">'
+          +'<span class="curso-nombre">'+esc(curso)+'</span>'
+          +'<div class="curso-stats">'
+          +'<span style="font-size:11px;color:#5A6880">'+cCompl+'/'+cursoData.length+'</span>'
+          +'<span class="curso-badge '+(cPct>=85?'pct-green':cPct>=60?'pct-orange':'pct-red')+'">'+cPct+'%</span>'
+          +'</div>'
+          +'</div>';
+
+        if(cursoOpen){
+          html += '<div class="personas-detail open">';
+          for(const p of cursoData){
+            const estadoClass = p.estado === 'Completado' ? 'estado-completado' : p.estado === 'No comenzó' ? 'estado-pendiente' : 'estado-curso';
+            html += '<div class="persona-row">'
+              +'<span class="persona-nombre">'+esc(p.nombre)+'</span>'
+              +'<span class="persona-rol">'+esc(p.rol||'')+'</span>'
+              +'<span class="persona-estado '+estadoClass+'">'+esc(p.estado||'—')+'</span>'
+              +'</div>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+function toggleMes(mes){
+  if(EXPANDED_MESES.has(mes)) EXPANDED_MESES.delete(mes);
+  else EXPANDED_MESES.add(mes);
+  render();
+}
+
+function toggleCurso(key){
+  if(EXPANDED_CURSOS.has(key)) EXPANDED_CURSOS.delete(key);
+  else EXPANDED_CURSOS.add(key);
+  render();
+}
+
+function esc(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Import
+function abrirImport(){
+  document.getElementById('modalImport').classList.add('open');
+  document.getElementById('importAnio').value = getAnio();
+  selectedFile = null;
+  document.getElementById('fileName').textContent = '';
+  document.getElementById('btnImportar').disabled = true;
+  document.getElementById('fileInput').value = '';
+}
+function cerrarImport(){ document.getElementById('modalImport').classList.remove('open'); }
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file){
+  if(!file) return;
+  selectedFile = file;
+  document.getElementById('fileName').textContent = '📎 ' + file.name;
+  document.getElementById('btnImportar').disabled = false;
+}
+
+async function importar(){
+  if(!selectedFile) return;
+  const btn = document.getElementById('btnImportar');
+  btn.disabled = true;
+  btn.textContent = 'Importando...';
+  try {
+    const fd = new FormData();
+    fd.append('archivo', selectedFile);
+    fd.append('anio', document.getElementById('importAnio').value);
+    const r = await fetch('/api/galaxia/pac-ventas/import', { method:'POST', body: fd });
+    const d = await r.json();
+    if(d.error){ alert('Error: ' + d.error); return; }
+    alert('Importación exitosa: ' + d.registros + ' registros procesados');
+    cerrarImport();
+    document.getElementById('selAnio').value = document.getElementById('importAnio').value;
+    cargarDatos();
+  } catch(e){ alert('Error de conexión'); }
+  finally { btn.disabled = false; btn.textContent = 'Importar'; }
+}
+
+cargarDatos();
+</script>
+</body>
+</html>

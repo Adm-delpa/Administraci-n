@@ -84,7 +84,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 <body>
 
 <div class="topbar">
-  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <button class="topbar-back" onclick="window.location.href='/ambiente-hub'">← Volver</button>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">KPI Ausentismo</span>
 </div>
@@ -98,8 +98,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
   <div class="toolbar">
     <select id="yearSel" class="sel" onchange="cambiarPeriodo()"></select>
     <select id="mesSel" class="sel" onchange="cambiarPeriodo()"></select>
-    <button class="btn btn-secondary" onclick="abrirImport()">📥 Importar Excel</button>
+    <button class="btn btn-secondary admin-only" onclick="abrirImport()">📥 Importar Excel</button>
     <div style="flex:1"></div>
+    <button class="btn btn-secondary admin-only" onclick="abrirConfig()">⚙ Configurar empleados</button>
     <span id="empCount" style="font-size:11px;color:#8A97AA"></span>
   </div>
 
@@ -133,9 +134,30 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
   </div>
 </div>
 
+<!-- Modal configurar empleados -->
+<div class="modal-overlay" id="modalConfig">
+  <div class="modal" style="width:520px">
+    <h3>Configurar empleados controlados</h3>
+    <p style="font-size:11px;color:#5E6E89;margin-bottom:12px">Seleccioná qué empleados se incluyen en la grilla y cálculos de KPI.</p>
+    <div style="display:flex;gap:10px;margin-bottom:10px;align-items:center">
+      <input type="text" id="configBuscar" placeholder="Buscar..." oninput="filtrarConfig()" class="sel" style="font-size:12px;flex:1">
+      <button class="btn btn-secondary" style="font-size:11px" onclick="toggleAllConfig(true)">Todos</button>
+      <button class="btn btn-secondary" style="font-size:11px" onclick="toggleAllConfig(false)">Ninguno</button>
+    </div>
+    <div id="configCount" style="font-size:11px;font-weight:600;color:#2563A8;margin-bottom:8px"></div>
+    <div id="configList" style="max-height:350px;overflow-y:auto;border:1px solid #D8DEE8;border-radius:8px"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="cerrarConfig()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const VALORES = [
@@ -227,7 +249,7 @@ async function cambiarPeriodo() {
 async function cargarEmpleados() {
   const r = await fetch('/api/auskpi/empleados');
   EMPLEADOS = await r.json();
-  document.getElementById('empCount').textContent = EMPLEADOS.length + ' empleados';
+  document.getElementById('empCount').textContent = EMPLEADOS.length + ' empleados controlados';
 }
 
 async function cargarMarcas() {
@@ -324,6 +346,7 @@ function renderGrilla(cont) {
 }
 
 async function guardarMarca(legajo, dia, valor, sel) {
+  if (!IS_ADMIN) return;
   const anio = +document.getElementById('yearSel').value;
   const mes = +document.getElementById('mesSel').value;
   MARCAS[marcaKey(legajo, dia)] = valor;
@@ -400,6 +423,7 @@ async function renderCalculo(cont) {
 }
 
 async function guardarDiasHab(mes, valor) {
+  if (!IS_ADMIN) return;
   const anio = +document.getElementById('yearSel').value;
   await fetch('/api/auskpi/dias-habiles', {
     method: 'PUT',
@@ -548,6 +572,7 @@ function filtrarDetalle() {
 }
 
 async function guardarDetalle(legajo, mes, diaDesde, diaHasta, categoria, enfermedad) {
+  if (!IS_ADMIN) return;
   const anio = +document.getElementById('yearSel').value;
   await fetch('/api/auskpi/detalle', {
     method: 'PUT',
@@ -632,6 +657,7 @@ async function renderAnalisis(cont) {
 }
 
 function abrirImport() {
+  if (!IS_ADMIN) return;
   document.getElementById('importMsg').innerHTML = '';
   document.getElementById('importFile').value = '';
   document.getElementById('modalImport').classList.add('show');
@@ -639,6 +665,7 @@ function abrirImport() {
 function cerrarImport() { document.getElementById('modalImport').classList.remove('show'); }
 
 async function doImport() {
+  if (!IS_ADMIN) return;
   const file = document.getElementById('importFile').files[0];
   if (!file) return;
   const msg = document.getElementById('importMsg');
@@ -659,6 +686,75 @@ async function doImport() {
   } catch(e) {
     msg.innerHTML = `<span class="msg-err">Error: ${e.message}</span>`;
   }
+}
+
+let TODOS_EMPLEADOS = [];
+
+function abrirConfig() {
+  if (!IS_ADMIN) return;
+  TODOS_EMPLEADOS = [...EMPLEADOS];
+  fetch('/api/auskpi/empleados?todos=1').then(r=>r.json()).then(all => {
+    TODOS_EMPLEADOS = all;
+    renderConfigList();
+    document.getElementById('modalConfig').classList.add('show');
+  });
+}
+
+function cerrarConfig() { document.getElementById('modalConfig').classList.remove('show'); }
+
+function renderConfigList() {
+  const list = document.getElementById('configList');
+  const buscar = (document.getElementById('configBuscar')?.value || '').toLowerCase();
+  let html = '';
+  let currentSector = '';
+  const filtered = TODOS_EMPLEADOS.filter(e =>
+    !buscar || `${e.apellido} ${e.nombre} ${e.legajo}`.toLowerCase().includes(buscar)
+  );
+  filtered.forEach(emp => {
+    if (emp.sector !== currentSector) {
+      currentSector = emp.sector;
+      html += `<div style="background:#1B3F72;color:#fff;padding:6px 12px;font-size:11px;font-weight:700">${currentSector}</div>`;
+    }
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid #EEF0F6;cursor:pointer;font-size:12px">
+      <input type="checkbox" data-legajo="${emp.legajo}" ${emp.controlado !== false ? 'checked' : ''}>
+      <span style="font-weight:600">${emp.apellido}, ${emp.nombre}</span>
+      <span style="color:#8A97AA;font-size:10px">(${emp.legajo})</span>
+    </label>`;
+  });
+  list.innerHTML = html;
+  updateConfigCount();
+}
+
+function filtrarConfig() { renderConfigList(); }
+
+function toggleAllConfig(val) {
+  document.querySelectorAll('#configList input[type=checkbox]').forEach(cb => { cb.checked = val; });
+  TODOS_EMPLEADOS.forEach(e => { e.controlado = val; });
+  updateConfigCount();
+}
+
+function updateConfigCount() {
+  const checks = document.querySelectorAll('#configList input[type=checkbox]:checked');
+  document.getElementById('configCount').textContent = `${checks.length} de ${TODOS_EMPLEADOS.length} empleados seleccionados`;
+}
+
+document.addEventListener('change', e => {
+  if (e.target.closest('#configList') && e.target.type === 'checkbox') updateConfigCount();
+});
+
+async function guardarConfig() {
+  if (!IS_ADMIN) return;
+  const checks = document.querySelectorAll('#configList input[type=checkbox]:checked');
+  const legajos = Array.from(checks).map(cb => cb.dataset.legajo);
+  await fetch('/api/auskpi/empleados/controlados', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ legajos })
+  });
+  cerrarConfig();
+  await cargarEmpleados();
+  await cargarMarcas();
+  renderTab();
 }
 
 async function init() {

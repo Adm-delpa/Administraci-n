@@ -101,7 +101,7 @@ tbody td{padding:11px 14px;font-size:13px;vertical-align:middle}
 <body>
 
 <div class="topbar">
-  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <button class="topbar-back" onclick="window.location.href='/ambiente-hub'">← Volver</button>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Entorno Laboral — Servicios Generales</span>
 </div>
@@ -116,7 +116,7 @@ tbody td{padding:11px 14px;font-size:13px;vertical-align:middle}
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <a href="https://forms.gle/Ads1tVa32ryk7oHZ6" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#6D28D9;background:#EDE9FE;border:1px solid #DDD6FE;border-radius:6px;padding:5px 10px;text-decoration:none">📋 Abrir formulario</a>
-      <button class="btn btn-primary btn-sm" onclick="abrirNuevo()">+ Nuevo</button>
+      <button class="btn btn-primary btn-sm admin-only" onclick="abrirNuevo()">+ Nuevo</button>
     </div>
   </div>
 
@@ -181,7 +181,7 @@ tbody td{padding:11px 14px;font-size:13px;vertical-align:middle}
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <a href="https://forms.gle/cNBMYpKkQQtxQsYX7" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:5px 10px;text-decoration:none">📋 Abrir formulario</a>
-        <button class="btn btn-primary btn-sm" onclick="abrirNuevoConflicto()" style="background:#DC2626">+ Nuevo</button>
+        <button class="btn btn-primary btn-sm admin-only" onclick="abrirNuevoConflicto()" style="background:#DC2626">+ Nuevo</button>
       </div>
     </div>
 
@@ -221,7 +221,7 @@ tbody td{padding:11px 14px;font-size:13px;vertical-align:middle}
         <div style="font-size:15px;font-weight:800;color:#18243A">📁 Evidencias de Inclusividad</div>
         <div style="font-size:11.5px;color:#94A3B8;margin-top:2px">Comprobantes de compra, pagos y acciones de inclusividad</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="abrirNuevaEvidencia()" style="background:#0369A1">+ Subir archivo</button>
+      <button class="btn btn-primary btn-sm admin-only" onclick="abrirNuevaEvidencia()" style="background:#0369A1">+ Subir archivo</button>
     </div>
 
     <div class="table-wrap">
@@ -478,6 +478,9 @@ tbody td{padding:11px 14px;font-size:13px;vertical-align:middle}
 <div class="toast" id="toast"></div>
 
 <script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 const el = id => document.getElementById(id);
 let reportes = [], editandoId = null;
 
@@ -572,8 +575,8 @@ function renderTabla(lista) {
       : `<div class="foto-placeholder">📷</div>`;
     const esForm = r.origen === 'forms';
     const btnHTML = esForm
-      ? `<button class="btn btn-ghost btn-sm" style="color:#6D28D9;border-color:#DDD6FE" onclick="abrirGestionar(${r.id})">Gestionar</button>`
-      : `<button class="btn btn-ghost btn-sm" onclick="abrirEditar(${r.id})">Editar</button>`;
+      ? `<button class="btn btn-ghost btn-sm admin-only" style="color:#6D28D9;border-color:#DDD6FE" onclick="abrirGestionar(${r.id})">Gestionar</button>`
+      : `<button class="btn btn-ghost btn-sm admin-only" onclick="abrirEditar(${r.id})">Editar</button>`;
     return `<tr>
       <td style="white-space:nowrap;color:#64748B;font-size:12px">${fmtFecha(r.fecha)}</td>
       <td style="font-size:12px">${r.sucursal||'—'}</td>
@@ -633,6 +636,7 @@ function abrirGestionar(id) {
 function cerrarGestionar() { el('modalGestionar').style.display = 'none'; }
 
 async function guardarGestion() {
+  if (!IS_ADMIN) return;
   const r = reportes.find(x => x.id === gestionandoId);
   if (!r) return;
   const btn = el('btnGestionar');
@@ -659,6 +663,7 @@ async function guardarGestion() {
 }
 
 function abrirNuevo() {
+  if (!IS_ADMIN) return;
   editandoId = null;
   el('modalTitulo').textContent = 'Nuevo reporte';
   el('inpFecha').value = new Date().toISOString().split('T')[0];
@@ -675,6 +680,7 @@ function abrirNuevo() {
 }
 
 function abrirEditar(id) {
+  if (!IS_ADMIN) return;
   const r = reportes.find(x => x.id === id);
   if (!r) return;
   editandoId = id;
@@ -695,6 +701,7 @@ function abrirEditar(id) {
 function cerrarModal() { el('modalReporte').style.display = 'none'; }
 
 async function guardarReporte() {
+  if (!IS_ADMIN) return;
   const body = {
     fecha:        el('inpFecha').value,
     sucursal:     el('inpSucursal').value,
@@ -737,6 +744,7 @@ async function cargarRevision() {
 }
 
 async function guardarRevision() {
+  if (!IS_ADMIN) return;
   const body = {
     pendiente: el('revPendiente').value.trim(),
     resuelto:  el('revResuelto').value.trim(),
@@ -784,8 +792,8 @@ function renderTablaConflictos() {
     const css = ESTADO_CSS_CL[c.estado] || '';
     const esForm = c.origen === 'forms';
     const btnHTML = esForm
-      ? `<button class="btn btn-ghost btn-sm" style="color:#DC2626;border-color:#FECACA" onclick="abrirGestionarConflicto(${c.id})">Gestionar</button>`
-      : `<button class="btn btn-ghost btn-sm" onclick="abrirEditarConflicto(${c.id})">Editar</button>`;
+      ? `<button class="btn btn-ghost btn-sm admin-only" style="color:#DC2626;border-color:#FECACA" onclick="abrirGestionarConflicto(${c.id})">Gestionar</button>`
+      : `<button class="btn btn-ghost btn-sm admin-only" onclick="abrirEditarConflicto(${c.id})">Editar</button>`;
     return `<tr>
       <td style="white-space:nowrap;color:#64748B;font-size:12px">${fmtFecha(c.fecha)}</td>
       <td style="font-size:12.5px;font-weight:600">${c.nombre||'—'}</td>
@@ -803,6 +811,7 @@ function renderTablaConflictos() {
 }
 
 function abrirNuevoConflicto() {
+  if (!IS_ADMIN) return;
   editandoConflictoId = null;
   el('cTitulo').textContent = 'Nuevo conflicto';
   el('cFecha').value = new Date().toISOString().split('T')[0];
@@ -813,6 +822,7 @@ function abrirNuevoConflicto() {
 }
 
 function abrirEditarConflicto(id) {
+  if (!IS_ADMIN) return;
   const c = conflictos.find(x=>x.id===id); if(!c) return;
   editandoConflictoId = id;
   el('cTitulo').textContent = 'Editar conflicto';
@@ -828,6 +838,7 @@ function abrirEditarConflicto(id) {
 function cerrarConflicto() { el('modalConflicto').style.display = 'none'; }
 
 async function guardarConflicto() {
+  if (!IS_ADMIN) return;
   const body = {
     fecha: el('cFecha').value, nombre: el('cNombre').value.trim(),
     contacto: el('cContacto').value.trim(), problema: el('cProblema').value.trim(),
@@ -846,6 +857,7 @@ async function guardarConflicto() {
 }
 
 function abrirGestionarConflicto(id) {
+  if (!IS_ADMIN) return;
   const c = conflictos.find(x=>x.id===id); if(!c) return;
   gestionandoConflictoId = id;
   el('gcOriginal').innerHTML = `
@@ -862,6 +874,7 @@ function abrirGestionarConflicto(id) {
 function cerrarGestionarConflicto() { el('modalGestionarConflicto').style.display='none'; }
 
 async function guardarGestionConflicto() {
+  if (!IS_ADMIN) return;
   const c = conflictos.find(x=>x.id===gestionandoConflictoId); if(!c) return;
   const btn = el('btnGestionarConflicto'); btn.textContent='Guardando…'; btn.disabled=true;
   try {
@@ -901,12 +914,13 @@ function renderTablaEvidencias() {
       <td>${fecha}</td>
       <td>${e.descripcion||'—'}</td>
       <td><a href="/api/el/evidencias/${e.id}/archivo" target="_blank" style="display:inline-flex;align-items:center;gap:5px;color:#0369A1;text-decoration:none;font-weight:600">${icono} ${e.archivo_nombre}</a></td>
-      <td><button class="btn btn-ghost btn-sm" style="color:#DC2626" onclick="eliminarEvidencia(${e.id})">Eliminar</button></td>
+      <td><button class="btn btn-ghost btn-sm admin-only" style="color:#DC2626" onclick="eliminarEvidencia(${e.id})">Eliminar</button></td>
     </tr>`;
   }).join('');
 }
 
 function abrirNuevaEvidencia() {
+  if (!IS_ADMIN) return;
   el('evFecha').value = new Date().toISOString().split('T')[0];
   el('evDescripcion').value = '';
   el('evArchivo').value = '';
@@ -915,6 +929,7 @@ function abrirNuevaEvidencia() {
 function cerrarEvidencia() { el('modalEvidencia').style.display = 'none'; }
 
 async function guardarEvidencia() {
+  if (!IS_ADMIN) return;
   const archivo = el('evArchivo').files[0];
   if (!archivo) { alert('Seleccioná un archivo'); return; }
   const btn = document.querySelector('#modalEvidencia .btn-primary');
@@ -933,6 +948,7 @@ async function guardarEvidencia() {
 }
 
 async function eliminarEvidencia(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar esta evidencia?')) return;
   await fetch(`/api/el/evidencias/${id}`, { method: 'DELETE' });
   showToast('Evidencia eliminada');

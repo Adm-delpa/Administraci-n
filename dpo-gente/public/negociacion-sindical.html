@@ -112,7 +112,7 @@ textarea{resize:vertical;min-height:72px}
   <div class="year-bar">
     <span class="year-bar-label">Año</span>
     <div id="yearBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-    <button class="year-add" onclick="agregarAnio()">+ Año</button>
+    <button class="year-add admin-only" onclick="agregarAnio()">+ Año</button>
   </div>
 
   <!-- Camioneros + SUTIAGA en grid -->
@@ -126,7 +126,7 @@ textarea{resize:vertical;min-height:72px}
           <span class="sind-tag sind-cam">Conv. 40/89</span>
           <div class="section-sub" style="margin-top:4px">Reuniones y acuerdos · Marcos Comas</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="abrirModal('Camioneros')">+ Nueva</button>
+        <button class="btn btn-primary btn-sm admin-only" onclick="abrirModal('Camioneros')">+ Nueva</button>
       </div>
       <div class="overflow-x">
         <table>
@@ -146,7 +146,7 @@ textarea{resize:vertical;min-height:72px}
           <span class="sind-tag sind-sut">Ventas</span>
           <div class="section-sub" style="margin-top:4px">Reuniones y acuerdos · Silvio Marchessi</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="abrirModal('SUTIAGA')">+ Nueva</button>
+        <button class="btn btn-primary btn-sm admin-only" onclick="abrirModal('SUTIAGA')">+ Nueva</button>
       </div>
       <div class="overflow-x">
         <table>
@@ -167,7 +167,7 @@ textarea{resize:vertical;min-height:72px}
         <div class="section-title">Calendario Gremial</div>
         <div class="section-sub">Seguimiento de compromisos anuales con Camioneros · R5.5.2</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="abrirCal()">+ Agregar</button>
+      <button class="btn btn-primary btn-sm admin-only" onclick="abrirCal()">+ Agregar</button>
     </div>
     <div class="overflow-x">
       <div class="cal-head cal-row">
@@ -189,7 +189,7 @@ textarea{resize:vertical;min-height:72px}
         <div class="section-title">Documentos</div>
         <div class="section-sub">SOPs, TORs, estrategias y evidencias · R5.5.1 · R5.5.3</div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="abrirDoc()">+ Subir</button>
+      <button class="btn btn-primary btn-sm admin-only" onclick="abrirDoc()">+ Subir</button>
     </div>
     <div class="overflow-x">
       <table>
@@ -392,6 +392,8 @@ textarea{resize:vertical;min-height:72px}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const ANIO_ACTUAL = new Date().getFullYear();
 let anioActivo = ANIO_ACTUAL;
@@ -414,6 +416,7 @@ function renderAnios() {
 function selAnio(a) { anioActivo = a; renderAnios(); cargarTodo(); }
 
 function agregarAnio() {
+  if (!IS_ADMIN) return;
   const n = parseInt(prompt('Agregar año:', ANIO_ACTUAL + 1));
   if (n && !isNaN(n) && !anios.includes(n)) {
     anios.push(n); anios.sort(); anioActivo = n;
@@ -468,13 +471,14 @@ function renderNeg(sind) {
       <td>${badge(n.estado, BADGE_NEG)}</td>
       <td><div class="td-actions">
         <button class="btn-icon" title="PDAs" onclick="abrirPDAs(${n.id}, '${(n.descripcion||'').substring(0,30).replace(/'/g,"\\'")}')">≡</button>
-        <button class="btn-icon" title="Editar" onclick="editarNeg(${n.id},'${sind}')">✏</button>
-        <button class="btn-danger-icon" title="Eliminar" onclick="eliminarNeg(${n.id},'${sind}')">✕</button>
+        <button class="btn-icon admin-only" title="Editar" onclick="editarNeg(${n.id},'${sind}')">✏</button>
+        <button class="btn-danger-icon admin-only" title="Eliminar" onclick="eliminarNeg(${n.id},'${sind}')">✕</button>
       </div></td>
     </tr>`).join('');
 }
 
 function abrirModal(sind, id) {
+  if (!IS_ADMIN) return;
   const todos = [...negData.Camioneros, ...negData.SUTIAGA];
   const n = id ? todos.find(x => x.id === id) : null;
   document.getElementById('nId').value = n ? n.id : '';
@@ -491,6 +495,7 @@ function abrirModal(sind, id) {
 function editarNeg(id, sind) { abrirModal(sind, id); }
 
 async function guardarNeg() {
+  if (!IS_ADMIN) return;
   const id = document.getElementById('nId').value;
   const sind = document.getElementById('nSind').value;
   const body = {
@@ -509,6 +514,7 @@ async function guardarNeg() {
 }
 
 async function eliminarNeg(id, sind) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar este registro?')) return;
   await fetch(`/api/ns/negociaciones/${id}`, { method: 'DELETE' });
   cargarNeg(sind);
@@ -546,11 +552,12 @@ function renderPDAs() {
         <option value="completado"${p.estado==='completado'?' selected':''}>Completado</option>
         <option value="vencido"${p.estado==='vencido'?' selected':''}>Vencido</option>
       </select>
-      <button class="btn-danger-icon" onclick="eliminarPDA(${p.id})">✕</button>
+      <button class="btn-danger-icon admin-only" onclick="eliminarPDA(${p.id})">✕</button>
     </div>`).join('');
 }
 
 async function agregarPDA() {
+  if (!IS_ADMIN) return;
   const accion = document.getElementById('pdaAccion').value.trim();
   if (!accion) return;
   await fetch('/api/ns/pdas', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ negociacion_id: pdaNegId, accion, responsable: document.getElementById('pdaResp').value, fecha_limite: document.getElementById('pdaFecha').value || null, estado:'pendiente' }) });
@@ -561,6 +568,7 @@ async function agregarPDA() {
 }
 
 async function cambiarEstadoPDA(id, estado) {
+  if (!IS_ADMIN) return;
   const p = pdas.find(x => x.id === id);
   if (!p) return;
   await fetch(`/api/ns/pdas/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({accion:p.accion, responsable:p.responsable, fecha_limite:p.fecha_limite, estado}) });
@@ -568,6 +576,7 @@ async function cambiarEstadoPDA(id, estado) {
 }
 
 async function eliminarPDA(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar?')) return;
   await fetch(`/api/ns/pdas/${id}`, { method:'DELETE' });
   await cargarPDAs();
@@ -604,11 +613,12 @@ async function cargarDocumentos() {
       <td><span class="badge badge-cat">${d.categoria || '—'}</span></td>
       <td style="font-size:12.5px">${d.descripcion || '—'}</td>
       <td><button class="btn-ghost btn btn-sm" onclick="verArchivo(${d.id},'${(d.archivo_nombre||'').replace(/'/g,"\\'")}','${d.archivo_tipo||''}')" style="font-size:12px;padding:3px 10px">${d.archivo_nombre}</button></td>
-      <td><button class="btn-danger-icon" onclick="eliminarDoc(${d.id})">✕</button></td>
+      <td><button class="btn-danger-icon admin-only" onclick="eliminarDoc(${d.id})">✕</button></td>
     </tr>`).join('');
 }
 
 function abrirDoc() {
+  if (!IS_ADMIN) return;
   document.getElementById('dFecha').value = '';
   document.getElementById('dCategoria').value = 'SOP';
   document.getElementById('dDesc').value = '';
@@ -617,6 +627,7 @@ function abrirDoc() {
 }
 
 async function guardarDoc() {
+  if (!IS_ADMIN) return;
   const file = document.getElementById('dArchivo').files[0];
   if (!file) { alert('Seleccioná un archivo'); return; }
   const fd = new FormData();
@@ -631,6 +642,7 @@ async function guardarDoc() {
 }
 
 async function eliminarDoc(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar?')) return;
   await fetch(`/api/ns/documentos/${id}`, { method:'DELETE' });
   cargarDocumentos();
@@ -668,13 +680,14 @@ function renderCal() {
         </select>
       </div>
       <div class="cal-cell"><div class="td-actions">
-        <button class="btn-icon" onclick="editarCal(${item.id})">✏</button>
-        <button class="btn-danger-icon" onclick="eliminarCal(${item.id})">✕</button>
+        <button class="btn-icon admin-only" onclick="editarCal(${item.id})">✏</button>
+        <button class="btn-danger-icon admin-only" onclick="eliminarCal(${item.id})">✕</button>
       </div></div>
     </div>`).join('');
 }
 
 function abrirCal(id) {
+  if (!IS_ADMIN) return;
   const item = id ? calData.find(x => x.id === id) : null;
   document.getElementById('calId').value = item ? item.id : '';
   document.getElementById('titleCal').textContent = item ? 'Editar acción' : 'Nueva acción';
@@ -689,6 +702,7 @@ function abrirCal(id) {
 function editarCal(id) { abrirCal(id); }
 
 async function guardarCal() {
+  if (!IS_ADMIN) return;
   const id = document.getElementById('calId').value;
   const body = {
     anio: anioActivo,
@@ -705,6 +719,7 @@ async function guardarCal() {
 }
 
 async function cambiarEstadoCal(id, estado) {
+  if (!IS_ADMIN) return;
   const item = calData.find(x => x.id === id);
   if (!item) return;
   await fetch(`/api/ns/calendario/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ anio: item.anio, accion: item.accion, responsable: item.responsable, fecha_inicio: item.fecha_inicio?.split('T')[0]||null, fecha_fin: item.fecha_fin?.split('T')[0]||null, estado }) });
@@ -712,6 +727,7 @@ async function cambiarEstadoCal(id, estado) {
 }
 
 async function eliminarCal(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar?')) return;
   await fetch(`/api/ns/calendario/${id}`, { method:'DELETE' });
   cargarCal();

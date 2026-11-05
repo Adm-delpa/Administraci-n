@@ -57,7 +57,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 <div class="wrap">
   <div class="toolbar">
     <select id="yearSel" class="year-select" onchange="cargarArchivos()"></select>
-    <button class="upload-btn" onclick="document.getElementById('archInput').click()">+ Subir archivo</button>
+    <button class="upload-btn admin-only" onclick="document.getElementById('archInput').click()">+ Subir archivo</button>
+    <button class="upload-btn admin-only" style="background:#1B3F72" onclick="abrirModalLink()">🔗 Agregar link</button>
     <input type="file" id="archInput" style="display:none"
       accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*"
       multiple onchange="subirArchivo(this)">
@@ -88,6 +89,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const anioActual = new Date().getFullYear();
 
@@ -126,23 +129,35 @@ async function cargarArchivos() {
       grid.innerHTML = '<div class="empty">No hay archivos cargados para ' + anio + '.</div>';
       return;
     }
-    grid.innerHTML = archivos.map(a => `
-      <div class="arch-item">
+    grid.innerHTML = archivos.map(a => {
+      if (a.tipo === 'link' && a.url) {
+        return `<div class="arch-item">
+          <div class="arch-icon">🔗</div>
+          <div class="arch-info">
+            <div class="arch-name" title="${a.nombre}">${a.nombre}</div>
+            <div class="arch-date">${formatFecha(a.created_at)}</div>
+          </div>
+          <a class="arch-ver" href="${a.url}" target="_blank" style="text-decoration:none">Abrir</a>
+          <button class="arch-del admin-only" onclick="eliminarArchivo(${a.id})" title="Eliminar">🗑</button>
+        </div>`;
+      }
+      return `<div class="arch-item">
         <div class="arch-icon">${archivoIcono(a.tipo)}</div>
         <div class="arch-info">
           <div class="arch-name" title="${a.nombre}">${a.nombre}</div>
           <div class="arch-date">${formatFecha(a.created_at)}</div>
         </div>
         <button class="arch-ver" onclick="abrirVisor(${a.id},'${a.nombre.replace(/'/g,"\\'")}','${(a.tipo||'').replace(/'/g,"\\'")}')">Ver</button>
-        <button class="arch-del" onclick="eliminarArchivo(${a.id})" title="Eliminar">🗑</button>
-      </div>
-    `).join('');
+        <button class="arch-del admin-only" onclick="eliminarArchivo(${a.id})" title="Eliminar">🗑</button>
+      </div>`;
+    }).join('');
   } catch(e) {
     grid.innerHTML = '<div class="empty">Error al cargar archivos.</div>';
   }
 }
 
 async function subirArchivo(input) {
+  if (!IS_ADMIN) return;
   if (!input.files.length) return;
   const anio = document.getElementById('yearSel').value;
   const grid = document.getElementById('archGrid');
@@ -158,6 +173,7 @@ async function subirArchivo(input) {
 }
 
 async function eliminarArchivo(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar este archivo?')) return;
   await fetch('/api/distrib/archivos/' + id, { method: 'DELETE' });
   cargarArchivos();
@@ -212,7 +228,44 @@ function cerrarVisor() {
   _visorWB = null;
 }
 
+function abrirModalLink() {
+  document.getElementById('modalLink').style.display = 'flex';
+  document.getElementById('linkNombre').value = '';
+  document.getElementById('linkUrl').value = '';
+}
+function cerrarModalLink() {
+  document.getElementById('modalLink').style.display = 'none';
+}
+async function guardarLink() {
+  const nombre = document.getElementById('linkNombre').value.trim();
+  const url = document.getElementById('linkUrl').value.trim();
+  if (!nombre || !url) return alert('Completá nombre y URL');
+  const anio = document.getElementById('yearSel').value;
+  await fetch('/api/distrib/links', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anio, nombre, url })
+  });
+  cerrarModalLink();
+  cargarArchivos();
+}
+
 initYears();
 </script>
+
+<div id="modalLink" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-width:90vw">
+    <h3 style="font-size:15px;font-weight:700;color:#1B3F72;margin-bottom:16px">Agregar Link</h3>
+    <label style="font-size:12px;font-weight:600;color:#5A6880;display:block;margin-bottom:4px">Nombre</label>
+    <input id="linkNombre" type="text" placeholder="Ej: Plan de desarrollo 2025" style="width:100%;padding:8px 12px;border:1.5px solid #D8DEE8;border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:12px">
+    <label style="font-size:12px;font-weight:600;color:#5A6880;display:block;margin-bottom:4px">URL</label>
+    <input id="linkUrl" type="url" placeholder="https://..." style="width:100%;padding:8px 12px;border:1.5px solid #D8DEE8;border-radius:8px;font-size:13px;font-family:inherit;margin-bottom:18px">
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="cerrarModalLink()" style="background:#F2F4F8;border:1.5px solid #D8DEE8;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancelar</button>
+      <button onclick="guardarLink()" style="background:#2563A8;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Guardar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

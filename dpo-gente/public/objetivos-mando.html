@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Objetivos Mandos Medios — DPO Gente</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#F3F4F6;color:#1e293b;min-height:100vh}
+
+/* Topbar */
+.topbar{background:#1B3F72;color:#fff;padding:10px 24px;display:flex;align-items:center;gap:12px}
+.topbar-back{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit}
+.topbar-back:hover{background:rgba(255,255,255,.1)}
+.topbar h1{font-size:18px;font-weight:700}
+
+/* Header */
+.page-header{background:#1B3F72;color:#fff;padding:28px 24px 22px;text-align:center}
+.page-header h2{font-size:24px;font-weight:800;margin-bottom:4px}
+.page-header p{opacity:.8;font-size:14px}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:18px 24px;background:#fff;border-bottom:1px solid #e5e7eb}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.legend-dot{width:14px;height:14px;border-radius:4px}
+
+/* Grid */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;padding:24px;max-width:1400px;margin:0 auto}
+
+/* Card */
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;position:relative}
+.card-stripe{height:4px}
+.card-body{padding:18px 20px 16px}
+.card-role{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.card-icon{font-size:24px}
+.card-role-name{font-size:16px;font-weight:700;color:#1B3F72}
+.tag-terc{font-size:11px;background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:4px}
+.card-responsable{font-size:13px;color:#64748b;margin:4px 0 14px;font-weight:500}
+
+.scores-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.score-col{text-align:center}
+.score-label{font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.score-value{font-size:30px;font-weight:800;line-height:1.1}
+.score-pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 10px;border-radius:10px;margin-top:4px}
+.score-bar{height:6px;border-radius:3px;background:#e5e7eb;margin-top:6px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+
+.score-na{font-size:22px;font-weight:700;color:#cbd5e1}
+
+/* Evolution */
+.evolution{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0 4px;border-top:1px solid #f1f5f9;font-size:13px;font-weight:600}
+.evo-arrow{font-size:18px}
+
+/* Admin */
+.admin-only{display:none}
+.admin-bar{display:flex;justify-content:flex-end;padding:12px 24px 0;max-width:1400px;margin:0 auto}
+.btn-add{background:#1B3F72;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-add:hover{background:#15325b}
+.card-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px}
+.card-actions button{background:#f1f5f9;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:13px}
+.card-actions button:hover{background:#e2e8f0}
+.card-actions .btn-del{color:#dc2626}
+
+/* Links section */
+.links-section{max-width:1400px;margin:0 auto;padding:20px 24px 0}
+.links-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.links-header h3{font-size:16px;font-weight:700;color:#1B3F72}
+.links-list{display:flex;flex-wrap:wrap;gap:10px}
+.link-chip{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e7eb;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;color:#1B3F72;transition:box-shadow .15s}
+.link-chip:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.link-chip .lc-icon{font-size:16px}
+.link-chip .btn-del-link{background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;padding:0 0 0 4px}
+.btn-add-link{background:#1B3F72;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-add-link:hover{background:#15325b}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;width:90%;max-width:440px;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.modal h3{font-size:18px;font-weight:700;color:#1B3F72;margin-bottom:16px}
+.modal label{display:block;font-size:13px;font-weight:600;color:#475569;margin-bottom:4px;margin-top:12px}
+.modal input[type=text],.modal input[type=number]{width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;font-family:inherit}
+.modal .chk-row{display:flex;align-items:center;gap:8px;margin-top:12px}
+.modal .chk-row input{width:18px;height:18px}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.modal-btns button{padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;border:none}
+.btn-cancel{background:#f1f5f9;color:#475569}
+.btn-save{background:#1B3F72;color:#fff}
+.btn-save:hover{background:#15325b}
+
+@media(max-width:600px){
+  .cards-grid{padding:14px}
+  .page-header{padding:20px 16px 16px}
+  .page-header h2{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">&#8592; Volver</button>
+  <h1>Objetivos Mandos Medios</h1>
+</div>
+
+<div class="page-header">
+  <h2>Gesti&oacute;n por Objetivos DPO</h2>
+  <p>Auditor&iacute;a H1 / H2 &mdash; Mandos Medios</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#9CA3AF"></div>Por debajo (0-39%)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#64748B"></div>Base (40-49%)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#D97706"></div>Avanzando (50-59%)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2563EB"></div>S&oacute;lido (60-79%)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div>Excelencia (80-100%)</div>
+</div>
+
+<div class="admin-bar admin-only">
+  <button class="btn-add" onclick="openModal()">+ Agregar rol</button>
+</div>
+
+<div class="cards-grid" id="grid"></div>
+
+<div class="links-section">
+  <div class="links-header">
+    <h3>&#128206; Documentos y enlaces</h3>
+    <button class="btn-add-link admin-only" onclick="openLinkModal()">+ Agregar enlace</button>
+  </div>
+  <div class="links-list" id="linksList"><span style="color:#94a3b8;font-size:13px">Cargando...</span></div>
+</div>
+
+<div class="modal-overlay" id="linkModal">
+  <div class="modal">
+    <h3>Agregar enlace</h3>
+    <label>T&iacute;tulo</label>
+    <input type="text" id="fLinkTitulo" placeholder="Ej: SOP 5.2 — Pol&iacute;ticas Salariales">
+    <label>URL</label>
+    <input type="text" id="fLinkUrl" placeholder="https://...">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeLinkModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveLink()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Agregar rol</h3>
+    <input type="hidden" id="fId">
+    <label>Rol</label>
+    <input type="text" id="fRol" placeholder="Ej: Responsable de Gente">
+    <label>Nombre del responsable</label>
+    <input type="text" id="fNombre" placeholder="Nombre y apellido">
+    <label>Icono (emoji)</label>
+    <input type="text" id="fIcon" placeholder="Ej: &#128101;" maxlength="4">
+    <div class="chk-row">
+      <input type="checkbox" id="fTerc"><label for="fTerc" style="margin:0">Terciarizado</label>
+    </div>
+    <label>H1 (%)</label>
+    <input type="number" id="fH1" min="0" max="100" placeholder="0-100">
+    <label>H2 (%)</label>
+    <input type="number" id="fH2" min="0" max="100" placeholder="0-100">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="save()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+const IS_ADMIN = USER && USER.admin;
+
+if (IS_ADMIN) document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+
+const ETAPAS = [
+  { min:80, name:'Excelencia',  color:'#16A34A', bg:'#dcfce7' },
+  { min:60, name:'Sólido',      color:'#2563EB', bg:'#dbeafe' },
+  { min:50, name:'Avanzando',   color:'#D97706', bg:'#fef3c7' },
+  { min:40, name:'Base',        color:'#64748B', bg:'#f1f5f9' },
+  { min:0,  name:'Por debajo',  color:'#9CA3AF', bg:'#f3f4f6' },
+];
+function etapa(v){ if(v==null) return null; for(const e of ETAPAS) if(v>=e.min) return e; return ETAPAS[4]; }
+
+const DEFAULTS = [
+  { rol:'Responsable de Gente', icon:'\u{1F465}', terciarizado:false },
+  { rol:'Responsable de Seguridad', icon:'\u{1F6E1}️', terciarizado:true },
+  { rol:'Responsable de Flota', icon:'\u{1F69B}', terciarizado:false },
+  { rol:'Responsable de Almacén', icon:'\u{1F4E6}', terciarizado:false },
+  { rol:'Responsable de Entrega', icon:'\u{1F69A}', terciarizado:false },
+  { rol:'Responsable de Planeamiento', icon:'\u{1F4CB}', terciarizado:false },
+  { rol:'Responsable de Gestión', icon:'\u{1F4CA}', terciarizado:false },
+];
+
+let DATA = [];
+
+async function load(){
+  const r = await fetch('/api/objetivos-mando');
+  DATA = await r.json();
+  if(DATA.length===0 && IS_ADMIN){
+    for(const d of DEFAULTS) await fetch('/api/objetivos-mando',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    return load();
+  }
+  render();
+}
+
+function scoreHTML(label, val){
+  const e = etapa(val);
+  if(val==null) return `<div class="score-col"><div class="score-label">${label}</div><div class="score-na">—</div></div>`;
+  return `<div class="score-col">
+    <div class="score-label">${label}</div>
+    <div class="score-value" style="color:${e.color}">${val}%</div>
+    <div class="score-pill" style="background:${e.bg};color:${e.color}">${e.name}</div>
+    <div class="score-bar"><div class="score-bar-fill" style="width:${val}%;background:${e.color}"></div></div>
+  </div>`;
+}
+
+function evoHTML(h1,h2){
+  if(h1==null||h2==null) return '';
+  const diff=h2-h1;
+  let arrow,label,color;
+  if(diff>0){ arrow='↑'; label='Mejoró'; color='#16A34A'; }
+  else if(diff<0){ arrow='↓'; label='Bajó'; color='#dc2626'; }
+  else { arrow='↔'; label='Sin cambio'; color='#64748b'; }
+  return `<div class="evolution" style="color:${color}">
+    <span class="evo-arrow">${arrow}</span> ${label} <strong>${diff>0?'+':''}${diff} pp</strong>
+  </div>`;
+}
+
+function render(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML=DATA.map(d=>{
+    const e2=etapa(d.h2)||etapa(d.h1)||ETAPAS[3];
+    const adminBtns=IS_ADMIN?`<div class="card-actions admin-only" style="display:flex">
+      <button onclick="openModal(${d.id})">&#9998;</button>
+      <button class="btn-del" onclick="del(${d.id})">&#128465;</button>
+    </div>`:'';
+    return `<div class="card">
+      <div class="card-stripe" style="background:${e2.color}"></div>
+      ${adminBtns}
+      <div class="card-body">
+        <div class="card-role">
+          <span class="card-icon">${d.icon||''}</span>
+          <span class="card-role-name">${d.rol}</span>
+          ${d.terciarizado?'<span class="tag-terc">(Terciarizado)</span>':''}
+        </div>
+        <div class="card-responsable">${d.nombre_responsable||'Sin asignar'}</div>
+        <div class="scores-grid">
+          ${scoreHTML('H1',d.h1)}
+          ${scoreHTML('H2',d.h2)}
+        </div>
+        ${evoHTML(d.h1,d.h2)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openModal(id){
+  const m=document.getElementById('modal');
+  if(id){
+    const d=DATA.find(x=>x.id===id);
+    document.getElementById('modalTitle').textContent='Editar rol';
+    document.getElementById('fId').value=id;
+    document.getElementById('fRol').value=d.rol;
+    document.getElementById('fNombre').value=d.nombre_responsable||'';
+    document.getElementById('fIcon').value=d.icon||'';
+    document.getElementById('fTerc').checked=d.terciarizado;
+    document.getElementById('fH1').value=d.h1!=null?d.h1:'';
+    document.getElementById('fH2').value=d.h2!=null?d.h2:'';
+  } else {
+    document.getElementById('modalTitle').textContent='Agregar rol';
+    document.getElementById('fId').value='';
+    document.getElementById('fRol').value='';
+    document.getElementById('fNombre').value='';
+    document.getElementById('fIcon').value='';
+    document.getElementById('fTerc').checked=false;
+    document.getElementById('fH1').value='';
+    document.getElementById('fH2').value='';
+  }
+  m.classList.add('active');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('active'); }
+
+async function save(){
+  const id=document.getElementById('fId').value;
+  const body={
+    rol:document.getElementById('fRol').value.trim(),
+    nombre_responsable:document.getElementById('fNombre').value.trim(),
+    icon:document.getElementById('fIcon').value.trim(),
+    terciarizado:document.getElementById('fTerc').checked,
+    h1:document.getElementById('fH1').value?parseInt(document.getElementById('fH1').value):null,
+    h2:document.getElementById('fH2').value?parseInt(document.getElementById('fH2').value):null,
+  };
+  if(!body.rol) return alert('El rol es obligatorio');
+  const url=id?'/api/objetivos-mando/'+id:'/api/objetivos-mando';
+  const method=id?'PUT':'POST';
+  await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closeModal();
+  load();
+}
+
+async function del(id){
+  if(!confirm('Eliminar este rol?')) return;
+  await fetch('/api/objetivos-mando/'+id,{method:'DELETE'});
+  load();
+}
+
+load();
+
+// --- Links ---
+let LINKS=[];
+async function loadLinks(){
+  const r=await fetch('/api/objetivos-mando-links');
+  LINKS=await r.json();
+  renderLinks();
+}
+function renderLinks(){
+  const c=document.getElementById('linksList');
+  if(!LINKS.length){ c.innerHTML='<span style="color:#94a3b8;font-size:13px">No hay documentos cargados</span>'; return; }
+  c.innerHTML=LINKS.map(l=>{
+    const del=IS_ADMIN?`<button class="btn-del-link" onclick="event.preventDefault();delLink(${l.id})">&times;</button>`:'';
+    return `<a class="link-chip" href="${l.url}" target="_blank" rel="noopener"><span class="lc-icon">&#128196;</span>${l.titulo}${del}</a>`;
+  }).join('');
+}
+function openLinkModal(){ document.getElementById('linkModal').classList.add('active'); }
+function closeLinkModal(){ document.getElementById('linkModal').classList.remove('active'); }
+async function saveLink(){
+  const titulo=document.getElementById('fLinkTitulo').value.trim();
+  const url=document.getElementById('fLinkUrl').value.trim();
+  if(!titulo||!url) return alert('Completá título y URL');
+  await fetch('/api/objetivos-mando-links',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({titulo,url})});
+  document.getElementById('fLinkTitulo').value='';
+  document.getElementById('fLinkUrl').value='';
+  closeLinkModal();
+  loadLinks();
+}
+async function delLink(id){
+  if(!confirm('Eliminar este enlace?')) return;
+  await fetch('/api/objetivos-mando-links/'+id,{method:'DELETE'});
+  loadLinks();
+}
+loadLinks();
+</script>
+</body>
+</html>

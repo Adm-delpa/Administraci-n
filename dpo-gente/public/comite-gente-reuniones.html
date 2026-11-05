@@ -113,7 +113,7 @@ textarea{resize:vertical;min-height:70px}
 <div class="wrap">
   <div class="toolbar">
     <select id="yearSel" class="year-select" onchange="cargarReuniones()"></select>
-    <button class="btn-primary" onclick="abrirNuevaReunion()">+ Nueva reunión</button>
+    <button class="btn-primary admin-only" onclick="abrirNuevaReunion()">+ Nueva reunión</button>
     <button class="btn-secondary ml-auto" onclick="abrirModalMiembros()">👥 Miembros</button>
   </div>
 
@@ -225,6 +225,8 @@ textarea{resize:vertical;min-height:70px}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const anioActual = new Date().getFullYear();
 let _reunionId = null;
@@ -290,6 +292,7 @@ function switchTab(tab) {
 }
 
 function abrirNuevaReunion() {
+  if (!IS_ADMIN) return;
   _reunionId = null;
   document.getElementById('modalTitle').textContent = 'Nueva Reunión';
   document.getElementById('fFecha').value = new Date().toISOString().split('T')[0];
@@ -320,6 +323,7 @@ async function abrirReunion(id) {
 }
 
 async function guardarReunion() {
+  if (!IS_ADMIN) return;
   const body = {
     fecha: document.getElementById('fFecha').value,
     tipo: document.getElementById('fTipo').value,
@@ -344,6 +348,7 @@ async function guardarReunion() {
 }
 
 async function eliminarReunion() {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar esta reunión? Se perderán la asistencia y acciones registradas.')) return;
   await fetch('/api/comite/reuniones/' + _reunionId, { method:'DELETE' });
   cargarReuniones();
@@ -387,6 +392,7 @@ function actualizarResumenAsist(lista) {
 }
 
 async function toggleAsist(id, estado) {
+  if (!IS_ADMIN) return;
   await fetch('/api/comite/asistencia/' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ estado }) });
   cargarAsistencia();
 }
@@ -422,6 +428,7 @@ function fmtCompromiso(iso) {
 }
 
 async function agregarAccion() {
+  if (!IS_ADMIN) return;
   const desc = document.getElementById('nuevaAccionDesc').value.trim();
   if (!desc) return;
   const body = {
@@ -439,12 +446,14 @@ async function agregarAccion() {
 }
 
 async function cambiarEstadoAccion(id, estado) {
+  if (!IS_ADMIN) return;
   const item = document.getElementById('acc_' + id);
   const desc = item.querySelector('.accion-texto').textContent;
   await fetch('/api/comite/acciones/' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ descripcion: desc, estado }) });
 }
 
 async function eliminarAccion(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar esta acción?')) return;
   await fetch('/api/comite/acciones/' + id, { method:'DELETE' });
   cargarAcciones();
@@ -476,6 +485,7 @@ async function cargarMiembros() {
 }
 
 async function agregarMiembro() {
+  if (!IS_ADMIN) return;
   const nombre = document.getElementById('mNombre').value.trim();
   if (!nombre) { alert('Ingresá el nombre.'); return; }
   await fetch('/api/comite/miembros', {
@@ -493,6 +503,7 @@ async function agregarMiembro() {
 }
 
 async function eliminarMiembro(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar este miembro?')) return;
   await fetch('/api/comite/miembros/' + id, { method:'DELETE' });
   cargarMiembros();

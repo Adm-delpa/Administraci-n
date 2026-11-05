@@ -104,6 +104,25 @@ tbody tr:hover td:first-child{background:#F7F9FC}
 .msg-ok{background:#D1FAE5;color:#065F46;font-size:12px;font-weight:600;padding:8px 12px;border-radius:6px}
 .msg-err{background:#FEE2E2;color:#B91C1C;font-size:12px;padding:8px 12px;border-radius:6px}
 .loading-row td{text-align:center;color:#8A97AA;padding:20px}
+
+.view-tabs{display:flex;gap:0;padding:0 20px;background:#fff;border-bottom:1px solid #D8DEE8}
+.view-tab{padding:10px 20px;font-size:12px;font-weight:600;color:#5E6E89;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit}
+.view-tab:hover{color:#1B3F72}
+.view-tab.active{color:#1B3F72;border-bottom-color:#1B3F72}
+
+.dpo-sheet{padding:16px 20px;overflow-x:auto;display:none}
+.dpo-sheet table{border-collapse:collapse;font-size:11px;min-width:900px;width:100%}
+.dpo-sheet thead th{background:#4A7A3D;color:#fff;padding:6px 10px;font-weight:600;text-align:center;white-space:nowrap;border:1px solid #3d6632}
+.dpo-sheet thead th:first-child{text-align:left;min-width:250px}
+.dpo-sheet thead th.th-um{background:#4A7A3D;min-width:40px}
+.dpo-sheet thead th.th-acum{background:#2563A8;color:#fff}
+.dpo-sheet tbody td{padding:5px 10px;border:1px solid #D8DEE8;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;background:#fff}
+.dpo-sheet tbody td:first-child{text-align:left;font-weight:600;background:#E8F0E4;color:#1e293b}
+.dpo-sheet tbody td:nth-child(2){text-align:center;background:#f0f0f0;font-weight:600;color:#5E6E89}
+.dpo-sheet tbody td.td-acum{background:#EBF2FA;font-weight:800;font-size:13px;color:#1B3F72}
+.dpo-sheet tbody tr:first-child td:first-child{background:#C6E0B4;font-weight:700;font-size:12px}
+.dpo-sheet tbody tr:first-child td{font-weight:700}
+.dpo-sheet tbody tr.dpo-sub td:first-child{padding-left:16px;font-weight:400;color:#5E6E89;background:#f7faf5}
 </style>
 </head>
 <body>
@@ -121,8 +140,8 @@ tbody tr:hover td:first-child{background:#F7F9FC}
   </div>
   <div class="header-btns">
     <button class="btn-header secondary" onclick="abrirBajasIndet()">📋 Bajas indet.</button>
-    <button class="btn-header secondary" onclick="abrirObjetivos()">⚙ Editar objetivo</button>
-    <button class="btn-header" onclick="abrirCarga()">↑ Cargar dotación</button>
+    <button class="btn-header secondary admin-only" onclick="abrirObjetivos()">⚙ Editar objetivo</button>
+    <button class="btn-header admin-only" onclick="abrirCarga()">↑ Cargar dotación</button>
   </div>
 </div>
 
@@ -144,7 +163,12 @@ tbody tr:hover td:first-child{background:#F7F9FC}
   <span class="badge-pend" id="badgePend" style="display:none" onclick="abrirPendientes()">⚠ Bajas pendientes de confirmación</span>
 </div>
 
-<div class="tbl-outer">
+<div class="view-tabs">
+  <button class="view-tab active" id="tabDash" onclick="switchView('dash')">Dashboard</button>
+  <button class="view-tab" id="tabDpo" onclick="switchView('dpo')">Hoja DPO</button>
+</div>
+
+<div class="tbl-outer" id="viewDash">
 <table id="dashTable">
   <thead>
     <tr>
@@ -163,11 +187,15 @@ tbody tr:hover td:first-child{background:#F7F9FC}
 </table>
 </div>
 
+<div class="dpo-sheet" id="viewDpo">
+  <table id="dpoTable"></table>
+</div>
+
 <!-- Sección documentos -->
-<div style="max-width:800px;margin:0 auto;padding:20px">
+<div id="secDocs" style="max-width:800px;margin:0 auto;padding:20px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <div style="font-size:11px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.06em">Documentos</div>
-    <button class="btn-header" style="background:#2563A8;color:#fff;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none" onclick="document.getElementById('docInput').click()">+ Subir archivo</button>
+    <button class="btn-header admin-only" style="background:#2563A8;color:#fff;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border:none" onclick="document.getElementById('docInput').click()">+ Subir archivo</button>
     <input type="file" id="docInput" style="display:none" multiple
       accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*"
       onchange="subirDoc(this)">
@@ -321,11 +349,14 @@ tbody tr:hover td:first-child{background:#F7F9FC}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 let dashData = null;
 let confirmaciones = {};
 let pendConfirmaciones = {};
+let overrides = {};
 
 function anioActivo() { return parseInt(document.getElementById('yearSel').value); }
 
@@ -342,9 +373,16 @@ function semaforo(val) {
   return '<span class="tto-r">' + p.toFixed(1) + '%</span>';
 }
 
-function cell(val, isPercent) {
-  if (val === null || val === undefined) return '<td class="empty-cell">—</td>';
-  if (isPercent) return '<td>' + (val * 100).toFixed(1) + '%</td>';
+function cell(val, isPercent, editKey, editMes) {
+  const editable = IS_ADMIN && editKey && editMes;
+  const isOvr = editKey && editMes && hasOverride(editMes, editKey);
+  const ovrStyle = isOvr ? 'color:#2563A8;font-style:italic;' : '';
+  if (val === null || val === undefined) {
+    if (editable) return `<td class="empty-cell" style="cursor:pointer;${ovrStyle}" ondblclick="editCell(this,${editMes},'${editKey}',false)">—</td>`;
+    return '<td class="empty-cell">—</td>';
+  }
+  if (isPercent) return '<td style="' + ovrStyle + '">' + (val * 100).toFixed(1) + '%</td>';
+  if (editable) return `<td style="cursor:pointer;${ovrStyle}" ondblclick="editCell(this,${editMes},'${editKey}',false)">${val}</td>`;
   return '<td>' + val + '</td>';
 }
 function cellVs(v) {
@@ -362,6 +400,39 @@ function cellVsPct(v) {
 }
 
 function get(m, key) { return dashData && dashData.months[m] ? dashData.months[m][key] : null; }
+function hasOverride(m, key) { return overrides[m] && overrides[m][key] !== undefined; }
+
+function applyOverrides() {
+  if (!dashData) return;
+  for (let m = 1; m <= 12; m++) {
+    if (!overrides[m]) continue;
+    if (!dashData.months[m]) {
+      dashData.months[m] = {};
+    }
+    for (const [k, v] of Object.entries(overrides[m])) {
+      dashData.months[m][k] = v;
+    }
+    recalcDerived(m);
+  }
+}
+
+function recalcDerived(m) {
+  const d = dashData.months[m];
+  if (!d) return;
+  const pct = (a, b) => b > 0 ? a / b : null;
+  const dt = d.dot_total || 0;
+  d.pct_muj = pct(d.dot_muj || 0, dt);
+  d.pct_hom = pct(d.dot_hom || 0, dt);
+  d.pct_tto_indet = pct(d.tto_indet || 0, d.dot_indet || 0);
+  d.pct_ven_muj = pct(d.ven_muj || 0, d.sec_ventas || 0);
+  d.pct_log_muj = pct(d.log_muj || 0, d.sec_log || 0);
+  d.pct_adm_muj = pct(d.adm_muj || 0, d.sec_adm || 0);
+  d.pct_lid_muj = pct(d.lid_muj || 0, d.lid_total || 0);
+  d.pct_gen_boomer = pct(d.gen_boomer || 0, dt);
+  d.pct_gen_x = pct(d.gen_x || 0, dt);
+  d.pct_gen_y = pct(d.gen_y || 0, dt);
+  d.pct_gen_z = pct(d.gen_z || 0, dt);
+}
 function getPrev(m, key) { return dashData && dashData.prevMonths[m] ? dashData.prevMonths[m][key] : null; }
 
 function ytdSum(key) {
@@ -412,7 +483,7 @@ function lbl(text, tip) {
 }
 
 function rowNums(label, key, sub, tip) {
-  const vals = MESES.map((_,i) => cell(get(i+1, key)));
+  const vals = MESES.map((_,i) => cell(get(i+1, key), false, key, i+1));
   const ytd = ytdLast(key);
   const aa  = aaLast(key);
   const vs  = ytd !== null && aa !== null ? ytd - aa : null;
@@ -598,9 +669,15 @@ async function cargarDashboard() {
     if (sector)   url += '&sector='   + encodeURIComponent(sector);
     if (sucursal) url += '&sucursal=' + encodeURIComponent(sucursal);
     if (soloOp)   url += '&posiciones=' + encodeURIComponent('CHOFER,AYUDANTE,OPERARIO/A');
-    const r = await fetch(url);
+    let oUrl = '/api/turnover/overrides?anio=' + anio;
+    if (sector)   oUrl += '&sector=' + encodeURIComponent(sector);
+    if (sucursal) oUrl += '&sucursal=' + encodeURIComponent(sucursal);
+    const [r, rO] = await Promise.all([fetch(url), fetch(oUrl)]);
     dashData = await r.json();
+    overrides = await rO.json();
+    applyOverrides();
     buildTable();
+    try { renderDPO(); } catch(e) { console.error('renderDPO error:', e); }
   } catch(e) {
     document.getElementById('dashBody').innerHTML = '<tr class="loading-row"><td colspan="17">Error al cargar datos</td></tr>';
   }
@@ -608,6 +685,7 @@ async function cargarDashboard() {
 
 // ── Cargar dotación ──
 function abrirCarga() {
+  if (!IS_ADMIN) return;
   document.getElementById('cargaAnio').value = anioActivo();
   document.getElementById('cargaMes').value = new Date().getMonth() + 1;
   document.getElementById('btnImportar').disabled = true;
@@ -626,6 +704,7 @@ function onFileSelect(inp) {
 }
 
 async function borrarMes() {
+  if (!IS_ADMIN) return;
   const anio = document.getElementById('cargaAnio').value;
   const mes  = document.getElementById('cargaMes').value;
   const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -644,6 +723,7 @@ async function borrarMes() {
 }
 
 async function importar() {
+  if (!IS_ADMIN) return;
   const btn = document.getElementById('btnImportar');
   btn.disabled = true; btn.textContent = 'Importando...';
   const msg = document.getElementById('cargaMsg');
@@ -673,6 +753,7 @@ async function importar() {
 
 // ── Confirmaciones (post-import) ──
 function abrirConfirm(bajas) {
+  if (!IS_ADMIN) return;
   confirmaciones = {};
   const list = document.getElementById('confirmList');
   list.innerHTML = bajas.map(b => `
@@ -698,6 +779,7 @@ function toggleReemplazo(id, val) {
 }
 
 async function guardarConfirmaciones() {
+  if (!IS_ADMIN) return;
   const lista = Object.entries(confirmaciones).map(([id, v]) => ({ id: parseInt(id), requiere_reemplazo: v }));
   if (!lista.length) { cerrarModal('modalConfirm'); return; }
   const r = await fetch('/api/turnover/confirmar-reemplazos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ confirmaciones: lista }) });
@@ -706,6 +788,7 @@ async function guardarConfirmaciones() {
 
 // ── Pendientes ──
 async function abrirPendientes() {
+  if (!IS_ADMIN) return;
   pendConfirmaciones = {};
   const r = await fetch('/api/turnover/pendientes?anio=' + anioActivo());
   const items = await r.json();
@@ -733,6 +816,7 @@ function togglePend(id, val) {
 }
 
 async function guardarPendientes() {
+  if (!IS_ADMIN) return;
   const lista = Object.entries(pendConfirmaciones).map(([id,v]) => ({ id: parseInt(id), requiere_reemplazo: v }));
   if (!lista.length) { cerrarModal('modalPend'); return; }
   const r = await fetch('/api/turnover/confirmar-reemplazos', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ confirmaciones: lista }) });
@@ -741,6 +825,7 @@ async function guardarPendientes() {
 
 // ── Objetivo ──
 async function abrirObjetivos() {
+  if (!IS_ADMIN) return;
   const r = await fetch('/api/turnover/config?anio=' + anioActivo());
   const cfg = await r.json();
   document.getElementById('objInput').value = cfg.obj_tto_indeterminados ? (parseFloat(cfg.obj_tto_indeterminados) * 100).toFixed(1) : '2.2';
@@ -749,6 +834,7 @@ async function abrirObjetivos() {
 }
 
 async function guardarObjetivo() {
+  if (!IS_ADMIN) return;
   const val = parseFloat(document.getElementById('objInput').value);
   if (isNaN(val)) return;
   const r = await fetch('/api/turnover/config', {
@@ -762,6 +848,124 @@ async function guardarObjetivo() {
 function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
 
 document.querySelectorAll('.modal-bg').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+
+function editCell(td, mes, key, isPct) {
+  if (!IS_ADMIN) return;
+  const orig = td.textContent.trim();
+  const origVal = orig === '—' ? '' : orig.replace('%','');
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.step = 'any';
+  input.value = origVal;
+  input.style.cssText = 'width:60px;font-size:11px;text-align:right;padding:2px 4px;border:1.5px solid #2563A8;border-radius:4px;font-family:inherit;background:#EBF2FA';
+  td.textContent = '';
+  td.appendChild(input);
+  input.focus();
+  input.select();
+  function save() {
+    const v = input.value.trim();
+    const anio = anioActivo();
+    const sector = document.getElementById('sectorSel').value || null;
+    const sucursal = document.getElementById('sucursalSel').value || null;
+    fetch('/api/turnover/overrides', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anio, mes, key, valor: v === '' ? null : parseFloat(v), sector, sucursal })
+    }).then(() => cargarDashboard());
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } if (e.key === 'Escape') { td.textContent = orig; } });
+}
+
+function switchView(v) {
+  document.getElementById('tabDash').classList.toggle('active', v === 'dash');
+  document.getElementById('tabDpo').classList.toggle('active', v === 'dpo');
+  document.getElementById('viewDash').style.display = v === 'dash' ? 'block' : 'none';
+  document.getElementById('viewDpo').style.display = v === 'dpo' ? 'block' : 'none';
+  document.getElementById('secDocs').style.display = v === 'dash' ? 'block' : 'none';
+}
+
+function renderDPO() {
+  var tbl = document.getElementById('dpoTable');
+  if (!dashData) { tbl.innerHTML = '<tbody><tr><td>Sin datos</td></tr></tbody>'; return; }
+  var anio = anioActivo();
+  var MNAMES = ['','M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
+
+  var thead = '<tr><th>Nombre</th><th class="th-um">UM</th>';
+  for (var m = 1; m <= 12; m++) thead += '<th>' + anio + MNAMES[m] + '</th>';
+  thead += '<th class="th-acum">Acum ' + anio + '</th></tr>';
+
+  function gv(m, key) { return dashData.months[m] ? (dashData.months[m][key] || 0) : 0; }
+  function ov(m, key) { return overrides[m] && overrides[m][key] !== undefined ? overrides[m][key] : null; }
+
+  // First collect involuntarias, voluntarias and headcount per month
+  var invArr = [], volArr = [], hcArr = [];
+  var acumInv = 0, acumVol = 0;
+  for (var m = 1; m <= 12; m++) {
+    var loaded = !!dashData.months[m];
+    var inv = gv(m, 'tto_invol');
+    var vol = gv(m, 'tto_vol');
+    var hc = ov(m, 'dpo_hc_prom');
+    if (loaded) { acumInv += inv; acumVol += vol; }
+    invArr.push({ v: inv, loaded: loaded });
+    volArr.push({ v: vol, loaded: loaded });
+    hcArr.push({ v: hc, loaded: loaded });
+  }
+
+  // TTO % row: (inv + vol) / hc_prom * 100
+  var ttoCells = '';
+  var totalSalidas = 0, lastHc = null;
+  for (var m = 1; m <= 12; m++) {
+    var loaded = invArr[m-1].loaded;
+    var inv = invArr[m-1].v;
+    var vol = volArr[m-1].v;
+    var hc = hcArr[m-1].v;
+    if (loaded) totalSalidas = acumInv; // not progressive - we use month values
+    // For monthly: (inv_m + vol_m) / hc_m * 100; but DPO shows cumulative
+    // Actually from the image: it shows 0 for months 1-5, then 5.88 for M6
+    // That means: cumulative (inv+vol) up to month / hc of that month * 100
+    var cumInv = 0, cumVol = 0;
+    for (var j = 1; j <= m; j++) { cumInv += invArr[j-1].v; cumVol += volArr[j-1].v; }
+    var pct = hc > 0 ? ((cumInv + cumVol) / hc * 100) : 0;
+    var show = loaded && hc !== null;
+    ttoCells += '<td style="' + (!show ? 'color:#CBD2DC' : 'font-weight:700') + '">' + (show ? pct.toFixed(2) : '0.00') + '</td>';
+    if (hc !== null) lastHc = hc;
+  }
+  // Acum: total salidas / last known hc * 100
+  var acumPct = lastHc > 0 ? ((acumInv + acumVol) / lastHc * 100) : 0;
+  var tbody = '<tr><td style="background:#C6E0B4;font-weight:700">Rotacion Personal (Turn Over)</td><td>%</td>' + ttoCells + '<td class="td-acum">' + acumPct.toFixed(2) + '</td></tr>';
+
+  // Involuntarias
+  var invCells = '';
+  for (var m = 1; m <= 12; m++) {
+    var d = invArr[m-1];
+    var editAttr = IS_ADMIN ? ' ondblclick="editCell(this,' + m + ',\'tto_invol\',false)" style="cursor:pointer;' + (!d.loaded ? 'color:#CBD2DC' : '') + '"' : ' style="' + (!d.loaded ? 'color:#CBD2DC' : '') + '"';
+    invCells += '<td' + editAttr + '>' + (d.loaded ? d.v : '0.00') + '</td>';
+  }
+  tbody += '<tr class="dpo-sub"><td>Número de salidas involuntarias en el año</td><td>#</td>' + invCells + '<td class="td-acum">' + acumInv + '</td></tr>';
+
+  // Voluntarias
+  var volCells = '';
+  for (var m = 1; m <= 12; m++) {
+    var d = volArr[m-1];
+    var editAttr = IS_ADMIN ? ' ondblclick="editCell(this,' + m + ',\'tto_vol\',false)" style="cursor:pointer;' + (!d.loaded ? 'color:#CBD2DC' : '') + '"' : ' style="' + (!d.loaded ? 'color:#CBD2DC' : '') + '"';
+    volCells += '<td' + editAttr + '>' + (d.loaded ? d.v : '0.00') + '</td>';
+  }
+  tbody += '<tr class="dpo-sub"><td>Número de salidas voluntarias en el año</td><td>#</td>' + volCells + '<td class="td-acum">' + acumVol + '</td></tr>';
+
+  // Headcount promedio acumulado (manual, editable, guardado como override dpo_hc_prom)
+  var hcCells = '', lastHcAcum = 0;
+  for (var m = 1; m <= 12; m++) {
+    var hc = hcArr[m-1].v;
+    var show = hc !== null;
+    if (show) lastHcAcum = hc;
+    var editAttr = IS_ADMIN ? ' ondblclick="editCell(this,' + m + ',\'dpo_hc_prom\',false)" style="cursor:pointer;' + (!show ? 'color:#CBD2DC' : '') + '"' : ' style="' + (!show ? 'color:#CBD2DC' : '') + '"';
+    hcCells += '<td' + editAttr + '>' + (show ? hc.toFixed(2) : '0.00') + '</td>';
+  }
+  tbody += '<tr class="dpo-sub"><td>Promedio Acumulado del año Headcount</td><td>#</td>' + hcCells + '<td class="td-acum">' + Math.round(lastHcAcum) + '</td></tr>';
+
+  tbl.innerHTML = '<thead>' + thead + '</thead><tbody>' + tbody + '</tbody>';
+}
 
 cargarFiltros().then(() => cargarDashboard());
 cargarDocs();
@@ -799,6 +1003,7 @@ async function cargarDocs() {
 }
 
 async function subirDoc(input) {
+  if (!IS_ADMIN) return;
   if (!input.files.length) return;
   document.getElementById('docList').innerHTML = '<div style="text-align:center;padding:20px;color:#5E6E89;font-size:13px">Subiendo...</div>';
   for (const file of input.files) {
@@ -811,6 +1016,7 @@ async function subirDoc(input) {
 }
 
 async function eliminarDoc(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar este archivo?')) return;
   await fetch('/api/turnover/archivos/' + id, { method: 'DELETE' });
   cargarDocs();
@@ -943,6 +1149,7 @@ function repPill(val, id) {
 }
 
 async function toggleRep(el, id) {
+  if (!IS_ADMIN) return;
   const cur = el.textContent.trim();
   // ciclo: PENDIENTE → SÍ → NO → PENDIENTE
   const next = cur === 'PENDIENTE' ? true : cur === 'SÍ' ? false : null;

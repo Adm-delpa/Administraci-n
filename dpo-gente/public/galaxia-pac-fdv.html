@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAC Fuerza de Ventas — Galaxia Q</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+body.embedded .topbar,body.embedded .hero{display:none}
+body.embedded .wrap{padding-top:10px}
+body.embedded{background:transparent}
+
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40;flex-wrap:wrap}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.topbar-btn{padding:6px 13px;background:#1B3F72;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.topbar-btn:hover{background:#163260}
+.topbar-btn.ghost{background:#fff;color:#1B3F72;border:1px solid #D8DEE8}
+.topbar-btn.ghost:hover{background:#F7F8FB}
+
+.hero{background:linear-gradient(135deg,#1B3F72 0%,#2A5A9E 100%);padding:20px 24px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.06)}
+.hero h1{font-size:15px;font-weight:700;color:#fff;position:relative;z-index:1}
+.hero p{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;position:relative;z-index:1}
+
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px}
+.kpi.navy::before{background:#1B3F72}
+.kpi.green::before{background:#10B981}
+.kpi.amber::before{background:#D97706}
+.kpi.red::before{background:#DC2626}
+.kpi-label{font-size:9.5px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.kpi.navy .kpi-val{color:#1B3F72}
+.kpi.green .kpi-val{color:#10B981}
+.kpi.amber .kpi-val{color:#D97706}
+.kpi-meta{font-size:10px;color:#8A97AA;margin-top:4px}
+.kpi-bar{height:3px;border-radius:2px;background:#EEF0F6;margin-top:8px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .3s}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid #E8EBF0}
+.tab{padding:8px 16px;border:none;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:#8A97AA;border-bottom:2px solid transparent}
+.tab.active{color:#1B3F72;border-bottom-color:#1B3F72}
+
+/* FILTROS */
+.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.filter-sel{padding:5px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:11px;color:#18243A;background:#fff;cursor:pointer;font-family:inherit}
+
+/* PILAR */
+.pil{margin-bottom:10px}
+.pil-h{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#fff;border:1px solid #EEF0F6;border-radius:10px;cursor:pointer;transition:background .1s;user-select:none}
+.pil-h:hover{background:#FAFBFD}
+.pil-h.open{border-radius:10px 10px 0 0;border-bottom-color:transparent}
+.pil-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.pil-info{flex:1}
+.pil-name{font-size:12.5px;font-weight:700;color:#18243A;display:flex;align-items:center;gap:6px}
+.pil-chevron{font-size:10px;color:#8A97AA;transition:transform .2s;display:inline-block}
+.pil-chevron.open{transform:rotate(90deg)}
+.gantt-mini{display:flex;gap:1px;height:4px;border-radius:2px;overflow:hidden;margin-top:4px;width:80px}
+.gantt-seg{height:100%}
+.gantt-seg.done{background:#10B981}
+.gantt-seg.sched{background:#3B82F6}
+.gantt-seg.pend{background:#D8DEE8}
+.pil-right{display:flex;gap:14px;align-items:center}
+.pil-stat{text-align:center}
+.pil-stat-val{font-size:13px;font-weight:700;color:#18243A}
+.pil-stat-lbl{font-size:9px;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em}
+.pil-pct{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;min-width:48px;text-align:center}
+.pp-green{background:#D1FAE5;color:#065F46}
+.pp-amber{background:#FEF3C7;color:#92400E}
+.pp-red{background:#FEE2E2;color:#B91C1C}
+.pp-gray{background:#F1F5F9;color:#64748B}
+
+.pil-body{background:#fff;border:1px solid #EEF0F6;border-top:none;border-radius:0 0 10px 10px}
+
+/* CAP ROW */
+.cr{display:flex;align-items:center;padding:10px 16px 10px 60px;border-bottom:1px solid #F5F6FA;gap:10px;cursor:pointer;transition:background .1s}
+.cr:last-child{border-bottom:none}
+.cr:hover{background:#F7F8FB}
+.cr-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cr-dot.done{background:#10B981}
+.cr-dot.sched{background:#3B82F6}
+.cr-dot.pend{background:#D8DEE8}
+.cr-name{flex:1;font-size:12px;font-weight:600;color:#18243A}
+.cr-asist{font-size:10px;color:#5A6880;min-width:40px;text-align:right}
+.cr-aprob{font-size:10px;font-weight:700;min-width:40px;text-align:right}
+.cr-date{font-size:10px;color:#8A97AA;min-width:75px;text-align:right}
+.cr-badge{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:6px;min-width:75px;text-align:center}
+.cb-done{background:#D1FAE5;color:#065F46}
+.cb-sched{background:#DBEAFE;color:#1E40AF}
+.cb-pend{background:#F1F5F9;color:#64748B}
+.cr-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.cr:hover .cr-actions{opacity:1}
+.btn-row{padding:3px 8px;border:1px solid #D8DEE8;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;background:#fff;color:#5A6880;white-space:nowrap}
+.btn-row:hover{background:#F7F8FB}
+.btn-row.danger:hover{background:#FEE2E2;border-color:#FECACA;color:#B91C1C}
+
+/* PERSONA GRID */
+.persona-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.persona-card{background:#fff;border:1px solid #EEF0F6;border-radius:10px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.persona-card:hover{box-shadow:0 4px 16px rgba(27,63,114,.1);border-color:#B8CCE8}
+.persona-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.persona-avatar{width:36px;height:36px;border-radius:50%;background:#EBF2FA;color:#1B3F72;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.persona-nombre{font-size:13px;font-weight:700;color:#18243A}
+.persona-rol{font-size:11px;color:#8A97AA}
+.persona-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.p-stat{text-align:center;padding:6px 4px;background:#F7F8FB;border-radius:6px}
+.p-stat-val{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.p-stat-lbl{font-size:9.5px;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.p-stat.green .p-stat-val{color:#10B981}
+.p-stat.amber .p-stat-val{color:#D97706}
+.p-stat.navy .p-stat-val{color:#1B3F72}
+
+/* CALENDARIO */
+.cal-wrap{display:flex;flex-direction:column;gap:20px}
+.cal-month{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
+.cal-month-hdr{padding:10px 16px;background:#1B3F72;display:flex;align-items:center;justify-content:space-between}
+.cal-month-nombre{font-size:13px;font-weight:700;color:#fff;text-transform:capitalize}
+.cal-month-count{font-size:11px;color:rgba(255,255,255,.6)}
+.cal-grid-wrap{overflow-x:auto}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid #EEF0F6}
+.cal-grid-head{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;padding:6px 4px;text-align:center;background:#FAFBFD;border-bottom:1px solid #EEF0F6}
+.cal-cell{min-height:65px;border-right:1px solid #EEF0F6;border-bottom:1px solid #EEF0F6;padding:3px 4px}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell.empty-cell{background:#FAFBFD}
+.cal-cell-day{font-size:11px;font-weight:700;color:#5A6880;margin-bottom:2px;padding:1px 4px;font-variant-numeric:tabular-nums}
+.cal-cell-day.today{background:#1B3F72;color:#fff;border-radius:10px;display:inline-block;padding:1px 7px}
+.cal-event{font-size:8.5px;font-weight:600;padding:2px 3px;border-radius:3px;margin-bottom:2px;cursor:pointer;line-height:1.25;word-break:break-word;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cal-event.realizada{background:#D1FAE5;color:#065F46}
+.cal-event.pendiente{background:#DBEAFE;color:#1E40AF}
+.cal-empty{padding:14px 16px;font-size:12px;color:#8A97AA;text-align:center}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:min(740px,97vw);max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-hdr{padding:13px 18px;border-bottom:1px solid #EEF0F6;display:flex;align-items:center;justify-content:space-between;background:#1B3F72}
+.modal-titulo{font-size:13.5px;font-weight:700;color:#fff}
+.modal-close{background:none;border:none;font-size:18px;color:rgba(255,255,255,.6);cursor:pointer;line-height:1;padding:2px 6px}
+.modal-close:hover{color:#fff}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-row.one{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{padding:8px 10px;border:1px solid #D8DEE8;border-radius:6px;font-size:12.5px;color:#18243A;background:#fff;font-family:inherit}
+.form-input:focus,.form-select:focus{outline:none;border-color:#2563A8}
+.form-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #EEF0F6}
+.btn-cancel{padding:7px 14px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;font-weight:600;background:#fff;color:#5A6880;cursor:pointer}
+.btn-save{padding:7px 16px;border:none;border-radius:6px;font-size:12px;font-weight:700;background:#1B3F72;color:#fff;cursor:pointer}
+.btn-save:hover{background:#163260}
+
+.nomina-grid{display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;border:1px solid #EEF0F6;border-radius:6px;padding:4px;margin-top:8px}
+.nomina-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:5px}
+.nomina-row:hover{background:#F7F8FB}
+.nomina-nombre-cell{flex:1;font-size:12px;color:#18243A;font-weight:500}
+.nomina-rol{font-size:10.5px;color:#8A97AA}
+.check-cell{display:flex;align-items:center;gap:4px;font-size:11px;color:#5A6880;white-space:nowrap;min-width:72px}
+.check-cell input{width:13px;height:13px;cursor:pointer;accent-color:#1B3F72}
+.check-cell.green input{accent-color:#059669}
+.nomina-row.no-aplica .nomina-nombre-cell,.nomina-row.no-aplica .nomina-rol{color:#C0C8D4}
+
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.det-section .det-label{font-size:10px;font-weight:700;color:#5A6880;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.det-section .det-value{font-size:12.5px;color:#18243A}
+
+.empty{color:#8A97AA;font-size:12px;padding:16px 0;text-align:center}
+.loading{text-align:center;padding:40px;color:#8A97AA;font-size:13px}
+
+@media(max-width:768px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .pil-right{display:none}
+  .cr{padding-left:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-btn ghost" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-title">📋 PAC Fuerza de Ventas</span>
+  <button class="topbar-btn ghost" onclick="exportarCSV()">⬇ Exportar</button>
+  <button class="topbar-btn" onclick="abrirModalNueva()">+ Nueva capacitación</button>
+</div>
+
+<div class="hero">
+  <h1>Plan anual de capacitación — Fuerza de ventas</h1>
+  <p>BDR y Merchandisers · Del Palacio S.A. · Año 2026</p>
+</div>
+
+<div class="wrap">
+  <div id="embedControls" style="display:none;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="topbar-btn ghost" onclick="exportarCSV()" style="font-size:11px;padding:5px 12px">⬇ Exportar</button>
+      <button class="topbar-btn" onclick="abrirModalNueva()" style="font-size:11px;padding:5px 12px">+ Nueva capacitación</button>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi navy"><div class="kpi-label">Capacitaciones</div><div class="kpi-val" id="kpi-total">—</div><div class="kpi-meta">planificadas</div></div>
+    <div class="kpi navy"><div class="kpi-label">Programadas</div><div class="kpi-val" id="kpi-prog">—</div><div class="kpi-meta">con fecha asignada</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-prog-bar" style="width:0%;background:#1B3F72"></div></div></div>
+    <div class="kpi amber"><div class="kpi-label">Adherencia Gantt</div><div class="kpi-val" id="kpi-gantt">—</div><div class="kpi-meta">meta ≥ 90%</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-gantt-bar" style="width:0%"></div></div></div>
+    <div class="kpi green"><div class="kpi-label">Aprobados</div><div class="kpi-val" id="kpi-apro">—</div><div class="kpi-meta">meta ≥ 85%</div><div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-apro-bar" style="width:0%"></div></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-caps" onclick="verTab('caps')">Por capacitación</button>
+    <button class="tab" id="tab-personas" onclick="verTab('personas')">Por persona</button>
+    <button class="tab" id="tab-cal" onclick="verTab('cal')">Calendario</button>
+  </div>
+
+  <div class="filters" id="filtros">
+    <select class="filter-sel" id="fil-pilar" onchange="renderVista()"><option value="">Todos los pilares</option></select>
+    <select class="filter-sel" id="fil-estado" onchange="renderVista()">
+      <option value="">Todos los estados</option>
+      <option value="realizada">Realizadas</option>
+      <option value="programada">Programadas</option>
+      <option value="pendiente">Pendientes</option>
+    </select>
+    <select class="filter-sel" id="fil-rol" onchange="renderVista()">
+      <option value="">Todos los roles</option>
+    </select>
+  </div>
+
+  <div id="contenido"><div class="loading">Cargando...</div></div>
+</div>
+
+<!-- MODAL FORM -->
+<div class="modal-bg" id="modal-form-bg">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modal-form-titulo">Nueva capacitación</span>
+      <button class="modal-close" onclick="cerrarModalForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Pilar</label>
+          <div style="display:flex;gap:6px">
+            <select class="form-select" id="f-pilar" style="flex:1"></select>
+            <button class="btn-save" onclick="abrirPilares()" style="padding:6px 10px;font-size:11px;white-space:nowrap" title="Gestionar pilares">⚙</button>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-nombre" placeholder="Nombre de la capacitación"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Responsable</label><input class="form-input" id="f-responsable"></div>
+        <div class="form-group"><label class="form-label">Fecha programada</label><input class="form-input" id="f-fecha-prog" type="date"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha ejecución</label><input class="form-input" id="f-fecha-ejec" type="date"></div>
+        <div class="form-group"><label class="form-label">Material (link)</label><input class="form-input" id="f-material" placeholder="https://..."></div>
+      </div>
+      <div class="form-row one">
+        <div class="form-group"><label class="form-label">Observaciones</label><input class="form-input" id="f-obs"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Asistentes</label>
+        <div class="nomina-grid" id="nomina-grid"></div>
+      </div>
+      <div class="form-footer">
+        <button class="btn-cancel" onclick="cerrarModalForm()">Cancelar</button>
+        <button class="btn-save" id="btn-guardar" onclick="guardarCap()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="modal-bg" id="modal-det-bg">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-titulo" id="modal-det-titulo">Detalle</span>
+      <button class="modal-close" onclick="cerrarDet()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-det-body"></div>
+  </div>
+</div>
+
+<!-- MODAL NOMINA -->
+<div class="modal-bg" id="modal-nomina-bg">
+  <div class="modal" style="width:min(500px,95vw)">
+    <div class="modal-hdr">
+      <span class="modal-titulo">Gestionar nómina</span>
+      <button class="modal-close" onclick="cerrarNomina()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Apellido</label><input class="form-input" id="n-apellido"></div>
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="n-nombre"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Rol</label>
+          <select class="form-select" id="n-rol">
+            <option value="BDR">BDR</option>
+            <option value="Merchandiser">Merchandiser</option>
+          </select>
+        </div>
+        <div class="form-group" style="justify-content:flex-end"><button class="btn-save" onclick="agregarPersona()">Agregar</button></div>
+      </div>
+      <div id="nomina-lista" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PILARES -->
+<div class="modal-bg" id="modal-pilares-bg">
+  <div class="modal" style="width:min(520px,95vw)">
+    <div class="modal-hdr">
+      <span class="modal-titulo">Gestionar pilares</span>
+      <button class="modal-close" onclick="cerrarPilares()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre del pilar</label><input class="form-input" id="p-nombre" placeholder="Ej: Liderazgo comercial"></div>
+        <div class="form-group"><label class="form-label">Icono</label>
+          <div style="position:relative">
+            <button type="button" class="form-input" id="p-icono-btn" onclick="toggleEmojiPicker()" style="width:60px;height:38px;font-size:20px;text-align:center;cursor:pointer">📋</button>
+            <input type="hidden" id="p-icono" value="📋">
+            <div id="emoji-picker" style="display:none;position:absolute;top:42px;left:0;z-index:200;background:#fff;border:1px solid #D8DEE8;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:10px;width:280px">
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px" id="emoji-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Color texto</label><input class="form-input" id="p-color" type="color" value="#1B3F72" style="height:34px;padding:2px"></div>
+        <div class="form-group"><label class="form-label">Color fondo</label><input class="form-input" id="p-bg" type="color" value="#EBF2FA" style="height:34px;padding:2px"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn-save" onclick="agregarPilar()">Agregar pilar</button></div>
+      <div id="pilares-lista"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+if(window !== window.top){
+  document.body.classList.add('embedded');
+  document.getElementById('embedControls').style.display = 'block';
+}
+
+let PILARES_CONFIG = {};
+let PILARES = [];
+
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let CAPS = [], NOMINA = [];
+let VISTA = 'caps';
+let EXPANDED = new Set();
+let EDIT_ID = null;
+
+function buildPilaresConfig() {
+  PILARES_CONFIG = {};
+  PILARES.forEach(p => { PILARES_CONFIG[p.nombre] = { icon: p.icono, bg: p.bg, color: p.color }; });
+}
+
+function poblarSelectPilar() {
+  const sel = document.getElementById('f-pilar');
+  const val = sel.value;
+  sel.innerHTML = PILARES.map(p => '<option value="'+esc(p.nombre)+'">'+esc(p.nombre)+'</option>').join('');
+  if (val && PILARES.some(p => p.nombre === val)) sel.value = val;
+}
+
+async function cargar() {
+  try {
+    const [caps, nomina, pilares] = await Promise.all([
+      fetch('/api/gx/pac-fdv').then(r => r.json()),
+      fetch('/api/gx/pac-fdv/nomina').then(r => r.json()),
+      fetch('/api/gx/pac-fdv/pilares').then(r => r.json())
+    ]);
+    CAPS = caps;
+    NOMINA = nomina;
+    PILARES = pilares;
+    buildPilaresConfig();
+    poblarSelectPilar();
+    renderKPIs();
+    poblarFiltros();
+    renderVista();
+  } catch(e) { document.getElementById('contenido').innerHTML = '<div class="empty">Error al cargar datos</div>'; }
+}
+
+function capEstado(c) {
+  if (c.fecha_ejecucion) return 'realizada';
+  if (c.fecha_programada) return 'programada';
+  return 'pendiente';
+}
+
+function filtrar() {
+  let data = CAPS;
+  const pilar = document.getElementById('fil-pilar').value;
+  const estado = document.getElementById('fil-estado').value;
+  if (pilar) data = data.filter(c => c.pilar === pilar);
+  if (estado) data = data.filter(c => capEstado(c) === estado);
+  return data;
+}
+
+function renderKPIs() {
+  const total = CAPS.length;
+  const prog = CAPS.filter(c => c.fecha_programada).length;
+  const realizadas = CAPS.filter(c => c.fecha_ejecucion);
+  const hoy = new Date();
+
+  let compromet = 0, cumplidas = 0;
+  CAPS.forEach(c => {
+    if (c.fecha_programada && new Date(c.fecha_programada) <= hoy) {
+      compromet++;
+      if (c.fecha_ejecucion) cumplidas++;
+    }
+  });
+  const gantt = compromet ? Math.round(cumplidas / compromet * 100) : 0;
+
+  let totalAplica = 0, totalAprobado = 0;
+  realizadas.forEach(c => {
+    const asis = c.asistentes || [];
+    asis.filter(a => a.aplica).forEach(a => { totalAplica++; if (a.aprobado) totalAprobado++; });
+  });
+  const apro = totalAplica ? Math.round(totalAprobado / totalAplica * 100) : 0;
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-prog').textContent = prog;
+  document.getElementById('kpi-prog-bar').style.width = (total ? Math.round(prog/total*100) : 0) + '%';
+  document.getElementById('kpi-gantt').textContent = gantt + '%';
+  document.getElementById('kpi-gantt-bar').style.width = gantt + '%';
+  document.getElementById('kpi-gantt-bar').style.background = gantt >= 90 ? '#10B981' : gantt >= 60 ? '#D97706' : '#DC2626';
+  document.getElementById('kpi-apro').textContent = apro + '%';
+  document.getElementById('kpi-apro-bar').style.width = apro + '%';
+  document.getElementById('kpi-apro-bar').style.background = apro >= 85 ? '#10B981' : apro >= 60 ? '#D97706' : '#DC2626';
+
+  const kpiGantt = document.querySelector('.kpi.amber');
+  const kpiApro = document.querySelector('.kpi.green');
+  kpiGantt.className = 'kpi ' + (gantt >= 90 ? 'green' : gantt >= 60 ? 'amber' : 'red');
+  kpiApro.className = 'kpi ' + (apro >= 85 ? 'green' : apro >= 60 ? 'amber' : 'red');
+}
+
+function poblarFiltros() {
+  const pilares = [...new Set(CAPS.map(c => c.pilar))].sort();
+  const sel = document.getElementById('fil-pilar');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Todos los pilares</option>' + pilares.map(p => '<option value="'+esc(p)+'"'+(p===val?' selected':'')+'>'+esc(p)+'</option>').join('');
+
+  const roles = [...new Set(NOMINA.map(n => n.rol))].filter(Boolean).sort();
+  const rolSel = document.getElementById('fil-rol');
+  const rolVal = rolSel.value;
+  rolSel.innerHTML = '<option value="">Todos los roles</option>' + roles.map(r => '<option value="'+esc(r)+'"'+(r===rolVal?' selected':'')+'>'+esc(r)+'</option>').join('');
+}
+
+function verTab(tab) {
+  VISTA = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('filtros').style.display = tab === 'cal' ? 'none' : 'flex';
+  renderVista();
+}
+
+function renderVista() {
+  if (VISTA === 'caps') renderCaps();
+  else if (VISTA === 'personas') renderPersonas();
+  else renderCalendario();
+}
+
+function renderCaps() {
+  const data = filtrar();
+  if (!data.length) { document.getElementById('contenido').innerHTML = '<div class="empty">No hay capacitaciones cargadas. Hacé clic en "+ Nueva capacitación" para agregar una.</div>'; return; }
+
+  const porPilar = {};
+  data.forEach(c => { (porPilar[c.pilar] = porPilar[c.pilar] || []).push(c); });
+
+  let html = '';
+  for (const [pilar, caps] of Object.entries(porPilar)) {
+    const cfg = PILARES_CONFIG[pilar] || { icon: '📋', bg: '#F1F5F9', color: '#64748B' };
+    const realizadas = caps.filter(c => c.fecha_ejecucion);
+    const programadas = caps.filter(c => c.fecha_programada && !c.fecha_ejecucion);
+    const pendientes = caps.filter(c => !c.fecha_programada && !c.fecha_ejecucion);
+    const isOpen = EXPANDED.has(pilar);
+
+    let totalAplica = 0, totalAsistio = 0, totalAprobado = 0;
+    realizadas.forEach(c => {
+      (c.asistentes||[]).filter(a => a.aplica).forEach(a => { totalAplica++; if(a.asistio) totalAsistio++; if(a.aprobado) totalAprobado++; });
+    });
+    const pctAsist = totalAplica ? Math.round(totalAsistio/totalAplica*100) : null;
+    const pctApro = totalAplica ? Math.round(totalAprobado/totalAplica*100) : null;
+
+    html += '<div class="pil">'
+      +'<div class="pil-h'+(isOpen?' open':'')+'" onclick="togglePilar(\''+esc(pilar)+'\')">'
+      +'<div class="pil-icon" style="background:'+cfg.bg+';color:'+cfg.color+'">'+cfg.icon+'</div>'
+      +'<div class="pil-info"><div class="pil-name"><span class="pil-chevron'+(isOpen?' open':'')+'">▸</span> '+esc(pilar)+'</div>'
+      +'<div class="gantt-mini">'
+      +(realizadas.length?'<div class="gantt-seg done" style="flex:'+realizadas.length+'"></div>':'')
+      +(programadas.length?'<div class="gantt-seg sched" style="flex:'+programadas.length+'"></div>':'')
+      +(pendientes.length?'<div class="gantt-seg pend" style="flex:'+pendientes.length+'"></div>':'')
+      +'</div></div>'
+      +'<div class="pil-right">'
+      +'<div class="pil-stat"><div class="pil-stat-val">'+realizadas.length+'/'+caps.length+'</div><div class="pil-stat-lbl">Realizadas</div></div>'
+      +'<div class="pil-stat"><div class="pil-stat-val">'+(pctAsist!==null?pctAsist+'%':'—')+'</div><div class="pil-stat-lbl">Asistencia</div></div>'
+      +'<span class="pil-pct '+(pctApro===null?'pp-gray':pctApro>=85?'pp-green':pctApro>=60?'pp-amber':'pp-red')+'">'+(pctApro!==null?pctApro+'%':'—')+'</span>'
+      +'</div></div>';
+
+    if (isOpen) {
+      html += '<div class="pil-body">';
+      caps.forEach(c => {
+        const est = capEstado(c);
+        const asis = (c.asistentes||[]).filter(a => a.aplica);
+        const asistieron = asis.filter(a => a.asistio).length;
+        const aprobaron = asis.filter(a => a.aprobado).length;
+        const pA = asis.length ? Math.round(aprobaron/asis.length*100) : null;
+        const fecha = c.fecha_ejecucion || c.fecha_programada;
+        html += '<div class="cr" onclick="verDetalle('+c.id+')">'
+          +'<span class="cr-dot '+(est==='realizada'?'done':est==='programada'?'sched':'pend')+'"></span>'
+          +'<span class="cr-name">'+esc(c.nombre)+'</span>'
+          +'<span class="cr-asist">'+(est==='realizada'?asistieron+'/'+asis.length:'—')+'</span>'
+          +'<span class="cr-aprob" style="color:'+(pA===null?'#8A97AA':pA>=85?'#10B981':pA>=60?'#D97706':'#DC2626')+'">'+(pA!==null?pA+'%':'—')+'</span>'
+          +'<span class="cr-date">'+(fecha?fmtDate(fecha):'—')+'</span>'
+          +'<span class="cr-badge '+(est==='realizada'?'cb-done':est==='programada'?'cb-sched':'cb-pend')+'">'+({realizada:'Realizada',programada:'Programada',pendiente:'Pendiente'}[est])+'</span>'
+          +'<span class="cr-actions">'
+          +'<button class="btn-row" onclick="event.stopPropagation();editarCap('+c.id+')">✎</button>'
+          +'<button class="btn-row danger" onclick="event.stopPropagation();borrarCap('+c.id+')">✕</button>'
+          +'</span></div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('contenido').innerHTML = html;
+}
+
+function renderPersonas() {
+  const rolFil = document.getElementById('fil-rol').value;
+  let personas = NOMINA;
+  if (rolFil) personas = personas.filter(n => n.rol === rolFil);
+  if (!personas.length) { document.getElementById('contenido').innerHTML = '<div class="empty">No hay personas en la nómina. <a href="#" onclick="abrirNomina();return false" style="color:#1B3F72;font-weight:700">Gestionar nómina</a></div>'; return; }
+
+  let html = '<div style="margin-bottom:12px"><button class="topbar-btn ghost" onclick="abrirNomina()" style="font-size:11px;padding:5px 10px">⚙ Gestionar nómina</button></div><div class="persona-grid">';
+  personas.forEach(p => {
+    const caps = CAPS.filter(c => (c.asistentes||[]).some(a => a.nomina_id === p.id && a.aplica));
+    const asistidas = caps.filter(c => (c.asistentes||[]).find(a => a.nomina_id === p.id)?.asistio);
+    const aprobadas = caps.filter(c => (c.asistentes||[]).find(a => a.nomina_id === p.id)?.aprobado);
+    const pctApro = caps.length ? Math.round(aprobadas.length / caps.length * 100) : 0;
+    const initials = (p.nombre[0]||'')+(p.apellido[0]||'');
+    html += '<div class="persona-card" onclick="verPersona('+p.id+')">'
+      +'<div class="persona-card-hdr">'
+      +'<div class="persona-avatar">'+initials.toUpperCase()+'</div>'
+      +'<div><div class="persona-nombre">'+esc(p.apellido)+', '+esc(p.nombre)+'</div><div class="persona-rol">'+esc(p.rol||'')+'</div></div></div>'
+      +'<div class="persona-stats">'
+      +'<div class="p-stat navy"><div class="p-stat-val">'+caps.length+'</div><div class="p-stat-lbl">Asignadas</div></div>'
+      +'<div class="p-stat '+(asistidas.length===caps.length&&caps.length?'green':'amber')+'"><div class="p-stat-val">'+asistidas.length+'</div><div class="p-stat-lbl">Asistió</div></div>'
+      +'<div class="p-stat '+(pctApro>=85?'green':pctApro>=60?'amber':'navy')+'"><div class="p-stat-val">'+pctApro+'%</div><div class="p-stat-lbl">Aprobó</div></div>'
+      +'</div></div>';
+  });
+  html += '</div>';
+  document.getElementById('contenido').innerHTML = html;
+}
+
+function renderCalendario() {
+  const year = new Date().getFullYear();
+  let html = '<div class="cal-wrap">';
+  for (let m = 0; m < 12; m++) {
+    const capsM = CAPS.filter(c => {
+      const d = c.fecha_ejecucion || c.fecha_programada;
+      if (!d) return false;
+      const dt = new Date(d);
+      return dt.getMonth() === m && dt.getFullYear() === year;
+    });
+    if (!capsM.length) continue;
+    const firstDay = new Date(year, m, 1).getDay();
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    const offset = firstDay === 0 ? 6 : firstDay - 1;
+    const today = new Date();
+
+    html += '<div class="cal-month"><div class="cal-month-hdr"><span class="cal-month-nombre">'+MESES[m]+' '+year+'</span><span class="cal-month-count">'+capsM.length+' cap.</span></div>';
+    html += '<div class="cal-grid-wrap"><div class="cal-grid">';
+    ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(d => html += '<div class="cal-grid-head">'+d+'</div>');
+    for (let i = 0; i < offset; i++) html += '<div class="cal-cell empty-cell"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday = today.getDate() === d && today.getMonth() === m && today.getFullYear() === year;
+      const events = capsM.filter(c => { const dt = new Date(c.fecha_ejecucion || c.fecha_programada); return dt.getDate() === d; });
+      html += '<div class="cal-cell"><div class="cal-cell-day'+(isToday?' today':'')+'">'+d+'</div>';
+      events.forEach(c => {
+        const est = capEstado(c);
+        html += '<div class="cal-event '+(est==='realizada'?'realizada':'pendiente')+'" onclick="verDetalle('+c.id+')">'+esc(c.nombre)+'</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div></div></div>';
+  }
+  html += '</div>';
+  document.getElementById('contenido').innerHTML = html || '<div class="empty">No hay capacitaciones con fecha asignada</div>';
+}
+
+function togglePilar(p) { if (EXPANDED.has(p)) EXPANDED.delete(p); else EXPANDED.add(p); renderCaps(); }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  const day = dt.getUTCDate();
+  const m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][dt.getUTCMonth()];
+  return day + ' ' + m + ' ' + dt.getUTCFullYear();
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// MODAL FORM
+function abrirModalNueva() {
+  EDIT_ID = null;
+  document.getElementById('modal-form-titulo').textContent = 'Nueva capacitación';
+  document.getElementById('f-pilar').selectedIndex = 0;
+  document.getElementById('f-nombre').value = '';
+  document.getElementById('f-responsable').value = '';
+  document.getElementById('f-fecha-prog').value = '';
+  document.getElementById('f-fecha-ejec').value = '';
+  document.getElementById('f-material').value = '';
+  document.getElementById('f-obs').value = '';
+  renderNominaGrid([]);
+  document.getElementById('modal-form-bg').classList.add('open');
+}
+
+function editarCap(id) {
+  const c = CAPS.find(x => x.id === id);
+  if (!c) return;
+  EDIT_ID = id;
+  document.getElementById('modal-form-titulo').textContent = 'Editar capacitación';
+  document.getElementById('f-pilar').value = c.pilar;
+  document.getElementById('f-nombre').value = c.nombre;
+  document.getElementById('f-responsable').value = c.responsable || '';
+  document.getElementById('f-fecha-prog').value = c.fecha_programada ? c.fecha_programada.split('T')[0] : '';
+  document.getElementById('f-fecha-ejec').value = c.fecha_ejecucion ? c.fecha_ejecucion.split('T')[0] : '';
+  document.getElementById('f-material').value = c.material_link || '';
+  document.getElementById('f-obs').value = c.observaciones || '';
+  renderNominaGrid(c.asistentes || []);
+  document.getElementById('modal-form-bg').classList.add('open');
+}
+
+function cerrarModalForm() { document.getElementById('modal-form-bg').classList.remove('open'); }
+
+function renderNominaGrid(asistentes) {
+  const grid = document.getElementById('nomina-grid');
+  if (!NOMINA.length) { grid.innerHTML = '<div class="empty">No hay personas en la nómina. <a href="#" onclick="abrirNomina();return false" style="color:#1B3F72;font-weight:700">Agregar personas</a></div>'; return; }
+  const aMap = {};
+  asistentes.forEach(a => { aMap[a.nomina_id] = a; });
+  grid.innerHTML = NOMINA.map(n => {
+    const a = aMap[n.id] || {};
+    const aplica = a.aplica !== undefined ? a.aplica : true;
+    const noAplica = !aplica;
+    return '<div class="nomina-row'+(noAplica?' no-aplica':'')+'" data-nid="'+n.id+'">'
+      +'<span class="nomina-nombre-cell">'+esc(n.apellido)+', '+esc(n.nombre)+'</span>'
+      +'<span class="nomina-rol">'+esc(n.rol||'')+'</span>'
+      +'<span class="check-cell"><input type="checkbox" data-field="aplica" '+(aplica?'checked':'')+' onchange="toggleAplica(this)"> Aplica</span>'
+      +'<span class="check-cell"><input type="checkbox" data-field="asistio" '+(a.asistio?'checked':'')+(!aplica?' disabled':'')+'> Asistió</span>'
+      +'<span class="check-cell green"><input type="checkbox" data-field="aprobado" '+(a.aprobado?'checked':'')+(!aplica?' disabled':'')+'> Aprobó</span>'
+      +'</div>';
+  }).join('');
+}
+
+function toggleAplica(cb) {
+  const row = cb.closest('.nomina-row');
+  const checks = row.querySelectorAll('input[data-field="asistio"],input[data-field="aprobado"]');
+  if (!cb.checked) {
+    row.classList.add('no-aplica');
+    checks.forEach(c => { c.checked = false; c.disabled = true; });
+  } else {
+    row.classList.remove('no-aplica');
+    checks.forEach(c => c.disabled = false);
+  }
+}
+
+async function guardarCap() {
+  const body = {
+    pilar: document.getElementById('f-pilar').value,
+    nombre: document.getElementById('f-nombre').value.trim(),
+    responsable: document.getElementById('f-responsable').value.trim(),
+    fecha_programada: document.getElementById('f-fecha-prog').value || null,
+    fecha_ejecucion: document.getElementById('f-fecha-ejec').value || null,
+    material_link: document.getElementById('f-material').value.trim() || null,
+    observaciones: document.getElementById('f-obs').value.trim() || null,
+    asistentes: []
+  };
+  if (!body.nombre) { alert('Ingresá un nombre'); return; }
+  document.querySelectorAll('#nomina-grid .nomina-row').forEach(row => {
+    body.asistentes.push({
+      nomina_id: parseInt(row.dataset.nid),
+      aplica: row.querySelector('[data-field="aplica"]').checked,
+      asistio: row.querySelector('[data-field="asistio"]').checked,
+      aprobado: row.querySelector('[data-field="aprobado"]').checked,
+      justificacion: ''
+    });
+  });
+  try {
+    const url = EDIT_ID ? '/api/gx/pac-fdv/' + EDIT_ID : '/api/gx/pac-fdv';
+    const method = EDIT_ID ? 'PUT' : 'POST';
+    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    cerrarModalForm();
+    cargar();
+  } catch(e) { alert('Error al guardar'); }
+}
+
+async function borrarCap(id) {
+  if (!confirm('¿Eliminar esta capacitación?')) return;
+  await fetch('/api/gx/pac-fdv/' + id, { method: 'DELETE' });
+  cargar();
+}
+
+function verDetalle(id) {
+  const c = CAPS.find(x => x.id === id);
+  if (!c) return;
+  const est = capEstado(c);
+  const asis = (c.asistentes||[]).filter(a => a.aplica);
+  let html = '<div class="det-grid">'
+    +'<div class="det-section"><div class="det-label">Pilar</div><div class="det-value">'+esc(c.pilar)+'</div></div>'
+    +'<div class="det-section"><div class="det-label">Responsable</div><div class="det-value">'+esc(c.responsable||'—')+'</div></div>'
+    +'<div class="det-section"><div class="det-label">Fecha programada</div><div class="det-value">'+fmtDate(c.fecha_programada)+'</div></div>'
+    +'<div class="det-section"><div class="det-label">Fecha ejecución</div><div class="det-value">'+fmtDate(c.fecha_ejecucion)+'</div></div>'
+    +'</div>';
+  if (c.material_link) html += '<div class="det-section" style="margin-bottom:14px"><div class="det-label">Material</div><a class="det-value" href="'+esc(c.material_link)+'" target="_blank" style="color:#2563A8">'+esc(c.material_link)+'</a></div>';
+  if (c.observaciones) html += '<div class="det-section" style="margin-bottom:14px"><div class="det-label">Observaciones</div><div class="det-value">'+esc(c.observaciones)+'</div></div>';
+  if (asis.length) {
+    html += '<div class="det-section"><div class="det-label">Asistentes ('+asis.length+')</div></div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px"><thead><tr><th style="text-align:left;padding:6px 8px;font-size:10px;color:#8A97AA;border-bottom:1px solid #EEF0F6">Persona</th><th style="padding:6px 8px;font-size:10px;color:#8A97AA;border-bottom:1px solid #EEF0F6">Rol</th><th style="padding:6px 8px;font-size:10px;color:#8A97AA;border-bottom:1px solid #EEF0F6">Asistió</th><th style="padding:6px 8px;font-size:10px;color:#8A97AA;border-bottom:1px solid #EEF0F6">Aprobó</th></tr></thead><tbody>';
+    asis.forEach(a => {
+      html += '<tr><td style="padding:6px 8px;font-weight:600;border-bottom:1px solid #F5F6FA">'+esc(a.apellido)+', '+esc(a.nombre_persona)+'</td>'
+        +'<td style="padding:6px 8px;color:#8A97AA;border-bottom:1px solid #F5F6FA">'+esc(a.rol||'')+'</td>'
+        +'<td style="padding:6px 8px;text-align:center;border-bottom:1px solid #F5F6FA">'+(a.asistio?'<span style="color:#10B981;font-weight:700">✓</span>':'<span style="color:#DC2626">✗</span>')+'</td>'
+        +'<td style="padding:6px 8px;text-align:center;border-bottom:1px solid #F5F6FA">'+(a.aprobado?'<span style="color:#10B981;font-weight:700">✓</span>':'<span style="color:#DC2626">✗</span>')+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  document.getElementById('modal-det-titulo').textContent = c.nombre;
+  document.getElementById('modal-det-body').innerHTML = html;
+  document.getElementById('modal-det-bg').classList.add('open');
+}
+function cerrarDet() { document.getElementById('modal-det-bg').classList.remove('open'); }
+
+function verPersona(id) {
+  const p = NOMINA.find(n => n.id === id);
+  if (!p) return;
+  const caps = CAPS.filter(c => (c.asistentes||[]).some(a => a.nomina_id === id && a.aplica));
+  let html = '<div style="margin-bottom:14px"><strong>'+esc(p.apellido)+', '+esc(p.nombre)+'</strong> — '+esc(p.rol||'')+'</div>';
+  if (!caps.length) { html += '<div class="empty">Sin capacitaciones asignadas</div>'; }
+  else {
+    caps.forEach(c => {
+      const a = (c.asistentes||[]).find(x => x.nomina_id === id);
+      const est = capEstado(c);
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#F7F8FB;border-radius:7px;margin-bottom:6px;font-size:12px">'
+        +'<span class="cr-dot '+(est==='realizada'?'done':est==='programada'?'sched':'pend')+'"></span>'
+        +'<span style="flex:1;font-weight:600">'+esc(c.nombre)+'</span>'
+        +'<span style="font-size:10px;color:#8A97AA">'+esc(c.pilar)+'</span>'
+        +(a&&a.asistio?'<span style="color:#10B981;font-size:10px;font-weight:700">Asistió</span>':'')
+        +(a&&a.aprobado?'<span style="color:#10B981;font-size:10px;font-weight:700">Aprobó</span>':'')
+        +'</div>';
+    });
+  }
+  document.getElementById('modal-det-titulo').textContent = p.apellido + ', ' + p.nombre;
+  document.getElementById('modal-det-body').innerHTML = html;
+  document.getElementById('modal-det-bg').classList.add('open');
+}
+
+// NOMINA
+function abrirNomina() {
+  renderNominaLista();
+  document.getElementById('modal-nomina-bg').classList.add('open');
+}
+function cerrarNomina() {
+  document.getElementById('modal-nomina-bg').classList.remove('open');
+  cargar().then(() => {
+    if (document.getElementById('modal-form-bg').classList.contains('open')) {
+      const existing = [];
+      document.querySelectorAll('#nomina-grid .nomina-row').forEach(r => {
+        existing.push({
+          nomina_id: parseInt(r.dataset.nid),
+          aplica: r.querySelector('[data-field="aplica"]').checked,
+          asistio: r.querySelector('[data-field="asistio"]').checked,
+          aprobado: r.querySelector('[data-field="aprobado"]').checked
+        });
+      });
+      renderNominaGrid(existing);
+    }
+  });
+}
+
+function renderNominaLista() {
+  const el = document.getElementById('nomina-lista');
+  if (!NOMINA.length) { el.innerHTML = '<div class="empty">No hay personas</div>'; return; }
+  el.innerHTML = NOMINA.map(n => '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid #F5F6FA">'
+    +'<span style="flex:1;font-size:12px;font-weight:600">'+esc(n.apellido)+', '+esc(n.nombre)+'</span>'
+    +'<span style="font-size:10px;color:#8A97AA">'+esc(n.rol||'')+'</span>'
+    +'<button class="btn-row danger" onclick="desactivarPersona('+n.id+')" style="font-size:10px">✕</button>'
+    +'</div>').join('');
+}
+
+async function agregarPersona() {
+  const apellido = document.getElementById('n-apellido').value.trim();
+  const nombre = document.getElementById('n-nombre').value.trim();
+  const rol = document.getElementById('n-rol').value;
+  if (!apellido || !nombre) { alert('Completá apellido y nombre'); return; }
+  await fetch('/api/gx/pac-fdv/nomina', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apellido, nombre, rol }) });
+  document.getElementById('n-apellido').value = '';
+  document.getElementById('n-nombre').value = '';
+  const r = await fetch('/api/gx/pac-fdv/nomina').then(r => r.json());
+  NOMINA = r;
+  renderNominaLista();
+}
+
+async function desactivarPersona(id) {
+  if (!confirm('¿Quitar esta persona de la nómina?')) return;
+  await fetch('/api/gx/pac-fdv/nomina/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: false }) });
+  const r = await fetch('/api/gx/pac-fdv/nomina').then(r => r.json());
+  NOMINA = r;
+  renderNominaLista();
+}
+
+function exportarCSV() {
+  const data = filtrar();
+  if (!data.length) { alert('No hay datos para exportar'); return; }
+  let csv = 'Pilar,Capacitación,Estado,Fecha Programada,Fecha Ejecución,Responsable\n';
+  data.forEach(c => {
+    csv += '"'+c.pilar+'","'+c.nombre+'","'+capEstado(c)+'","'+(c.fecha_programada||'')+'","'+(c.fecha_ejecucion||'')+'","'+(c.responsable||'')+'"\n';
+  });
+  const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pac-fdv-'+new Date().getFullYear()+'.csv';
+  a.click();
+}
+
+// PILARES
+function abrirPilares() {
+  renderPilaresLista();
+  document.getElementById('modal-pilares-bg').classList.add('open');
+}
+function cerrarPilares() {
+  document.getElementById('modal-pilares-bg').classList.remove('open');
+  cargar();
+}
+
+function renderPilaresLista() {
+  const el = document.getElementById('pilares-lista');
+  if (!PILARES.length) { el.innerHTML = '<div class="empty">No hay pilares creados</div>'; return; }
+  el.innerHTML = PILARES.map(p => '<div style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #F5F6FA">'
+    +'<div style="background:'+p.bg+';color:'+p.color+';width:28px;height:28px;border-radius:6px;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+p.icono+'</div>'
+    +'<span style="flex:1;font-size:12px;font-weight:600">'+esc(p.nombre)+'</span>'
+    +'<button class="btn-row danger" onclick="eliminarPilar('+p.id+')" style="font-size:10px" title="Eliminar">✕</button>'
+    +'</div>').join('');
+}
+
+async function agregarPilar() {
+  const nombre = document.getElementById('p-nombre').value.trim();
+  const icono = document.getElementById('p-icono').value.trim() || '📋';
+  const color = document.getElementById('p-color').value;
+  const bg = document.getElementById('p-bg').value;
+  if (!nombre) { alert('Ingresá un nombre para el pilar'); return; }
+  await fetch('/api/gx/pac-fdv/pilares', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre, icono, color, bg }) });
+  document.getElementById('p-nombre').value = '';
+  document.getElementById('p-icono').value = '📋';
+  document.getElementById('p-icono-btn').textContent = '📋';
+  const r = await fetch('/api/gx/pac-fdv/pilares').then(r => r.json());
+  PILARES = r;
+  buildPilaresConfig();
+  poblarSelectPilar();
+  renderPilaresLista();
+}
+
+async function eliminarPilar(id) {
+  if (!confirm('¿Eliminar este pilar?')) return;
+  await fetch('/api/gx/pac-fdv/pilares/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activo: false }) });
+  const r = await fetch('/api/gx/pac-fdv/pilares').then(r => r.json());
+  PILARES = r;
+  buildPilaresConfig();
+  poblarSelectPilar();
+  renderPilaresLista();
+}
+
+const EMOJIS = ['📋','📚','📖','📝','📊','📈','🎯','🏆','⭐','💡','🔧','⚙','🛡','🤝','👥','💼','🎓','📌','🔑','✅','💪','🚀','🌟','❤','🔥','📣','🧠','🎨','📦','🏅','🌍','🏠','🔔','💬','📱','💻','🛒','🔎','⏰','📅','🧩','🎵','🎬','🏗','🌱','☀','🌊','⚡','🔒','📡'];
+
+function initEmojiPicker() {
+  const grid = document.getElementById('emoji-grid');
+  grid.innerHTML = EMOJIS.map(e => '<button type="button" style="font-size:20px;background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;line-height:1" onmouseover="this.style.background=\'#EBF2FA\'" onmouseout="this.style.background=\'none\'" onclick="seleccionarEmoji(\''+e+'\')">'+e+'</button>').join('');
+}
+function toggleEmojiPicker() {
+  const p = document.getElementById('emoji-picker');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+function seleccionarEmoji(e) {
+  document.getElementById('p-icono').value = e;
+  document.getElementById('p-icono-btn').textContent = e;
+  document.getElementById('emoji-picker').style.display = 'none';
+}
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('emoji-picker');
+  const btn = document.getElementById('p-icono-btn');
+  if (picker && !picker.contains(e.target) && e.target !== btn) picker.style.display = 'none';
+});
+initEmojiPicker();
+
+cargar();
+</script>
+</body>
+</html>

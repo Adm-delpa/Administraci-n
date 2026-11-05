@@ -84,10 +84,30 @@ async function init() {
     const badgeCls = pct >= 90 ? 'badge-green' : pct >= 60 ? 'badge-orange' : 'badge-gray';
     cardPac.innerHTML = `
       <div class="mod-icon">📅</div>
-      <div class="mod-title">Plan Anual de Capacitación (PAC)</div>
-      <div class="mod-desc">Seguimiento de capacitaciones por pilar: asistencia, aprobación y adherencia al GANTT.</div>
+      <div class="mod-title">PAC Dolores</div>
+      <div class="mod-desc">Plan Anual de Capacitación — Dolores.</div>
       <div class="mod-footer"><span class="mod-badge ${badgeCls}">${pct}% adherencia</span><span class="mod-arr">Abrir →</span></div>`;
     grid.appendChild(cardPac);
+
+    // PAC Casa Central
+    let pacCcTotal = 0, pacCcRealizadas = 0;
+    try {
+      const capsCc = await fetch('/api/pac-cc').then(r => r.json());
+      pacCcTotal = capsCc.length;
+      pacCcRealizadas = capsCc.filter(c => !!c.fecha_ejecucion).length;
+    } catch(e) {}
+    const cardPacCc = document.createElement('button');
+    cardPacCc.className = 'mod-card';
+    cardPacCc.style.setProperty('--accent', '#0891B2');
+    cardPacCc.onclick = () => window.location.href = '/pac-cc';
+    const pctCc = pacCcTotal > 0 ? Math.round(pacCcRealizadas / pacCcTotal * 100) : 0;
+    const badgeClsCc = pctCc >= 90 ? 'badge-green' : pctCc >= 60 ? 'badge-orange' : 'badge-gray';
+    cardPacCc.innerHTML = `
+      <div class="mod-icon">🏢</div>
+      <div class="mod-title">PAC Casa Central</div>
+      <div class="mod-desc">Plan Anual de Capacitación — Casa Central.</div>
+      <div class="mod-footer"><span class="mod-badge ${badgeClsCc}">${pctCc}% adherencia</span><span class="mod-arr">Abrir →</span></div>`;
+    grid.appendChild(cardPacCc);
 
     // Otras páginas CMS de Aprendizaje y Desarrollo (Inducciones, SKAP, etc.)
     const paginas = await fetch('/api/paginas').then(r => r.json());

@@ -95,7 +95,7 @@ tr:hover .td-actions{opacity:1}
       <div class="page-title">Transferencias internas</div>
       <div class="page-sub">Registro de movimientos de personal</div>
     </div>
-    <button class="btn-nuevo" onclick="abrirModal()">+ Transferencia interna</button>
+    <button class="btn-nuevo admin-only" onclick="abrirModal()">+ Transferencia interna</button>
   </div>
 
   <div class="filters">
@@ -196,6 +196,9 @@ tr:hover .td-actions{opacity:1}
 </div>
 
 <script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let MOVIMIENTOS = [];
 let EDIT_ID = null;
@@ -260,7 +263,7 @@ function renderTabla() {
       <td class="td-pos">${m.posicion_nueva||'—'}</td>
       <td class="td-fecha">${m.mes||''} ${m.anio||''}</td>
       <td>
-        <div class="td-actions">
+        <div class="td-actions admin-only">
           <button class="btn-xs" onclick="editar(${m.id})">Editar</button>
           <button class="btn-xs danger" onclick="eliminar(${m.id})">Eliminar</button>
         </div>
@@ -270,6 +273,7 @@ function renderTabla() {
 
 // ── MODAL ──
 function abrirModal(m) {
+  if (!IS_ADMIN) return;
   EDIT_ID = m ? m.id : null;
   document.getElementById('modal-title').textContent = m ? 'Editar movimiento' : 'Nueva transferencia interna';
   const hoy = new Date();
@@ -312,6 +316,7 @@ async function editar(id) {
 }
 
 async function eliminar(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminár este movimiento?')) return;
   try {
     await fetch(`/api/movimientos/${id}`, { method: 'DELETE' });

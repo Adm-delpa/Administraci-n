@@ -147,7 +147,7 @@ textarea{min-height:72px;resize:vertical}
           <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Programado</div>
           <div class="legend-item"><div class="legend-dot" style="background:#16A34A"></div>Realizado</div>
         </div>
-        <button class="btn btn-primary" onclick="abrirModalComun()">+ Nueva comunicación</button>
+        <button class="btn btn-primary admin-only" onclick="abrirModalComun()">+ Nueva comunicación</button>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -192,7 +192,7 @@ textarea{min-height:72px;resize:vertical}
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <a href="https://docs.google.com/forms/d/e/1FAIpQLScxdvgV094M4VF166eQg5QDkTVgHSvnb2M-Oaa5WONtvt397g/viewform" target="_blank" class="btn btn-secondary" style="text-decoration:none">Abrir formulario</a>
-        <button class="btn btn-primary" onclick="abrirModalFb()">+ Registrar aporte</button>
+        <button class="btn btn-primary admin-only" onclick="abrirModalFb()">+ Registrar aporte</button>
       </div>
     </div>
     <div class="tbl-wrap">
@@ -202,6 +202,7 @@ textarea{min-height:72px;resize:vertical}
             <th>Fecha</th>
             <th>Autor</th>
             <th>Aporte / Sugerencia</th>
+            <th>¿Por qué suma?</th>
             <th>Generó ajuste</th>
             <th>Descripción del ajuste</th>
             <th>Acciones</th>
@@ -380,6 +381,12 @@ textarea{min-height:72px;resize:vertical}
         </div>
       </div>
       <div class="form-row full">
+        <div>
+          <label>¿Por qué te parece que suma?</label>
+          <textarea id="fPorQue" placeholder="Motivo o beneficio que aporta la idea"></textarea>
+        </div>
+      </div>
+      <div class="form-row full">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <input type="checkbox" id="fGeneroAjuste" style="width:auto" onchange="toggleAjuste()">
           <label style="margin:0;cursor:pointer" for="fGeneroAjuste">Generó un ajuste al plan</label>
@@ -402,6 +409,8 @@ textarea{min-height:72px;resize:vertical}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 const MESES = ['1','2','3','4','5','6','7','8','9','10','11','12'];
 const MESES_ABR = ['E','F','M','A','M','J','J','A','S','O','N','D'];
@@ -490,8 +499,8 @@ function renderTablaComun() {
       ${mCells}
       <td class="month-cell"><button class="btn-ev" onclick="abrirEvidencias(${c.id})" title="Ver / subir evidencias" id="ev-btn-${c.id}">📎</button></td>
       <td style="white-space:nowrap">
-        <button class="btn btn-secondary btn-sm" onclick="editarComun(${c.id})">Editar</button>
-        <button class="btn btn-danger btn-sm" onclick="eliminarComun(${c.id})">Eliminar</button>
+        <button class="btn btn-secondary btn-sm admin-only" onclick="editarComun(${c.id})">Editar</button>
+        <button class="btn btn-danger btn-sm admin-only" onclick="eliminarComun(${c.id})">Eliminar</button>
       </td>
     </tr>`;
   }
@@ -499,6 +508,7 @@ function renderTablaComun() {
 }
 
 async function toggleMes(id, m) {
+  if (!IS_ADMIN) return;
   const c = comunData.find(x => x.id === id);
   if (!c) return;
   const meses = { ...(c.meses || {}) };
@@ -528,18 +538,19 @@ function fmtFecha(d) {
 function renderTablaFb() {
   const tbody = document.getElementById('tbodyFb');
   if (!fbData.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No hay aportes registrados para ${anioActual}.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">No hay aportes registrados para ${anioActual}.</td></tr>`;
     return;
   }
   tbody.innerHTML = fbData.map(f => `<tr>
     <td>${fmtFecha(f.fecha)}</td>
     <td>${f.autor||'—'}</td>
     <td>${f.aporte||'—'}</td>
+    <td>${f.por_que||'—'}</td>
     <td>${f.genero_ajuste ? '<span class="ajuste-tag">Sí</span>' : '<span style="color:#8A97AA">No</span>'}</td>
     <td>${f.ajuste_descripcion||'—'}</td>
     <td style="white-space:nowrap">
-      <button class="btn btn-secondary btn-sm" onclick="editarFb(${f.id})">Editar</button>
-      <button class="btn btn-danger btn-sm" onclick="eliminarFb(${f.id})">Eliminar</button>
+      <button class="btn btn-secondary btn-sm admin-only" onclick="editarFb(${f.id})">Editar</button>
+      <button class="btn btn-danger btn-sm admin-only" onclick="eliminarFb(${f.id})">Eliminar</button>
     </td>
   </tr>`).join('');
 }
@@ -578,6 +589,7 @@ function abrirModalComun(id) {
 function editarComun(id) { abrirModalComun(id); }
 
 async function guardarComun() {
+  if (!IS_ADMIN) return;
   const id = document.getElementById('cId').value;
   const meses = {};
   MESES.forEach(m => { const v = document.getElementById('m'+m).value; if (v) meses[m] = v; });
@@ -600,6 +612,7 @@ async function guardarComun() {
 }
 
 async function eliminarComun(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar esta comunicación?')) return;
   await fetch(`/api/pc/comunicaciones/${id}`, { method: 'DELETE' });
   cargarComun();
@@ -613,6 +626,7 @@ function abrirModalFb(id) {
     document.getElementById('fFecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('fAutor').value = '';
     document.getElementById('fAporte').value = '';
+    document.getElementById('fPorQue').value = '';
     document.getElementById('fGeneroAjuste').checked = false;
     document.getElementById('fAjusteDesc').value = '';
     document.getElementById('ajusteRow').style.display = 'none';
@@ -621,6 +635,7 @@ function abrirModalFb(id) {
     document.getElementById('fFecha').value = f.fecha ? f.fecha.split('T')[0] : '';
     document.getElementById('fAutor').value = f.autor||'';
     document.getElementById('fAporte').value = f.aporte||'';
+    document.getElementById('fPorQue').value = f.por_que||'';
     document.getElementById('fGeneroAjuste').checked = !!f.genero_ajuste;
     document.getElementById('fAjusteDesc').value = f.ajuste_descripcion||'';
     document.getElementById('ajusteRow').style.display = f.genero_ajuste ? 'grid' : 'none';
@@ -636,12 +651,14 @@ function toggleAjuste() {
 }
 
 async function guardarFb() {
+  if (!IS_ADMIN) return;
   const id = document.getElementById('fId').value;
   const body = {
     anio: anioActual,
     fecha: document.getElementById('fFecha').value || null,
     autor: document.getElementById('fAutor').value,
     aporte: document.getElementById('fAporte').value,
+    por_que: document.getElementById('fPorQue').value,
     genero_ajuste: document.getElementById('fGeneroAjuste').checked,
     ajuste_descripcion: document.getElementById('fAjusteDesc').value
   };
@@ -653,6 +670,7 @@ async function guardarFb() {
 }
 
 async function eliminarFb(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar este aporte?')) return;
   await fetch(`/api/pc/feedback/${id}`, { method: 'DELETE' });
   cargarFb();
@@ -691,7 +709,7 @@ async function cargarEvidencias(comunId) {
       <img src="/api/pc/evidencias/${e.id}/imagen" alt="${e.nombre}" onclick="abrirLightbox('/api/pc/evidencias/${e.id}/imagen')">
       <div class="ev-thumb-footer">
         <span class="ev-thumb-name" title="${e.nombre}">${e.nombre}</span>
-        <button class="ev-thumb-del" onclick="eliminarEvidencia(${e.id},${comunId})" title="Eliminar">×</button>
+        <button class="ev-thumb-del admin-only" onclick="eliminarEvidencia(${e.id},${comunId})" title="Eliminar">×</button>
       </div>
     </div>`).join('');
 
@@ -711,6 +729,7 @@ function previewUpload(input) {
 }
 
 async function subirEvidencia() {
+  if (!IS_ADMIN) return;
   const comunId = document.getElementById('evComunId').value;
   const mes = document.getElementById('evMes').value;
   const file = document.getElementById('evFile').files[0];
@@ -737,6 +756,7 @@ async function subirEvidencia() {
 }
 
 async function eliminarEvidencia(id, comunId) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar esta evidencia?')) return;
   await fetch(`/api/pc/evidencias/${id}`, { method: 'DELETE' });
   await cargarEvidencias(comunId);

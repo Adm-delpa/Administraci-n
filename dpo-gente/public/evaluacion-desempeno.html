@@ -74,7 +74,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
   </div>
 
   <div class="toolbar">
-    <button class="upload-btn" onclick="document.getElementById('archInput').click()">+ Subir archivo</button>
+    <button class="upload-btn admin-only" onclick="document.getElementById('archInput').click()">+ Subir archivo</button>
     <input type="file" id="archInput" style="display:none" multiple
       accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*"
       onchange="subirArchivo(this)">
@@ -102,6 +102,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 function archivoIcono(tipo) {
   if (!tipo) return '📎';
@@ -127,7 +129,7 @@ async function cargarArchivos() {
         <div class="arch-icon">${archivoIcono(a.tipo)}</div>
         <div class="arch-name" title="${a.nombre}">${a.nombre}</div>
         <button class="arch-ver" onclick="abrirVisor(${a.id},'${a.nombre.replace(/'/g,"\\'")}','${(a.tipo||'').replace(/'/g,"\\'")}')">Ver</button>
-        <button class="arch-del" onclick="eliminarArchivo(${a.id})" title="Eliminar">🗑</button>
+        <button class="arch-del admin-only" onclick="eliminarArchivo(${a.id})" title="Eliminar">🗑</button>
       </div>
     `).join('');
   } catch(e) {
@@ -136,6 +138,7 @@ async function cargarArchivos() {
 }
 
 async function subirArchivo(input) {
+  if (!IS_ADMIN) return;
   if (!input.files.length) return;
   const list = document.getElementById('archList');
   list.innerHTML = '<div class="uploading">Subiendo...</div>';
@@ -149,6 +152,7 @@ async function subirArchivo(input) {
 }
 
 async function eliminarArchivo(id) {
+  if (!IS_ADMIN) return;
   if (!confirm('¿Eliminar este archivo?')) return;
   await fetch('/api/desempeno/archivos/' + id, { method: 'DELETE' });
   cargarArchivos();

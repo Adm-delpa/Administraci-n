@@ -115,20 +115,24 @@ tbody tr:hover .row-actions{opacity:1}
 .p-stat.navy .p-stat-val{color:#1B3F72}
 .recap-alert{display:flex;align-items:center;gap:6px;padding:6px 9px;background:#FEF3C7;border-radius:6px;font-size:11px;font-weight:600;color:#92400E;margin-top:4px}
 
-/* CALENDARIO */
-.cal-wrap{display:flex;flex-direction:column;gap:16px}
+/* CALENDARIO GRID */
+.cal-wrap{display:flex;flex-direction:column;gap:24px}
 .cal-month{background:#fff;border:1px solid #EEF0F6;border-radius:10px;overflow:hidden}
 .cal-month-hdr{padding:10px 16px;background:#1B3F72;display:flex;align-items:center;justify-content:space-between}
 .cal-month-nombre{font-size:13px;font-weight:700;color:#fff;text-transform:capitalize}
 .cal-month-count{font-size:11px;color:rgba(255,255,255,.6)}
-.cal-items{padding:8px 0}
-.cal-item{display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid #F5F6FA;cursor:pointer;transition:background .1s}
-.cal-item:last-child{border-bottom:none}
-.cal-item:hover{background:#F7F8FB}
-.cal-item-dia{min-width:28px;font-size:12px;font-weight:700;color:#1B3F72;font-variant-numeric:tabular-nums}
-.cal-item-info{flex:1}
-.cal-item-nombre{font-size:12.5px;font-weight:600;color:#18243A}
-.cal-item-pilar{font-size:10.5px;color:#8A97AA;margin-top:1px}
+.cal-grid-wrap{overflow-x:auto}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid #EEF0F6}
+.cal-grid-head{font-size:10px;font-weight:700;color:#8A97AA;text-transform:uppercase;letter-spacing:.04em;padding:6px 4px;text-align:center;background:#FAFBFD;border-bottom:1px solid #EEF0F6}
+.cal-cell{min-height:70px;border-right:1px solid #EEF0F6;border-bottom:1px solid #EEF0F6;padding:3px 4px;vertical-align:top;overflow:hidden}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell.empty-cell{background:#FAFBFD}
+.cal-cell-day{font-size:11px;font-weight:700;color:#5A6880;margin-bottom:2px;padding:1px 4px;font-variant-numeric:tabular-nums}
+.cal-cell-day.today{background:#1B3F72;color:#fff;border-radius:10px;display:inline-block;padding:1px 7px}
+.cal-event{font-size:8.5px;font-weight:600;padding:2px 3px;border-radius:3px;margin-bottom:2px;cursor:pointer;line-height:1.25;word-break:break-word;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cal-event.realizada{background:#D1FAE5;color:#065F46}
+.cal-event.pendiente{background:#EBF2FA;color:#1B3F72}
+.cal-event:hover{filter:brightness(.92)}
 .cal-empty{padding:14px 16px;font-size:12px;color:#8A97AA;text-align:center}
 
 /* MODAL GENERICO */
@@ -194,7 +198,7 @@ tbody tr:hover .row-actions{opacity:1}
 <body>
 
 <div class="topbar">
-  <button class="topbar-btn ghost" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <button class="topbar-btn ghost" onclick="window.location.href='/aprendizaje-hub'">← Volver</button>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Plan Anual de Capacitación — PAC 2026</span>
   <button class="topbar-btn ghost" onclick="exportarCSV()">⬇ Exportar</button>
@@ -613,44 +617,59 @@ function abrirModalPersona(id) {
 }
 function cerrarModalPers() { document.getElementById('modal-pers-bg').classList.remove('open'); }
 
-/* ─── VISTA CALENDARIO ─── */
+/* ─── VISTA CALENDARIO GRID ─── */
 function renderCalendario() {
   if (VISTA !== 'cal') return;
   const cont = document.getElementById('contenido');
-  const conFecha = CAPS.filter(c => c.fecha_programada).map(c => {
-    const d = parseLocal(c.fecha_programada);
+  const DIAS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const conFecha = CAPS.filter(c => c.fecha_programada || c.fecha_ejecucion).map(c => {
+    const d = parseLocal(c.fecha_ejecucion || c.fecha_programada);
     return { ...c, _d: d };
-  }).filter(c => c._d && c._d.getMonth() >= 2 && c._d.getMonth() <= 10 && c._d.getFullYear() === 2026)
-    .sort((a,b) => a._d - b._d);
+  }).filter(c => c._d && c._d.getFullYear() === 2026).sort((a,b) => a._d - b._d);
 
-  const meses = [2,3,4,5,6,7,8,9,10];
-  const hayAlgo = conFecha.length > 0;
-
-  if (!hayAlgo) {
-    cont.innerHTML = '<div class="empty">No hay capacitaciones con fecha programada todavía. Editá cada capacitación para asignarle una fecha y aparecerá aquí.</div>';
+  const mesesConDatos = [...new Set(conFecha.map(c => c._d.getMonth()))].sort((a,b) => a - b);
+  if (mesesConDatos.length === 0) {
+    cont.innerHTML = '<div class="empty">No hay capacitaciones con fecha programada todavía.</div>';
     return;
   }
 
-  cont.innerHTML = '<div class="cal-wrap">' + meses.map(m => {
+  const hoy = new Date();
+  const hoyStr = hoy.getFullYear() + '-' + hoy.getMonth() + '-' + hoy.getDate();
+
+  cont.innerHTML = '<div class="cal-wrap">' + mesesConDatos.map(m => {
     const items = conFecha.filter(c => c._d.getMonth() === m);
-    return `<div class="cal-month">
-      <div class="cal-month-hdr">
-        <span class="cal-month-nombre">${MESES[m]} 2026</span>
-        <span class="cal-month-count">${items.length} capacitación${items.length !== 1 ? 'es' : ''}</span>
-      </div>
-      ${items.length
-        ? `<div class="cal-items">${items.map(c => `
-          <div class="cal-item" onclick="abrirDetalle(${c.id})">
-            <span class="cal-item-dia">${String(c._d.getDate()).padStart(2,'0')}</span>
-            <div class="cal-item-info">
-              <div class="cal-item-nombre">${c.nombre}</div>
-              <div class="cal-item-pilar">${c.pilar}</div>
-            </div>
-            ${tipoBadge(c)}
-            ${estadoCap(c) === 'realizada' ? '<span class="badge-realizada">✓ Realizada</span>' : ''}
-          </div>`).join('')}</div>`
-        : '<div class="cal-empty">Sin capacitaciones programadas para este mes</div>'}
-    </div>`;
+    const year = 2026;
+    const firstDay = new Date(year, m, 1);
+    const lastDay = new Date(year, m + 1, 0).getDate();
+    let startDow = firstDay.getDay();
+    startDow = startDow === 0 ? 6 : startDow - 1;
+
+    let cells = '';
+    DIAS.forEach(d => { cells += '<div class="cal-grid-head">' + d + '</div>'; });
+    for (let i = 0; i < startDow; i++) cells += '<div class="cal-cell empty-cell"></div>';
+    for (let day = 1; day <= lastDay; day++) {
+      const dayKey = year + '-' + m + '-' + day;
+      const isToday = dayKey === hoyStr;
+      const evts = items.filter(c => c._d.getDate() === day);
+      cells += '<div class="cal-cell">' +
+        '<div class="cal-cell-day' + (isToday ? ' today' : '') + '">' + day + '</div>' +
+        evts.map(c => {
+          const cls = c.fecha_ejecucion ? 'realizada' : 'pendiente';
+          return '<div class="cal-event ' + cls + '" onclick="abrirDetalle(' + c.id + ')" title="' + c.nombre.replace(/"/g,'&quot;') + '">' + c.nombre + '</div>';
+        }).join('') +
+      '</div>';
+    }
+    const totalCells = startDow + lastDay;
+    const trailing = (7 - (totalCells % 7)) % 7;
+    for (let i = 0; i < trailing; i++) cells += '<div class="cal-cell empty-cell"></div>';
+
+    return '<div class="cal-month">' +
+      '<div class="cal-month-hdr">' +
+        '<span class="cal-month-nombre">' + MESES[m] + ' 2026</span>' +
+        '<span class="cal-month-count">' + items.length + ' capacitación' + (items.length !== 1 ? 'es' : '') + '</span>' +
+      '</div>' +
+      '<div class="cal-grid-wrap"><div class="cal-grid">' + cells + '</div></div>' +
+    '</div>';
   }).join('') + '</div>';
 }
 
@@ -694,7 +713,8 @@ function renderNominaGrid(asistentesActuales) {
   (asistentesActuales||[]).forEach(a => { aMap[a.nomina_id] = a; });
   const hasFechaEjec = !!document.getElementById('f-fecha-ejec').value;
   document.getElementById('nomina-grid').innerHTML = NOMINA.map(p => {
-    const a = aMap[p.id] || { aplica: false, asistio: false, aprobado: false };
+    const a = aMap[p.id] || { aplica: false, asistio: false, aprobado: false, justificacion: '' };
+    const showJustif = a.aplica && !a.asistio && hasFechaEjec;
     return `<div class="nomina-row ${a.aplica?'':'no-aplica'}" id="nrow-${p.id}">
       <div style="flex:1">
         <div class="nomina-nombre-cell">${p.apellido}, ${p.nombre.split(' ')[0]}</div>
@@ -712,6 +732,7 @@ function renderNominaGrid(asistentesActuales) {
         <input type="checkbox" data-nom="${p.id}" data-chk="aprobado" ${a.aprobado?'checked':''}>
         Aprobó
       </label>
+      <input type="text" data-nom="${p.id}" data-chk="justificacion" value="${(a.justificacion||'').replace(/"/g,'&quot;')}" placeholder="Justificación..." style="display:${showJustif?'block':'none'};font-size:10px;border:1px solid #D8DEE8;border-radius:4px;padding:3px 6px;width:140px;font-family:inherit;color:#92400E">
     </div>`;
   }).join('');
 }
@@ -723,12 +744,18 @@ function onAplicaChange(nomId, val) {
   const hasFechaEjec = !!document.getElementById('f-fecha-ejec').value;
   row.querySelector('[data-chk="asistio"]').closest('label').style.cssText = (!val||!hasFechaEjec) ? 'opacity:.35;pointer-events:none' : '';
   row.querySelector('[data-chk="aprobado"]').closest('label').style.cssText = 'opacity:.35;pointer-events:none';
+  const justif = row.querySelector('[data-chk="justificacion"]');
+  justif.style.display = 'none';
 }
 function onAsistioChange(nomId, val) {
   const row = document.getElementById('nrow-' + nomId);
   const lblApro = row.querySelector('[data-chk="aprobado"]').closest('label');
   if (!val) row.querySelector('[data-chk="aprobado"]').checked = false;
   lblApro.style.cssText = val ? '' : 'opacity:.35;pointer-events:none';
+  const justif = row.querySelector('[data-chk="justificacion"]');
+  const hasFechaEjec = !!document.getElementById('f-fecha-ejec').value;
+  const aplica = row.querySelector('[data-chk="aplica"]').checked;
+  justif.style.display = (aplica && !val && hasFechaEjec) ? 'block' : 'none';
 }
 
 document.getElementById('f-fecha-ejec').addEventListener('change', function() {
@@ -753,7 +780,8 @@ function getAsistentesForm() {
     nomina_id: p.id,
     aplica:   document.querySelector(`[data-nom="${p.id}"][data-chk="aplica"]`)?.checked || false,
     asistio:  document.querySelector(`[data-nom="${p.id}"][data-chk="asistio"]`)?.checked || false,
-    aprobado: document.querySelector(`[data-nom="${p.id}"][data-chk="aprobado"]`)?.checked || false
+    aprobado: document.querySelector(`[data-nom="${p.id}"][data-chk="aprobado"]`)?.checked || false,
+    justificacion: document.querySelector(`[data-nom="${p.id}"][data-chk="justificacion"]`)?.value || ''
   }));
 }
 
@@ -833,10 +861,12 @@ function abrirDetalle(id) {
     const dash = '<span style="color:#D8DEE8">—</span>';
     const asistioCell = !ejecutada ? dash : (a.asistio ? '✅' : '❌');
     const aproboCell  = !ejecutada || !a.asistio ? dash : (a.aprobado ? '✅' : '❌');
+    const justifCell = (ejecutada && a.aplica && !a.asistio && a.justificacion) ? `<span style="color:#92400E;font-size:11px">${a.justificacion}</span>` : '';
     return `<tr>
       <td style="font-weight:600">${p.apellido}, ${p.nombre.split(' ')[0]}</td>
       <td style="text-align:center">${asistioCell}</td>
       <td style="text-align:center">${aproboCell}</td>
+      <td>${justifCell}</td>
     </tr>`;
   }).filter(Boolean).join('');
   document.getElementById('modal-det-titulo').textContent = c.nombre;
@@ -857,7 +887,7 @@ function abrirDetalle(id) {
     <div class="det-section">
       <div class="det-label" style="margin-bottom:8px">Asistencia nominal (${aplican.length} aplican)</div>
       <table class="asis-table">
-        <thead><tr><th>Persona</th><th style="text-align:center">Asistió</th><th style="text-align:center">Aprobó</th></tr></thead>
+        <thead><tr><th>Persona</th><th style="text-align:center">Asistió</th><th style="text-align:center">Aprobó</th><th>Justificación</th></tr></thead>
         <tbody>${asisRows}</tbody>
       </table>
     </div>

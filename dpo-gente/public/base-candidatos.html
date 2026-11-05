@@ -95,9 +95,14 @@ tbody td{padding:11px 14px;vertical-align:middle}
 .close-x:hover{color:#18243A}
 
 /* DROPZONE */
-.dropzone{border:1.5px dashed #B8C8D8;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#F7FAFC;margin-bottom:4px;transition:border-color .15s}
+.dz-row{display:flex;gap:10px;margin-bottom:4px}
+.dropzone{flex:1;border:1.5px dashed #B8C8D8;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#F7FAFC;transition:border-color .15s}
 .dropzone:hover,.dropzone.drag{border-color:#2563A8;background:#EBF2FA}
 .dropzone strong{color:#2563A8}
+.dz-camera{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1.5px dashed #B8C8D8;border-radius:8px;padding:16px 20px;text-align:center;cursor:pointer;background:#F7FAFC;transition:border-color .15s;min-width:110px}
+.dz-camera:hover{border-color:#2563A8;background:#EBF2FA}
+.dz-camera-icon{font-size:28px;line-height:1}
+.dz-camera-text{font-size:11px;font-weight:700;color:#2563A8}
 .dz-sub{font-size:11.5px;color:#8A97AA;margin-top:4px}
 .dz-status{font-size:12px;margin-top:8px;font-weight:600}
 .dz-status.busy{color:#8A6010}
@@ -125,10 +130,69 @@ tbody td{padding:11px 14px;vertical-align:middle}
 
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#18243A;color:#fff;padding:10px 20px;border-radius:7px;font-size:13px;font-weight:600;z-index:100;display:none;box-shadow:0 6px 20px rgba(0,0,0,.2)}
 
+/* ── RESPONSIVE ── */
 @media(max-width:700px){
-  .stat-cards{grid-template-columns:1fr 1fr}
+  .topbar{padding:.5rem .75rem;gap:8px}
+  .topbar-back{font-size:11.5px;padding:4px 7px}
+  .topbar-sep{display:none}
+  .topbar-title{font-size:11px}
+
+  .page-header{padding:14px 16px}
+  .page-header h1{font-size:16px}
+
+  .wrap{padding:12px 10px}
+
+  .stat-cards{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .stat-card{padding:12px 14px}
+  .stat-num{font-size:22px}
+  .stat-label{font-size:9.5px}
+
+  .toolbar{flex-wrap:wrap;gap:8px}
+  .search-input{flex:1 1 100%;order:-1}
+  .filter-sel{flex:1 1 calc(50% - 4px);font-size:12px;padding:7px 8px}
+  .btn-add{flex:1 1 100%;text-align:center;padding:10px 16px}
+
+  /* Card layout instead of table */
+  .table-wrap{border:none;background:transparent;overflow:visible}
+  table{min-width:0}
+  thead{display:none}
+  tbody{display:flex;flex-direction:column;gap:8px}
+  tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;background:#fff;border:1px solid #D8DEE8;border-radius:8px;padding:12px 14px;border-bottom:none}
+  tbody tr:hover{background:#fff}
+  tbody td{padding:0;display:block}
+  tbody td::before{content:attr(data-label);display:block;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8A97AA;margin-bottom:2px}
+  /* Name spans full width */
+  tbody td:nth-child(1){grid-column:1/-1;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid #EEF0F6}
+  tbody td:nth-child(1)::before{display:none}
+  /* Estado spans full width */
+  tbody td:nth-child(8){grid-column:1/-1;margin-top:4px;padding-top:6px;border-top:1px solid #EEF0F6}
+  tbody td:nth-child(8)::before{display:none}
+  /* Edit button */
+  tbody td:nth-child(9){grid-column:1/-1}
+  tbody td:nth-child(9)::before{display:none}
+  .edit-btn{width:100%;text-align:center;padding:7px 10px}
+  .estado-sel{width:100%;padding:6px 10px;font-size:12px}
+
+  /* Empty state fix */
+  tbody tr:has(.empty-state){display:block}
+  tbody tr:has(.empty-state) td{grid-column:1/-1}
+
+  /* Modal full-screen */
+  .overlay{padding:0;align-items:stretch}
+  .modal{max-width:100%;border-radius:0;min-height:100dvh;padding:16px 14px 20px}
+  .modal-title{font-size:15px}
+  .dz-row{flex-direction:row;gap:8px}
+  .dz-camera{min-width:90px;padding:14px 12px}
+  .dz-camera-icon{font-size:24px}
   .form-grid{grid-template-columns:1fr}
   .form-grid .full{grid-column:1}
+  .modal-footer{flex-direction:column;gap:8px}
+  .modal-footer-right{width:100%;display:flex;gap:8px}
+  .modal-footer-right .btn-cancel,.modal-footer-right .btn-save{flex:1}
+  .btn-danger{width:100%;text-align:center}
+  #btn-delete-wrap{width:100%}
+
+  .dropzone{padding:14px 10px}
 }
 </style>
 </head>
@@ -165,7 +229,7 @@ tbody td{padding:11px 14px;vertical-align:middle}
       <option value="">Todos los estados</option>
       <option>Sin entrevista</option><option>Entrevistado OK</option><option>Entrevistado no OK</option>
     </select>
-    <button class="btn-add" id="btn-add">+ Agregar candidato</button>
+    <button class="btn-add admin-only" id="btn-add">+ Agregar candidato</button>
   </div>
 
   <div class="table-wrap">
@@ -190,13 +254,20 @@ tbody td{padding:11px 14px;vertical-align:middle}
     <div class="modal-title" id="modal-title">Agregar candidato</div>
     <div class="modal-sub">Completá los datos del candidato. Podés adjuntar el CV y extraer los datos si querés.</div>
 
-    <div class="dropzone" id="dropzone">
-      <input type="file" id="file-input" accept=".pdf,.doc,.docx" style="display:none">
-      <strong>Hacé clic o arrastrá el CV acá</strong>
-      <div class="dz-sub">PDF o Word · máx 10 MB</div>
-      <div class="dz-status" id="dz-status"></div>
-      <button type="button" class="btn-extract" id="btn-extract" onclick="extraerDatos()">Extraer datos del CV</button>
+    <div class="dz-row">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".pdf,.doc,.docx,image/*" style="display:none">
+        <strong>Hacé clic o arrastrá el CV acá</strong>
+        <div class="dz-sub">PDF, Word o imagen · máx 10 MB</div>
+      </div>
+      <div class="dz-camera" id="dz-camera">
+        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none">
+        <span class="dz-camera-icon">📷</span>
+        <span class="dz-camera-text">Sacar foto</span>
+      </div>
     </div>
+    <div class="dz-status" id="dz-status"></div>
+    <button type="button" class="btn-extract" id="btn-extract" onclick="extraerDatos()">Extraer datos del CV</button>
 
     <form id="cand-form">
       <div class="section-label">Datos personales</div>
@@ -250,7 +321,7 @@ tbody td{padding:11px 14px;vertical-align:middle}
         <div id="btn-delete-wrap"></div>
         <div class="modal-footer-right">
           <button type="button" class="btn-cancel" id="btn-cancel">Cancelar</button>
-          <button type="submit" class="btn-save" id="btn-save">Guardar candidato</button>
+          <button type="submit" class="btn-save admin-only" id="btn-save">Guardar candidato</button>
         </div>
       </div>
     </form>
@@ -262,6 +333,8 @@ tbody td{padding:11px 14px;vertical-align:middle}
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend', '<style>.admin-only{display:none!important}</style>');
 
 let CANDIDATOS = [];
 let EDITING_ID = null;
@@ -332,12 +405,12 @@ function renderTabla(){
     return `<tr>
       <td><div class="cell-name">${esc(c.apellido)}${c.apellido&&c.nombre?', ':''}${esc(c.nombre)}</div>
           <div class="cell-meta">${sexBadge}${fecha}</div></td>
-      <td><span class="cell-muted">${esc(c.localidad)||'<span class="no-val">–</span>'}</span></td>
-      <td>${areaChip(c.area)}<div class="cell-sm">${esc(c.formacion)}</div></td>
-      <td>${c.celular?`<div class="cell-muted">${esc(c.celular)}</div>`:''}${c.email?`<div class="cell-sm">${esc(c.email)}</div>`:''}</td>
-      <td><span class="cell-muted">${lic}</span></td>
-      <td><span class="medio-tag">${esc(c.medio_reclutamiento)||'<span class="no-val">–</span>'}</span></td>
-      <td>${cv}</td>
+      <td data-label="Localidad"><span class="cell-muted">${esc(c.localidad)||'<span class="no-val">–</span>'}</span></td>
+      <td data-label="Área">${areaChip(c.area)}<div class="cell-sm">${esc(c.formacion)}</div></td>
+      <td data-label="Contacto">${c.celular?`<div class="cell-muted">${esc(c.celular)}</div>`:''}${c.email?`<div class="cell-sm">${esc(c.email)}</div>`:''}</td>
+      <td data-label="Licencia"><span class="cell-muted">${lic}</span></td>
+      <td data-label="Medio"><span class="medio-tag">${esc(c.medio_reclutamiento)||'<span class="no-val">–</span>'}</span></td>
+      <td data-label="CV">${cv}</td>
       <td><select class="estado-sel" data-id="${c.id}" data-v="${esc(c.estado)}">
         ${['Sin entrevista','Entrevistado OK','Entrevistado no OK'].map(o=>`<option${o===c.estado?' selected':''}>${o}</option>`).join('')}
       </select></td>
@@ -384,7 +457,7 @@ function abrirModal(c){
   st.className = 'dz-status';
   document.getElementById('btn-extract').classList.remove('visible');
   const delWrap = document.getElementById('btn-delete-wrap');
-  delWrap.innerHTML = c?`<button type="button" class="btn-danger" id="btn-delete">Eliminar candidato</button>`:'';
+  delWrap.innerHTML = (c && IS_ADMIN)?`<button type="button" class="btn-danger admin-only" id="btn-delete">Eliminar candidato</button>`:'';
   if(c) document.getElementById('btn-delete').addEventListener('click',()=>eliminar(c.id));
   document.getElementById('overlay').classList.add('open');
 }
@@ -412,14 +485,18 @@ document.getElementById('f-area').addEventListener('change',renderTabla);
 document.getElementById('f-licencia-fil').addEventListener('change',renderTabla);
 document.getElementById('f-estado').addEventListener('change',renderTabla);
 
-// ── CV Upload — solo guarda el archivo, NO extrae datos ──
+// ── CV Upload — archivo o foto ──
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('file-input');
+const cameraInput = document.getElementById('camera-input');
+const dzCamera = document.getElementById('dz-camera');
 dropzone.addEventListener('click',()=>fileInput.click());
 dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('drag');});
 dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('drag'));
 dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('drag');if(e.dataTransfer.files[0])seleccionarArchivo(e.dataTransfer.files[0]);});
 fileInput.addEventListener('change',e=>{if(e.target.files[0])seleccionarArchivo(e.target.files[0]);});
+dzCamera.addEventListener('click',()=>cameraInput.click());
+cameraInput.addEventListener('change',e=>{if(e.target.files[0])seleccionarArchivo(e.target.files[0]);});
 
 function seleccionarArchivo(file){
   PENDING_CV_FILE = file;
@@ -465,6 +542,7 @@ async function extraerDatos(){
 // ── Guardar ──
 document.getElementById('cand-form').addEventListener('submit', async e=>{
   e.preventDefault();
+  if(!IS_ADMIN){ toast('Solo lectura'); return; }
   const apellido = document.getElementById('f-apellido').value.trim();
   const nombre = document.getElementById('f-nombre').value.trim();
   if(!apellido && !nombre){ toast('Ingresá al menos apellido o nombre'); return; }

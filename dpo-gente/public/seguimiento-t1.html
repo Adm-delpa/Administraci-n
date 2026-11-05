@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento T1 — DPO Gente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
+.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
+.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
+.topbar-back:hover{background:#EBF2FA}
+.topbar-sep{color:#D8DEE8}
+.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
+.page-header{background:linear-gradient(135deg,#1B3F72,#2563A8);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.page-header h1{font-size:16px;font-weight:700;color:#fff}
+.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.btn-header{background:#fff;color:#1B3F72;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-header:hover{background:#EBF2FA}
+.wrap{max-width:1200px;margin:0 auto;padding:20px}
+.controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.sel{font-size:12px;font-weight:600;padding:7px 12px;border-radius:7px;border:1.5px solid #D8DEE8;background:#fff;color:#18243A;cursor:pointer;font-family:inherit}
+.sel:focus{outline:none;border-color:#2563A8}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:10px;padding:16px;border:1px solid #D8DEE8;text-align:center}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#5E6E89;margin-bottom:6px}
+.kpi-val{font-size:28px;font-weight:800;color:#18243A}
+.kpi-meta{font-size:10px;color:#8A97AA;margin-top:4px}
+.kpi.green .kpi-val{color:#065F46}
+.kpi.red .kpi-val{color:#B91C1C}
+.kpi.orange .kpi-val{color:#92400E}
+
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #D8DEE8;padding-bottom:0}
+.tab{background:none;border:none;padding:8px 16px;font-size:12px;font-weight:600;color:#8A97AA;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab:hover{color:#2563A8}
+.tab.active{color:#2563A8;border-bottom-color:#2563A8}
+
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:11px}
+thead th{background:#1B3F72;color:#fff;padding:7px 10px;font-weight:600;text-align:left;white-space:nowrap;position:sticky;top:0}
+tbody td{padding:6px 10px;border-bottom:1px solid #EEF0F6;background:#fff;white-space:nowrap}
+tbody tr:hover td{background:#F7F9FC}
+.alert-row td{background:#FEE2E2 !important}
+.alert-row:hover td{background:#FECACA !important}
+.ok-row td{background:#D1FAE5 !important}
+.ok-row:hover td{background:#A7F3D0 !important}
+.badge-ok{background:#D1FAE5;color:#065F46;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.badge-alert{background:#FEE2E2;color:#B91C1C;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.badge-warn{background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+
+.empty{text-align:center;padding:40px 20px;color:#8A97AA;font-size:13px}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:420px;max-width:90vw;padding:24px;display:flex;flex-direction:column;gap:14px}
+.modal-title{font-size:15px;font-weight:700;color:#18243A}
+.form-row{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:11px;font-weight:600;color:#5E6E89;text-transform:uppercase}
+.upload-zone{border:2px dashed #D8DEE8;border-radius:8px;padding:20px;text-align:center;cursor:pointer}
+.upload-zone:hover{border-color:#2563A8}
+.upload-zone.has-file{border-color:#2563A8;background:#EBF2FA}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end}
+.btn-cancel{background:#F2F4F8;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;color:#5E6E89;cursor:pointer;font-family:inherit}
+.btn-primary{background:#2563A8;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit}
+.btn-primary:disabled{opacity:.5;cursor:default}
+.msg-ok{background:#D1FAE5;color:#065F46;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600}
+.msg-err{background:#FEE2E2;color:#B91C1C;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600}
+
+.chofer-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.chofer-card{background:#fff;border:1px solid #D8DEE8;border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s}
+.chofer-card:hover{border-color:#2563A8}
+.chofer-name{font-size:14px;font-weight:700;color:#18243A;margin-bottom:8px}
+.chofer-stat{font-size:11px;color:#5E6E89;margin-bottom:3px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Seguimiento T1</span>
+</div>
+
+<div class="page-header">
+  <div>
+    <h1>🚛 Seguimiento T1 — Transporte Tercerizado</h1>
+    <p>Control de descanso entre viajes · Ambiente de Trabajo y Compromiso</p>
+  </div>
+  <button class="btn-header admin-only" onclick="abrirImport()">📥 Importar Excel</button>
+</div>
+
+<div class="wrap">
+  <div class="controls">
+    <select class="sel" id="yearSel" onchange="cargar()"></select>
+    <select class="sel" id="sucursalSel" onchange="cargar()">
+      <option value="">Todas las sucursales</option>
+      <option value="Mar de Ajo">Casa Central (Mar de Ajó)</option>
+      <option value="Dolores">Dolores</option>
+    </select>
+    <select class="sel" id="choferSel" onchange="cargar()">
+      <option value="">Todos los transportistas</option>
+    </select>
+  </div>
+
+  <div class="kpi-row" id="kpis"></div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabResumen" onclick="verTab('resumen')">Resumen por transportista</button>
+    <button class="tab" id="tabDetalle" onclick="verTab('detalle')">Detalle de viajes</button>
+    <button class="tab" id="tabAlertas" onclick="verTab('alertas')">Alertas</button>
+  </div>
+
+  <div id="contenido"></div>
+</div>
+
+<!-- Modal importar -->
+<div class="modal-bg" id="modalImport">
+  <div class="modal">
+    <div class="modal-title">Importar viajes</div>
+    <div class="form-row">
+      <div class="form-label">Año</div>
+      <select class="sel" id="importAnio" style="width:100%"></select>
+    </div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div style="font-size:24px;margin-bottom:6px">📄</div>
+      <div id="uploadTxt" style="font-size:12px;color:#8A97AA">Click para seleccionar archivo Excel</div>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="onFile(this)">
+    <div id="importMsg" style="display:none"></div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" id="btnImport" disabled onclick="importar()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
+if (!USER) window.location.href = '/';
+const IS_ADMIN = !!(USER && USER.admin);
+if (!IS_ADMIN) document.head.insertAdjacentHTML('beforeend','<style>.admin-only{display:none!important}</style>');
+
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+let DATA = [];
+let ANALISIS = [];
+let TAB = 'resumen';
+
+function initYears() {
+  const y = new Date().getFullYear();
+  ['yearSel','importAnio'].forEach(id => {
+    const s = document.getElementById(id);
+    for (let i = y; i >= y - 3; i--) { const o = document.createElement('option'); o.value = i; o.textContent = i; s.appendChild(o); }
+  });
+}
+
+function fmtFecha(iso) {
+  if (!iso) return '—';
+  const s = String(iso).slice(0, 10);
+  const d = new Date(s + 'T12:00:00');
+  if (isNaN(d)) return '—';
+  return d.toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function analizar(data) {
+  const porChofer = {};
+  data.forEach(v => {
+    if (!porChofer[v.chofer]) porChofer[v.chofer] = [];
+    porChofer[v.chofer].push(v);
+  });
+
+  const result = [];
+  for (const [chofer, viajes] of Object.entries(porChofer)) {
+    viajes.forEach(v => { v.fecha = String(v.fecha).slice(0, 10); });
+    viajes.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    let alertas = 0, totalPares = 0;
+    const detalle = [];
+
+    for (let i = 0; i < viajes.length; i++) {
+      const v = viajes[i];
+      let diasDescanso = null, esAlerta = false;
+      if (i > 0) {
+        const prev = new Date(viajes[i-1].fecha + 'T12:00:00');
+        const curr = new Date(v.fecha + 'T12:00:00');
+        diasDescanso = Math.round((curr - prev) / 86400000);
+        totalPares++;
+        const mismoRemito = v.remito === viajes[i-1].remito;
+        const mismoOrigen = v.inicio === viajes[i-1].inicio;
+        if (diasDescanso < 1 && mismoRemito && mismoOrigen) { alertas++; esAlerta = true; }
+      }
+      detalle.push({ ...v, diasDescanso, esAlerta, idx: i });
+    }
+
+    result.push({
+      chofer,
+      totalViajes: viajes.length,
+      alertas,
+      totalPares,
+      pctCumplimiento: totalPares > 0 ? Math.round((totalPares - alertas) / totalPares * 100) : 100,
+      detalle
+    });
+  }
+  result.sort((a, b) => a.chofer.localeCompare(b.chofer));
+  return result;
+}
+
+async function cargar() {
+  const anio = document.getElementById('yearSel').value;
+  const sucursal = document.getElementById('sucursalSel').value;
+  let url = '/api/seguimiento-t1?anio=' + anio;
+  if (sucursal) url += '&sucursal=' + encodeURIComponent(sucursal);
+  try {
+    const r = await fetch(url);
+    DATA = await r.json();
+  } catch(e) { DATA = []; }
+
+  const choferFiltro = document.getElementById('choferSel').value;
+
+  // Update chofer filter
+  const choferes = [...new Set(DATA.map(d => d.chofer))].sort();
+  const selC = document.getElementById('choferSel');
+  const prevVal = selC.value;
+  selC.innerHTML = '<option value="">Todos los transportistas</option>';
+  choferes.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selC.appendChild(o); });
+  if (choferes.includes(prevVal)) selC.value = prevVal;
+
+  let filtered = DATA;
+  if (selC.value) filtered = DATA.filter(d => d.chofer === selC.value);
+
+  ANALISIS = analizar(filtered);
+  renderKPIs();
+  renderTab();
+}
+
+function renderKPIs() {
+  const totalViajes = ANALISIS.reduce((s, a) => s + a.totalViajes, 0);
+  const totalAlertas = ANALISIS.reduce((s, a) => s + a.alertas, 0);
+  const totalPares = ANALISIS.reduce((s, a) => s + a.totalPares, 0);
+  const pctGlobal = totalPares > 0 ? Math.round((totalPares - totalAlertas) / totalPares * 100) : 100;
+  const cls = pctGlobal >= 90 ? 'green' : pctGlobal >= 70 ? 'orange' : 'red';
+
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Total viajes</div><div class="kpi-val">${totalViajes}</div></div>
+    <div class="kpi"><div class="kpi-label">Transportistas</div><div class="kpi-val">${ANALISIS.length}</div></div>
+    <div class="kpi ${cls}"><div class="kpi-label">% Cumplimiento</div><div class="kpi-val">${pctGlobal}%</div><div class="kpi-meta">viajes con ≥1 día de descanso</div></div>
+    <div class="kpi ${totalAlertas > 0 ? 'red' : 'green'}"><div class="kpi-label">Alertas</div><div class="kpi-val">${totalAlertas}</div><div class="kpi-meta">viajes mismo día que el anterior</div></div>
+  `;
+}
+
+function verTab(t) {
+  TAB = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
+  renderTab();
+}
+
+function renderTab() {
+  const cont = document.getElementById('contenido');
+  if (TAB === 'resumen') renderResumen(cont);
+  else if (TAB === 'detalle') renderDetalle(cont);
+  else renderAlertas(cont);
+}
+
+function renderResumen(cont) {
+  if (!ANALISIS.length) { cont.innerHTML = '<div class="empty">Sin datos cargados.</div>'; return; }
+  cont.innerHTML = '<div class="chofer-cards">' + ANALISIS.map(a => {
+    const cls = a.pctCumplimiento >= 90 ? 'green' : a.pctCumplimiento >= 70 ? 'orange' : 'red';
+    return `<div class="chofer-card" onclick="document.getElementById('choferSel').value='${a.chofer}';cargar();verTab('detalle')">
+      <div class="chofer-name">🚛 ${a.chofer}</div>
+      <div class="chofer-stat">Viajes: <b>${a.totalViajes}</b></div>
+      <div class="chofer-stat">Cumplimiento: <b style="color:${cls==='green'?'#065F46':cls==='orange'?'#92400E':'#B91C1C'}">${a.pctCumplimiento}%</b></div>
+      <div class="chofer-stat">Alertas: ${a.alertas > 0 ? '<span class="badge-alert">'+a.alertas+'</span>' : '<span class="badge-ok">0</span>'}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function renderDetalle(cont) {
+  if (!ANALISIS.length) { cont.innerHTML = '<div class="empty">Sin datos cargados.</div>'; return; }
+  let html = '<div class="tbl-wrap"><table><thead><tr>';
+  html += '<th>Transportista</th><th>Fecha</th><th>Remito</th><th>Origen</th><th>Destino</th><th>Días desde anterior</th><th>Estado</th>';
+  html += '</tr></thead><tbody>';
+  ANALISIS.forEach(a => {
+    a.detalle.forEach(d => {
+      const rowCls = d.esAlerta ? 'alert-row' : (d.diasDescanso !== null && d.diasDescanso >= 1 ? 'ok-row' : '');
+      const badge = d.diasDescanso === null ? '—' :
+        d.diasDescanso < 1 ? '<span class="badge-alert">MISMO DÍA</span>' :
+        d.diasDescanso === 1 ? '<span class="badge-warn">1 día</span>' :
+        '<span class="badge-ok">' + d.diasDescanso + ' días</span>';
+      const estado = d.diasDescanso === null ? '—' :
+        d.diasDescanso < 1 ? '<span class="badge-alert">⚠ ALERTA</span>' : '<span class="badge-ok">✓ OK</span>';
+      html += `<tr class="${rowCls}">
+        <td style="font-weight:600">${d.chofer}</td>
+        <td>${fmtFecha(d.fecha)}</td>
+        <td style="font-size:10px">${d.remito}</td>
+        <td style="font-size:10px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${d.inicio}</td>
+        <td>${d.fin}</td>
+        <td style="text-align:center">${badge}</td>
+        <td style="text-align:center">${estado}</td>
+      </tr>`;
+    });
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+function renderAlertas(cont) {
+  const alertas = [];
+  ANALISIS.forEach(a => {
+    a.detalle.filter(d => d.esAlerta).forEach(d => {
+      const prev = a.detalle[d.idx - 1];
+      alertas.push({ chofer: d.chofer, fecha: d.fecha, remito: d.remito, inicio: d.inicio, fin: d.fin, prevRemito: prev.remito, prevInicio: prev.inicio, prevFin: prev.fin });
+    });
+  });
+
+  if (!alertas.length) {
+    cont.innerHTML = '<div class="empty" style="color:#065F46">✓ No hay alertas — Todos los viajes cumplen con el descanso mínimo.</div>';
+    return;
+  }
+
+  let html = '<div class="tbl-wrap"><table><thead><tr>';
+  html += '<th>Transportista</th><th>Fecha</th><th>Viaje anterior</th><th>Viaje en alerta</th>';
+  html += '</tr></thead><tbody>';
+  alertas.forEach(a => {
+    html += `<tr class="alert-row">
+      <td style="font-weight:700">${a.chofer}</td>
+      <td>${fmtFecha(a.fecha)}</td>
+      <td style="font-size:10px">${a.prevRemito} · ${a.prevInicio} → ${a.prevFin}</td>
+      <td style="font-size:10px">${a.remito} · ${a.inicio} → ${a.fin}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+}
+
+// ── Import ──
+function abrirImport() {
+  document.getElementById('modalImport').classList.add('open');
+  document.getElementById('uploadTxt').textContent = 'Click para seleccionar archivo Excel';
+  document.getElementById('uploadZone').classList.remove('has-file');
+  document.getElementById('btnImport').disabled = true;
+  document.getElementById('importMsg').style.display = 'none';
+  document.getElementById('importAnio').value = document.getElementById('yearSel').value;
+}
+function cerrarModal() { document.getElementById('modalImport').classList.remove('open'); }
+function onFile(inp) {
+  if (inp.files.length) {
+    document.getElementById('uploadTxt').textContent = inp.files[0].name;
+    document.getElementById('uploadZone').classList.add('has-file');
+    document.getElementById('btnImport').disabled = false;
+  }
+}
+async function importar() {
+  const btn = document.getElementById('btnImport');
+  btn.disabled = true; btn.textContent = 'Importando...';
+  const msg = document.getElementById('importMsg');
+  try {
+    const fd = new FormData();
+    fd.append('anio', document.getElementById('importAnio').value);
+    fd.append('archivo', document.getElementById('fileInput').files[0]);
+    const r = await fetch('/api/seguimiento-t1/importar', { method: 'POST', body: fd });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    msg.style.display = ''; msg.className = 'msg-ok';
+    msg.textContent = `✓ ${data.count} viajes importados`;
+    cerrarModal();
+    cargar();
+  } catch(e) {
+    msg.style.display = ''; msg.className = 'msg-err'; msg.textContent = e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Importar';
+}
+
+initYears();
+cargar();
+</script>
+</body>
+</html>
