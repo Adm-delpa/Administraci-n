@@ -77,6 +77,47 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 .modal label{font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px}
 .modal input[type=file]{font-size:12px;font-family:inherit}
 .modal .btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+/* Carga rápida */
+.carga{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.carga-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.carga-head h3{font-size:13.5px;font-weight:800;color:#1B3F72;flex:1}
+.carga-head p{font-size:11px;color:#8A97AA;width:100%}
+.carga-form{display:grid;grid-template-columns:minmax(220px,2fr) minmax(190px,1.5fr) 140px 140px minmax(160px,1.5fr) auto;gap:10px;align-items:end}
+.carga-form label{display:block;font-size:10px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.carga-form input[type=text],.carga-form input[type=date],.carga-form select{width:100%;background:#fff;border:1.5px solid #D8DEE8;border-radius:8px;padding:7px 10px;font-size:12.5px;font-family:inherit;color:#18243A}
+.carga-form input:focus,.carga-form select:focus{outline:none;border-color:#2563A8}
+.carga-opts{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:#5E6E89;align-items:center}
+.carga-opts label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.carga-msg{font-size:11.5px;font-weight:600}
+@media(max-width:1100px){.carga-form{grid-template-columns:1fr 1fr}}
+
+.novs{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:12px 16px}
+.novs-title{font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.novs-list{display:flex;flex-wrap:wrap;gap:6px}
+.nov{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 6px 4px 10px;font-size:11px;font-weight:600;border:1px solid transparent}
+.nov b{font-weight:800}
+.nov button{background:rgba(0,0,0,.07);border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:10px;line-height:18px;color:inherit}
+.nov button:hover{background:rgba(0,0,0,.18)}
+
+.grilla-table td.cel{font-size:10px;font-weight:700;padding:5px 1px;min-width:38px;white-space:nowrap;color:#C4CBD6}
+.grilla-table td.cel.celda-presente,.grilla-table td.cel.celda-ausencia,.grilla-table td.cel.celda-justificada{color:inherit}
+.grilla-table td.cel.celda-presente{color:#166534}.grilla-table td.cel.celda-ausencia{color:#991B1B}.grilla-table td.cel.celda-justificada{color:#92400E}
+.grilla-table td.cel.celda-nohabil,.grilla-table td.cel.celda-na{color:#9CA3AF}
+.editable td.cel{cursor:pointer}
+.editable td.cel:hover{outline:2px solid #2563A8;outline-offset:-2px}
+.grilla-table td.info.clic{cursor:pointer}
+.grilla-table td.info.clic:hover{color:#2563A8}
+.grilla-table th.hoy{box-shadow:inset 0 -3px 0 #2563A8;color:#2563A8}
+
+.pop{position:fixed;z-index:120;background:#fff;border:1px solid #D8DEE8;border-radius:10px;box-shadow:0 10px 30px rgba(24,36,58,.18);padding:10px;width:300px;display:none}
+.pop.show{display:block}
+.pop-title{font-size:11px;font-weight:700;color:#1B3F72;margin-bottom:8px}
+.pop-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pop-grid button{border:none;border-radius:6px;padding:5px 6px;font-size:10.5px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit;background:#F5F7FB;color:#18243A}
+.pop-grid button:hover{filter:brightness(.94)}
+.pop-grid button.sel{outline:2px solid #2563A8}
+.pop-foot{display:flex;justify-content:space-between;margin-top:8px;gap:6px}
+.pop-foot button{font-size:10.5px;padding:5px 8px}
 .msg-ok{color:#16A34A;font-size:12px;margin-top:8px}
 .msg-err{color:#DC2626;font-size:12px;margin-top:8px}
 </style>
@@ -113,10 +154,52 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
     <div class="tab" data-tab="comparativa" onclick="switchTab('comparativa')">Comparativa Anual</div>
   </div>
 
+  <div class="carga admin-only" id="panelCarga">
+    <div class="carga-head">
+      <h3>⚡ Carga rápida de novedades</h3>
+      <button class="btn btn-secondary" onclick="completarPresentes()" title="Marca Presente en los días vacíos. No pisa novedades cargadas.">✓ Completar presentes</button>
+      <p>Cargá la inasistencia una sola vez (persona, tipo y rango de fechas) y se completa sola en la grilla. Tip: hacé clic en un nombre o en una celda de la grilla para cargar desde ahí.</p>
+    </div>
+    <div class="carga-form">
+      <div>
+        <label>Empleado</label>
+        <input type="text" id="cEmp" list="cEmpList" placeholder="Escribí apellido o legajo..." autocomplete="off">
+        <datalist id="cEmpList"></datalist>
+      </div>
+      <div>
+        <label>Tipo de novedad</label>
+        <select id="cTipo"></select>
+      </div>
+      <div>
+        <label>Desde</label>
+        <input type="date" id="cDesde" onchange="syncHasta()">
+      </div>
+      <div>
+        <label>Hasta</label>
+        <input type="date" id="cHasta">
+      </div>
+      <div>
+        <label>Motivo / enfermedad (opcional)</label>
+        <input type="text" id="cMotivo" placeholder="Ej: gripe, mudanza...">
+      </div>
+      <div>
+        <button class="btn btn-primary" style="padding:9px 18px" onclick="cargarNovedad()">Cargar</button>
+      </div>
+    </div>
+    <div class="carga-opts">
+      <label><input type="checkbox" id="cTodos" onchange="toggleTodos()"> Aplicar a todos los empleados del mes (feriados, cierres)</label>
+      <label><input type="checkbox" id="cSaltarDom" checked onchange="guardarPrefs()"> No marcar domingos</label>
+      <label><input type="checkbox" id="cSaltarSab" onchange="guardarPrefs()"> No marcar sábados</label>
+      <span class="carga-msg" id="cMsg"></span>
+    </div>
+  </div>
+
   <div id="content">
     <div class="loading">Cargando...</div>
   </div>
 </div>
+
+<div class="pop" id="pop"></div>
 
 <!-- Modal importar -->
 <div class="modal-overlay" id="modalImport">
@@ -179,6 +262,7 @@ const JUSTIFICADAS = [
 const anioActual = new Date().getFullYear();
 const mesActual = new Date().getMonth() + 1;
 let EMPLEADOS = [];
+let EMPLEADOS_MES = [];
 let MARCAS = {};
 let TAB_ACTIVO = 'grilla';
 
@@ -243,6 +327,7 @@ function switchTab(tab) {
 
 async function cambiarPeriodo() {
   await cargarMarcas();
+  setFechasDefault();
   renderTab();
 }
 
@@ -250,6 +335,8 @@ async function cargarEmpleados() {
   const r = await fetch('/api/auskpi/empleados');
   EMPLEADOS = await r.json();
   document.getElementById('empCount').textContent = EMPLEADOS.length + ' empleados controlados';
+  EMPLEADOS_MES = EMPLEADOS;
+  actualizarDatalist();
 }
 
 async function cargarMarcas() {
@@ -263,6 +350,8 @@ async function cargarMarcas() {
 
 function renderTab() {
   const cont = document.getElementById('content');
+  document.getElementById('panelCarga').style.display = (TAB_ACTIVO === 'grilla' && IS_ADMIN) ? '' : 'none';
+  cerrarPop();
   if (TAB_ACTIVO === 'grilla') renderGrilla(cont);
   else if (TAB_ACTIVO === 'calculo') renderCalculo(cont);
   else if (TAB_ACTIVO === 'persona') renderPersona(cont);
@@ -271,104 +360,368 @@ function renderTab() {
   else if (TAB_ACTIVO === 'comparativa') renderComparativa(cont);
 }
 
+// ── Carga rápida ──────────────────────────────────────────
+const OTROS_VALORES = ['Presente', 'NO HABIL', 'N/A'];
+
+function hoyISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function isoDe(anio, mes, dia) { return anio + '-' + String(mes).padStart(2, '0') + '-' + String(dia).padStart(2, '0'); }
+function nombreEmp(e) { return `${e.apellido}, ${e.nombre} (${e.legajo})`; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+function initCarga() {
+  const sel = document.getElementById('cTipo');
+  let h = '<optgroup label="Ausencias (cuentan para el KPI)">';
+  AUSENCIAS.forEach(v => { h += `<option value="${esc(v)}">${esc(v)}</option>`; });
+  h += '</optgroup><optgroup label="Justificadas">';
+  JUSTIFICADAS.forEach(v => { h += `<option value="${esc(v)}">${esc(v)}</option>`; });
+  h += '</optgroup><optgroup label="Otros">';
+  OTROS_VALORES.forEach(v => { h += `<option value="${esc(v)}">${esc(v)}</option>`; });
+  h += '<option value="">— Borrar (dejar vacío)</option></optgroup>';
+  sel.innerHTML = h;
+  sel.value = 'Faltas no programadas';
+
+  try {
+    const p = JSON.parse(localStorage.getItem('auskpicc_prefs') || '{}');
+    if (p.dom !== undefined) document.getElementById('cSaltarDom').checked = p.dom;
+    if (p.sab !== undefined) document.getElementById('cSaltarSab').checked = p.sab;
+  } catch (e) {}
+
+  ['cEmp', 'cMotivo', 'cDesde', 'cHasta'].forEach(id =>
+    document.getElementById(id).addEventListener('keydown', ev => { if (ev.key === 'Enter') cargarNovedad(); }));
+
+  document.addEventListener('click', ev => {
+    const pop = document.getElementById('pop');
+    if (pop.classList.contains('show') && !pop.contains(ev.target) && !ev.target.closest('td.cel')) cerrarPop();
+  });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') cerrarPop(); });
+  window.addEventListener('scroll', cerrarPop, true);
+}
+
+function guardarPrefs() {
+  localStorage.setItem('auskpicc_prefs', JSON.stringify({
+    dom: document.getElementById('cSaltarDom').checked,
+    sab: document.getElementById('cSaltarSab').checked
+  }));
+}
+
+function actualizarDatalist() {
+  document.getElementById('cEmpList').innerHTML =
+    EMPLEADOS_MES.map(e => `<option value="${esc(nombreEmp(e))}">${esc(e.sector || '')}</option>`).join('');
+}
+
+function setFechasDefault() {
+  const anio = +document.getElementById('yearSel').value;
+  const mes = +document.getElementById('mesSel').value;
+  const hoy = hoyISO();
+  const f = hoy.startsWith(isoDe(anio, mes, 1).slice(0, 8)) ? hoy : isoDe(anio, mes, 1);
+  document.getElementById('cDesde').value = f;
+  document.getElementById('cHasta').value = f;
+}
+
+function syncHasta() {
+  const d = document.getElementById('cDesde').value, h = document.getElementById('cHasta');
+  if (!h.value || h.value < d) h.value = d;
+}
+
+function toggleTodos() {
+  const t = document.getElementById('cTodos').checked;
+  const inp = document.getElementById('cEmp');
+  inp.disabled = t;
+  inp.placeholder = t ? `Se aplica a los ${EMPLEADOS_MES.length} empleados del mes` : 'Escribí apellido o legajo...';
+  if (t) { inp.value = ''; document.getElementById('cTipo').value = 'NO HABIL'; }
+}
+
+function buscarEmpleado(txt) {
+  txt = (txt || '').trim();
+  if (!txt) return null;
+  const m = txt.match(/\(([^)]+)\)\s*$/);
+  if (m) { const e = EMPLEADOS.find(x => String(x.legajo) === m[1].trim()); if (e) return e; }
+  const t = txt.toLowerCase();
+  const exact = EMPLEADOS_MES.find(e => String(e.legajo) === txt);
+  if (exact) return exact;
+  const hits = EMPLEADOS_MES.filter(e => nombreEmp(e).toLowerCase().includes(t));
+  return hits.length === 1 ? hits[0] : null;
+}
+
+function setMsg(txt, ok) {
+  const m = document.getElementById('cMsg');
+  m.textContent = txt;
+  m.style.color = ok ? '#16A34A' : '#DC2626';
+  clearTimeout(setMsg._t);
+  setMsg._t = setTimeout(() => { m.textContent = ''; }, 6000);
+}
+
+async function cargarNovedad() {
+  if (!IS_ADMIN) return;
+  const todos = document.getElementById('cTodos').checked;
+  let legajos;
+  let quien;
+  if (todos) {
+    legajos = EMPLEADOS_MES.map(e => e.legajo);
+    quien = `${legajos.length} empleados`;
+  } else {
+    const emp = buscarEmpleado(document.getElementById('cEmp').value);
+    if (!emp) { setMsg('Elegí un empleado de la lista', false); document.getElementById('cEmp').focus(); return; }
+    legajos = [emp.legajo];
+    quien = `${emp.apellido}, ${emp.nombre}`;
+  }
+  const desde = document.getElementById('cDesde').value;
+  const hasta = document.getElementById('cHasta').value || desde;
+  if (!desde) { setMsg('Completá la fecha desde', false); return; }
+  if (hasta < desde) { setMsg('"Hasta" no puede ser anterior a "Desde"', false); return; }
+  const valor = document.getElementById('cTipo').value;
+  if (todos && !confirm(`Vas a cargar "${valor || 'Borrar'}" del ${desde} al ${hasta} a ${legajos.length} empleados. ¿Seguimos?`)) return;
+
+  const r = await fetch('/api/auskpi/novedad', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      legajos, desde, hasta, valor,
+      saltar_domingos: document.getElementById('cSaltarDom').checked,
+      saltar_sabados: document.getElementById('cSaltarSab').checked,
+      motivo: document.getElementById('cMotivo').value.trim()
+    })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { setMsg(j.error || 'Error al guardar', false); return; }
+  setMsg(`✓ ${valor || 'Borrado'} · ${quien} · ${j.dias} día${j.dias === 1 ? '' : 's'}`, true);
+
+  document.getElementById('cEmp').value = '';
+  document.getElementById('cMotivo').value = '';
+  if (todos) { document.getElementById('cTodos').checked = false; toggleTodos(); }
+  await cargarMarcas();
+  renderTab();
+  if (!todos) document.getElementById('cEmp').focus();
+}
+
+async function completarPresentes() {
+  if (!IS_ADMIN) return;
+  const anio = +document.getElementById('yearSel').value;
+  const mes = +document.getElementById('mesSel').value;
+  const hoy = new Date();
+  const esMesActual = hoy.getFullYear() === anio && hoy.getMonth() + 1 === mes;
+  const hastaDia = esMesActual ? hoy.getDate() : diasEnMes(anio, mes);
+  const sab = !document.getElementById('cSaltarSab').checked;
+  if (!confirm(`Se marcará "Presente" en todos los días vacíos del 1 al ${hastaDia} de ${MESES[mes - 1]} (${sab ? 'lunes a sábado' : 'lunes a viernes'}).\nLas novedades ya cargadas no se tocan.`)) return;
+  const r = await fetch('/api/auskpi/completar-presentes', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anio, mes, hasta_dia: hastaDia, incluir_sabados: sab, legajos: EMPLEADOS_MES.map(e => e.legajo) })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { setMsg(j.error || 'Error', false); return; }
+  setMsg(`✓ ${j.registros} días marcados como Presente`, true);
+  await cargarMarcas();
+  renderTab();
+}
+
+// Agrupa las marcas del mes en bloques (misma persona, mismo tipo, días seguidos)
+function bloquesNovedades(anio, mes) {
+  const dias = diasEnMes(anio, mes);
+  const out = [];
+  EMPLEADOS_MES.forEach(emp => {
+    let cur = null;
+    for (let d = 1; d <= dias; d++) {
+      const v = MARCAS[marcaKey(emp.legajo, d)] || '';
+      if (!v) continue; // los días vacíos no cortan el bloque
+      if (v === 'Presente') { if (cur) { out.push(cur); cur = null; } continue; }
+      if (cur && cur.valor === v) { cur.hasta = d; cur.dias++; }
+      else { if (cur) out.push(cur); cur = { emp, valor: v, desde: d, hasta: d, dias: 1 }; }
+    }
+    if (cur) out.push(cur);
+  });
+  return out;
+}
+
+async function borrarBloque(legajo, desde, hasta) {
+  const anio = +document.getElementById('yearSel').value;
+  const mes = +document.getElementById('mesSel').value;
+  await fetch('/api/auskpi/novedad', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ legajos: [legajo], desde: isoDe(anio, mes, desde), hasta: isoDe(anio, mes, hasta), valor: '' })
+  });
+  await cargarMarcas();
+  renderTab();
+}
+
+function editarBloque(legajo, desde, hasta, valor) {
+  const anio = +document.getElementById('yearSel').value;
+  const mes = +document.getElementById('mesSel').value;
+  const emp = EMPLEADOS.find(e => String(e.legajo) === String(legajo));
+  document.getElementById('cTodos').checked = false; toggleTodos();
+  if (emp) document.getElementById('cEmp').value = nombreEmp(emp);
+  document.getElementById('cTipo').value = valor;
+  document.getElementById('cDesde').value = isoDe(anio, mes, desde);
+  document.getElementById('cHasta').value = isoDe(anio, mes, hasta);
+  document.getElementById('panelCarga').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('cTipo').focus();
+}
+
+function colorNov(v) {
+  if (AUSENCIAS.includes(v)) return 'background:#FEE2E2;color:#991B1B;border-color:#FCA5A5';
+  if (JUSTIFICADAS.includes(v)) return 'background:#FEF3C7;color:#92400E;border-color:#FCD34D';
+  return 'background:#F3F4F6;color:#4B5563;border-color:#D1D5DB';
+}
+
+// ── Grilla ────────────────────────────────────────────────
 function renderGrilla(cont) {
-  if (!EMPLEADOS.length) {
-    cont.innerHTML = '<div class="loading">No hay empleados cargados. Importá el Excel primero.</div>';
+  if (!EMPLEADOS_MES.length) {
+    cont.innerHTML = '<div class="loading">No hay empleados para este mes. Importá el Excel o revisá las exclusiones.</div>';
     return;
   }
   const anio = +document.getElementById('yearSel').value;
   const mes = +document.getElementById('mesSel').value;
   const dias = diasEnMes(anio, mes);
   const diasSemana = ['D','L','M','M','J','V','S'];
+  const hoy = new Date();
+  const diaHoy = (hoy.getFullYear() === anio && hoy.getMonth() + 1 === mes) ? hoy.getDate() : 0;
 
-  let html = '<div class="grilla-wrap"><table class="grilla-table"><thead><tr>';
+  // Novedades del mes
+  const bloques = bloquesNovedades(anio, mes).filter(b => b.valor !== 'NO HABIL' || b.dias < dias);
+  let html = '<div class="novs" style="margin-bottom:14px">';
+  html += `<div class="novs-title">Novedades cargadas en ${MESES[mes - 1]} · ${bloques.length}</div>`;
+  if (!bloques.length) {
+    html += '<div style="font-size:11.5px;color:#8A97AA">Todavía no hay novedades este mes. Cargalas arriba y aparecen acá y en la grilla.</div>';
+  } else {
+    html += '<div class="novs-list">';
+    bloques.forEach(b => {
+      const rango = b.desde === b.hasta ? `día ${b.desde}` : `${b.desde} al ${b.hasta}`;
+      const leg = esc(b.emp.legajo);
+      html += `<span class="nov" style="${colorNov(b.valor)}" title="${esc(b.valor)}">
+        <span style="cursor:${IS_ADMIN ? 'pointer' : 'default'}" ${IS_ADMIN ? `onclick="editarBloque('${leg}',${b.desde},${b.hasta},'${esc(b.valor)}')"` : ''}>
+        <b>${esc(b.emp.apellido)}</b> · ${esc(valAbrev(b.valor))} · ${rango} (${b.dias}d)</span>
+        ${IS_ADMIN ? `<button title="Borrar" onclick="if(confirm('¿Borrar esta novedad?'))borrarBloque('${leg}',${b.desde},${b.hasta})">✕</button>` : ''}
+      </span>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  html += `<div class="grilla-wrap" id="grillaWrap"><table class="grilla-table ${IS_ADMIN ? 'editable' : ''}"><thead><tr>`;
   html += '<th style="min-width:180px;text-align:left;padding-left:8px">Empleado</th>';
   html += '<th style="min-width:70px">Sector</th>';
   for (let d = 1; d <= dias; d++) {
     const dow = new Date(anio, mes - 1, d).getDay();
-    const isDom = dow === 0;
-    html += `<th class="${isDom ? 'dom' : ''}" style="min-width:38px">${d}<br><span style="font-size:9px;font-weight:500">${diasSemana[dow]}</span></th>`;
+    html += `<th class="${dow === 0 ? 'dom' : ''} ${d === diaHoy ? 'hoy' : ''}" style="min-width:38px">${d}<br><span style="font-size:9px;font-weight:500">${diasSemana[dow]}</span></th>`;
   }
   html += '<th style="min-width:35px">JN</th><th style="min-width:35px">AUS</th><th style="min-width:35px">AJ</th>';
   html += '</tr></thead><tbody>';
 
-  let currentSector = '';
-  EMPLEADOS.forEach(emp => {
+  let currentSector = null;
+  EMPLEADOS_MES.forEach(emp => {
     if (emp.sector !== currentSector) {
       currentSector = emp.sector;
-      html += `<tr><td class="info info-sector" colspan="${dias + 4}">${currentSector}</td></tr>`;
+      html += `<tr><td class="info info-sector" colspan="${dias + 5}">${esc(currentSector)}</td></tr>`;
     }
-
+    const leg = esc(emp.legajo);
     html += '<tr>';
-    html += `<td class="info">${emp.apellido}, ${emp.nombre} <span style="color:#8A97AA;font-size:10px">(${emp.legajo})</span></td>`;
-    html += `<td style="font-size:10px;color:#5E6E89;white-space:nowrap">${emp.sector}</td>`;
+    html += `<td class="info ${IS_ADMIN ? 'clic' : ''}" ${IS_ADMIN ? `onclick="elegirEmpleado('${leg}')" title="Cargar novedad para esta persona"` : ''}>${esc(emp.apellido)}, ${esc(emp.nombre)} <span style="color:#8A97AA;font-size:10px">(${leg})</span></td>`;
+    html += `<td style="font-size:10px;color:#5E6E89;white-space:nowrap">${esc(emp.sector)}</td>`;
 
     let jn = 0, aus = 0, aj = 0;
     for (let d = 1; d <= dias; d++) {
       const isDom = esDomingo(anio, mes, d);
-      const key = marcaKey(emp.legajo, d);
-      let val = MARCAS[key] || '';
-      if (isDom && !val) val = 'NO HABIL';
-
+      let val = MARCAS[marcaKey(emp.legajo, d)] || '';
+      const show = val || (isDom ? 'NO HABIL' : '');
       if (val === 'Presente') jn++;
       else if (AUSENCIAS.includes(val)) aus++;
       else if (JUSTIFICADAS.includes(val)) aj++;
-
-      const cls = celdaClass(val);
-      const abrev = valAbrev(val);
-
-      html += `<td class="${isDom && !val ? 'dom' : ''} ${cls}" style="padding:0;position:relative">`;
-      html += `<select class="celda-sel ${cls}" onchange="guardarMarca('${emp.legajo}',${d},this.value,this)"
-        data-leg="${emp.legajo}" data-dia="${d}">`;
-      VALORES.forEach(v => {
-        html += `<option value="${v}" ${v === val ? 'selected' : ''}>${v || '—'}</option>`;
-      });
-      html += '</select></td>';
+      const cls = celdaClass(show);
+      html += `<td class="cel ${cls} ${isDom && !val ? 'dom' : ''}" data-leg="${leg}" data-dia="${d}" title="${esc(show || 'Sin dato')}"${IS_ADMIN ? ' onclick="abrirPop(event,this)"' : ''}>${show ? esc(valAbrev(show)) : '—'}</td>`;
     }
-
     html += `<td class="resumen">${jn}</td>`;
     html += `<td class="resumen" style="color:#991B1B">${aus}</td>`;
     html += `<td class="resumen" style="color:#92400E">${aj}</td>`;
     html += '</tr>';
   });
-
   html += '</tbody></table></div>';
 
   // Leyenda
-  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:10px">';
+  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:10px;color:#5E6E89">';
   html += '<span><span style="display:inline-block;width:14px;height:14px;background:#DCFCE7;border-radius:3px;vertical-align:middle"></span> Presente</span>';
   html += '<span><span style="display:inline-block;width:14px;height:14px;background:#FEE2E2;border-radius:3px;vertical-align:middle"></span> Ausencia</span>';
   html += '<span><span style="display:inline-block;width:14px;height:14px;background:#FEF3C7;border-radius:3px;vertical-align:middle"></span> Justificada</span>';
   html += '<span><span style="display:inline-block;width:14px;height:14px;background:#F3F4F6;border-radius:3px;vertical-align:middle"></span> No hábil / N/A</span>';
+  html += '<span style="margin-left:8px">P Presente · NH No hábil · FNP Falta no prog. · LE&lt;20 / LE&gt;20 Lic. enfermedad · VAC Vacaciones · LP48 Lic. &lt;48hs · DD Duelo · ART Rechazo ART · II In itinere · FA48 Falta con aviso · COMP Compensatorio · TRAM Trámites · GREM Gremial · SUSP Suspensión · ACC Accidente</span>';
   html += '</div>';
 
+  const prevScroll = document.getElementById('grillaWrap');
+  const sx = prevScroll ? prevScroll.scrollLeft : null;
   cont.innerHTML = html;
+  const wrap = document.getElementById('grillaWrap');
+  if (sx !== null) wrap.scrollLeft = sx;
+  else if (diaHoy > 7) wrap.scrollLeft = (diaHoy - 7) * 38;
 }
 
-async function guardarMarca(legajo, dia, valor, sel) {
+function elegirEmpleado(legajo) {
+  const emp = EMPLEADOS.find(e => String(e.legajo) === String(legajo));
+  if (!emp) return;
+  document.getElementById('cTodos').checked = false; toggleTodos();
+  document.getElementById('cEmp').value = nombreEmp(emp);
+  document.getElementById('panelCarga').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('cTipo').focus();
+}
+
+// Popover para editar un día puntual
+let POP_CEL = null;
+function abrirPop(ev, td) {
+  ev.stopPropagation();
+  POP_CEL = td;
+  const leg = td.dataset.leg, dia = +td.dataset.dia;
+  const emp = EMPLEADOS.find(e => String(e.legajo) === String(leg));
+  const actual = MARCAS[marcaKey(leg, dia)] || '';
+  const mes = +document.getElementById('mesSel').value;
+  const opciones = ['Presente', ...AUSENCIAS, ...JUSTIFICADAS, 'NO HABIL', 'N/A'];
+  let h = `<div class="pop-title">${esc(emp ? emp.apellido + ', ' + emp.nombre : leg)} · ${dia} de ${MESES[mes - 1]}</div><div class="pop-grid">`;
+  opciones.forEach((v, i) => {
+    const bg = v === 'Presente' ? '#DCFCE7' : AUSENCIAS.includes(v) ? '#FEE2E2' : JUSTIFICADAS.includes(v) ? '#FEF3C7' : '#F3F4F6';
+    h += `<button class="${v === actual ? 'sel' : ''}" style="background:${bg}" onclick="elegirPop(${i})" title="${esc(v)}"><b>${esc(valAbrev(v))}</b> ${esc(v)}</button>`;
+  });
+  h += '</div><div class="pop-foot">';
+  h += '<button class="btn btn-secondary" onclick="elegirPop(-1)">Vaciar</button>';
+  h += '<button class="btn btn-secondary" onclick="popARango()">Cargar rango desde acá →</button>';
+  h += '</div>';
+  const pop = document.getElementById('pop');
+  pop.innerHTML = h;
+  pop._opciones = opciones;
+  pop.classList.add('show');
+  const r = td.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let x = r.left + r.width / 2 - pw / 2, y = r.bottom + 6;
+  if (x + pw > window.innerWidth - 8) x = window.innerWidth - pw - 8;
+  if (x < 8) x = 8;
+  if (y + ph > window.innerHeight - 8) y = r.top - ph - 6;
+  pop.style.left = x + 'px'; pop.style.top = Math.max(8, y) + 'px';
+}
+function cerrarPop() { document.getElementById('pop').classList.remove('show'); POP_CEL = null; }
+
+async function elegirPop(i) {
+  if (!POP_CEL) return;
+  const valor = i < 0 ? '' : document.getElementById('pop')._opciones[i];
+  const leg = POP_CEL.dataset.leg, dia = +POP_CEL.dataset.dia;
+  cerrarPop();
+  await guardarMarca(leg, dia, valor);
+}
+
+function popARango() {
+  if (!POP_CEL) return;
+  const leg = POP_CEL.dataset.leg, dia = +POP_CEL.dataset.dia;
+  const anio = +document.getElementById('yearSel').value;
+  const mes = +document.getElementById('mesSel').value;
+  cerrarPop();
+  elegirEmpleado(leg);
+  document.getElementById('cDesde').value = isoDe(anio, mes, dia);
+  document.getElementById('cHasta').value = isoDe(anio, mes, dia);
+  document.getElementById('cHasta').focus();
+}
+
+async function guardarMarca(legajo, dia, valor) {
   if (!IS_ADMIN) return;
   const anio = +document.getElementById('yearSel').value;
   const mes = +document.getElementById('mesSel').value;
-  MARCAS[marcaKey(legajo, dia)] = valor;
-
-  sel.className = 'celda-sel ' + celdaClass(valor);
-  sel.parentElement.className = celdaClass(valor);
-
-  // Update row totals
-  const row = sel.closest('tr');
-  const selects = row.querySelectorAll('.celda-sel');
-  let jn = 0, aus = 0, aj = 0;
-  selects.forEach(s => {
-    const v = s.value;
-    if (v === 'Presente') jn++;
-    else if (AUSENCIAS.includes(v)) aus++;
-    else if (JUSTIFICADAS.includes(v)) aj++;
-  });
-  const resCells = row.querySelectorAll('td.resumen');
-  if (resCells[0]) resCells[0].textContent = jn;
-  if (resCells[1]) resCells[1].textContent = aus;
-  if (resCells[2]) resCells[2].textContent = aj;
-
+  if (valor) MARCAS[marcaKey(legajo, dia)] = valor; else delete MARCAS[marcaKey(legajo, dia)];
+  renderTab();
   await fetch('/api/auskpi/marcas', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -759,8 +1112,10 @@ async function guardarConfig() {
 
 async function init() {
   initSelects();
+  initCarga();
   await cargarEmpleados();
   await cargarMarcas();
+  setFechasDefault();
   renderTab();
 }
 

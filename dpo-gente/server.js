@@ -6407,6 +6407,90 @@ app.put('/api/auskpi/marcas', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// (Dolores) // Carga rápida de novedad: aplica un valor a un rango de fechas para uno o varios legajos
+// body: { legajos:[], desde:'YYYY-MM-DD', hasta:'YYYY-MM-DD', valor, saltar_domingos, saltar_sabados, motivo }
+// valor vacío = borrar las marcas del rango
+app.post('/api/auskpi/novedad', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { legajos, desde, hasta, valor, saltar_domingos, saltar_sabados, motivo } = req.body;
+    if (!Array.isArray(legajos) || !legajos.length) return res.status(400).json({ error: 'Falta empleado' });
+    const parse = s => { const [y, m, d] = String(s).split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+    const d0 = parse(desde), d1 = parse(hasta || desde);
+    if (isNaN(d0) || isNaN(d1) || d1 < d0) return res.status(400).json({ error: 'Rango de fechas inválido' });
+    if ((d1 - d0) / 86400000 > 400) return res.status(400).json({ error: 'Rango demasiado largo' });
+
+    const dias = [];
+    for (let t = d0.getTime(); t <= d1.getTime(); t += 86400000) {
+      const dt = new Date(t), dow = dt.getUTCDay();
+      if (saltar_domingos && dow === 0) continue;
+      if (saltar_sabados && dow === 6) continue;
+      dias.push({ anio: dt.getUTCFullYear(), mes: dt.getUTCMonth() + 1, dia: dt.getUTCDate() });
+    }
+
+    await client.query('BEGIN');
+    for (const legajo of legajos) {
+      for (const f of dias) {
+        if (!valor) {
+          await client.query('DELETE FROM dpo_auskpi_marcas WHERE legajo=$1 AND anio=$2 AND mes=$3 AND dia=$4',
+            [legajo, f.anio, f.mes, f.dia]);
+        } else {
+          await client.query(
+            `INSERT INTO dpo_auskpi_marcas (legajo, anio, mes, dia, valor)
+             VALUES ($1,$2,$3,$4,$5) ON CONFLICT (legajo, anio, mes, dia) DO UPDATE SET valor=$5`,
+            [legajo, f.anio, f.mes, f.dia, valor]);
+        }
+      }
+      // Guardar motivo/enfermedad en el detalle (un bloque por mes del rango)
+      if (valor && motivo && dias.length) {
+        const porMes = {};
+        dias.forEach(f => {
+          const k = f.anio + '_' + f.mes;
+          if (!porMes[k]) porMes[k] = { anio: f.anio, mes: f.mes, desde: f.dia, hasta: f.dia };
+          porMes[k].hasta = f.dia;
+        });
+        for (const b of Object.values(porMes)) {
+          await client.query(
+            `INSERT INTO dpo_auskpi_detalle (legajo, anio, mes, dia_desde, dia_hasta, categoria, enfermedad, motivo)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,'')
+             ON CONFLICT (legajo, anio, mes, dia_desde) DO UPDATE SET dia_hasta=$5, categoria=$6, enfermedad=$7`,
+            [legajo, b.anio, b.mes, b.desde, b.hasta, valor, String(motivo).slice(0, 300)]);
+        }
+      }
+    }
+    await client.query('COMMIT');
+    res.json({ ok: true, dias: dias.length, registros: dias.length * legajos.length });
+  } catch(e) {
+    await client.query('ROLLBACK').catch(() => {});
+    res.status(500).json({ error: e.message });
+  } finally { client.release(); }
+});
+
+// Completar con "Presente" los días vacíos del mes (no pisa novedades cargadas)
+// body: { anio, mes, hasta_dia, incluir_sabados, legajos:[] }
+app.post('/api/auskpi/completar-presentes', async (req, res) => {
+  try {
+    const { anio, mes, hasta_dia, incluir_sabados, legajos } = req.body;
+    if (!Array.isArray(legajos) || !legajos.length) return res.json({ ok: true, registros: 0 });
+    const ultimo = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+    const tope = Math.min(+hasta_dia || ultimo, ultimo);
+    const legs = [], dias = [];
+    for (let d = 1; d <= tope; d++) {
+      const dow = new Date(Date.UTC(anio, mes - 1, d)).getUTCDay();
+      if (dow === 0) continue;
+      if (dow === 6 && !incluir_sabados) continue;
+      legajos.forEach(l => { legs.push(String(l)); dias.push(d); });
+    }
+    if (!legs.length) return res.json({ ok: true, registros: 0 });
+    const r = await pool.query(
+      `INSERT INTO dpo_auskpi_marcas (legajo, anio, mes, dia, valor)
+       SELECT l, $1, $2, d, 'Presente' FROM unnest($3::text[], $4::int[]) AS t(l, d)
+       ON CONFLICT (legajo, anio, mes, dia) DO NOTHING`,
+      [anio, mes, legs, dias]);
+    res.json({ ok: true, registros: r.rowCount });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // Días hábiles por mes (carga manual)
 pool.query(`CREATE TABLE IF NOT EXISTS dpo_auskpi_dias_habiles (
   id SERIAL PRIMARY KEY,
