@@ -77,6 +77,25 @@ body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;m
 .modal label{font-size:11px;font-weight:700;color:#5E6E89;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px}
 .modal input[type=file]{font-size:12px;font-family:inherit}
 .modal .btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+/* Resumen KPI */
+.rk{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:16px 20px;margin-top:16px}
+.rk-head{font-size:13.5px;font-weight:800;color:#1B3F72;margin-bottom:14px}
+.rk-code{display:inline-block;font-size:9.5px;font-weight:800;color:#2563A8;background:#EBF2FA;border-radius:4px;padding:2px 6px;letter-spacing:.03em}
+.rk-formula{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rk-box{background:#F5F7FB;border:1px solid #E3E8F0;border-radius:10px;padding:10px 14px;min-width:150px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+.rk-val{font-size:24px;font-weight:800;color:#18243A;line-height:1.1}
+.rk-lbl{font-size:10.5px;color:#5E6E89;max-width:170px;line-height:1.3}
+.rk-op{font-size:22px;font-weight:700;color:#8A97AA}
+.rk-group{border:1.5px dashed #C9D3E1;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.rk-group-in{display:flex;align-items:center;gap:10px}
+.rk-sub{font-size:11px;color:#5E6E89;text-align:center}
+.rk-result{background:#fff;border:2px solid #1B3F72;min-width:170px}
+.rk-result .rk-val{font-size:30px}
+.rk-input{width:70px;font-size:22px;font-weight:800;text-align:center;border:1.5px solid #D8DEE8;border-radius:8px;padding:2px 4px;font-family:inherit;color:#18243A;background:#fff}
+.rk-input:focus{outline:none;border-color:#2563A8}
+.rk-warn{margin-top:10px;font-size:11.5px;font-weight:600;color:#B45309}
+.rk-foot{margin-top:10px;font-size:10.5px;color:#8A97AA}
+.rk .rk-val.pct-good{color:#16A34A}.rk .rk-val.pct-warn{color:#D97706}.rk .rk-val.pct-bad{color:#DC2626}
 /* Carga rápida */
 .carga{background:#fff;border:1px solid #D8DEE8;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
 .carga-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -359,6 +378,7 @@ async function cargarEmpleados() {
 }
 
 async function cargarMarcas() {
+  await cargarDiasHab(true);
   const anio = document.getElementById('yearSel').value;
   const mes = document.getElementById('mesSel').value;
   const [rM, rE] = await Promise.all([
@@ -597,6 +617,76 @@ function colorNov(v) {
   return 'background:#F3F4F6;color:#4B5563;border-color:#D1D5DB';
 }
 
+const API_BASE = '/api/auskpi-cc';
+// ── Cuadro resumen DC-K1450 ───────────────────────────────
+let DIAS_HAB = {};
+let DIAS_HAB_ANIO = null;
+
+async function cargarDiasHab(force) {
+  const anio = +document.getElementById('yearSel').value;
+  if (!force && DIAS_HAB_ANIO === anio) return;
+  try {
+    const r = await fetch(API_BASE + '/dias-habiles?anio=' + anio);
+    DIAS_HAB = (await r.json()) || {};
+  } catch (e) { DIAS_HAB = {}; }
+  DIAS_HAB_ANIO = anio;
+}
+
+function fmtNum(n) { return Number(n).toLocaleString('es-AR'); }
+
+function renderResumenKpi(anio, mes, dias) {
+  let ausDias = 0;
+  EMPLEADOS_MES.forEach(emp => {
+    for (let d = 1; d <= dias; d++) {
+      if (AUSENCIAS.includes(MARCAS[marcaKey(emp.legajo, d)] || '')) ausDias++;
+    }
+  });
+  const emps = EMPLEADOS_MES.length;
+  const diasTrab = +(DIAS_HAB[mes] || DIAS_HAB[String(mes)] || 0);
+  const nomina = emps * diasTrab;
+  const pct = nomina > 0 ? ausDias / nomina : null;
+  const pctCls = pct === null ? '' : pct <= 0.02 ? 'pct-good' : pct <= 0.05 ? 'pct-warn' : 'pct-bad';
+  const pctTxt = pct === null ? '—' : (pct * 100).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+
+  const diasTrabHtml = IS_ADMIN
+    ? `<input type="number" min="0" max="31" class="rk-input" value="${diasTrab || ''}" placeholder="?" onchange="guardarDiasHabResumen(${mes}, this.value)" title="Días trabajados del mes (se guarda también en KPI Mensual)">`
+    : `<div class="rk-val">${diasTrab || '—'}</div>`;
+
+  let h = '<div class="rk">';
+  h += `<div class="rk-head"><span class="rk-code">DC-K1450</span> Ausentismo · ${MESES[mes - 1]} ${anio}</div>`;
+  h += '<div class="rk-formula">';
+  h += `<div class="rk-box"><div class="rk-code">DC-R1451</div><div class="rk-val" style="color:#991B1B">${fmtNum(ausDias)}</div><div class="rk-lbl">Días de empleados con ausentismo en el mes</div></div>`;
+  h += '<div class="rk-op">÷</div>';
+  h += '<div class="rk-group">';
+  h += '<div class="rk-group-in">';
+  h += `<div class="rk-box"><div class="rk-code">DC-R1461</div><div class="rk-val">${fmtNum(emps)}</div><div class="rk-lbl">Total de empleados operativos</div></div>`;
+  h += '<div class="rk-op">×</div>';
+  h += `<div class="rk-box"><div class="rk-code">DC-R1462</div>${diasTrabHtml}<div class="rk-lbl">Días trabajados en el mes</div></div>`;
+  h += '</div>';
+  h += `<div class="rk-sub"><span class="rk-code">DC-K1460</span> Total días de nómina: <b>${nomina ? fmtNum(nomina) : '—'}</b></div>`;
+  h += '</div>';
+  h += '<div class="rk-op">=</div>';
+  h += `<div class="rk-box rk-result"><div class="rk-code">DC-K1450</div><div class="rk-val ${pctCls}">${pctTxt}</div><div class="rk-lbl">Ausentismo</div></div>`;
+  h += '</div>';
+  if (!diasTrab) h += `<div class="rk-warn">⚠ Falta cargar los días trabajados de ${MESES[mes - 1]}${IS_ADMIN ? ' (podés cargarlos en el recuadro DC-R1462)' : ''}.</div>`;
+  h += '<div class="rk-foot">Cuenta solo ausencias (FNP, Lic. enfermedad &lt;20, LP48, duelo, rechazo ART, in itinere). Las justificadas no suman. Verde ≤ 2 % · Amarillo ≤ 5 % · Rojo &gt; 5 %.</div>';
+  h += '</div>';
+  return h;
+}
+
+async function guardarDiasHabResumen(mes, valor) {
+  if (!IS_ADMIN) return;
+  const anio = +document.getElementById('yearSel').value;
+  const dias = parseInt(valor, 10);
+  if (isNaN(dias) || dias < 0 || dias > 31) return;
+  DIAS_HAB[mes] = dias;
+  await fetch(API_BASE + '/dias-habiles', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anio, mes, dias })
+  });
+  renderTab();
+}
+
 // ── Grilla ────────────────────────────────────────────────
 function renderGrilla(cont) {
   if (!EMPLEADOS_MES.length) {
@@ -678,6 +768,8 @@ function renderGrilla(cont) {
   html += '<span><span style="display:inline-block;width:14px;height:14px;background:#F3F4F6;border-radius:3px;vertical-align:middle"></span> No hábil / N/A</span>';
   html += '<span style="margin-left:8px">P Presente · NH No hábil · FNP Falta no prog. · LE&lt;20 / LE&gt;20 Lic. enfermedad · VAC Vacaciones · LP48 Lic. &lt;48hs · DD Duelo · ART Rechazo ART · II In itinere · FA48 Falta con aviso · COMP Compensatorio · TRAM Trámites · GREM Gremial · SUSP Suspensión · ACC Accidente</span>';
   html += '</div>';
+
+  html += renderResumenKpi(anio, mes, dias);
 
   const prevScroll = document.getElementById('grillaWrap');
   const sx = prevScroll ? prevScroll.scrollLeft : null;
@@ -829,6 +921,7 @@ async function renderCalculo(cont) {
 
 async function guardarDiasHab(mes, valor) {
   if (!IS_ADMIN) return;
+  DIAS_HAB[mes] = parseInt(valor) || 0;
   const anio = +document.getElementById('yearSel').value;
   await fetch('/api/auskpi-cc/dias-habiles', {
     method: 'PUT',
