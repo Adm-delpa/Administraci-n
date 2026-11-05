@@ -6111,6 +6111,25 @@ app.get('/api/turnover/dotacion', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+// Cumpleaños del mes: toma la última dotación cargada en turnover (personal activo)
+app.get('/api/cumpleanos', async (req, res) => {
+  try {
+    const mes = parseInt(req.query.mes) || (new Date().getMonth() + 1);
+    const ult = await pool.query('SELECT anio, mes FROM dpo_turnover_dotacion ORDER BY anio DESC, mes DESC LIMIT 1');
+    if (!ult.rows.length) return res.json([]);
+    const { anio, mes: mesDot } = ult.rows[0];
+    const r = await pool.query(
+      `SELECT nombre, apellido, sector, sucursal, EXTRACT(DAY FROM fecha_nacimiento)::int AS dia
+       FROM dpo_turnover_dotacion
+       WHERE anio=$1 AND mes=$2 AND ftes='si' AND fecha_nacimiento IS NOT NULL
+         AND EXTRACT(MONTH FROM fecha_nacimiento)=$3
+       ORDER BY dia, apellido, nombre`,
+      [anio, mesDot, mes]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/turnover/filtros', async (req, res) => {
   try {
     const anio = parseInt(req.query.anio) || new Date().getFullYear();

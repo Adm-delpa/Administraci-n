@@ -3,28 +3,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gente — del Palacio S.A</title>
+<title>Gente — Distribuidora del Palacio S.A.</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#18181A}
 a{color:inherit}
 
+/* LAYOUT CON MENÚ LATERAL */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:248px;flex-shrink:0;background:#0F2340;color:#C3CFE0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:45}
+.sb-brand{display:flex;align-items:center;gap:10px;padding:18px 18px 20px}
+.sb-logo{width:36px;height:36px;border-radius:50%;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.sb-logo img{width:100%;height:100%;object-fit:contain;padding:3px}
+.sb-empresa{font-size:13px;font-weight:700;color:#fff;line-height:1.25}
+.sb-area{font-size:12px;font-weight:500;color:#8EA6C8}
+.sb-nav{padding:0 10px;display:flex;flex-direction:column;gap:1px}
+.sb-label{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6F87AB;padding:16px 10px 6px}
+.sb-item{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;color:#C3CFE0;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:500;text-align:left;padding:8px 10px;border-radius:7px;cursor:pointer;line-height:1.3}
+.sb-item i{font-size:17px;flex-shrink:0;color:#8EA6C8}
+.sb-item:hover{background:#18304F;color:#fff}
+.sb-item.active{background:#1E3A63;color:#fff}
+.sb-item.active i{color:#fff}
+.sb-item.locked{opacity:.45;cursor:default}
+.sb-item.locked:hover{background:none;color:#C3CFE0}
+.sb-item .sb-num{color:#6F87AB;font-weight:600;min-width:16px}
+.sb-item .sb-lock{margin-left:auto;font-size:13px}
+.sb-footer{margin-top:auto;padding:14px 20px 18px}
+.sb-storage{font-size:11px;color:#8EA6C8}
+.sb-storage-track{height:4px;background:#1E3A63;border-radius:2px;margin:5px 0 4px;overflow:hidden}
+.sb-storage-fill{height:100%;border-radius:2px;background:#10B981;transition:width .4s}
+.sb-backdrop{display:none}
+
+.app{flex:1;min-width:0;display:flex;flex-direction:column}
+
 /* TOPBAR */
-.topbar{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid #E7E5E1;padding:.75rem 2rem;display:flex;align-items:center;gap:14px}
-.topbar-logo{width:36px;height:36px;flex-shrink:0}
-.topbar-logo img{width:100%;height:100%;object-fit:contain}
-.topbar-empresa{font-size:15px;font-weight:700;color:#18181A;letter-spacing:-.01em}
+.topbar{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid #ECEDF1;padding:.6rem 2rem;display:flex;align-items:center;gap:14px;min-height:54px}
+.topbar-menu{display:none;background:none;border:none;font-size:22px;color:#18181A;cursor:pointer;padding:2px 4px;line-height:1}
 .topbar-spacer{flex:1}
-.topbar-user{font-size:12px;font-weight:600;color:#56555A}
+.topbar-user{font-size:12.5px;font-weight:600;color:#3A3935;display:flex;align-items:center;gap:8px}
+.topbar-avatar{width:28px;height:28px;border-radius:50%;background:#EAF1FB;color:#0D4FA0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .topbar-logout{background:none;border:none;color:#9896A0;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;padding:5px 10px;border-radius:6px}
 .topbar-logout:hover{color:#C0392B;background:#FEF2F2}
-.topbar-back{background:none;border:none;color:#0D4FA0;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px}
-.topbar-back:hover{background:#EAF1FB}
 
 /* MAIN */
-.main{min-height:calc(100vh - 57px);display:flex;flex-direction:column}
-.main-content{flex:1;max-width:980px;width:100%;margin:0 auto;padding:3.5rem 2rem 3rem}
+.main{flex:1;display:flex;flex-direction:column}
+.main-content{flex:1;max-width:1080px;width:100%;margin:0 auto;padding:2.25rem 2.25rem 3rem}
 
 /* SECCIÓN CARDS */
 .secciones-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:2.5rem}
@@ -43,15 +68,42 @@ a{color:inherit}
 .breadcrumb-sep{color:#D8D6D2}
 
 body.focused-mode .topbar{display:none}
+body.focused-mode .sidebar{display:none}
 body.focused-mode .main-content{padding-top:5rem}
 body.focused-mode #focused-topbar{display:flex!important}
 
-.hero-title{font-size:56px;font-weight:800;letter-spacing:-.02em;text-align:center;color:#18181A;line-height:1.05}
-.hero-underline{height:5px;background:#0D4FA0;border-radius:3px;width:65%;max-width:520px;margin:1.4rem auto 2.2rem}
-.hero-text{max-width:760px;margin:0 auto;text-align:center}
-.hero-text p{font-size:15px;line-height:1.8;color:#3A3935;margin-bottom:1.1rem}
-.hero-banner{margin-top:2.5rem;background:#0D4FA0;border-radius:10px;padding:2rem 2.5rem;text-align:center}
-.hero-banner-text{font-size:17px;font-weight:700;color:#fff;line-height:1.6}
+/* INICIO */
+.ini-eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#0D4FA0}
+.ini-saludo{font-size:26px;font-weight:700;letter-spacing:-.02em;color:#18181A;margin-top:4px}
+.ini-vision{font-size:13.5px;line-height:1.65;color:#56555A;margin-top:8px;max-width:720px}
+.ini-vision b{color:#0D4FA0;font-weight:600}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:1.75rem}
+.kpi{border:1px solid #E6E8EE;border-radius:10px;padding:14px 16px;background:#fff;text-decoration:none;color:inherit;display:block;transition:border-color .15s}
+a.kpi:hover{border-color:#0D4FA0}
+.kpi-label{font-size:12px;font-weight:500;color:#6B6A70;display:flex;align-items:center;gap:6px}
+.kpi-label i{font-size:15px;color:#0D4FA0}
+.kpi-valor{font-size:24px;font-weight:700;letter-spacing:-.02em;color:#18181A;margin-top:6px}
+.kpi-sub{font-size:11.5px;color:#9896A0;margin-top:2px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.info-card{border:1px solid #E6E8EE;border-radius:10px;padding:14px 16px;background:#fff}
+.info-title{font-size:13px;font-weight:600;color:#18181A;display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.info-title i{font-size:17px;color:#0D4FA0}
+.info-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:#3A3935;padding:7px 0;border-top:1px solid #F0F1F4}
+.info-row:first-of-type{border-top:none}
+.info-row .info-meta{color:#6B6A70;white-space:nowrap}
+.info-row .info-meta.hoy{color:#B45309;font-weight:600}
+.info-row.pasado{color:#9896A0}
+.info-empty{font-size:12.5px;color:#9896A0;padding:6px 0}
+.info-link{background:none;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#0D4FA0;cursor:pointer;padding:6px 0 0}
+.info-link:hover{text-decoration:underline}
+.ini-h2{font-size:14px;font-weight:600;color:#18181A;margin:2.25rem 0 .75rem}
+.sec-icon{width:36px;height:36px;border-radius:8px;background:#EAF1FB;color:#0D4FA0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.seccion-card.locked .sec-icon{background:#F0EFEC;color:#BBBAB5}
+.secciones-grid.ini{margin-top:0;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.secciones-grid.ini .seccion-card{flex-direction:row;align-items:center;gap:12px;padding:14px 16px;border-width:1px;border-color:#E6E8EE;border-radius:10px}
+.secciones-grid.ini .seccion-card:hover{transform:none;box-shadow:none;border-color:#0D4FA0}
+.secciones-grid.ini .seccion-titulo{font-size:13.5px;font-weight:600}
+.secciones-grid.ini .seccion-sub{font-size:11.5px;margin-top:1px}
 
 /* MÓDULOS GRID */
 .modulos-section{margin-top:3rem}
@@ -181,31 +233,59 @@ body.focused-mode #focused-topbar{display:flex!important}
 .block-columnas-link{display:inline-block;margin-top:.25rem;font-size:13px;font-weight:600;color:#0D4FA0;text-decoration:none}
 .block-columnas-link:hover{text-decoration:underline}
 
+@media(max-width:1000px){
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:860px){
-  .main-content{padding:2rem 1.25rem}
-  .hero-title{font-size:38px}
+  .main-content{padding:1.5rem 1rem 2rem}
   .page-title{font-size:28px}
   .block-columnas-view{grid-template-columns:1fr}
-  .secciones-grid{grid-template-columns:1fr}
-  .topbar{padding:.75rem 1rem}
+  .secciones-grid,.secciones-grid.ini{grid-template-columns:1fr}
+  .info-grid{grid-template-columns:1fr}
+  .topbar{padding:.6rem 1rem}
+  .topbar-menu{display:block}
+  .topbar-username{display:none}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .2s}
+  body.sb-open .sidebar{transform:none}
+  body.sb-open .sb-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:44}
+  .ini-saludo{font-size:22px}
 }
 </style>
 </head>
 <body>
 
-<header class="topbar">
-  <div class="topbar-logo"><img src="/logo.png" alt="Logo"></div>
-  <span class="topbar-empresa" id="sidebar-empresa">del Palacio S.A</span>
-  <div class="topbar-spacer"></div>
-  <div id="storageBar" style="display:none;align-items:center;gap:6px;margin-right:12px">
-    <span style="font-size:11px;color:#6B7A94;font-weight:600">Almacenamiento:</span>
-    <div style="width:100px;height:7px;background:#EEF0F6;border-radius:4px;overflow:hidden">
-      <div id="storageBarFill" style="height:100%;border-radius:4px;background:#10B981;transition:width .4s"></div>
-    </div>
-    <span id="storageBarTxt" style="font-size:11px;font-weight:700;color:#5A6880"></span>
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo"><img src="/logo.png" alt="Logo"></div>
+    <div><div class="sb-empresa" id="sidebar-empresa">Del Palacio S.A.</div><div class="sb-area">Gente</div></div>
   </div>
+  <nav class="sb-nav">
+    <button class="sb-item active" id="nav-inicio" onclick="irAInicio();cerrarSidebar()"><i class="ti ti-home" aria-hidden="true"></i>Inicio</button>
+    <div class="sb-label">Secciones</div>
+    <div id="nav-tree"></div>
+    <div id="sb-admin" style="display:none">
+      <div class="sb-label">Administración</div>
+      <button class="sb-item" onclick="abrirAdmin();cerrarSidebar()"><i class="ti ti-lock" aria-hidden="true"></i>Gestionar accesos</button>
+      <button class="sb-item" id="sb-editar" onclick="toggleEdit();cerrarSidebar()"><i class="ti ti-edit" aria-hidden="true"></i><span id="sb-editar-txt">Editar portada</span></button>
+    </div>
+  </nav>
+  <div class="sb-footer">
+    <div id="storageBar" class="sb-storage" style="display:none">
+      Almacenamiento
+      <div class="sb-storage-track"><div id="storageBarFill" class="sb-storage-fill"></div></div>
+      <span id="storageBarTxt"></span>
+    </div>
+  </div>
+</aside>
+<div class="sb-backdrop" onclick="cerrarSidebar()"></div>
+
+<div class="app">
+<header class="topbar">
+  <button class="topbar-menu" onclick="document.body.classList.toggle('sb-open')" aria-label="Abrir menú"><i class="ti ti-menu-2" aria-hidden="true"></i></button>
+  <div class="topbar-spacer"></div>
   <div id="bellWrap" style="display:none;position:relative;margin-right:4px">
-    <button id="bellBtn" onclick="toggleRecordatorios()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 6px;position:relative;line-height:1">🔔
+    <button id="bellBtn" onclick="toggleRecordatorios()" aria-label="Notificaciones" style="background:none;border:none;cursor:pointer;font-size:21px;color:#3A3935;padding:4px 6px;position:relative;line-height:1"><i class="ti ti-bell" aria-hidden="true"></i>
       <span id="bellBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:#DC2626;color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px">0</span>
     </button>
     <div id="bellPanel" style="display:none;position:absolute;top:36px;right:0;width:360px;background:#fff;border:1px solid #D8DEE8;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.15);z-index:50;max-height:480px;overflow-y:auto">
@@ -220,10 +300,10 @@ body.focused-mode #focused-topbar{display:flex!important}
       </div>
     </div>
   </div>
-  <span class="topbar-user" id="sidebar-user">—</span>
+  <span class="topbar-user"><span class="topbar-avatar" id="topbar-avatar"></span><span class="topbar-username" id="sidebar-user">—</span></span>
   <button class="topbar-logout" onclick="if(confirm('¿Cerrar sesión?')){sessionStorage.clear();window.location.href='/'}">Salir</button>
 </header>
-<div>
+<div class="main-wrap" style="flex:1;display:flex;flex-direction:column">
 
   <!-- topbar para modo enfocado (?vista=ID) -->
   <div id="focused-topbar" style="display:none;position:fixed;top:0;left:0;right:0;background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:none;align-items:center;gap:12px;z-index:50">
@@ -241,10 +321,8 @@ body.focused-mode #focused-topbar{display:flex!important}
     </div>
   </div>
 </div>
-
-<!-- elementos fantasma para compatibilidad con JS del sidebar removido -->
-<div id="nav-tree" style="display:none"></div>
-<div id="nav-inicio" style="display:none"></div>
+</div><!-- /.app -->
+</div><!-- /.layout -->
 
 <button class="fab-edit" id="fab-edit" onclick="toggleEdit()" title="Editar" style="display:none">✎</button>
 
@@ -253,6 +331,9 @@ const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) { window.location.href = '/'; }
 const IS_ADMIN = !!(USER && USER.admin);
 document.getElementById('sidebar-user').textContent = USER.nombre || USER.username;
+document.getElementById('topbar-avatar').textContent = String(USER.nombre || USER.username || '?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+if (IS_ADMIN) document.getElementById('sb-admin').style.display = 'block';
+function cerrarSidebar(){ document.body.classList.remove('sb-open'); }
 
 // Indicador de almacenamiento (solo admin)
 if (!USER.admin) document.getElementById('storageBar').remove();
@@ -260,12 +341,12 @@ else fetch('/api/storage').then(r=>r.json()).then(d=>{
   const bar = document.getElementById('storageBar');
   const fill = document.getElementById('storageBarFill');
   const txt  = document.getElementById('storageBarTxt');
-  bar.style.display = 'flex';
+  bar.style.display = 'block';
   const pct = Math.min(d.pct, 100);
   fill.style.width = pct + '%';
   fill.style.background = pct >= 85 ? '#EF4444' : pct >= 60 ? '#F59E0B' : '#10B981';
   txt.textContent = d.used_mb + ' MB';
-  txt.style.color  = pct >= 85 ? '#EF4444' : pct >= 60 ? '#F59E0B' : '#5A6880';
+  txt.style.color  = pct >= 85 ? '#F87171' : pct >= 60 ? '#FBBF24' : '#8EA6C8';
   if (pct >= 85) {
     const warn = document.createElement('div');
     warn.style.cssText = 'position:fixed;bottom:16px;right:16px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:10px;padding:12px 16px;font-size:12.5px;color:#B91C1C;font-weight:600;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.1);max-width:300px';
@@ -441,7 +522,10 @@ async function cargarTodo(){
     const [rc, rp] = await Promise.all([fetch('/api/config'), fetch('/api/paginas')]);
     CONFIG = await rc.json();
     PAGINAS = await rp.json();
-    document.getElementById('sidebar-empresa').textContent = CONFIG.nombre_empresa || 'del Palacio S.A';
+    var emp = (CONFIG.nombre_empresa || 'Del Palacio S.A.').trim();
+    emp = emp.charAt(0).toUpperCase() + emp.slice(1);
+    if (/S\.A$/.test(emp)) emp += '.';
+    document.getElementById('sidebar-empresa').textContent = emp;
     document.getElementById('app-footer-text').textContent = CONFIG.footer_texto || '';
     // auto-seleccionar página si viene por URL param
     const vistaParam = parseInt(new URLSearchParams(location.search).get('vista'));
@@ -457,8 +541,8 @@ async function cargarTodo(){
       document.body.classList.add('focused-mode');
       if(pag) document.getElementById('focused-titulo').textContent = pag.titulo;
     }
-    renderNav();
     renderMain();
+    if(!RESUMEN && !window._resumenPedido){ window._resumenPedido = true; cargarResumen(); }
   }catch(e){
     document.getElementById('main-content').innerHTML = '<div class="page-empty" style="color:#C0392B">Error al cargar.</div>';
   }
@@ -469,9 +553,40 @@ function hijosDe(id){
 }
 function paginaById(id){ return PAGINAS.find(p => p.id === id); }
 
+// ¿La sección raíz `raizId` contiene la vista actual?
+function vistaDentroDe(raizId){
+  var cur = typeof VISTA === 'number' ? paginaById(VISTA) : null;
+  while(cur){ if(cur.id === raizId) return true; cur = cur.parent_id ? paginaById(cur.parent_id) : null; }
+  return false;
+}
+
 function renderNav(){
   const cont = document.getElementById('nav-tree');
-  if(cont) cont.innerHTML = hijosDe(null).map(p => renderNavNode(p, 0)).join('');
+  if(!cont) return;
+  const secciones = hijosDe(null);
+  cont.innerHTML = secciones.map(function(p){
+    const num = seccionNumero(p.titulo).replace('.','');
+    const nombre = seccionNombreLimpio(p.titulo);
+    if(!puedeVerSeccion(p)){
+      return '<button class="sb-item locked" title="Sin acceso" tabindex="-1"><i class="ti '+seccionTablerIcon(p.titulo)+'" aria-hidden="true"></i>'
+        +(num?'<span class="sb-num">'+num+'</span>':'')+'<span>'+esc(nombre)+'</span><i class="ti ti-lock sb-lock" aria-hidden="true"></i></button>';
+    }
+    return '<button class="sb-item'+(vistaDentroDe(p.id)?' active':'')+'" onclick="abrirSeccion('+p.id+');cerrarSidebar()" title="'+escAttr(nombre)+'">'
+      +'<i class="ti '+seccionTablerIcon(p.titulo)+'" aria-hidden="true"></i>'
+      +(num?'<span class="sb-num">'+num+'</span>':'')+'<span>'+esc(nombre)+'</span></button>';
+  }).join('');
+  const txt = document.getElementById('sb-editar-txt');
+  if(txt) txt.textContent = EDITANDO ? 'Cancelar edición' : (VISTA === 'inicio' ? 'Editar portada' : 'Editar sección');
+}
+
+// Abre una sección raíz (algunas van directo a su hub)
+function abrirSeccion(id){
+  const p = paginaById(id);
+  if(!p) return;
+  const MODULE_URLS = { 'Talento y Crecimiento': '/talento-hub' };
+  const modUrl = MODULE_URLS[seccionNombreLimpio(p.titulo)];
+  if(modUrl){ window.location.href = modUrl; return; }
+  seleccionarPagina(id);
 }
 
 function esHub(p){
@@ -633,10 +748,8 @@ function toggleEdit(){
 }
 
 function editSyncInicioFromInputs(){
+  // intro_titulo / párrafos ya no se muestran: se conservan tal cual en EDIT_STATE
   EDIT_STATE.nombre_empresa = document.getElementById('e-nombre-empresa').value;
-  EDIT_STATE.intro_titulo = document.getElementById('e-intro-titulo').value;
-  EDIT_STATE.intro_parrafo1 = document.getElementById('e-parrafo1').value;
-  EDIT_STATE.intro_parrafo2 = document.getElementById('e-parrafo2').value;
   EDIT_STATE.frase_destacada = document.getElementById('e-frase').value;
   EDIT_STATE.footer_texto = document.getElementById('e-footer').value;
 }
@@ -801,6 +914,17 @@ function seccionIcono(titulo){
   for(const k of Object.keys(SECCION_ICONOS)){ if(t.includes(k)) return SECCION_ICONOS[k]; }
   return '📂';
 }
+const SECCION_TABLER = [
+  ['cultura','ti-building-community'],['reclutamiento','ti-user-search'],['recompensas','ti-award'],
+  ['aprendizaje','ti-school'],['ambiente','ti-building'],['talento','ti-trending-up'],
+  ['comite','ti-users-group'],['comité','ti-users-group'],['galaxia','ti-planet'],['pda','ti-checklist'],
+  ['indicador','ti-chart-line'],['kpi','ti-chart-line'],['beneficio','ti-gift'],['sop','ti-file-text']
+];
+function seccionTablerIcon(titulo){
+  const t = String(titulo||'').toLowerCase();
+  for(const [k,ic] of SECCION_TABLER){ if(t.includes(k)) return ic; }
+  return 'ti-folder';
+}
 function seccionNumero(titulo){
   const m = titulo.match(/^(\d+)\./); return m ? m[1]+'.' : '';
 }
@@ -818,52 +942,153 @@ function puedeVerSeccion(p){
   return false;
 }
 
+// ── INICIO: saludo, indicadores, formularios y cumpleaños ──
+const MESES_MIN = ['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var RESUMEN = null;          // cache de indicadores (se carga una vez)
+var CUMPLE_EXPANDIDO = false;
+
+function saludo(){
+  const h = new Date().getHours();
+  return h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
+}
+function fmtPct(v){ return v == null ? '—' : (v*100).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'; }
+function nombrePropio(s){
+  return String(s||'').toLowerCase().replace(/(^|[\s'-])([a-záéíóúñü])/g, function(m,a,b){ return a+b.toUpperCase(); });
+}
+// "Nuestro sueño es "Ser la ..."" → "ser la ..."
+function textoVision(t){
+  var v = String(t||'').trim().replace(/^nuestro sueño es\s*/i,'').replace(/^["“”']+|["“”'.]+$/g,'').trim();
+  return v ? v.charAt(0).toLowerCase() + v.slice(1) + '.' : '';
+}
+
+async function cargarResumen(){
+  const anio = new Date().getFullYear(), mesHoy = new Date().getMonth()+1;
+  const j = u => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
+  const [tto, ausD, ausC, vac, cumple, forms] = await Promise.all([
+    j('/api/turnover/dashboard?anio='+anio),
+    j('/api/auskpi/calculo?anio='+anio),
+    j('/api/auskpi-cc/calculo?anio='+anio),
+    j('/api/vacantes?status='+encodeURIComponent('En curso')),
+    j('/api/cumpleanos?mes='+mesHoy),
+    IS_ADMIN ? j('/api/notif-forms') : Promise.resolve(null)
+  ]);
+  const R = {};
+  // Dotación: último mes cargado (año actual, si no el anterior)
+  if(tto){
+    let src = tto.months, ultimo = null;
+    for(let m=12;m>=1;m--){ if(src[m]){ ultimo = m; break; } }
+    if(!ultimo){ src = tto.prevMonths; for(let m=12;m>=1;m--){ if(src && src[m]){ ultimo = m; break; } } }
+    if(ultimo) R.dotacion = { valor: src[ultimo].dot_total, mes: ultimo, anio: src === tto.months ? anio : anio-1 };
+    // Rotación YTD: bajas indeterminados con reemplazo / dotación indeterminados (igual que KPI Turnover)
+    let bajas = 0, dot = 0, hay = false;
+    for(let m=1;m<=12;m++){ const d = tto.months[m]; if(d){ hay = true; bajas += d.tto_indet||0; dot += d.dot_indet||0; } }
+    R.rotacion = { valor: hay && dot ? bajas/dot : null, obj: tto.config ? parseFloat(tto.config.obj_tto_indeterminados) : null };
+  }
+  // Ausentismo: último mes cerrado con dato (o el actual si no hay otro)
+  const ultAus = arr => {
+    if(!Array.isArray(arr)) return null;
+    const ok = arr.filter(x => x.pct != null && x.mes <= mesHoy && (x.presente + x.ausencia + x.justificada) > 0);
+    const cerrado = ok.filter(x => x.mes < mesHoy);
+    return (cerrado.length ? cerrado : ok).slice(-1)[0] || null;
+  };
+  R.ausD = ultAus(ausD); R.ausC = ultAus(ausC);
+  if(Array.isArray(vac)){
+    const porSede = {};
+    vac.forEach(v => { porSede[v.sede||'—'] = (porSede[v.sede||'—']||0)+1; });
+    R.vacantes = { valor: vac.length, porSede };
+  }
+  R.cumple = Array.isArray(cumple) ? cumple : null;
+  if(Array.isArray(forms)){
+    const porFuente = {};
+    forms.filter(n => !n.visto).forEach(n => { porFuente[n.fuente] = (porFuente[n.fuente]||0) + (parseInt(n.nuevos)||0); });
+    R.forms = Object.keys(porFuente).map(f => ({ fuente: f, nuevos: porFuente[f] })).sort((a,b)=>b.nuevos-a.nuevos);
+  }
+  RESUMEN = R;
+  if(VISTA === 'inicio' && !EDITANDO) renderMain();
+}
+
+function renderKpis(){
+  const R = RESUMEN;
+  const cargando = '<div class="kpi-valor" style="color:#D8D6D2">…</div>';
+  const card = (href, icon, label, valor, sub) =>
+    '<a class="kpi" href="'+href+'"><div class="kpi-label"><i class="ti '+icon+'" aria-hidden="true"></i>'+label+'</div>'
+    +(R ? '<div class="kpi-valor">'+valor+'</div><div class="kpi-sub">'+sub+'</div>' : cargando)+'</a>';
+  if(!R) return '<div class="kpi-grid">'+card('/kpi-turnover','ti-users','Dotación')+card('/kpi-ausentismo','ti-calendar-off','Ausentismo')+card('/kpi-turnover','ti-arrows-exchange','Rotación')+card('/vacantes','ti-briefcase','Vacantes abiertas')+'</div>';
+  const d = R.dotacion, rot = R.rotacion || {}, a = R.ausD, c = R.ausC, v = R.vacantes;
+  const ausVal = a ? fmtPct(a.pct) : c ? fmtPct(c.pct) : '—';
+  const ausSub = a && c ? 'Dolores · CC '+fmtPct(c.pct)+' · '+MESES_MIN[a.mes]
+               : a ? 'Dolores · '+MESES_MIN[a.mes] : c ? 'Casa Central · '+MESES_MIN[c.mes] : 'Sin datos cargados';
+  const sedes = v ? Object.keys(v.porSede).map(s => esc(s)+' '+v.porSede[s]).join(' · ') : '';
+  return '<div class="kpi-grid">'
+    + card('/kpi-turnover','ti-users','Dotación', d ? d.valor.toLocaleString('es-AR') : '—', d ? 'personas · '+MESES_MIN[d.mes]+(d.anio !== new Date().getFullYear() ? ' '+d.anio : '') : 'Sin datos cargados')
+    + card('/kpi-ausentismo','ti-calendar-off','Ausentismo', ausVal, ausSub)
+    + card('/kpi-turnover','ti-arrows-exchange','Rotación', fmtPct(rot.valor), rot.valor == null ? 'Sin datos cargados' : 'acumulado '+new Date().getFullYear()+(rot.obj ? ' · obj. '+fmtPct(rot.obj) : ''))
+    + card('/vacantes','ti-briefcase','Vacantes abiertas', v ? v.valor : '—', v ? (v.valor ? sedes : 'Ninguna en curso') : 'Sin datos')
+    + '</div>';
+}
+
+function renderInfoCards(){
+  const R = RESUMEN;
+  let out = '';
+  if(IS_ADMIN){
+    let body;
+    if(!R) body = '<div class="info-empty">Cargando…</div>';
+    else if(!R.forms || !R.forms.length) body = '<div class="info-empty">No hay respuestas nuevas.</div>';
+    else body = R.forms.slice(0,4).map(f => '<div class="info-row"><span>'+esc(f.fuente)+'</span><span class="info-meta" style="color:#0D4FA0">'+f.nuevos+' nueva'+(f.nuevos>1?'s':'')+'</span></div>').join('');
+    out += '<div class="info-card"><div class="info-title"><i class="ti ti-forms" aria-hidden="true"></i>Formularios recibidos</div>'+body
+      +'<button class="info-link" onclick="event.stopPropagation();toggleRecordatorios()">Ver en notificaciones</button></div>';
+  }
+  const hoy = new Date().getDate(), mesHoy = new Date().getMonth()+1;
+  let cb;
+  if(!R) cb = '<div class="info-empty">Cargando…</div>';
+  else if(!R.cumple) cb = '<div class="info-empty">No se pudo cargar la dotación.</div>';
+  else if(!R.cumple.length) cb = '<div class="info-empty">No hay cumpleaños este mes en la dotación cargada.</div>';
+  else {
+    const lista = CUMPLE_EXPANDIDO ? R.cumple : R.cumple.slice(0,5);
+    cb = lista.map(p => {
+      const dd = String(p.dia).padStart(2,'0')+'/'+String(mesHoy).padStart(2,'0');
+      const meta = p.dia === hoy ? '<span class="info-meta hoy">hoy</span>' : '<span class="info-meta">'+dd+'</span>';
+      const area = p.sector ? ' · '+esc(nombrePropio(p.sector)) : '';
+      return '<div class="info-row'+(p.dia < hoy ? ' pasado' : '')+'"><span>'+esc(nombrePropio((p.nombre||'')+' '+(p.apellido||'')))+'<span style="color:#9896A0">'+area+'</span></span>'+meta+'</div>';
+    }).join('');
+    if(R.cumple.length > 5) cb += '<button class="info-link" onclick="CUMPLE_EXPANDIDO=!CUMPLE_EXPANDIDO;renderMain()">'+(CUMPLE_EXPANDIDO ? 'Ver menos' : 'Ver los '+R.cumple.length)+'</button>';
+  }
+  out += '<div class="info-card"><div class="info-title"><i class="ti ti-cake" aria-hidden="true"></i>Cumpleaños de '+MESES_MIN[mesHoy]+'</div>'+cb+'</div>';
+  return '<div class="info-grid">'+out+'</div>';
+}
+
 function renderInicioView(){
   const secciones = PAGINAS.filter(function(p){ return !p.parent_id; }).sort(function(a,b){ return a.orden-b.orden; });
   var cards = secciones.map(function(p){
     const hijos = hijosDe(p.id);
-    const sub = hijos.length ? hijos.length+' subsección'+(hijos.length>1?'es':'') : '';
-    const acceso = puedeVerSeccion(p);
-    if(!acceso) return '<div class="seccion-card locked">'
-      +'<div style="font-size:28px;line-height:1;opacity:.3">'+seccionIcono(p.titulo)+'</div>'
-      +'<div>'
-      +(seccionNumero(p.titulo)?'<div class="seccion-num" style="color:#BBBAB5">'+seccionNumero(p.titulo)+'</div>':'')
-      +'<div class="seccion-titulo">'+esc(seccionNombreLimpio(p.titulo))+'</div>'
-      +'<div class="seccion-sub">🔒 Sin acceso</div>'
-      +'</div>'
-      +'</div>';
-    const MODULE_URLS = { 'Talento y Crecimiento': '/talento-hub' };
-    const cleanTitulo = seccionNombreLimpio(p.titulo);
-    const modUrl = MODULE_URLS[cleanTitulo];
-    const clickHandler = modUrl ? 'window.location.href=\''+modUrl+'\'' : 'seleccionarPagina('+p.id+')';
-    return '<div class="seccion-card" onclick="'+clickHandler+'">'
-      +'<div style="font-size:28px;line-height:1">'+seccionIcono(p.titulo)+'</div>'
-      +'<div>'
-      +(seccionNumero(p.titulo)?'<div class="seccion-num">'+seccionNumero(p.titulo)+'</div>':'')
-      +'<div class="seccion-titulo">'+esc(seccionNombreLimpio(p.titulo))+'</div>'
+    const num = seccionNumero(p.titulo).replace('.','');
+    const sub = hijos.length ? hijos.length+(hijos.length>1?' subsecciones':' subsección') : (num ? 'Sección '+num : '');
+    const icon = '<span class="sec-icon"><i class="ti '+seccionTablerIcon(p.titulo)+'" aria-hidden="true"></i></span>';
+    if(!puedeVerSeccion(p)) return '<div class="seccion-card locked">'+icon
+      +'<div><div class="seccion-titulo">'+esc(seccionNombreLimpio(p.titulo))+'</div>'
+      +'<div class="seccion-sub">Sin acceso</div></div></div>';
+    return '<div class="seccion-card" onclick="abrirSeccion('+p.id+')">'+icon
+      +'<div><div class="seccion-titulo">'+esc(seccionNombreLimpio(p.titulo))+'</div>'
       +(sub?'<div class="seccion-sub">'+sub+'</div>':'')
-      +'</div>'
-      +'</div>';
+      +'</div></div>';
   }).join('');
-  return '<div class="hero-title">'+esc(CONFIG.intro_titulo||'')+'</div>'
-    +'<div class="hero-underline"></div>'
-    +'<div class="hero-text">'
-    +(CONFIG.intro_parrafo1?'<p>'+esc(CONFIG.intro_parrafo1)+'</p>':'')
-    +(CONFIG.intro_parrafo2?'<p>'+esc(CONFIG.intro_parrafo2)+'</p>':'')
-    +'</div>'
-    +(CONFIG.frase_destacada?'<div class="hero-banner"><div class="hero-banner-text">'+esc(CONFIG.frase_destacada)+'</div></div>':'')
-    +'<div class="secciones-grid">'+cards+'</div>';
+  const nombre = String(USER.nombre || USER.username || '').trim().split(/\s+/)[0];
+  const vision = textoVision(CONFIG.frase_destacada);
+  return '<div class="ini-eyebrow">Pilar Gente · Modelo DPO · Galaxia Q</div>'
+    +'<div class="ini-saludo">'+saludo()+(nombre ? ', '+esc(nombrePropio(nombre)) : '')+'</div>'
+    +(vision ? '<div class="ini-vision"><b>Visión:</b> '+esc(vision)+'</div>' : '')
+    + renderKpis()
+    + renderInfoCards()
+    +'<div class="ini-h2">Secciones del pilar</div>'
+    +'<div class="secciones-grid ini">'+cards+'</div>';
 }
 
 function renderInicioEdit(){
   const s = EDIT_STATE;
   return '<div class="edit-card">'
-    +'<div class="edit-title">Editar página de inicio</div>'
-    +'<div class="edit-field"><label>Nombre de la empresa (cabecera)</label><input id="e-nombre-empresa" value="'+escAttr(s.nombre_empresa)+'"></div>'
-    +'<div class="edit-field"><label>Título grande (ej: GENTE)</label><input id="e-intro-titulo" value="'+escAttr(s.intro_titulo)+'"></div>'
-    +'<div class="edit-field"><label>Párrafo 1</label><textarea id="e-parrafo1" rows="4">'+esc(s.intro_parrafo1)+'</textarea></div>'
-    +'<div class="edit-field"><label>Párrafo 2</label><textarea id="e-parrafo2" rows="4">'+esc(s.intro_parrafo2)+'</textarea></div>'
-    +'<div class="edit-field"><label>Frase destacada (banner)</label><textarea id="e-frase" rows="3">'+esc(s.frase_destacada)+'</textarea></div>'
+    +'<div class="edit-title">Editar portada</div>'
+    +'<div class="edit-field"><label>Nombre de la empresa (menú lateral)</label><input id="e-nombre-empresa" value="'+escAttr(s.nombre_empresa)+'"></div>'
+    +'<div class="edit-field"><label>Visión (se muestra debajo del saludo)</label><textarea id="e-frase" rows="3">'+esc(s.frase_destacada)+'</textarea></div>'
     +'<div class="edit-field"><label>Texto del pie de página</label><input id="e-footer" value="'+escAttr(s.footer_texto)+'"></div>'
     +'<div class="edit-footer">'
     +'<button class="btn-cancel" onclick="toggleEdit()">Cancelar</button>'
@@ -891,7 +1116,7 @@ function renderPaginaView(p){
   if(hijos.length > 0){
     const cards = hijos.map(function(h){
       const nietos = hijosDe(h.id);
-      const sub = nietos.length ? nietos.length+' subsección'+(nietos.length>1?'es':'') : '';
+      const sub = nietos.length ? nietos.length+(nietos.length>1?' subsecciones':' subsección') : '';
       const acceso = puedeVerSeccion(h);
       if(!acceso) return '<div class="seccion-card locked">'
         +'<div style="font-size:28px;line-height:1;opacity:.3">'+seccionIcono(h.titulo)+'</div>'
@@ -992,6 +1217,7 @@ function renderPaginaEdit(){
 function renderMain(){
   const cont = document.getElementById('main-content');
   document.getElementById('nav-inicio').classList.toggle('active', VISTA==='inicio');
+  renderNav();
   if(VISTA === 'inicio'){
     cont.innerHTML = EDITANDO ? renderInicioEdit() : renderInicioView();
     return;
@@ -1067,10 +1293,11 @@ function renderModulos() {
 
 // ── PANEL ADMIN ──
 if (USER.admin) {
-  document.getElementById('fab-edit').style.display = 'flex';
+  // En modo enfocado (?vista=ID) no hay menú lateral: se mantiene el botón flotante de edición
+  if (document.body.classList.contains('focused-mode') || new URLSearchParams(location.search).get('vista'))
+    document.getElementById('fab-edit').style.display = 'flex';
   document.body.insertAdjacentHTML('beforeend',
-    '<button class="admin-btn" onclick="abrirAdmin()">⚙ Gestionar accesos</button>'
-    + '<div class="admin-modal-bg" id="adminModalBg" style="display:none" onclick="if(event.target===this)cerrarAdmin()">'
+    '<div class="admin-modal-bg" id="adminModalBg" style="display:none" onclick="if(event.target===this)cerrarAdmin()">'
     + '<div class="admin-modal">'
     + '<div class="admin-modal-header"><h3>Gestionar accesos por módulo</h3><button class="admin-close" onclick="cerrarAdmin()">×</button></div>'
     + '<div style="padding:16px 22px 20px"><div id="adminContenido"><div style="text-align:center;padding:30px;color:#9896A0">Cargando…</div></div></div>'
