@@ -977,7 +977,7 @@ async function cargarResumen(){
     j('/api/turnover/dashboard?anio='+anio),
     j('/api/auskpi/calculo?anio='+anioCerr),
     j('/api/auskpi-cc/calculo?anio='+anioCerr),
-    j('/api/vacantes?status='+encodeURIComponent('En curso')),
+    j('/api/vacantes'),
     j('/api/cumpleanos?mes='+mesHoy),
     IS_ADMIN ? j('/api/notif-forms') : Promise.resolve(null)
   ]);
@@ -1002,9 +1002,11 @@ async function cargarResumen(){
   R.ausMes = mesCerr; R.ausAnio = anioCerr;
   R.ausD = ausMes(ausD); R.ausC = ausMes(ausC);
   if(Array.isArray(vac)){
+    // Misma regla que el módulo Vacantes (efectivoStatus): abierta = sin fecha de finalización
+    const abiertas = vac.filter(v => !v.fecha_finalizacion);
     const porSede = {};
-    vac.forEach(v => { porSede[v.sede||'—'] = (porSede[v.sede||'—']||0)+1; });
-    R.vacantes = { valor: vac.length, porSede };
+    abiertas.forEach(v => { porSede[v.sede||'—'] = (porSede[v.sede||'—']||0)+1; });
+    R.vacantes = { valor: abiertas.length, porSede };
   }
   R.cumple = Array.isArray(cumple) ? cumple : null;
   if(Array.isArray(forms)){
