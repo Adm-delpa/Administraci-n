@@ -548,8 +548,14 @@ async function cargarTodo(){
       document.body.classList.add('focused-mode');
       if(pag) document.getElementById('focused-titulo').textContent = pag.titulo;
     }
+    // ?seccion=ID: abre esa sección con el menú lateral (lo usan los links del menú de otras pantallas)
+    const secParam = parseInt(new URLSearchParams(location.search).get('seccion'));
+    if(secParam && VISTA === 'inicio' && paginaById(secParam)){
+      history.replaceState(null, '', '/pilar-gente');
+      abrirSeccion(secParam);
+      return;
+    }
     renderMain();
-    if(!RESUMEN && !window._resumenPedido){ window._resumenPedido = true; cargarResumen(); }
   }catch(e){
     document.getElementById('main-content').innerHTML = '<div class="page-empty" style="color:#C0392B">Error al cargar.</div>';
   }
@@ -936,7 +942,8 @@ function seccionNumero(titulo){
   const m = titulo.match(/^(\d+)\./); return m ? m[1]+'.' : '';
 }
 function seccionNombreLimpio(titulo){
-  return titulo.replace(/^\d+\.\s*/,'');
+  // Quita el número y corrige tildes que faltan en títulos cargados en la base
+  return titulo.replace(/^\d+\.\s*/,'').replace(/\bSeleccion\b/g,'Selección').replace(/\bDescripcion\b/g,'Descripción').replace(/\bComite\b/g,'Comité');
 }
 
 function puedeVerSeccion(p){
@@ -1233,6 +1240,7 @@ function renderMain(){
   document.getElementById('nav-inicio').classList.toggle('active', VISTA==='inicio');
   renderNav();
   if(VISTA === 'inicio'){
+    if(!RESUMEN && !window._resumenPedido){ window._resumenPedido = true; cargarResumen(); }
     cont.innerHTML = EDITANDO ? renderInicioEdit() : renderInicioView();
     return;
   }
