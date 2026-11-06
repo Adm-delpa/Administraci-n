@@ -3,140 +3,89 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ambiente de Trabajo y Compromiso</title>
+<title>Ambiente de Trabajo y Compromiso — Gente</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="/gente-shell.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#F2F4F8;color:#18243A;min-height:100vh}
-.topbar{background:#fff;border-bottom:1px solid #D8DEE8;padding:.6rem 1.5rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:40}
-.topbar-back{display:flex;align-items:center;gap:5px;background:none;border:none;color:#2563A8;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 9px;border-radius:6px}
-.topbar-back:hover{background:#EBF2FA}
-.topbar-sep{color:#D8DEE8}
-.topbar-title{font-size:12.5px;font-weight:700;color:#18243A;flex:1}
-.page-header{background:#1B3F72;padding:18px 24px}
-.page-header h1{font-size:16px;font-weight:700;color:#fff}
-.page-header p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
-.wrap{max-width:960px;margin:0 auto;padding:24px 20px}
-.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.mod-card{background:#fff;border:1px solid #D8DEE8;border-radius:10px;padding:20px 18px;cursor:pointer;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;transition:box-shadow .15s,border-color .15s;text-align:left;width:100%;font-family:inherit}
-.mod-card:hover{border-color:#2563A8;box-shadow:0 2px 14px rgba(37,99,168,.12)}
-.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#2563A8)}
-.mod-icon{font-size:28px;line-height:1}
-.mod-title{font-size:13px;font-weight:700;color:#18243A}
-.mod-desc{font-size:11.5px;color:#8A97AA;line-height:1.5;flex:1}
-.mod-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
-.mod-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
-.badge-navy{background:#EBF2FA;color:#1B3F72}
-.badge-teal{background:#CCFBF1;color:#0F766E}
-.badge-purple{background:#EDE9FE;color:#5B21B6}
-.badge-orange{background:#FEF3C7;color:#92400E}
-.badge-green{background:#D1FAE5;color:#065F46}
-.badge-gray{background:#F1F5F9;color:#64748B}
-.mod-arr{font-size:11px;color:#2563A8;font-weight:600}
+body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#18181A}
+.aus-sedes{display:grid;grid-template-columns:1fr 1fr;margin-top:6px;max-width:360px}
+.aus-sede{text-decoration:none;color:inherit;display:block}
+.aus-sede + .aus-sede{border-left:1px solid #EEF0F4;padding-left:12px}
+.aus-sede:hover .aus-valor{color:#0D4FA0}
+.aus-nombre{font-size:11px;color:#9896A0}
+.aus-valor{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.aus-vacio{font-size:11.5px;color:#B45309;padding-top:4px}
 </style>
 </head>
 <body>
-
-<div class="topbar">
-  <button class="topbar-back" onclick="window.location.href='/pilar-gente'">← Volver</button>
-  <span class="topbar-sep">|</span>
-  <span class="topbar-title">Ambiente de Trabajo y Compromiso</span>
+<div class="gs-layout">
+<aside class="gs-sidebar" id="gs-sidebar"></aside>
+<div class="gs-backdrop" onclick="GenteShell.cerrar()"></div>
+<div class="gs-app">
+<header class="gs-topbar" id="gs-topbar"></header>
+<main class="hub-wrap">
+  <div class="hub-eyebrow">Sección 5 · Pilar Gente</div>
+  <h1 class="hub-titulo">Ambiente de Trabajo y Compromiso</h1>
+  <div class="hub-sub">Ausentismo, clima, comunicación y relaciones laborales</div>
+  <div class="hub-kpis" id="kpis"></div>
+  <div id="grupos"></div>
+</main>
+</div>
 </div>
 
-<div class="page-header">
-  <h1>Ambiente de Trabajo y Compromiso</h1>
-  <p>DPO Gente 2026</p>
-</div>
-
-<div class="wrap">
-  <div class="mod-grid">
-
-    <button class="mod-card" style="--accent:#1B3F72" onclick="window.location.href='/ausentismo'">
-      <div class="mod-icon">📅</div>
-      <div class="mod-title">Ausentismo</div>
-      <div class="mod-desc">Registro y seguimiento de ausencias por persona y período.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-navy">Activo</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-    <button class="mod-card" style="--accent:#2563A8" onclick="window.location.href='/kpi-ausentismo'">
-      <div class="mod-icon">📋</div>
-      <div class="mod-title">KPI Ausentismo</div>
-      <div class="mod-desc">Grilla diaria de asistencia y cálculo de KPI de ausentismo.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-navy">Activo</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-    <button class="mod-card" style="--accent:#2563A8" onclick="window.location.href='/kpi-ausentismo-cc'">
-      <div class="mod-icon">📋</div>
-      <div class="mod-title">KPI Ausentismo CC</div>
-      <div class="mod-desc">Grilla diaria de asistencia y cálculo de KPI de ausentismo · Casa Central.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-navy">Activo</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-    <button class="mod-card" style="--accent:#0891B2" onclick="window.location.href='/engagement'">
-      <div class="mod-icon">💬</div>
-      <div class="mod-title">Engagement</div>
-      <div class="mod-desc">Seguimiento de encuestas y resultados de compromiso del equipo.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-gray">Próximamente</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-    <button class="mod-card" style="--accent:#7C3AED" onclick="window.location.href='/entorno-laboral'">
-      <div class="mod-icon">🏢</div>
-      <div class="mod-title">Entorno Laboral</div>
-      <div class="mod-desc">Gestión de condiciones y mejoras del ambiente de trabajo.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-gray">Próximamente</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-    <button class="mod-card" style="--accent:#D97706" onclick="window.location.href='/negociacion-sindical'">
-      <div class="mod-icon">🤝</div>
-      <div class="mod-title">Negociación Sindical</div>
-      <div class="mod-desc">Registro de acuerdos, reuniones y seguimiento gremial.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-gray">Próximamente</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-    <button class="mod-card" style="--accent:#059669" onclick="window.location.href='/plan-comunicaciones'">
-      <div class="mod-icon">📣</div>
-      <div class="mod-title">Plan de Comunicaciones</div>
-      <div class="mod-desc">Planificación y seguimiento de comunicaciones internas.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-gray">Próximamente</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-    <button class="mod-card" style="--accent:#DC2626" onclick="window.location.href='/seguimiento-t1'">
-      <div class="mod-icon">🚛</div>
-      <div class="mod-title">Seguimiento T1</div>
-      <div class="mod-desc">Control de descanso entre viajes — Transporte tercerizado.</div>
-      <div class="mod-footer">
-        <span class="mod-badge badge-red">Transporte</span>
-        <span class="mod-arr">Abrir →</span>
-      </div>
-    </button>
-
-  </div>
-</div>
-
+<script src="/gente-shell.js"></script>
 <script>
 const USER = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!USER) window.location.href = '/';
+const j = u => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
+const MESES = ['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const fmtPct = v => v == null ? '—' : (v*100).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' %';
+
+const { fila, grupo } = GenteShell.hub;
+
+// Ausentismo Logística a mes cerrado (misma regla que la portada: siempre el mes calendario anterior)
+const HOY = new Date(), MES_HOY = HOY.getMonth() + 1;
+const MES_C = MES_HOY === 1 ? 12 : MES_HOY - 1, ANIO_C = MES_HOY === 1 ? HOY.getFullYear() - 1 : HOY.getFullYear();
+const ausMes = arr => {
+  if(!Array.isArray(arr)) return null;
+  const x = arr.find(r => r.mes === MES_C);
+  return x && x.pct != null && (x.presente + x.ausencia + x.justificada) > 0 ? x : null;
+};
+
+function render(ausD, ausC){
+  const sede = (href, nombre, x) => '<a class="aus-sede" href="' + href + '"><div class="aus-nombre">' + nombre + '</div>'
+    + (x ? '<div class="aus-valor">' + fmtPct(x.pct) + '</div>' : (x === undefined ? '<div class="aus-valor" style="color:#D8D6D2">…</div>' : '<div class="aus-vacio">Sin datos de ' + MESES[MES_C] + '</div>')) + '</a>';
+  document.getElementById('kpis').innerHTML = '<div class="hub-kpi">'
+    + '<div class="hub-kpi-label"><i class="ti ti-calendar-off" aria-hidden="true"></i>Ausentismo Logística</div>'
+    + '<div class="aus-sedes">' + sede('/kpi-ausentismo','Dolores',ausD) + sede('/kpi-ausentismo-cc','Casa Central',ausC) + '</div>'
+    + '<div class="hub-kpi-sub">Mes cerrado: ' + MESES[MES_C] + ' ' + ANIO_C + '</div></div>';
+
+  document.getElementById('grupos').innerHTML =
+      grupo('Ausentismo', [
+        { nombre: 'Ausentismo', desc: 'Registro y seguimiento de ausencias por persona y período', icon: 'ti-calendar-off', href: '/ausentismo', estado: 'Activo' },
+        { nombre: 'KPI Ausentismo Dolores', desc: 'Grilla diaria de asistencia y cálculo del KPI', icon: 'ti-chart-line', href: '/kpi-ausentismo', estado: ausD ? fmtPct(ausD.pct) : 'Activo' },
+        { nombre: 'KPI Ausentismo Casa Central', desc: 'Grilla diaria de asistencia y cálculo del KPI', icon: 'ti-chart-line', href: '/kpi-ausentismo-cc', estado: ausC ? fmtPct(ausC.pct) : 'Activo' }
+      ])
+    + grupo('Clima y comunicación', [
+        { nombre: 'Engagement', desc: 'Encuestas y resultados de compromiso del equipo', icon: 'ti-heart-handshake', href: '/engagement', estado: 'Próximamente', cls: 'pronto' },
+        { nombre: 'Entorno laboral', desc: 'Condiciones y mejoras del ambiente de trabajo', icon: 'ti-building', href: '/entorno-laboral', estado: 'Próximamente', cls: 'pronto' },
+        { nombre: 'Plan de comunicaciones', desc: 'Planificación y seguimiento de comunicaciones internas', icon: 'ti-speakerphone', href: '/plan-comunicaciones', estado: 'Próximamente', cls: 'pronto' }
+      ])
+    + grupo('Relaciones laborales y condiciones', [
+        { nombre: 'Negociación sindical', desc: 'Acuerdos, reuniones y seguimiento gremial', icon: 'ti-gavel', href: '/negociacion-sindical', estado: 'Próximamente', cls: 'pronto' },
+        { nombre: 'Seguimiento T1', desc: 'Control de descanso entre viajes — Transporte tercerizado', icon: 'ti-truck', href: '/seguimiento-t1', estado: 'Transporte' }
+      ]);
+}
+
+async function init(){
+  render(undefined, undefined);
+  GenteShell.init({ activo: p => /ambiente/i.test(p.titulo), titulo: 'Ambiente de Trabajo y Compromiso' });
+  const [d, c] = await Promise.all([j('/api/auskpi/calculo?anio=' + ANIO_C), j('/api/auskpi-cc/calculo?anio=' + ANIO_C)]);
+  render(ausMes(d), ausMes(c));
+}
+init();
 </script>
 </body>
 </html>

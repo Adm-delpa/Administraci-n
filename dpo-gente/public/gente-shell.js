@@ -70,3 +70,29 @@
 
   window.GenteShell = { init, cerrar: () => document.body.classList.remove('gs-open'), acentos };
 })();
+
+// Helpers para armar el contenido de los hubs con el estilo estándar
+(function(){
+  const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // f = { href, icon, nombre, desc, estado, cls }
+  function fila(f){
+    return '<a class="hub-fila" href="' + esc(f.href) + '">'
+      + '<span class="hub-fila-icon"><i class="ti ' + f.icon + '" aria-hidden="true"></i></span>'
+      + '<span><span class="hub-fila-nombre">' + esc(f.nombre) + '</span>'
+      + (f.desc ? '<span class="hub-fila-desc">' + esc(f.desc) + '</span>' : '') + '</span>'
+      + '<span class="hub-fila-estado ' + (f.cls || '') + '">' + esc(f.estado || '') + '</span>'
+      + '<i class="ti ti-chevron-right hub-fila-arrow" aria-hidden="true"></i></a>';
+  }
+  function grupo(titulo, filas){
+    return filas.length ? '<div class="hub-grupo">' + esc(titulo) + '</div><div class="hub-lista">' + filas.map(fila).join('') + '</div>' : '';
+  }
+  // k = { href, icon, label, valor, sub } (valor/sub pueden traer HTML ya escapado)
+  function kpi(k){
+    const tag = k.href ? 'a' : 'div';
+    return '<' + tag + ' class="hub-kpi"' + (k.href ? ' href="' + esc(k.href) + '"' : '') + '>'
+      + '<div class="hub-kpi-label"><i class="ti ' + k.icon + '" aria-hidden="true"></i>' + esc(k.label) + '</div>'
+      + '<div class="hub-kpi-valor"' + (k.chico ? ' style="font-size:17px;padding-top:4px"' : '') + '>' + k.valor + '</div>'
+      + '<div class="hub-kpi-sub">' + (k.sub || '&nbsp;') + '</div></' + tag + '>';
+  }
+  GenteShell.hub = { fila, grupo, kpi, esc };
+})();
