@@ -84,6 +84,13 @@ a.kpi:hover{border-color:#0D4FA0}
 .kpi-label i{font-size:15px;color:#0D4FA0}
 .kpi-valor{font-size:24px;font-weight:700;letter-spacing:-.02em;color:#18181A;margin-top:6px}
 .kpi-sub{font-size:11.5px;color:#9896A0;margin-top:2px}
+.kpi-sedes{display:grid;grid-template-columns:1fr 1fr;margin-top:6px}
+.kpi-sede{text-decoration:none;color:inherit;display:block;min-width:0;border-radius:6px}
+.kpi-sede + .kpi-sede{border-left:1px solid #EEF0F4;padding-left:10px}
+.kpi-sede:hover .kpi-sede-valor{color:#0D4FA0}
+.kpi-sede-nombre{font-size:11px;color:#9896A0}
+.kpi-sede-valor{font-size:19px;font-weight:700;letter-spacing:-.02em;color:#18181A}
+.kpi-sede-vacio{font-size:11.5px;color:#B45309;padding-top:4px}
 .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
 .info-card{border:1px solid #E6E8EE;border-radius:10px;padding:14px 16px;background:#fff}
 .info-title{font-size:13px;font-weight:600;color:#18181A;display:flex;align-items:center;gap:7px;margin-bottom:6px}
@@ -951,7 +958,7 @@ function saludo(){
   const h = new Date().getHours();
   return h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
 }
-function fmtPct(v){ return v == null ? '—' : (v*100).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'; }
+function fmtPct(v){ return v == null ? '—' : (v*100).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %'; }
 function nombrePropio(s){
   return String(s||'').toLowerCase().replace(/(^|[\s'-])([a-záéíóúñü])/g, function(m,a,b){ return a+b.toUpperCase(); });
 }
@@ -963,11 +970,13 @@ function textoVision(t){
 
 async function cargarResumen(){
   const anio = new Date().getFullYear(), mesHoy = new Date().getMonth()+1;
+  // Ausentismo a mes cerrado: siempre el mes calendario anterior (en enero, diciembre del año previo)
+  const mesCerr = mesHoy === 1 ? 12 : mesHoy - 1, anioCerr = mesHoy === 1 ? anio - 1 : anio;
   const j = u => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
   const [tto, ausD, ausC, vac, cumple, forms] = await Promise.all([
     j('/api/turnover/dashboard?anio='+anio),
-    j('/api/auskpi/calculo?anio='+anio),
-    j('/api/auskpi-cc/calculo?anio='+anio),
+    j('/api/auskpi/calculo?anio='+anioCerr),
+    j('/api/auskpi-cc/calculo?anio='+anioCerr),
     j('/api/vacantes?status='+encodeURIComponent('En curso')),
     j('/api/cumpleanos?mes='+mesHoy),
     IS_ADMIN ? j('/api/notif-forms') : Promise.resolve(null)
@@ -984,14 +993,14 @@ async function cargarResumen(){
     for(let m=1;m<=12;m++){ const d = tto.months[m]; if(d){ hay = true; bajas += d.tto_indet||0; dot += d.dot_indet||0; } }
     R.rotacion = { valor: hay && dot ? bajas/dot : null, obj: tto.config ? parseFloat(tto.config.obj_tto_indeterminados) : null };
   }
-  // Ausentismo: último mes cerrado con dato (o el actual si no hay otro)
-  const ultAus = arr => {
+  // null = sin datos cargados de ese mes en la sede
+  const ausMes = arr => {
     if(!Array.isArray(arr)) return null;
-    const ok = arr.filter(x => x.pct != null && x.mes <= mesHoy && (x.presente + x.ausencia + x.justificada) > 0);
-    const cerrado = ok.filter(x => x.mes < mesHoy);
-    return (cerrado.length ? cerrado : ok).slice(-1)[0] || null;
+    const x = arr.find(r => r.mes === mesCerr);
+    return x && x.pct != null && (x.presente + x.ausencia + x.justificada) > 0 ? x : null;
   };
-  R.ausD = ultAus(ausD); R.ausC = ultAus(ausC);
+  R.ausMes = mesCerr; R.ausAnio = anioCerr;
+  R.ausD = ausMes(ausD); R.ausC = ausMes(ausC);
   if(Array.isArray(vac)){
     const porSede = {};
     vac.forEach(v => { porSede[v.sede||'—'] = (porSede[v.sede||'—']||0)+1; });
@@ -1013,15 +1022,18 @@ function renderKpis(){
   const card = (href, icon, label, valor, sub) =>
     '<a class="kpi" href="'+href+'"><div class="kpi-label"><i class="ti '+icon+'" aria-hidden="true"></i>'+label+'</div>'
     +(R ? '<div class="kpi-valor">'+valor+'</div><div class="kpi-sub">'+sub+'</div>' : cargando)+'</a>';
-  if(!R) return '<div class="kpi-grid">'+card('/kpi-turnover','ti-users','Dotación')+card('/kpi-ausentismo','ti-calendar-off','Ausentismo')+card('/kpi-turnover','ti-arrows-exchange','Rotación')+card('/vacantes','ti-briefcase','Vacantes abiertas')+'</div>';
-  const d = R.dotacion, rot = R.rotacion || {}, a = R.ausD, c = R.ausC, v = R.vacantes;
-  const ausVal = a ? fmtPct(a.pct) : c ? fmtPct(c.pct) : '—';
-  const ausSub = a && c ? 'Dolores · CC '+fmtPct(c.pct)+' · '+MESES_MIN[a.mes]
-               : a ? 'Dolores · '+MESES_MIN[a.mes] : c ? 'Casa Central · '+MESES_MIN[c.mes] : 'Sin datos cargados';
+  if(!R) return '<div class="kpi-grid">'+card('/kpi-turnover','ti-users','Dotación')+card('/kpi-ausentismo','ti-calendar-off','Ausentismo Logística')+card('/kpi-turnover','ti-arrows-exchange','Rotación')+card('/vacantes','ti-briefcase','Vacantes abiertas')+'</div>';
+  const d = R.dotacion, rot = R.rotacion || {}, v = R.vacantes;
+  // Ausentismo Logística: Dolores y Casa Central lado a lado, cada mitad lleva a su KPI
+  const sede = (href, nombre, x) => '<a class="kpi-sede" href="'+href+'"><div class="kpi-sede-nombre">'+nombre+'</div>'
+    + (x ? '<div class="kpi-sede-valor">'+fmtPct(x.pct)+'</div>' : '<div class="kpi-sede-vacio">Sin datos de '+MESES_MIN[R.ausMes]+'</div>') + '</a>';
+  const ausCard = '<div class="kpi"><div class="kpi-label"><i class="ti ti-calendar-off" aria-hidden="true"></i>Ausentismo Logística</div>'
+    + '<div class="kpi-sedes">' + sede('/kpi-ausentismo','Dolores',R.ausD) + sede('/kpi-ausentismo-cc','Casa Central',R.ausC) + '</div>'
+    + '<div class="kpi-sub">Mes cerrado: '+MESES_MIN[R.ausMes]+' '+R.ausAnio+'</div></div>';
   const sedes = v ? Object.keys(v.porSede).map(s => esc(s)+' '+v.porSede[s]).join(' · ') : '';
   return '<div class="kpi-grid">'
     + card('/kpi-turnover','ti-users','Dotación', d ? d.valor.toLocaleString('es-AR') : '—', d ? 'personas · '+MESES_MIN[d.mes]+(d.anio !== new Date().getFullYear() ? ' '+d.anio : '') : 'Sin datos cargados')
-    + card('/kpi-ausentismo','ti-calendar-off','Ausentismo', ausVal, ausSub)
+    + ausCard
     + card('/kpi-turnover','ti-arrows-exchange','Rotación', fmtPct(rot.valor), rot.valor == null ? 'Sin datos cargados' : 'acumulado '+new Date().getFullYear()+(rot.obj ? ' · obj. '+fmtPct(rot.obj) : ''))
     + card('/vacantes','ti-briefcase','Vacantes abiertas', v ? v.valor : '—', v ? (v.valor ? sedes : 'Ninguna en curso') : 'Sin datos')
     + '</div>';
