@@ -20,41 +20,86 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .logout-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);padding:5px 12px;border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
 .logout-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 
-.page{max-width:1400px;margin:0 auto;padding:1.5rem 1rem}
+.page{max-width:1200px;margin:0 auto;padding:1.5rem 1rem 3rem}
 .breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#9896A0;margin-bottom:1rem;font-weight:500}
 .breadcrumb a{color:#1E6FD9;text-decoration:none;font-weight:600}
 .breadcrumb-sep{color:#DDDBD6}
 
-/* Tables */
-.table-container{background:#fff;border:1px solid #DDDBD6;border-radius:10px;overflow:hidden;margin-bottom:1.25rem}
-.table-title{padding:12px 16px;font-weight:700;font-size:14px;border-bottom:1px solid #DDDBD6;
-  display:flex;align-items:center;justify-content:space-between}
-.table-scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#F8F7F5;padding:7px 10px;text-align:right;font-weight:700;font-size:11px;
-  color:#9896A0;border-bottom:1.5px solid #DDDBD6;white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}
-th:first-child{text-align:left;min-width:200px;position:sticky;left:0;z-index:2;background:#F8F7F5}
-td{padding:6px 10px;text-align:right;border-bottom:1px solid #F2F1EE;white-space:nowrap}
-td:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:#fff;z-index:1}
-tr:hover td{background:#F8F7F5}
-tr.row-total td{font-weight:700;border-top:2px solid #DDDBD6;background:#F8F7F5!important}
-tr.row-category td{background:#F8F7F5;font-weight:700;color:#0D4FA0}
-tr.row-sub td:first-child{padding-left:24px;font-weight:400;color:#56555A}
-tr.row-result td{font-weight:700;font-size:13px;background:#EBF2FC!important}
+h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
+.sub{font-size:13px;color:#56555A;margin-bottom:1.25rem;max-width:760px;line-height:1.5}
 
-.col-total{background:#EBF2FC!important}
-.cat-strip{width:4px;height:14px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:middle}
+.card{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9896A0;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+
+/* Carga */
+.drop{border:2px dashed #C9C6BF;border-radius:10px;padding:1.4rem 1rem;text-align:center;cursor:pointer;transition:.15s;background:#FAFAF8}
+.drop:hover,.drop.over{border-color:#E8730C;background:#FFF6EE}
+.drop strong{display:block;font-size:14px;margin-bottom:.2rem}
+.drop span{font-size:12px;color:#9896A0}
+.fuentes{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.9rem}
+.fuente{border:1px solid #E6E4DF;border-radius:8px;padding:.6rem .75rem;font-size:12px;display:flex;gap:.6rem;align-items:flex-start}
+.fuente .dot{width:10px;height:10px;border-radius:50%;background:#DDDBD6;margin-top:3px;flex-shrink:0}
+.fuente.ok .dot{background:#1F9D55}
+.fuente.err .dot{background:#C0392B}
+.fuente b{display:block;font-size:12px;margin-bottom:.1rem}
+.fuente small{color:#9896A0;display:block;line-height:1.4;word-break:break-word}
+.fuente .x{margin-left:auto;background:none;border:none;color:#9896A0;cursor:pointer;font-size:15px;line-height:1}
+
+/* Avisos */
+.aviso{border-left:4px solid #E8730C;background:#FFF6EE;border-radius:8px;padding:.8rem 1rem;margin-bottom:1rem;font-size:12px}
+.aviso.rojo{border-left-color:#C0392B;background:#FDF0EE}
+.aviso-t{font-weight:700;font-size:13px;margin-bottom:.35rem}
+.aviso p{color:#56555A;margin-bottom:.6rem;line-height:1.45}
+.mini{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:6px;overflow:hidden}
+.mini th{background:#F8F7F5;text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9896A0;font-weight:700}
+.mini td{padding:5px 8px;border-top:1px solid #F2F1EE;vertical-align:middle}
+.mini td.n{text-align:right;white-space:nowrap}
+.mini select{padding:4px 6px;border:1.5px solid #DDDBD6;border-radius:6px;font-family:inherit;font-size:12px;background:#fff}
+.tabla-scroll{overflow-x:auto}
+
+/* Meses */
+.meses{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem}
+.mes-btn{border:1.5px solid #DDDBD6;background:#fff;border-radius:20px;padding:5px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:#56555A;display:flex;align-items:center;gap:6px}
+.mes-btn.act{background:#E8730C;border-color:#E8730C;color:#fff}
+.mes-btn .pill{font-size:10px;font-weight:700;border-radius:8px;padding:0 5px;background:rgba(0,0,0,.08)}
+.mes-btn.act .pill{background:rgba(255,255,255,.25)}
+
+.col-info{font-size:12px;color:#56555A;margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
+.col-info .letra{font-weight:800;font-size:15px;color:#E8730C;background:#FFF6EE;border-radius:6px;padding:2px 9px}
+
+.bloques{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem}
+.bloque{background:#fff;border:1px solid #DDDBD6;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.bloque-h{padding:.7rem .9rem;border-bottom:1px solid #EEECE8;display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.bloque-h b{font-size:13px;display:block}
+.bloque-h .rango{font-size:11px;color:#9896A0;font-weight:600;margin-top:2px}
+.bloque-h .rango code{background:#F2F1EE;border-radius:4px;padding:1px 5px;color:#18181A;font-weight:700}
+.btn{padding:.45rem .8rem;border:none;border-radius:7px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;background:#E8730C;color:#fff}
+.btn:hover{background:#CF650A}
+.btn:disabled{background:#DDDBD6;color:#9896A0;cursor:not-allowed}
+.btn.ok{background:#1F9D55}
+.btn-sec{background:#fff;color:#18181A;border:1.5px solid #DDDBD6}
+.btn-sec:hover{background:#F8F7F5}
+.bloque table{width:100%;border-collapse:collapse;font-size:12px}
+.bloque td{padding:5px .9rem;border-bottom:1px solid #F5F4F1}
+.bloque td.v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bloque td.fila{color:#C9C6BF;font-size:10px;width:26px;text-align:right;padding-right:0}
+.bloque tr.sep td{border-top:2px solid #EEECE8}
+.bloque .falta{padding:.9rem;font-size:12px;color:#C0392B}
+.vacio{text-align:center;color:#9896A0;font-size:13px;padding:2rem 1rem}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#18181A;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
 
 @media(max-width:768px){
   .topbar{padding:.75rem 1rem}
-  .page{padding:1rem .75rem}
-  th:first-child,td:first-child{min-width:140px}
+  .page{padding:1rem .75rem 3rem}
+  .fuentes{grid-template-columns:1fr}
+  .bloques{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
     <div class="topbar-logo">
@@ -81,15 +126,288 @@ tr.row-result td{font-weight:700;font-size:13px;background:#EBF2FC!important}
     <span>Presupuesto</span>
   </div>
 
-  <!-- Acá vamos a ir armando el presupuesto -->
+  <h1>Importador de la planilla auxiliar</h1>
+  <p class="sub">Subí los 3 reportes de CMQ del mes (Seguimiento Gasto TS, Seguimiento Venta TS y Presupuesto Costos – Facturación). La app hace los mismos cálculos que la planilla auxiliar y te da los valores listos para pegar en la hoja <b>Volumen</b> del presupuesto.</p>
 
+  <div class="card">
+    <div class="card-title">1 · Reportes</div>
+    <div class="drop" id="drop">
+      <strong>Arrastrá los archivos acá o hacé clic para elegirlos</strong>
+      <span>Los 3 reportes .xlsx juntos o de a uno. Se reconocen solos por sus columnas.</span>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" multiple hidden>
+    </div>
+    <div class="fuentes" id="fuentes"></div>
+  </div>
+
+  <div id="avisos"></div>
+
+  <div class="card" id="res-card">
+    <div class="card-title"><span>2 · Valores para la hoja Volumen</span><span id="guardado" style="text-transform:none;letter-spacing:0;font-weight:600"></span></div>
+    <div id="resultados"><div class="vacio">Todavía no hay datos. Subí los reportes para ver los valores.</div></div>
+  </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="/presupuesto-calc.js"></script>
 <script>
 const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!userData) { window.location.href = '/'; }
 document.getElementById('user-nombre').textContent = userData.nombre || userData.username;
 document.getElementById('user-avatar').textContent = (userData.nombre||userData.username).charAt(0).toUpperCase();
+
+const PC = window.PresupuestoCalc;
+const MODULO = 'presupuesto';
+const FUENTES = [
+  { id:'gasto',  nombre:'Seguimiento Gasto TS' },
+  { id:'ventas', nombre:'Seguimiento Venta TS' },
+  { id:'costos', nombre:'Costos – Facturación' },
+];
+const MESES_TXT = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const SEGMENTOS = ['Core','Value','Core +','Premium','Super Premium','TOP UNG','UNG FAM','AGUAS ECO','ADYACENCIAS','VINO','MARKETPLACE ALIMENTOS'];
+// Fila inicial de cada bloque en la hoja Volumen
+const FILA_INICIO = { volTot:4, volCC:12, volDOL:20, phl:30, tshl:129, cmv:152, fn:168 };
+const DECIMALES = { volTot:2, volCC:2, volDOL:2, phl:2, tshl:2, cmv:0, fn:0 };
+
+let cargados = {};        // tipo -> {archivo, registros, meses}
+let codif = null;         // codificación (marcas, calibres UNG, acciones)
+let guardados = {};       // 'vol-2026/10' -> datos guardados
+let resultado = null;
+let mesActivo = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200); }
+const fmt = (n, d) => (n||0).toLocaleString('es-AR', { minimumFractionDigits:d, maximumFractionDigits:d });
+// Para pegar en Excel (configuración regional argentina): sin separador de miles, coma decimal
+const paraExcel = n => { const r = Math.round((n||0)*1e6)/1e6; return String(r).replace('.', ','); };
+function letraColumna(mes){ // 2026/01 -> S ... 2026/12 -> AD
+  const i = 18 + (parseInt(mes.slice(5),10) - 1);
+  return i < 26 ? String.fromCharCode(65+i) : 'A' + String.fromCharCode(65 + i - 26);
+}
+const mesTxt = m => MESES_TXT[parseInt(m.slice(5),10)-1] + ' ' + m.slice(0,4);
+
+// ── Datos guardados ──
+async function cargarGuardados(){
+  try {
+    const r = await fetch('/api/datos/' + MODULO);
+    const d = await r.json();
+    codif = d.codif || JSON.parse(JSON.stringify(PC.CODIF_DEFAULT));
+    if (!codif.ignorar) codif.ignorar = [];
+    guardados = {};
+    Object.keys(d).filter(k => k.startsWith('vol-')).forEach(k => { guardados[k.slice(4)] = d[k]; });
+  } catch(e) {
+    codif = JSON.parse(JSON.stringify(PC.CODIF_DEFAULT)); codif.ignorar = [];
+  }
+  render();
+}
+async function guardar(periodo, datos){
+  const r = await fetch('/api/datos/' + MODULO, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ periodo, datos }) });
+  if (!r.ok) throw new Error('No se pudo guardar');
+}
+function log(accion, detalle){
+  fetch('/api/log', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username:userData.username, nombre:userData.nombre, accion:'Presupuesto: ' + accion, detalle }) }).catch(()=>{});
+}
+
+// ── Carga de archivos ──
+const drop = $('drop'), fileIn = $('file');
+drop.onclick = () => fileIn.click();
+fileIn.onchange = () => { leerArchivos([...fileIn.files]); fileIn.value=''; };
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); leerArchivos([...e.dataTransfer.files]); };
+
+async function leerArchivos(files){
+  for (const f of files) {
+    try {
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, { type:'array' });
+      let ok = false, ultimoError = null;
+      for (const nombre of wb.SheetNames) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[nombre], { header:1, defval:'' });
+        try {
+          const p = PC.parsearReporte(rows);
+          const meses = [...new Set(p.registros.map(r => r.mes))].sort();
+          cargados[p.tipo] = { archivo: f.name, registros: p.registros, meses };
+          ok = true; break;
+        } catch(e) { ultimoError = e; }
+      }
+      if (!ok) { cargados['err-' + f.name] = { archivo: f.name, error: (ultimoError && ultimoError.message) || 'Formato no reconocido' }; }
+      else delete cargados['err-' + f.name];
+    } catch(e) {
+      cargados['err-' + f.name] = { archivo: f.name, error: 'No se pudo leer el archivo: ' + e.message };
+    }
+  }
+  recalcular();
+  const tipos = FUENTES.filter(x => cargados[x.id]).map(x => x.nombre);
+  if (tipos.length) log('importar reportes', tipos.join(', '));
+}
+function quitar(tipo){ delete cargados[tipo]; recalcular(); }
+
+// ── Cálculo ──
+async function recalcular(){
+  const data = {};
+  FUENTES.forEach(f => { if (cargados[f.id]) data[f.id] = cargados[f.id].registros; });
+  resultado = Object.keys(data).length ? PC.calcular(data, codif) : null;
+  if (resultado) {
+    const ign = new Set(codif.ignorar || []);
+    resultado.sinGrupo = resultado.sinGrupo.filter(x => !ign.has(claveSinGrupo(x)));
+    const meses = Object.keys(resultado.meses).sort();
+    if (!meses.includes(mesActivo)) mesActivo = meses[meses.length-1];
+    await guardarCompletos();
+  }
+  render();
+}
+
+// Guarda los meses que tienen los 3 reportes cargados
+async function guardarCompletos(){
+  const completos = Object.entries(resultado.meses).filter(([,m]) => m.fuentes.gasto && m.fuentes.ventas && m.fuentes.costos);
+  if (!completos.length) { $('guardado').textContent = ''; return; }
+  try {
+    for (const [mes, m] of completos) {
+      const datos = { mes, bloques: PC.bloquesVolumen(m).map(b => ({ id:b.id, valores:b.valores })), archivos: FUENTES.map(f => cargados[f.id].archivo), usuario: userData.username, fecha: new Date().toISOString() };
+      await guardar('vol-' + mes, datos);
+      guardados[mes] = datos;
+    }
+    $('guardado').textContent = '✓ Guardado: ' + completos.map(([m]) => mesTxt(m)).join(', ');
+    $('guardado').style.color = '#1F9D55';
+  } catch(e) {
+    $('guardado').textContent = 'No se pudo guardar en el servidor';
+    $('guardado').style.color = '#C0392B';
+  }
+}
+
+// ── Codificación (marcas / calibres / acciones) ──
+const claveSinGrupo = x => [x.un, x.marca, x.calibre].map(v => String(v||'').trim().toUpperCase()).join('|');
+async function asignarSegmento(i, valor){
+  const x = resultado.sinGrupo[i];
+  if (!valor) return;
+  if (valor === '__ignorar') {
+    codif.ignorar.push(claveSinGrupo(x));
+  } else if (String(x.un).trim().toUpperCase() === 'UNG') {
+    codif.ung[String(x.calibre).trim()] = valor;
+  } else {
+    codif.marca[String(x.marca).trim()] = valor;
+  }
+  await guardarCodif(valor === '__ignorar' ? 'Se ignorará esa combinación' : 'Clasificado como ' + valor);
+}
+async function asignarAccion(codigo, accion, validada){
+  if (validada === '') return;
+  codif.acciones.push({ codigo: isNaN(+codigo) ? codigo : +codigo, accion: accion || '', validada: validada === '1' });
+  await guardarCodif('Acción ' + codigo + (validada === '1' ? ' marcada como validada (paga CMQ)' : ' marcada como no validada (paga Del Palacio)'));
+}
+async function guardarCodif(msg){
+  try { await guardar('codif', codif); toast(msg); log('codificación', msg); }
+  catch(e) { toast('No se pudo guardar la codificación'); }
+  recalcular();
+}
+
+// ── Render ──
+function render(){ renderFuentes(); renderAvisos(); renderResultados(); }
+
+function renderFuentes(){
+  const html = FUENTES.map(f => {
+    const c = cargados[f.id];
+    if (!c) return `<div class="fuente"><div class="dot"></div><div><b>${f.nombre}</b><small>Falta cargar</small></div></div>`;
+    return `<div class="fuente ok"><div class="dot"></div><div><b>${f.nombre}</b><small>${esc(c.archivo)}<br>${c.registros.length.toLocaleString('es-AR')} filas · ${c.meses.map(mesTxt).join(', ')}</small></div><button class="x" title="Quitar" onclick="quitar('${f.id}')">×</button></div>`;
+  }).join('') + Object.entries(cargados).filter(([k]) => k.startsWith('err-')).map(([k,c]) =>
+    `<div class="fuente err"><div class="dot"></div><div><b>${esc(c.archivo)}</b><small>${esc(c.error)}</small></div><button class="x" title="Quitar" onclick="quitar('${esc(k)}')">×</button></div>`).join('');
+  $('fuentes').innerHTML = html;
+}
+
+function renderAvisos(){
+  const el = $('avisos');
+  if (!resultado) { el.innerHTML = ''; return; }
+  let h = '';
+  const ad = resultado.accionesDesconocidas;
+  if (ad.length) {
+    h += `<div class="aviso rojo"><div class="aviso-t">Acciones descentralizadas sin clasificar (${ad.length})</div>
+      <p>Estos códigos no están en la tabla de acciones. En la planilla auxiliar daban #N/A y su gasto quedaba <b>afuera</b> del TS/HL. Indicá si cada acción está validada por CMQ (la paga CMQ) o no (la paga Del Palacio).</p>
+      <div class="tabla-scroll"><table class="mini"><tr><th>Código</th><th>Acción</th><th>Meses</th><th style="text-align:right">Trade Spend</th><th>¿Quién la paga?</th></tr>
+      ${ad.map(a => `<tr><td>${esc(a.codigo)}</td><td>${esc(a.accion)}</td><td>${a.meses.map(mesTxt).join(', ')}</td><td class="n">$ ${fmt(a.ts,0)}</td>
+        <td><select onchange="asignarAccion('${esc(a.codigo)}', this.dataset.acc, this.value)" data-acc="${esc(a.accion)}"><option value="">Elegir…</option><option value="1">CMQ (validada)</option><option value="0">Del Palacio (no validada)</option></select></td></tr>`).join('')}
+      </table></div></div>`;
+  }
+  // Un renglón por producto, sumando lo que aporta cada reporte
+  const prods = {};
+  resultado.sinGrupo.forEach((x, i) => {
+    const k = claveSinGrupo(x);
+    const p = prods[k] || (prods[k] = { i, un:x.un, marca:x.marca, calibre:x.calibre, hl:0, pnit:0, ts:0, meses:new Set() });
+    if (x.fuente.startsWith('Venta')) p.hl += x.valor;
+    else if (x.fuente.startsWith('Costos')) p.pnit += x.valor;
+    else p.ts += x.valor;
+    x.meses.forEach(m => p.meses.add(m));
+  });
+  const sg = Object.values(prods).filter(p => Math.abs(p.hl) >= 0.5 || Math.abs(p.pnit) >= 1 || Math.abs(p.ts) >= 1);
+  if (sg.length) {
+    const val = (v, pre, suf, d) => Math.abs(v) < 1e-9 ? '<span style="color:#C9C6BF">—</span>' : pre + fmt(v, d) + suf;
+    h += `<div class="aviso"><div class="aviso-t">Productos sin segmento (${sg.length})</div>
+      <p>Estas marcas o calibres no están en la tabla de codificación, así que no entran en ninguna agrupación. Lo mismo pasaba en la planilla auxiliar: quedaban afuera sin avisar. Asignales un segmento, o elegí "Ignorar" si no corresponde contarlos (por ejemplo, envases). El segmento se aplica a toda la marca; en UNG, al calibre.</p>
+      <div class="tabla-scroll"><table class="mini"><tr><th>Unidad de negocio</th><th>Marca</th><th>Calibre</th><th>Meses</th><th style="text-align:right">Volumen</th><th style="text-align:right">Venta PNIT</th><th style="text-align:right">Trade Spend</th><th>Segmento</th></tr>
+      ${sg.map(p => `<tr><td>${esc(p.un)}</td><td>${esc(p.marca)}</td><td>${esc(p.calibre)}</td><td>${[...p.meses].sort().map(m=>MESES_TXT[parseInt(m.slice(5),10)-1].slice(0,3)).join(', ')}</td>
+        <td class="n">${val(p.hl,'',' HL',2)}</td><td class="n">${val(p.pnit,'$ ','',0)}</td><td class="n">${val(p.ts,'$ ','',0)}</td>
+        <td><select onchange="asignarSegmento(${p.i}, this.value)"><option value="">Elegir…</option>${SEGMENTOS.map(s=>`<option>${s}</option>`).join('')}<option value="__ignorar">Ignorar</option></select></td></tr>`).join('')}
+      </table></div></div>`;
+  }
+  resultado.avisos.forEach(a => { h += `<div class="aviso rojo"><div class="aviso-t">Atención</div><p>${esc(a.texto)}</p></div>`; });
+  el.innerHTML = h;
+}
+
+function renderResultados(){
+  const el = $('resultados');
+  // Meses disponibles: los calculados ahora + los guardados antes
+  const mesesCalc = resultado ? Object.keys(resultado.meses) : [];
+  const meses = [...new Set([...mesesCalc, ...Object.keys(guardados)])].sort();
+  if (!meses.length) { el.innerHTML = '<div class="vacio">Todavía no hay datos. Subí los reportes para ver los valores.</div>'; return; }
+  if (!meses.includes(mesActivo)) mesActivo = meses[meses.length-1];
+
+  let bloques, origen;
+  if (resultado && resultado.meses[mesActivo]) {
+    bloques = PC.bloquesVolumen(resultado.meses[mesActivo]); origen = 'calc';
+  } else {
+    const g = guardados[mesActivo];
+    const plantilla = PC.bloquesVolumen(PC.calcular({ ventas:[{mes:mesActivo,suc:'CC',un:'',marca:'',calibre:'',hl:0}] }, codif).meses[mesActivo]);
+    bloques = plantilla.map(b => ({ ...b, valores: (g.bloques.find(x => x.id === b.id) || {}).valores || b.valores, faltan: [] }));
+    origen = 'guardado';
+  }
+  const letra = letraColumna(mesActivo);
+  const g = guardados[mesActivo];
+
+  let h = `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===mesActivo?'act':''}" onclick="mesActivo='${m}';renderResultados()">${mesTxt(m)}${guardados[m]?'<span class="pill">guardado</span>':''}</button>`).join('')}</div>`;
+  h += `<div class="col-info"><span>Columna en la hoja Volumen:</span><span class="letra">${letra}</span>
+    <span>${origen === 'guardado' ? `Valores guardados el ${new Date(g.fecha).toLocaleDateString('es-AR')} por ${esc(g.usuario)}` : 'Hacé clic en <b>Copiar</b> y pegá en la primera celda del rango indicado.'}</span></div>`;
+  h += '<div class="bloques">' + bloques.map(b => bloqueHTML(b, letra)).join('') + '</div>';
+  el.innerHTML = h;
+  window._bloques = bloques;
+}
+
+function bloqueHTML(b, letra){
+  const ini = FILA_INICIO[b.id], fin = ini + b.valores.length - 1;
+  const d = DECIMALES[b.id];
+  const nombres = { gasto:'Gasto TS', ventas:'Venta TS', costos:'Costos – Facturación' };
+  const head = `<div class="bloque-h"><div><b>${esc(b.titulo)}</b><div class="rango">Pegar en <code>${letra}${ini}:${letra}${fin}</code></div></div>
+    <button class="btn" ${b.faltan.length?'disabled':''} onclick="copiar('${b.id}', this)">Copiar</button></div>`;
+  if (b.faltan.length) return `<div class="bloque">${head}<div class="falta">Falta cargar: ${b.faltan.map(k=>nombres[k]).join(' y ')}.</div></div>`;
+  const mitad = b.valores.length === 14 ? 7 : -1;
+  const filas = b.valores.map((v,i) => `<tr class="${i===mitad?'sep':''}"><td class="fila">${ini+i}</td><td>${esc(b.labels[i])}</td><td class="v">${fmt(v,d)}</td></tr>`).join('');
+  return `<div class="bloque">${head}<table>${filas}</table></div>`;
+}
+
+async function copiar(id, btn){
+  const b = window._bloques.find(x => x.id === id);
+  const texto = b.valores.map(paraExcel).join('\r\n');
+  try { await navigator.clipboard.writeText(texto); }
+  catch(e) {
+    const ta = document.createElement('textarea'); ta.value = texto; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  btn.textContent = '✓ Copiado'; btn.classList.add('ok');
+  setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('ok'); }, 1800);
+  toast(b.titulo + ' copiado');
+}
+
+cargarGuardados();
 </script>
 </body>
 </html>
