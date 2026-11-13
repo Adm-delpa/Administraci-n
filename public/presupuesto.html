@@ -90,7 +90,52 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#18181A;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:50}
 .toast.show{opacity:1}
 
+/* Pestañas */
+.tabs{display:flex;gap:4px;border-bottom:2px solid #DDDBD6;margin-bottom:1.25rem;overflow-x:auto}
+.tab{background:none;border:none;padding:.6rem 1rem;font-family:inherit;font-size:13px;font-weight:700;color:#9896A0;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab.act{color:#E8730C;border-bottom-color:#E8730C}
+
+/* Claves de prorrateo */
+.claves{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.6rem}
+.clave{border:1px solid #E6E4DF;border-radius:8px;padding:.55rem .7rem}
+.clave b{font-size:12px;display:block;margin-bottom:.35rem}
+.clave .par{display:flex;gap:.4rem}
+.clave label{flex:1;font-size:10px;color:#9896A0;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.clave input{width:100%;margin-top:2px;padding:.35rem .5rem;border:1.5px solid #DDDBD6;border-radius:6px;font-family:inherit;font-size:13px}
+.clave input:focus{outline:none;border-color:#E8730C}
+.clave .auto{font-size:11px;color:#1F9D55;font-weight:600;margin-top:.3rem}
+.clave.falta{border-color:#E8730C;background:#FFF6EE}
+.clave small{display:block;font-size:11px;color:#56555A;margin-top:.3rem}
+
+/* Resumen */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:1rem}
+.kpi{background:#fff;border:1px solid #DDDBD6;border-radius:10px;padding:.75rem .9rem}
+.kpi-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9896A0;margin-bottom:.2rem}
+.kpi-v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi-s{font-size:11px;color:#9896A0;margin-top:.15rem}
+
+/* Tabla REAL */
+.real{width:100%;border-collapse:collapse;font-size:12px}
+.real th{background:#F8F7F5;padding:7px 10px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#9896A0;font-weight:700;border-bottom:1.5px solid #DDDBD6;position:sticky;top:0}
+.real th:first-child{text-align:left}
+.real td{padding:5px 10px;border-bottom:1px solid #F2F1EE;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.real td:first-child{text-align:left;white-space:normal;min-width:260px}
+.real tr.area td{background:#FFF6EE;font-weight:800;color:#18181A;border-top:2px solid #F3D9C2}
+.real tr.pend td{color:#C9C6BF}
+.real tr.tot td{background:#18181A;color:#fff;font-weight:800}
+.real .fila{color:#C9C6BF;font-size:10px;margin-right:6px}
+.tag{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px;cursor:help}
+.tag.fix{background:#E7F6EE;color:#1F9D55}
+.tag.pend{background:#F2F1EE;color:#9896A0}
+.tag.warn{background:#FFF0E0;color:#B85A00}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem;font-size:12px;color:#56555A}
+.toolbar label{display:flex;align-items:center;gap:6px;cursor:pointer}
+details.sueltos{margin-top:1rem;font-size:12px}
+details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
+
 @media(max-width:768px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .real td:first-child{min-width:180px}
   .topbar{padding:.75rem 1rem}
   .page{padding:1rem .75rem 3rem}
   .fuentes{grid-template-columns:1fr}
@@ -126,6 +171,12 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
     <span>Presupuesto</span>
   </div>
 
+  <div class="tabs">
+    <button class="tab act" data-tab="vol" onclick="verTab('vol')">Volumen · reportes CMQ</button>
+    <button class="tab" data-tab="egr" onclick="verTab('egr')">Egresos · Chess</button>
+  </div>
+
+  <div id="tab-vol">
   <h1>Importador de la planilla auxiliar</h1>
   <p class="sub">Subí los 3 reportes de CMQ del mes (Seguimiento Gasto TS, Seguimiento Venta TS y Presupuesto Costos – Facturación). La app hace los mismos cálculos que la planilla auxiliar y te da los valores listos para pegar en la hoja <b>Volumen</b> del presupuesto.</p>
 
@@ -145,12 +196,31 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
     <div class="card-title"><span>2 · Valores para la hoja Volumen</span><span id="guardado" style="text-transform:none;letter-spacing:0;font-weight:600"></span></div>
     <div id="resultados"><div class="vacio">Todavía no hay datos. Subí los reportes para ver los valores.</div></div>
   </div>
+  </div>
+
+  <div id="tab-egr" hidden>
+  <h1>Egresos reales desde Chess</h1>
+  <p class="sub">Subí los exports de <b>Egresos tipificados</b> (reporte explotado) de Casa Central y de Dolores. La app arma los gastos reales por renglón y mes, igual que la hoja <b>REAL</b>, y los reparte entre sucursales con las mismas claves de prorrateo. Los importes van <b>sin IVA</b>: neto gravado + no gravado + impuestos internos.</p>
+
+  <div class="card">
+    <div class="card-title">1 · Exports de Chess</div>
+    <div class="drop" id="drop-egr">
+      <strong>Arrastrá los exports acá o hacé clic para elegirlos</strong>
+      <span>Uno por sucursal o los dos juntos. La sucursal se toma de la columna "Sucursal" de Chess (1 = Casa Central, 2 = Dolores).</span>
+      <input type="file" id="file-egr" accept=".xlsx,.xls,.csv" multiple hidden>
+    </div>
+    <div class="fuentes" id="fuentes-egr"></div>
+  </div>
+
+  <div id="egr-cuerpo"></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="/presupuesto-calc.js"></script>
+<script src="/presupuesto-egresos.js"></script>
 <script>
 const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!userData) { window.location.href = '/'; }
@@ -197,10 +267,14 @@ async function cargarGuardados(){
     if (!codif.ignorar) codif.ignorar = [];
     guardados = {};
     Object.keys(d).filter(k => k.startsWith('vol-')).forEach(k => { guardados[k.slice(4)] = d[k]; });
+    clavesGuardadas = {}; egrGuardados = {};
+    Object.keys(d).filter(k => k.startsWith('claves-')).forEach(k => { clavesGuardadas[k.slice(7)] = d[k]; });
+    Object.keys(d).filter(k => k.startsWith('egr-')).forEach(k => { egrGuardados[k.slice(4)] = d[k]; });
   } catch(e) {
     codif = JSON.parse(JSON.stringify(PC.CODIF_DEFAULT)); codif.ignorar = [];
   }
   render();
+  renderEgr();
 }
 async function guardar(periodo, datos){
   const r = await fetch('/api/datos/' + MODULO, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ periodo, datos }) });
@@ -304,7 +378,7 @@ async function guardarCodif(msg){
 }
 
 // ── Render ──
-function render(){ renderFuentes(); renderAvisos(); renderResultados(); }
+function render(){ renderFuentes(); renderAvisos(); renderResultados(); if (!$('tab-egr').hidden) renderEgr(); }
 
 function renderFuentes(){
   const html = FUENTES.map(f => {
@@ -407,6 +481,241 @@ async function copiar(id, btn){
   toast(b.titulo + ' copiado');
 }
 
+// ══════════════ EGRESOS (Chess) ══════════════
+const PE = window.PresupuestoEgresos;
+let egrArchivos = {};        // nombre de archivo -> {registros, meses, porSuc} | {error}
+let egrMes = null;
+let mostrarCeros = false;
+let clavesGuardadas = {};    // 'AAAA/MM' -> claves cargadas a mano
+let egrGuardados = {};       // 'AAAA/MM' -> resultado guardado
+let egrUltimo = null;
+const NOMBRE_CLAVE = { vol:'Volumen (HL)', camiones:'Camiones', litros:'Litros de combustible', personas:'Personas (total)', personasOper:'Personas de Operaciones', personasDist:'Personas de Distribución', fnTotal:'Facturación neta total' };
+
+function verTab(t){
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('act', b.dataset.tab === t));
+  $('tab-vol').hidden = t !== 'vol';
+  $('tab-egr').hidden = t !== 'egr';
+  try { localStorage.setItem('presupuesto-tab', t); } catch(e) {}
+  if (t === 'egr') renderEgr();
+}
+
+const dropE = $('drop-egr'), fileE = $('file-egr');
+dropE.onclick = () => fileE.click();
+fileE.onchange = () => { leerEgresos([...fileE.files]); fileE.value=''; };
+dropE.ondragover = e => { e.preventDefault(); dropE.classList.add('over'); };
+dropE.ondragleave = () => dropE.classList.remove('over');
+dropE.ondrop = e => { e.preventDefault(); dropE.classList.remove('over'); leerEgresos([...e.dataTransfer.files]); };
+
+async function leerEgresos(files){
+  for (const f of files) {
+    try {
+      const wb = XLSX.read(await f.arrayBuffer(), { type:'array' });
+      let ok = null, err = null;
+      for (const nombre of wb.SheetNames) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[nombre], { header:1, defval:'', raw:true });
+        try { ok = PE.parsearEgresos(rows, null); break; } catch(e) { err = e; }
+      }
+      if (!ok) { egrArchivos[f.name] = { error: (err && err.message) || 'Formato no reconocido' }; continue; }
+      const meses = [...new Set(ok.registros.map(r => r.mes))].sort();
+      const porSuc = { CC: ok.registros.filter(r => r.suc === 'CC').length, DOL: ok.registros.filter(r => r.suc === 'DOL').length };
+      egrArchivos[f.name] = { registros: ok.registros, meses, porSuc, sinFecha: ok.sinFecha.length };
+    } catch(e) {
+      egrArchivos[f.name] = { error: 'No se pudo leer el archivo: ' + e.message };
+    }
+  }
+  const ms = registrosEgr().map(r => r.mes).sort();
+  if (ms.length && !ms.includes(egrMes)) egrMes = ms[ms.length-1];
+  log('importar egresos Chess', files.map(f => f.name).join(', '));
+  renderEgr();
+}
+function quitarEgr(nombre){ delete egrArchivos[nombre]; renderEgr(); }
+const registrosEgr = () => Object.values(egrArchivos).filter(a => a.registros).flatMap(a => a.registros);
+
+// Mismo mes y sucursal en dos archivos distintos = probablemente duplicado
+function duplicados(){
+  const visto = {}, dup = new Set();
+  Object.entries(egrArchivos).forEach(([n, a]) => {
+    if (!a.registros) return;
+    new Set(a.registros.map(r => r.mes + '|' + r.suc)).forEach(k => { if (visto[k]) dup.add(k); else visto[k] = n; });
+  });
+  return [...dup];
+}
+
+// ── Claves de prorrateo ──
+const suma = arr => (arr || []).reduce((a, b) => a + (+b || 0), 0);
+function volAuto(mes){
+  if (resultado && resultado.meses[mes] && resultado.meses[mes].fuentes.ventas) {
+    const m = resultado.meses[mes];
+    return { CC: suma(Object.values(m.vol.CC)), DOL: suma(Object.values(m.vol.DOL)) };
+  }
+  const g = guardados[mes];
+  if (g) {
+    const b = id => (g.bloques.find(x => x.id === id) || {}).valores;
+    return { CC: suma(b('volCC')), DOL: suma(b('volDOL')) };
+  }
+  return null;
+}
+function fnAuto(mes){
+  if (resultado && resultado.meses[mes] && resultado.meses[mes].fuentes.costos) return resultado.meses[mes].netoTot;
+  const g = guardados[mes];
+  if (g) { const b = g.bloques.find(x => x.id === 'fn'); if (b) return suma(b.valores); }
+  return null;
+}
+// Claves del mes: automáticas (volumen y FN desde los reportes CMQ) + cargadas a mano.
+// Si el mes no tiene claves cargadas, se proponen las del último mes anterior que sí tenga.
+function clavesDe(mes){
+  let manual = clavesGuardadas[mes], copiadoDe = null;
+  if (!manual) {
+    const prev = Object.keys(clavesGuardadas).filter(m => m < mes).sort().pop();
+    if (prev) { manual = clavesGuardadas[prev]; copiadoDe = prev; }
+  }
+  manual = manual || {};
+  const c = { ...manual };
+  const v = volAuto(mes); if (v) { c.vol = v; c.volAuto = true; }
+  const fn = fnAuto(mes); if (fn != null) { c.fnTotal = fn; c.fnAuto = true; }
+  c.copiadoDe = copiadoDe;
+  return c;
+}
+let _tGuardarClaves = null;
+function setClave(id, suc, valor){
+  const actual = clavesDe(egrMes);
+  const base = clavesGuardadas[egrMes] ? { ...clavesGuardadas[egrMes] } : (() => { const o = { ...actual }; delete o.vol; delete o.fnTotal; delete o.volAuto; delete o.fnAuto; delete o.copiadoDe; if (!actual.volAuto && actual.vol) o.vol = actual.vol; if (!actual.fnAuto && actual.fnTotal != null) o.fnTotal = actual.fnTotal; return o; })();
+  const n = valor === '' ? null : parseFloat(String(valor).replace(/\./g, '').replace(',', '.'));
+  if (id === 'fnTotal') base.fnTotal = n;
+  else base[id] = { ...(base[id] || {}), [suc]: n };
+  clavesGuardadas[egrMes] = base;
+  clearTimeout(_tGuardarClaves);
+  const mes = egrMes;
+  _tGuardarClaves = setTimeout(async () => {
+    try { await guardar('claves-' + mes, clavesGuardadas[mes]); } catch(e) { toast('No se pudieron guardar las claves'); }
+  }, 600);
+  renderEgrResultado();
+}
+
+// ── Render ──
+function renderEgr(){
+  renderEgrFuentes();
+  const regs = registrosEgr();
+  const meses = [...new Set([...regs.map(r => r.mes), ...Object.keys(egrGuardados)])].sort();
+  const el = $('egr-cuerpo');
+  if (!meses.length) { el.innerHTML = ''; return; }
+  if (!meses.includes(egrMes)) egrMes = meses[meses.length-1];
+  const dup = duplicados();
+  let h = '';
+  if (dup.length) h += `<div class="aviso rojo"><div class="aviso-t">Posibles datos duplicados</div><p>Hay más de un archivo con datos de ${dup.map(k => { const [m,s] = k.split('|'); return mesTxt(m) + ' (' + (s==='CC'?'Casa Central':'Dolores') + ')'; }).join(', ')}. Quitá el que sobra para no sumar dos veces.</p></div>`;
+  h += `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===egrMes?'act':''}" onclick="egrMes='${m}';renderEgr()">${mesTxt(m)}${egrGuardados[m]?'<span class="pill">guardado</span>':''}</button>`).join('')}</div>`;
+  h += '<div id="egr-claves"></div><div id="egr-res"></div>';
+  el.innerHTML = h;
+  renderEgrResultado();
+}
+
+function renderEgrFuentes(){
+  $('fuentes-egr').innerHTML = Object.entries(egrArchivos).map(([n, a]) => a.error
+    ? `<div class="fuente err"><div class="dot"></div><div><b>${esc(n)}</b><small>${esc(a.error)}</small></div><button class="x" title="Quitar" onclick="quitarEgr('${esc(n).replace(/'/g,"\\'")}')">×</button></div>`
+    : `<div class="fuente ok"><div class="dot"></div><div><b>${esc(n)}</b><small>${a.registros.length.toLocaleString('es-AR')} comprobantes · ${a.porSuc.CC ? 'Casa Central' : ''}${a.porSuc.CC && a.porSuc.DOL ? ' y ' : ''}${a.porSuc.DOL ? 'Dolores' : ''}<br>${a.meses.map(mesTxt).join(', ')}${a.sinFecha ? `<br>${a.sinFecha} filas sin fecha válida (no se toman)` : ''}</small></div><button class="x" title="Quitar" onclick="quitarEgr('${esc(n).replace(/'/g,"\\'")}')">×</button></div>`
+  ).join('');
+}
+
+function inputClave(id, suc, valor, dis){
+  const v = valor == null || valor === '' ? '' : String(valor).replace('.', ',');
+  return `<label>${suc === 'CC' ? 'Casa Central' : suc === 'DOL' ? 'Dolores' : 'Total'}<input inputmode="decimal" value="${esc(v)}" ${dis?'disabled':''} onchange="setClave('${id}','${suc}',this.value)"></label>`;
+}
+
+function renderEgrResultado(){
+  const cont = $('egr-res'), contC = $('egr-claves');
+  if (!cont) return;
+  const regs = registrosEgr().filter(r => r.mes === egrMes);
+  const hayDatos = regs.length > 0;
+  const claves = clavesDe(egrMes);
+
+  let res;
+  if (hayDatos) res = PE.calcularMes(registrosEgr(), egrMes, claves, { importe:'neto' });
+  else {
+    const g = egrGuardados[egrMes];
+    const mapa = Object.fromEntries((g.filas || []).map(f => [f.fila, f]));
+    const filas = PE.FILAS.map(([fila, area, label]) => { const regla = PE.REGLAS[fila] || {}; const s = mapa[fila] || {}; return { fila, area, label, regla, fuente: regla.fuente || 'egresos', total: s.total||0, CC: s.CC||0, DOL: s.DOL||0 }; });
+    res = { filas, total: g.total, CC: g.CC, DOL: g.DOL, ivaExcluido: g.ivaExcluido || 0, sueltos: [], faltanClaves: [], guardado: g };
+  }
+  egrUltimo = res;
+
+  // Claves
+  const usa = new Set(PE.FILAS.map(([f]) => (PE.REGLAS[f] || {}).reparto || ((PE.REGLAS[f] || {}).fuente ? null : 'vol')).filter(Boolean));
+  const falta = new Set(res.faltanClaves);
+  const tarjeta = (id, cuerpo, extra) => `<div class="clave ${falta.has(id)?'falta':''}"><b>${NOMBRE_CLAVE[id]}</b>${cuerpo}${extra||''}</div>`;
+  let hc = `<div class="card"><div class="card-title"><span>2 · Claves de prorrateo · ${mesTxt(egrMes)}</span>${claves.copiadoDe && !clavesGuardadas[egrMes] ? `<span style="text-transform:none;letter-spacing:0;color:#B85A00">Copiadas de ${mesTxt(claves.copiadoDe)}: revisalas</span>` : ''}</div><div class="claves">`;
+  hc += tarjeta('vol', `<div class="par">${inputClave('vol','CC', claves.vol && Math.round(claves.vol.CC*100)/100, claves.volAuto || !hayDatos)}${inputClave('vol','DOL', claves.vol && Math.round(claves.vol.DOL*100)/100, claves.volAuto || !hayDatos)}</div>`, claves.volAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Se completa solo si cargás los reportes CMQ del mes.</small>');
+  ['camiones','litros','personas','personasOper','personasDist'].filter(id => usa.has(id)).forEach(id => {
+    const k = claves[id] || {};
+    hc += tarjeta(id, `<div class="par">${inputClave(id,'CC',k.CC,!hayDatos)}${inputClave(id,'DOL',k.DOL,!hayDatos)}</div>`);
+  });
+  hc += tarjeta('fnTotal', `<div class="par">${inputClave('fnTotal','T', claves.fnTotal != null ? Math.round(claves.fnTotal) : '', claves.fnAuto || !hayDatos)}</div>`, claves.fnAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Para el 0,6% que suma "Otros impuestos".</small>');
+  hc += '</div>';
+  if (!hayDatos) hc += '<p style="font-size:12px;color:#9896A0;margin-top:.6rem">Estos son los valores guardados. Para recalcular, volvé a subir los exports de este mes.</p>';
+  hc += '</div>';
+  contC.innerHTML = hc;
+
+  // KPIs
+  let h = `<div class="kpis">
+    <div class="kpi"><div class="kpi-l">Egresos del mes</div><div class="kpi-v">$ ${fmt(res.total,0)}</div><div class="kpi-s">sin IVA · sin sueldos ni acarreo</div></div>
+    <div class="kpi"><div class="kpi-l">Casa Central</div><div class="kpi-v">$ ${fmt(res.CC,0)}</div><div class="kpi-s">${res.total ? fmt(res.CC/res.total*100,1) : 0}%</div></div>
+    <div class="kpi"><div class="kpi-l">Dolores</div><div class="kpi-v">$ ${fmt(res.DOL,0)}</div><div class="kpi-s">${res.total ? fmt(res.DOL/res.total*100,1) : 0}%</div></div>
+    <div class="kpi"><div class="kpi-l">IVA y percepciones excluidos</div><div class="kpi-v">$ ${fmt(res.ivaExcluido,0)}</div><div class="kpi-s">el Excel los suma como gasto</div></div>
+  </div>`;
+  if (res.faltanClaves.length) h += `<div class="aviso"><div class="aviso-t">Faltan claves de prorrateo</div><p>Completá ${res.faltanClaves.map(k => '<b>' + NOMBRE_CLAVE[k] + '</b>').join(', ')} para repartir esos gastos entre sucursales. Mientras tanto quedan en el total pero sin asignar.</p></div>`;
+
+  // Tabla
+  h += `<div class="card"><div class="toolbar"><span>3 · Gastos reales por renglón (hoja REAL)</span><label><input type="checkbox" ${mostrarCeros?'checked':''} onchange="mostrarCeros=this.checked;renderEgrResultado()"> Mostrar renglones en cero</label></div><div class="tabla-scroll"><table class="real"><tr><th>Renglón</th><th>Total</th><th>Casa Central</th><th>Dolores</th></tr>`;
+  const areas = [...new Set(res.filas.map(f => f.area))];
+  const PEND = { sueldos:'Sueldos: próximo paso', aportes:'Sueldos: próximo paso', acarreo:'Acarreo: próximo paso', sinDato:'No se carga desde Chess' };
+  areas.forEach(a => {
+    const fs = res.filas.filter(f => f.area === a);
+    const t = fs.reduce((o, f) => ({ total:o.total+f.total, CC:o.CC+f.CC, DOL:o.DOL+f.DOL }), { total:0, CC:0, DOL:0 });
+    h += `<tr class="area"><td>${esc(a)}</td><td>${fmt(t.total,0)}</td><td>${fmt(t.CC,0)}</td><td>${fmt(t.DOL,0)}</td></tr>`;
+    fs.forEach(f => {
+      const pend = f.fuente !== 'egresos';
+      if (!pend && !mostrarCeros && Math.abs(f.total) < 0.5) return;
+      if (pend && f.fuente === 'sinDato' && !mostrarCeros) return;
+      let tags = '';
+      if (pend) tags += `<span class="tag pend">${PEND[f.fuente]}</span>`;
+      if (f.regla.corrige) tags += `<span class="tag fix" title="${esc(f.regla.corrige)}">corrige el Excel</span>`;
+      if (f.sinClave && f.total) tags += `<span class="tag warn">sin repartir</span>`;
+      if (f.otrosProveedores && Math.abs(f.otrosProveedores) > 0.5) tags += `<span class="tag warn" title="Proveedores distintos de ${esc(f.regla.proveedores.CC)} y ${esc(f.regla.proveedores.DOL)}">$ ${fmt(f.otrosProveedores,0)} sin repartir</span>`;
+      const c = v => pend ? '—' : fmt(v,0);
+      h += `<tr class="${pend?'pend':''}"><td><span class="fila">${f.fila}</span>${esc(f.label)}${tags}</td><td>${c(f.total)}</td><td>${c(f.CC)}</td><td>${c(f.DOL)}</td></tr>`;
+    });
+  });
+  h += `<tr class="tot"><td>TOTAL EGRESOS</td><td>${fmt(res.total,0)}</td><td>${fmt(res.CC,0)}</td><td>${fmt(res.DOL,0)}</td></tr></table></div>`;
+
+  if (res.sueltos.length) {
+    h += `<details class="sueltos"><summary>Conceptos de Chess que no van a ningún renglón del presupuesto (${res.sueltos.length})</summary>
+      <p style="color:#56555A;margin:.5rem 0">Son egresos tipificados que la hoja REAL tampoco toma: sueldos, impuestos, préstamos, notas de crédito, etc. Revisalos por si alguno debería ser gasto.</p>
+      <div class="tabla-scroll"><table class="mini"><tr><th>Concepto</th><th>Descripción egreso</th><th style="text-align:right">Comprobantes</th><th style="text-align:right">Importe</th></tr>
+      ${res.sueltos.map(s => `<tr><td>${esc(s.concepto)}</td><td>${esc(s.egreso)}</td><td class="n">${s.n}</td><td class="n">$ ${fmt(s.importe,0)}</td></tr>`).join('')}</table></div></details>`;
+  }
+  h += '</div>';
+  cont.innerHTML = h;
+
+  if (hayDatos && !res.faltanClaves.length) guardarEgr(res);
+}
+
+let _tGuardarEgr = null;
+function guardarEgr(res){
+  clearTimeout(_tGuardarEgr);
+  const mes = egrMes;
+  _tGuardarEgr = setTimeout(async () => {
+    const datos = { mes, total: res.total, CC: res.CC, DOL: res.DOL, ivaExcluido: res.ivaExcluido,
+      filas: res.filas.filter(f => f.fuente === 'egresos' && (f.total || f.CC || f.DOL)).map(f => ({ fila:f.fila, total:f.total, CC:f.CC, DOL:f.DOL })),
+      importe: 'neto', usuario: userData.username, fecha: new Date().toISOString() };
+    try {
+      await guardar('egr-' + mes, datos);
+      const nuevo = !egrGuardados[mes];
+      egrGuardados[mes] = datos;
+      if (nuevo) renderEgr();
+    } catch(e) { /* sin conexión al servidor: se reintenta en el próximo cambio */ }
+  }, 800);
+}
+
+try { if (localStorage.getItem('presupuesto-tab') === 'egr') verTab('egr'); } catch(e) {}
 cargarGuardados();
 </script>
 </body>
