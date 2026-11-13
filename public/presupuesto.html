@@ -63,6 +63,8 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
 .mes-btn.act{background:#E8730C;border-color:#E8730C;color:#fff}
 .mes-btn .pill{font-size:10px;font-weight:700;border-radius:8px;padding:0 5px;background:rgba(0,0,0,.08)}
 .mes-btn.act .pill{background:rgba(255,255,255,.25)}
+.mes-btn .pill.falta{background:#FFE3C7;color:#B85A00}
+.mes-btn.act .pill.falta{background:#fff;color:#B85A00}
 
 .col-info{font-size:12px;color:#56555A;margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center}
 .col-info .letra{font-weight:800;font-size:15px;color:#E8730C;background:#FFF6EE;border-radius:6px;padding:2px 9px}
@@ -561,25 +563,17 @@ function fnAuto(mes){
   if (g) { const b = g.bloques.find(x => x.id === 'fn'); if (b) return suma(b.valores); }
   return null;
 }
-// Claves del mes: automáticas (volumen y FN desde los reportes CMQ) + cargadas a mano.
-// Si el mes no tiene claves cargadas, se proponen las del último mes anterior que sí tenga.
+// Claves del mes: automáticas (volumen y FN desde los reportes CMQ) + las cargadas a mano.
+// No se estima nada: lo que falta queda vacío y el mes se guarda como incompleto.
 function clavesDe(mes){
-  let manual = clavesGuardadas[mes], copiadoDe = null;
-  if (!manual) {
-    const prev = Object.keys(clavesGuardadas).filter(m => m < mes).sort().pop();
-    if (prev) { manual = clavesGuardadas[prev]; copiadoDe = prev; }
-  }
-  manual = manual || {};
-  const c = { ...manual };
+  const c = { ...(clavesGuardadas[mes] || {}) };
   const v = volAuto(mes); if (v) { c.vol = v; c.volAuto = true; }
   const fn = fnAuto(mes); if (fn != null) { c.fnTotal = fn; c.fnAuto = true; }
-  c.copiadoDe = copiadoDe;
   return c;
 }
 let _tGuardarClaves = null;
 function setClave(id, suc, valor){
-  const actual = clavesDe(egrMes);
-  const base = clavesGuardadas[egrMes] ? { ...clavesGuardadas[egrMes] } : (() => { const o = { ...actual }; delete o.vol; delete o.fnTotal; delete o.volAuto; delete o.fnAuto; delete o.copiadoDe; if (!actual.volAuto && actual.vol) o.vol = actual.vol; if (!actual.fnAuto && actual.fnTotal != null) o.fnTotal = actual.fnTotal; return o; })();
+  const base = { ...(clavesGuardadas[egrMes] || {}) };
   const n = valor === '' ? null : parseFloat(String(valor).replace(/\./g, '').replace(',', '.'));
   if (id === 'fnTotal') base.fnTotal = n;
   else base[id] = { ...(base[id] || {}), [suc]: n };
@@ -603,7 +597,8 @@ function renderEgr(){
   const dup = duplicados();
   let h = '';
   if (dup.length) h += `<div class="aviso rojo"><div class="aviso-t">Posibles datos duplicados</div><p>Hay más de un archivo con datos de ${dup.map(k => { const [m,s] = k.split('|'); return mesTxt(m) + ' (' + (s==='CC'?'Casa Central':'Dolores') + ')'; }).join(', ')}. Quitá el que sobra para no sumar dos veces.</p></div>`;
-  h += `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===egrMes?'act':''}" onclick="egrMes='${m}';renderEgr()">${mesTxt(m)}${egrGuardados[m]?'<span class="pill">guardado</span>':''}</button>`).join('')}</div>`;
+  const pill = m => { const g = egrGuardados[m]; if (!g) return ''; return g.faltan && g.faltan.length ? '<span class="pill falta">faltan claves</span>' : '<span class="pill">guardado</span>'; };
+  h += `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===egrMes?'act':''}" onclick="egrMes='${m}';renderEgr()">${mesTxt(m)}${pill(m)}</button>`).join('')}</div>`;
   h += '<div id="egr-claves"></div><div id="egr-res"></div>';
   el.innerHTML = h;
   renderEgrResultado();
@@ -628,29 +623,26 @@ function renderEgrResultado(){
   const hayDatos = regs.length > 0;
   const claves = clavesDe(egrMes);
 
-  let res;
-  if (hayDatos) res = PE.calcularMes(registrosEgr(), egrMes, claves, { importe:'neto' });
-  else {
-    const g = egrGuardados[egrMes];
-    const mapa = Object.fromEntries((g.filas || []).map(f => [f.fila, f]));
-    const filas = PE.FILAS.map(([fila, area, label]) => { const regla = PE.REGLAS[fila] || {}; const s = mapa[fila] || {}; return { fila, area, label, regla, fuente: regla.fuente || 'egresos', total: s.total||0, CC: s.CC||0, DOL: s.DOL||0 }; });
-    res = { filas, total: g.total, CC: g.CC, DOL: g.DOL, ivaExcluido: g.ivaExcluido || 0, sueltos: [], faltanClaves: [], guardado: g };
-  }
+  // Con los exports cargados se agrupa de cero; si no, se usa lo agrupado que quedó guardado
+  const g = egrGuardados[egrMes];
+  const agrupado = hayDatos ? PE.agruparMes(registrosEgr(), egrMes, { importe:'neto' }) : (g && g.agrupado);
+  if (!agrupado) { cont.innerHTML = ''; contC.innerHTML = '<div class="aviso">Este mes se guardó con una versión anterior. Volvé a subir los exports para recalcularlo.</div>'; return; }
+  const res = PE.repartir(agrupado, claves);
   egrUltimo = res;
 
   // Claves
   const usa = new Set(PE.FILAS.map(([f]) => (PE.REGLAS[f] || {}).reparto || ((PE.REGLAS[f] || {}).fuente ? null : 'vol')).filter(Boolean));
   const falta = new Set(res.faltanClaves);
   const tarjeta = (id, cuerpo, extra) => `<div class="clave ${falta.has(id)?'falta':''}"><b>${NOMBRE_CLAVE[id]}</b>${cuerpo}${extra||''}</div>`;
-  let hc = `<div class="card"><div class="card-title"><span>2 · Claves de prorrateo · ${mesTxt(egrMes)}</span>${claves.copiadoDe && !clavesGuardadas[egrMes] ? `<span style="text-transform:none;letter-spacing:0;color:#B85A00">Copiadas de ${mesTxt(claves.copiadoDe)}: revisalas</span>` : ''}</div><div class="claves">`;
-  hc += tarjeta('vol', `<div class="par">${inputClave('vol','CC', claves.vol && Math.round(claves.vol.CC*100)/100, claves.volAuto || !hayDatos)}${inputClave('vol','DOL', claves.vol && Math.round(claves.vol.DOL*100)/100, claves.volAuto || !hayDatos)}</div>`, claves.volAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Se completa solo si cargás los reportes CMQ del mes.</small>');
+  let hc = `<div class="card"><div class="card-title"><span>2 · Claves de prorrateo · ${mesTxt(egrMes)}</span>${res.faltanClaves.length ? `<span style="text-transform:none;letter-spacing:0;color:#B85A00">Faltan ${res.faltanClaves.length}: podés completarlas cuando tengas los datos</span>` : '<span style="text-transform:none;letter-spacing:0;color:#1F9D55">✓ Completas</span>'}</div><div class="claves">`;
+  hc += tarjeta('vol', `<div class="par">${inputClave('vol','CC', claves.vol && Math.round(claves.vol.CC*100)/100, claves.volAuto)}${inputClave('vol','DOL', claves.vol && Math.round(claves.vol.DOL*100)/100, claves.volAuto)}</div>`, claves.volAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Se completa solo si cargás los reportes CMQ del mes.</small>');
   ['camiones','litros','personas','personasOper','personasDist'].filter(id => usa.has(id)).forEach(id => {
     const k = claves[id] || {};
-    hc += tarjeta(id, `<div class="par">${inputClave(id,'CC',k.CC,!hayDatos)}${inputClave(id,'DOL',k.DOL,!hayDatos)}</div>`);
+    hc += tarjeta(id, `<div class="par">${inputClave(id,'CC',k.CC)}${inputClave(id,'DOL',k.DOL)}</div>`);
   });
-  hc += tarjeta('fnTotal', `<div class="par">${inputClave('fnTotal','T', claves.fnTotal != null ? Math.round(claves.fnTotal) : '', claves.fnAuto || !hayDatos)}</div>`, claves.fnAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Para el 0,6% que suma "Otros impuestos".</small>');
+  hc += tarjeta('fnTotal', `<div class="par">${inputClave('fnTotal','T', claves.fnTotal != null ? Math.round(claves.fnTotal) : '', claves.fnAuto)}</div>`, claves.fnAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Para el 0,6% que suma "Otros impuestos".</small>');
   hc += '</div>';
-  if (!hayDatos) hc += '<p style="font-size:12px;color:#9896A0;margin-top:.6rem">Estos son los valores guardados. Para recalcular, volvé a subir los exports de este mes.</p>';
+  if (!hayDatos) hc += `<p style="font-size:12px;color:#9896A0;margin-top:.6rem">Mostrando lo guardado el ${new Date(g.fecha).toLocaleDateString('es-AR')}. Podés completar las claves sin volver a subir los exports.</p>`;
   hc += '</div>';
   contC.innerHTML = hc;
 
@@ -661,7 +653,7 @@ function renderEgrResultado(){
     <div class="kpi"><div class="kpi-l">Dolores</div><div class="kpi-v">$ ${fmt(res.DOL,0)}</div><div class="kpi-s">${res.total ? fmt(res.DOL/res.total*100,1) : 0}%</div></div>
     <div class="kpi"><div class="kpi-l">IVA y percepciones excluidos</div><div class="kpi-v">$ ${fmt(res.ivaExcluido,0)}</div><div class="kpi-s">el Excel los suma como gasto</div></div>
   </div>`;
-  if (res.faltanClaves.length) h += `<div class="aviso"><div class="aviso-t">Faltan claves de prorrateo</div><p>Completá ${res.faltanClaves.map(k => '<b>' + NOMBRE_CLAVE[k] + '</b>').join(', ')} para repartir esos gastos entre sucursales. Mientras tanto quedan en el total pero sin asignar.</p></div>`;
+  if (res.faltanClaves.length) h += `<div class="aviso"><div class="aviso-t">Mes incompleto: faltan claves de prorrateo</div><p>Faltan ${res.faltanClaves.map(k => '<b>' + NOMBRE_CLAVE[k] + '</b>').join(', ')}. El mes queda guardado igual y figura como "faltan claves". Los gastos que dependen de esas claves están en el total, pero <b>$ ${fmt(res.sinRepartir,0)}</b> quedan sin repartir entre sucursales.${res.faltanClaves.includes('fnTotal') ? ' Sin la facturación neta, "Otros impuestos" no incluye el 0,6%.' : ''} Cuando tengas los datos, volvé a este mes y completalos; no hace falta subir los exports otra vez.</p></div>`;
 
   // Tabla
   h += `<div class="card"><div class="toolbar"><span>3 · Gastos reales por renglón (hoja REAL)</span><label><input type="checkbox" ${mostrarCeros?'checked':''} onchange="mostrarCeros=this.checked;renderEgrResultado()"> Mostrar renglones en cero</label></div><div class="tabla-scroll"><table class="real"><tr><th>Renglón</th><th>Total</th><th>Casa Central</th><th>Dolores</th></tr>`;
@@ -695,23 +687,28 @@ function renderEgrResultado(){
   h += '</div>';
   cont.innerHTML = h;
 
-  if (hayDatos && !res.faltanClaves.length) guardarEgr(res);
+  // Se guarda siempre: completo o marcado con las claves que faltan
+  const firma = JSON.stringify([res.total, res.CC, res.DOL, res.faltanClaves]);
+  if (!g || g._firma !== firma || hayDatos) guardarEgr(agrupado, res, firma, !hayDatos && g ? g.fecha : null);
 }
 
 let _tGuardarEgr = null;
-function guardarEgr(res){
+function guardarEgr(agrupado, res, firma, fechaCarga){
   clearTimeout(_tGuardarEgr);
   const mes = egrMes;
   _tGuardarEgr = setTimeout(async () => {
-    const datos = { mes, total: res.total, CC: res.CC, DOL: res.DOL, ivaExcluido: res.ivaExcluido,
+    const prev = egrGuardados[mes];
+    const datos = { mes, agrupado, total: res.total, CC: res.CC, DOL: res.DOL, sinRepartir: res.sinRepartir,
+      ivaExcluido: res.ivaExcluido, faltan: res.faltanClaves,
       filas: res.filas.filter(f => f.fuente === 'egresos' && (f.total || f.CC || f.DOL)).map(f => ({ fila:f.fila, total:f.total, CC:f.CC, DOL:f.DOL })),
-      importe: 'neto', usuario: userData.username, fecha: new Date().toISOString() };
+      importe: 'neto', usuario: userData.username, fecha: fechaCarga || new Date().toISOString(), actualizado: new Date().toISOString(), _firma: firma };
+    if (prev && prev._firma === firma && JSON.stringify(prev.agrupado) === JSON.stringify(agrupado)) return;
     try {
       await guardar('egr-' + mes, datos);
-      const nuevo = !egrGuardados[mes];
+      const cambioEstado = !prev || (prev.faltan || []).length !== datos.faltan.length;
       egrGuardados[mes] = datos;
-      if (nuevo) renderEgr();
-    } catch(e) { /* sin conexión al servidor: se reintenta en el próximo cambio */ }
+      if (cambioEstado) renderEgr();
+    } catch(e) { toast('No se pudo guardar el mes en el servidor'); }
   }, 800);
 }
 

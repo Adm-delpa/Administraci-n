@@ -265,47 +265,36 @@
     return cc + dol > 0 ? cc / (cc + dol) : null;
   }
 
-  // Calcula la hoja REAL (renglones de egresos) para un mes
+  const REPARTO_FIJO = ['sucursal', 'proveedor'];
+
+  // Paso 1: agrupa los comprobantes del mes por renglón. No depende de las claves de
+  // prorrateo, así que se puede guardar y repartir después sin volver a subir los exports.
   // opciones.importe: 'neto' (sin IVA, por defecto) | 'total' (como el Excel)
-  function calcularMes(registros, mes, claves, opciones) {
+  function agruparMes(registros, mes, opciones) {
     const modo = (opciones && opciones.importe) || 'neto';
     const regsMes = registros.filter(r => r.mes === mes);
     const imp = r => modo === 'total' ? r.total : r.neto;
     const usados = new Set();
-    const faltanClaves = new Set();
-    const filas = FILAS.map(([fila, area, label]) => {
+    const filas = [];
+    FILAS.forEach(([fila, , label]) => {
       const regla = REGLAS[fila] || {};
-      const fuente = regla.fuente || 'egresos';
-      const o = { fila, area, label, fuente, regla, total: 0, CC: 0, DOL: 0, ivaExcluido: 0 };
-      if (fuente !== 'egresos') return o;
+      if ((regla.fuente || 'egresos') !== 'egresos') return;
       const L = norm(label);
       const match = regla.match === 'egreso' ? (r => r.egreso === norm(regla.valor)) : (r => r.concepto === L);
       const excl = regla.excluirProveedor ? norm(regla.excluirProveedor) : null;
       const sel = regsMes.filter(r => match(r) && (!excl || r.proveedor !== excl));
+      if (!sel.length) return;
       sel.forEach(r => usados.add(r));
-      o.total = sel.reduce((a, r) => a + imp(r), 0);
-      o.ivaExcluido = sel.reduce((a, r) => a + (r.total - r.neto), 0);
-      if (regla.masFN) {
-        if (claves && claves.fnTotal) o.total += regla.masFN * claves.fnTotal;
-        else faltanClaves.add('fnTotal');
-      }
+      const o = { fila, base: sel.reduce((a, r) => a + imp(r), 0), iva: sel.reduce((a, r) => a + (r.total - r.neto), 0) };
       const rep = regla.reparto || 'vol';
-      if (rep === 'cc') { o.CC = o.total; }
-      else if (rep === 'dol') { o.DOL = o.total; }
-      else if (rep === 'mitad') { o.CC = o.DOL = o.total / 2; }
-      else if (rep === 'sucursal') {
+      if (rep === 'sucursal') {
         o.CC = sel.filter(r => r.suc === 'CC').reduce((a, r) => a + imp(r), 0);
         o.DOL = sel.filter(r => r.suc === 'DOL').reduce((a, r) => a + imp(r), 0);
       } else if (rep === 'proveedor') {
         o.CC = sel.filter(r => r.proveedor === norm(regla.proveedores.CC)).reduce((a, r) => a + imp(r), 0);
         o.DOL = sel.filter(r => r.proveedor === norm(regla.proveedores.DOL)).reduce((a, r) => a + imp(r), 0);
-        o.otrosProveedores = o.total - o.CC - o.DOL;
-      } else {
-        const s = share(claves && claves[rep]);
-        if (s == null) { if (o.total) faltanClaves.add(rep); o.sinClave = true; }
-        else { o.CC = o.total * s; o.DOL = o.total * (1 - s); }
       }
-      return o;
+      filas.push(o);
     });
 
     // Conceptos tipificados (código de egreso distinto de 0) que no caen en ningún renglón
@@ -316,24 +305,65 @@
       if (!sueltos[k]) sueltos[k] = { concepto: r.concepto, egreso: r.egreso, importe: 0, n: 0 };
       sueltos[k].importe += imp(r); sueltos[k].n++;
     });
+    return {
+      mes, importe: modo, filas, cantidad: regsMes.length,
+      sueltos: Object.values(sueltos).sort((a, b) => Math.abs(b.importe) - Math.abs(a.importe)),
+    };
+  }
 
+  // Paso 2: reparte lo agrupado entre Casa Central y Dolores con las claves del mes.
+  // Si falta una clave, esos renglones quedan en el total "sin repartir" y se informa en faltanClaves.
+  function repartir(agrupado, claves) {
+    const por = Object.fromEntries((agrupado.filas || []).map(f => [f.fila, f]));
+    const faltanClaves = new Set();
+    const filas = FILAS.map(([fila, area, label]) => {
+      const regla = REGLAS[fila] || {};
+      const fuente = regla.fuente || 'egresos';
+      const o = { fila, area, label, fuente, regla, total: 0, CC: 0, DOL: 0, ivaExcluido: 0 };
+      if (fuente !== 'egresos') return o;
+      const g = por[fila] || { base: 0, iva: 0, CC: 0, DOL: 0 };
+      o.total = g.base; o.ivaExcluido = g.iva;
+      if (regla.masFN) {
+        if (claves && claves.fnTotal) o.total += regla.masFN * claves.fnTotal;
+        else faltanClaves.add('fnTotal');
+      }
+      const rep = regla.reparto || 'vol';
+      if (rep === 'cc') o.CC = o.total;
+      else if (rep === 'dol') o.DOL = o.total;
+      else if (rep === 'mitad') o.CC = o.DOL = o.total / 2;
+      else if (REPARTO_FIJO.includes(rep)) {
+        o.CC = g.CC || 0; o.DOL = g.DOL || 0;
+        if (rep === 'proveedor') o.otrosProveedores = o.total - o.CC - o.DOL;
+      } else {
+        const s = share(claves && claves[rep]);
+        if (s == null) { if (o.total) { faltanClaves.add(rep); o.sinClave = true; } }
+        else { o.CC = o.total * s; o.DOL = o.total * (1 - s); }
+      }
+      return o;
+    });
     const areas = {};
     filas.forEach(f => {
       const a = areas[f.area] || (areas[f.area] = { area: f.area, total: 0, CC: 0, DOL: 0 });
       a.total += f.total; a.CC += f.CC; a.DOL += f.DOL;
     });
+    const total = filas.reduce((a, f) => a + f.total, 0);
+    const CC = filas.reduce((a, f) => a + f.CC, 0), DOL = filas.reduce((a, f) => a + f.DOL, 0);
     return {
-      mes, filas, areas: Object.values(areas),
-      total: filas.reduce((a, f) => a + f.total, 0),
-      CC: filas.reduce((a, f) => a + f.CC, 0), DOL: filas.reduce((a, f) => a + f.DOL, 0),
-      ivaExcluido: modo === 'neto' ? filas.reduce((a, f) => a + f.ivaExcluido, 0) : 0,
-      sueltos: Object.values(sueltos).sort((a, b) => Math.abs(b.importe) - Math.abs(a.importe)),
+      mes: agrupado.mes, filas, areas: Object.values(areas), total, CC, DOL,
+      sinRepartir: total - CC - DOL,
+      ivaExcluido: agrupado.importe === 'total' ? 0 : filas.reduce((a, f) => a + f.ivaExcluido, 0),
+      sueltos: agrupado.sueltos || [],
       faltanClaves: [...faltanClaves],
-      cantidad: regsMes.length,
+      cantidad: agrupado.cantidad,
     };
   }
 
-  const api = { FILAS, REGLAS, CLAVES, MESES, parsearEgresos, calcularMes, mesDe };
+  // Atajo: agrupa y reparte en un paso
+  function calcularMes(registros, mes, claves, opciones) {
+    return repartir(agruparMes(registros, mes, opciones), claves);
+  }
+
+  const api = { FILAS, REGLAS, CLAVES, MESES, parsearEgresos, agruparMes, repartir, calcularMes, mesDe };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PresupuestoEgresos = api;
 })(typeof window !== 'undefined' ? window : this);
