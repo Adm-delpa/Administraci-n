@@ -1150,7 +1150,7 @@ function renderRes(){
   h += `<div class="kpis">
     <div class="kpi"><div class="kpi-l">Ventas netas</div><div class="kpi-v">${fmtM(fnL.T)}</div><div class="kpi-s">${fmt(L('vol').T,0)} HL</div></div>
     <div class="kpi"><div class="kpi-l">Margen bruto</div><div class="kpi-v">${fmtM(L('mb').T)}</div><div class="kpi-s">${pct(L('mb').T, fnL.T)} de las ventas netas</div></div>
-    <div class="kpi"><div class="kpi-l">EBITDA</div><div class="kpi-v">${fmtM(L('ebitda').T)}</div><div class="kpi-s">${pct(L('ebitda').T, fnL.T)} de las ventas netas</div></div>
+    <div class="kpi"><div class="kpi-l">Resultado antes de impuestos</div><div class="kpi-v">${fmtM(L('ebitda').T)}</div><div class="kpi-s">${pct(L('ebitda').T, fnL.T)} de las ventas netas</div></div>
     <div class="kpi"><div class="kpi-l">Utilidad neta</div><div class="kpi-v" style="color:${L('un').T < 0 ? '#C0392B' : '#1F9D55'}">${fmtM(L('un').T)}</div><div class="kpi-s">ROS ${fmt(ros*100,1)}%</div></div>
   </div>`;
 
@@ -1182,7 +1182,7 @@ function renderRes(){
 let resUnidad = 'M';   // 'M' = millones, '$' = pesos completos
 const LABEL_VISTA = {
   fn: 'Facturación neta (ventas netas)', bonCMQ: 'Bonificaciones que reintegra CMQ', cmv: 'Costo de la mercadería vendida (CMV)',
-  cyo: 'Facturación remota (Cuenta y Orden)', gastos: 'Gastos operativos', iibb: 'Percepciones Ingresos Brutos',
+  cyo: 'Facturación remota (Cuenta y Orden)', gastos: 'Gastos operativos', iibb: 'Ingresos Brutos',
 };
 // Orden de lectura: cómo se arma el resultado, por bloques y con el signo de cada línea
 const BLOQUES_VISTA = [

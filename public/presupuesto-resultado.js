@@ -78,7 +78,7 @@
     ['VENTAS', 'Ventas'], ['OPERACIONES', 'Operaciones'], ['INFRAESTRUCTURA', 'Infraestructura'],
     ['DISTRIBUCION', 'Distribución'], ['ACARREO', 'Acarreo'], ['ADMIN Y FINANZAS', 'Administración y finanzas'],
   ];
-  // Percepciones IIBB: 5% sobre (bruta − bonificaciones), con coeficiente 1,16 en cerveza y 1,06 en UNG
+  // Ingresos Brutos: 5% sobre (bruta − bonificaciones), con coeficiente 1,16 en cerveza y 1,06 en UNG (como el Excel)
   const IIBB = { tasa: 0.05, coef: [1.16, 1.16, 1.06, 1.06, 1, 1, 1] };
   const z7 = () => [0, 0, 0, 0, 0, 0, 0];
   const S = a => a.reduce((x, y) => x + (+y || 0), 0);
@@ -147,10 +147,10 @@
     g.T = gT; // incluye lo que todavía no se pudo repartir entre sucursales
     if (sinRep > 0.5) g.sinRepartir = sinRep;
 
-    const ebitda = linea('ebitda', 'EBITDA', mb('CC') - gCC, mb('DOL') - gDOL, { total: true });
+    const ebitda = linea('ebitda', 'RESULTADO ANTES DE IMPUESTOS', mb('CC') - gCC, mb('DOL') - gDOL, { total: true });
     ebitda.T = mb('CC') + mb('DOL') - gT;
     const iibb = s => IIBB.tasa * fb.sub.reduce((a, x, i) => a + ((x[s] - bCMQ.sub[i][s] - bDP.sub[i][s]) * IIBB.coef[i]), 0);
-    linea('iibb', 'Percepciones Ingresos Brutos', iibb('CC'), iibb('DOL'), { formula: '5% de (bruta − bonificaciones), × 1,16 cerveza y × 1,06 UNG' });
+    linea('iibb', 'Ingresos Brutos', iibb('CC'), iibb('DOL'), { formula: '5% de (bruta − bonificaciones), × 1,16 cerveza y × 1,06 UNG' });
     const un = linea('un', 'UTILIDAD NETA', ebitda.CC - iibb('CC'), ebitda.DOL - iibb('DOL'), { total: true, final: true });
     un.T = ebitda.T - iibb('CC') - iibb('DOL');
     return { lineas: L, faltan, fn };
