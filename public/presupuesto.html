@@ -132,6 +132,8 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
 .tag.warn{background:#FFF0E0;color:#B85A00}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem;font-size:12px;color:#56555A}
 .toolbar label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.info-ex{font-size:12px;color:#56555A;background:#F8F7F5;border:1px solid #E6E4DF;border-radius:8px;padding:.6rem .85rem;margin-bottom:1rem}
+.info-ex .det{color:#1E6FD9;font-weight:600;cursor:help;text-decoration:underline dotted}
 details.sueltos{margin-top:1rem;font-size:12px}
 details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
 
@@ -710,6 +712,11 @@ function renderEgrResultado(){
     <div class="kpi"><div class="kpi-l">Dolores</div><div class="kpi-v">$ ${fmt(res.DOL,0)}</div><div class="kpi-s">${res.total ? fmt(res.DOL/res.total*100,1) : 0}%</div></div>
     <div class="kpi"><div class="kpi-l">IVA y percepciones excluidos</div><div class="kpi-v">$ ${fmt(res.ivaExcluido,0)}</div><div class="kpi-s">el Excel los suma como gasto</div></div>
   </div>`;
+  const ex = agrupado.excluidos;
+  if (ex && ex.n) {
+    const det = Object.entries(ex.porFila).sort((a,b) => b[1].importe - a[1].importe).map(([f, x]) => { const fl = PE.FILAS.find(y => y[0] === +f); return `${esc(fl ? fl[2] : f)}: $ ${fmt(x.importe,0)}`; });
+    h += `<div class="info-ex">Se dejaron afuera <b>${ex.n} comprobantes ME con letra P</b> ($ ${fmt(ex.importe,0)}).${ex.enRenglones ? ` De ese importe, $ ${fmt(ex.enRenglones,0)} habría ido a renglones del presupuesto <span class="det" title="${esc(det.join('\n'))}">(ver detalle)</span>; el resto no correspondía a ningún renglón.` : ' Ninguno correspondía a un renglón del presupuesto.'}</div>`;
+  }
   if (res.faltanClaves.length) h += `<div class="aviso"><div class="aviso-t">Mes incompleto: faltan claves de prorrateo</div><p>Faltan ${res.faltanClaves.map(k => '<b>' + NOMBRE_CLAVE[k] + '</b>').join(', ')}. El mes queda guardado igual y figura como "faltan claves". Los gastos que dependen de esas claves están en el total, pero <b>$ ${fmt(res.sinRepartir,0)}</b> quedan sin repartir entre sucursales.${res.faltanClaves.includes('fnTotal') ? ' Sin la facturación neta, "Otros impuestos" no incluye el 0,6%.' : ''} Cuando tengas los datos, volvé a este mes y completalos; no hace falta subir los exports otra vez.</p></div>`;
 
   // Tabla

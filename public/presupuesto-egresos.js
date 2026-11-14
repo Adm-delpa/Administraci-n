@@ -230,8 +230,9 @@
       concepto: col(H, 'Concepto'), fecha: col(H, 'Fecha Comp.'), proveedor: col(H, 'Descripción Cuenta Acreedora'),
       codEgreso: col(H, 'Egreso'), egreso: col(H, 'Descripción Egreso'), suc: col(H, 'Sucursal'), deposito: col(H, 'DEPOSITO'),
       total: col(H, 'Total Cpbte.'), neto: col(H, 'Neto Gravado'), noGrav: col(H, 'No Gravado'), impInt: col(H, 'Imp. Internos'),
-      iva: col(H, 'I.V.A.'), comp: col(H, 'Comprobante'),
+      iva: col(H, 'I.V.A.'), comp: col(H, 'Comprobante'), letra: col(H, 'Letra'),
     };
+    if (C.comp < 0 || C.letra < 0) throw new Error('Al export le faltan las columnas "Comprobante" y "Letra", que se usan para dejar afuera los ME con letra P.');
     const falta = ['concepto', 'fecha', 'total', 'neto', 'noGrav', 'impInt'].filter(k => C[k] < 0);
     if (falta.length) throw new Error('Al export le faltan columnas: ' + falta.join(', '));
     const regs = [], sinFecha = [];
@@ -247,7 +248,7 @@
         else suc = num(r[C.suc]) === 2 ? 'DOL' : 'CC';
       }
       regs.push({
-        mes, suc,
+        mes, suc, comp: norm(r[C.comp]), letra: norm(r[C.letra]),
         concepto: norm(r[C.concepto]), egreso: C.egreso >= 0 ? norm(r[C.egreso]) : '',
         codEgreso: C.codEgreso >= 0 ? num(r[C.codEgreso]) : 0,
         proveedor: C.proveedor >= 0 ? norm(r[C.proveedor]) : '',
@@ -267,22 +268,32 @@
 
   const REPARTO_FIJO = ['sucursal', 'proveedor'];
 
+  // Comprobantes de Chess que no se toman (pedido de la usuaria, 14/11/2026)
+  const EXCLUIR = [{ comprobante: 'ME', letra: 'P' }];
+  const excluido = r => EXCLUIR.some(e => r.comp === e.comprobante && r.letra === e.letra);
+
   // Paso 1: agrupa los comprobantes del mes por renglón. No depende de las claves de
   // prorrateo, así que se puede guardar y repartir después sin volver a subir los exports.
   // opciones.importe: 'neto' (sin IVA, por defecto) | 'total' (como el Excel)
   function agruparMes(registros, mes, opciones) {
     const modo = (opciones && opciones.importe) || 'neto';
-    const regsMes = registros.filter(r => r.mes === mes);
+    const delMes = registros.filter(r => r.mes === mes);
+    const fuera = delMes.filter(excluido);
+    const regsMes = delMes.filter(r => !excluido(r));
     const imp = r => modo === 'total' ? r.total : r.neto;
     const usados = new Set();
     const filas = [];
+    const fueraPorFila = {}; // cuánto de lo excluido habría ido a cada renglón
     FILAS.forEach(([fila, , label]) => {
       const regla = REGLAS[fila] || {};
       if ((regla.fuente || 'egresos') !== 'egresos') return;
       const L = norm(label);
       const match = regla.match === 'egreso' ? (r => r.egreso === norm(regla.valor)) : (r => r.concepto === L);
       const excl = regla.excluirProveedor ? norm(regla.excluirProveedor) : null;
-      const sel = regsMes.filter(r => match(r) && (!excl || r.proveedor !== excl));
+      const ok = r => match(r) && (!excl || r.proveedor !== excl);
+      const f2 = fuera.filter(ok);
+      if (f2.length) fueraPorFila[fila] = { n: f2.length, importe: f2.reduce((a, r) => a + imp(r), 0) };
+      const sel = regsMes.filter(ok);
       if (!sel.length) return;
       sel.forEach(r => usados.add(r));
       const o = { fila, base: sel.reduce((a, r) => a + imp(r), 0), iva: sel.reduce((a, r) => a + (r.total - r.neto), 0) };
@@ -308,6 +319,12 @@
     return {
       mes, importe: modo, filas, cantidad: regsMes.length,
       sueltos: Object.values(sueltos).sort((a, b) => Math.abs(b.importe) - Math.abs(a.importe)),
+      excluidos: {
+        n: fuera.length,
+        importe: fuera.reduce((a, r) => a + imp(r), 0),
+        enRenglones: Object.values(fueraPorFila).reduce((a, x) => a + x.importe, 0),
+        porFila: fueraPorFila,
+      },
     };
   }
 
