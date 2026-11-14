@@ -318,13 +318,15 @@
       filas.push(o);
     });
 
-    // Conceptos tipificados (código de egreso distinto de 0) que no caen en ningún renglón
+    // Conceptos tipificados (código de egreso distinto de 0) que no caen en ningún renglón.
+    // Se guardan con su apertura por sucursal e IVA para poder asignarlos después a un renglón.
     const sueltos = {};
     regsMes.forEach(r => {
       if (usados.has(r) || !r.codEgreso) return;
       const k = r.concepto;
-      if (!sueltos[k]) sueltos[k] = { concepto: r.concepto, egreso: r.egreso, importe: 0, n: 0 };
-      sueltos[k].importe += imp(r); sueltos[k].n++;
+      if (!sueltos[k]) sueltos[k] = { concepto: r.concepto, egreso: r.egreso, importe: 0, n: 0, CC: 0, DOL: 0, iva: 0 };
+      const s = sueltos[k];
+      s.importe += imp(r); s.n++; s[r.suc] += imp(r); s.iva += r.total - r.neto;
     });
     return {
       mes, importe: modo, filas, cantidad: regsMes.length,
@@ -341,6 +343,43 @@
         }, {})).sort((a, b) => Math.abs(b.importe) - Math.abs(a.importe)),
       },
     };
+  }
+
+  // Asignaciones hechas desde la pantalla para conceptos de Chess que no van a ningún renglón:
+  // mapeo = { 'CONCEPTO': { fila: 91 } | { excluir: true } }. Se aplica sobre lo agrupado (también en meses
+  // guardados), así una asignación nueva corrige todos los meses sin volver a subir los exports.
+  function aplicarMapeo(agrupado, mapeo) {
+    if (!agrupado) return agrupado;
+    const m = {};
+    Object.entries(mapeo || {}).forEach(([k, v]) => { m[norm(k)] = v; });
+    if (!Object.keys(m).length) return agrupado;
+    const a = JSON.parse(JSON.stringify(agrupado));
+    const ex = a.excluidos || (a.excluidos = { n: 0, importe: 0, enRenglones: 0, porFila: {}, porMotivo: [] });
+    ex.porMotivo = ex.porMotivo || [];
+    const quedan = [];
+    (a.sueltos || []).forEach(s => {
+      const regla = m[norm(s.concepto)];
+      if (!regla) { quedan.push(s); return; }
+      if (regla.excluir) {
+        ex.n += s.n; ex.importe += s.importe;
+        ex.porMotivo.push({ motivo: s.concepto + ' (excluido a mano)', n: s.n, importe: s.importe });
+        return;
+      }
+      const filaDef = FILAS.find(f => f[0] === +regla.fila);
+      if (!filaDef || (REGLAS[regla.fila] || {}).fuente) { quedan.push(s); return; } // renglón inválido o que no sale de Chess
+      let o = a.filas.find(f => f.fila === +regla.fila);
+      if (!o) { o = { fila: +regla.fila, base: 0, iva: 0 }; a.filas.push(o); }
+      o.base += s.importe; o.iva += s.iva || 0;
+      const rep = (REGLAS[regla.fila] || {}).reparto || 'vol';
+      if (REPARTO_FIJO.includes(rep)) {
+        // Renglones que se reparten por sucursal real: se usa la sucursal de los comprobantes
+        const cc = s.CC != null ? s.CC : s.importe, dol = s.DOL != null ? s.DOL : 0;
+        o.CC = (o.CC || 0) + cc; o.DOL = (o.DOL || 0) + dol;
+      }
+      (o.asignados = o.asignados || []).push({ concepto: s.concepto, importe: s.importe });
+    });
+    a.sueltos = quedan;
+    return a;
   }
 
   // Paso 2: reparte lo agrupado entre Casa Central y Dolores con las claves del mes.
@@ -406,7 +445,7 @@
       }
       if (fuente !== 'egresos') { o.pendiente = true; return o; }
       const g = por[fila] || { base: 0, iva: 0, CC: 0, DOL: 0 };
-      o.total = g.base; o.ivaExcluido = g.iva;
+      o.total = g.base; o.ivaExcluido = g.iva; if (g.asignados) o.asignados = g.asignados;
       if (regla.masFN) {
         if (claves && claves.fnTotal) o.total += regla.masFN * claves.fnTotal;
         else faltanClaves.add('fnTotal');
@@ -525,7 +564,7 @@
     return repartir(agruparMes(registros, mes, opciones), claves, sueldos, acarreo);
   }
 
-  const api = { FILAS, REGLAS, CLAVES, MESES, EXCLUIR, EXCLUIR_CONCEPTOS, parsearEgresos, agruparMes, repartir, calcularMes, mesDe, parsearSueldos, sueldosMes, acarreoMes };
+  const api = { FILAS, REGLAS, CLAVES, MESES, EXCLUIR, EXCLUIR_CONCEPTOS, parsearEgresos, agruparMes, aplicarMapeo, repartir, calcularMes, mesDe, parsearSueldos, sueldosMes, acarreoMes };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PresupuestoEgresos = api;
 })(typeof window !== 'undefined' ? window : this);
