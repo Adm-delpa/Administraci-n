@@ -156,7 +156,109 @@
     return { lineas: L, faltan, fn };
   }
 
-  const api = { SECCIONES, calcularCargas, GRUPOS, AREAS, resultadoMes };
+  // ── Presupuesto (Nivel 3) ──
+  // Lee el presupuesto del Excel "PRESUPUESTO DP" (valores ya calculados en las celdas).
+  // getCell(hoja, 'C12') -> número. Devuelve { '2026/01': p, ... }
+  const COLS_MES = 'CDEFGHIJKLMN'.split('');
+  const colN = s => { let n = 0; for (const ch of s) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  const colL = n => { let s = ''; n++; while (n) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+  function leerPresupuesto(getCell, anio) {
+    const meses = {};
+    const filas = (h, col, a, b) => { const o = []; for (let r = a; r <= b; r++) o.push(+getCell(h, col + r) || 0); return o; };
+    const AREA_FILA = [['VENTAS', 17], ['OPERACIONES', 37], ['INFRAESTRUCTURA', 50], ['DISTRIBUCION', 65], ['ACARREO', 71], ['ADMIN Y FINANZAS', 127]];
+    COLS_MES.forEach((c, i) => {
+      const cCC = colL(colN('P') + i), cDOL = colL(colN('AC') + i), cW = colL(colN('B') + i), cY = colL(colN('O') + i);
+      const n = (h, a) => +getCell(h, a) || 0;
+      meses[anio + '/' + String(i + 1).padStart(2, '0')] = {
+        volCC: filas('Volumen', c, 12, 18), volDOL: filas('Volumen', c, 20, 26),
+        phl: filas('Volumen', c, 30, 36), margen: filas('Volumen', c, 39, 45),
+        tsCMQ: filas('Volumen', c, 129, 135), tsDP: filas('Volumen', c, 136, 142),
+        icv: { CC: n('Volumen', c + 100), DOL: n('Volumen', c + 101) },
+        ndc: { CC: n('Volumen', c + 175), DOL: n('Volumen', c + 176) },
+        otras: { CC: n('Volumen', c + 180), DOL: n('Volumen', c + 181) },
+        wsc: { CC: n('WSC', cW + 7), DOL: n('WSC', cW + 8) },
+        cyo: { CC: n('CyO', cY + 13), DOL: 0 },
+        segm: { CC: 0, DOL: 0 },
+        gastos: AREA_FILA.map(([area, f]) => ({ area, total: n('PRESUPUESTO', c + f), CC: n('PRESUPUESTO', cCC + f), DOL: n('PRESUPUESTO', cDOL + f) })),
+        // Gastos por renglón (misma estructura de filas que la hoja REAL); solo los que tienen importe
+        renglones: (() => {
+          const tot = new Set(AREA_FILA.map(x => x[1])); const o = [];
+          for (let f = 4; f <= 126; f++) {
+            if (tot.has(f)) continue;
+            const t = n('PRESUPUESTO', c + f), cc = n('PRESUPUESTO', cCC + f), dl = n('PRESUPUESTO', cDOL + f);
+            if (t || cc || dl) o.push({ fila: f, total: t, CC: cc, DOL: dl });
+          }
+          return o;
+        })(),
+      };
+    });
+    return meses;
+  }
+
+  // Arma el resultado presupuestado con el mismo motor que el real.
+  // Diferencias del Excel: CMV = bruta / (1 + margen del segmento); Fact. neta = bruta − bonificaciones.
+  function presupuestoMes(p) {
+    const suc = ['CC', 'DOL'];
+    const fb = {}, cmv = {}, fn = {};
+    suc.forEach(s => {
+      const vol = s === 'CC' ? p.volCC : p.volDOL;
+      fb[s] = vol.map((v, i) => v * p.phl[i]);
+      cmv[s] = fb[s].map((x, i) => x / (1 + (p.margen[i] || 0)));
+      fn[s] = S(fb[s]) - S(vol.map((v, i) => v * p.tsDP[i])) - S(vol.map((v, i) => v * p.tsCMQ[i]));
+    });
+    const vol = { volCC: p.volCC, volDOL: p.volDOL, phl: p.phl, tshl: p.tsCMQ.concat(p.tsDP), cmv: cmv.CC.concat(cmv.DOL), fn: [fn.CC, fn.DOL] };
+    const sec = (id, o) => ({ id, CC: o.CC, DOL: o.DOL, total: o.CC + o.DOL, faltan: [] });
+    const cargas = { faltan: [], secciones: [sec('ndcExtra', p.ndc), sec('ndcOtras', p.otras), sec('icv', p.icv), sec('wsc', p.wsc), sec('cyo', p.cyo), sec('segm', p.segm)] };
+    const egresos = { areas: p.gastos, faltanClaves: [], sinRepartir: 0 };
+    const r = resultadoMes(vol, egresos, cargas);
+    r.entrada = p;
+    return r;
+  }
+
+  // ── Por qué del desvío ──
+  // Facturación bruta, bonificaciones CMQ y CMV: efecto volumen (cantidades a precio presupuestado)
+  // y efecto precio (diferencia de precio unitario sobre el volumen real), por segmento.
+  // real: { vol:{volCC,volDOL,phl,tshl,cmv,fn} } ; p: entrada del presupuesto ; suc: 'T'|'CC'|'DOL'
+  function efectosVolPrecio(volReal, p, suc) {
+    if (!volReal || !p) return null;
+    const vR = GRUPOS.map((_, i) => suc === 'CC' ? +volReal.volCC[i] || 0 : suc === 'DOL' ? +volReal.volDOL[i] || 0 : (+volReal.volCC[i] || 0) + (+volReal.volDOL[i] || 0));
+    const vP = GRUPOS.map((_, i) => suc === 'CC' ? p.volCC[i] : suc === 'DOL' ? p.volDOL[i] : p.volCC[i] + p.volDOL[i]);
+    const cmvR = GRUPOS.map((_, i) => { const a = (volReal.cmv || [])[i] || 0, b = (volReal.cmv || [])[i + 7] || 0; return suc === 'CC' ? a : suc === 'DOL' ? b : a + b; });
+    const unit = (tot, v) => v ? tot / v : 0;
+    const mk = (precioR, precioP) => {
+      const seg = GRUPOS.map((g, i) => ({ label: g, vol: (vR[i] - vP[i]) * precioP[i], precio: (precioR[i] - precioP[i]) * vR[i] }));
+      return { volumen: S(seg.map(s => s.vol)), precio: S(seg.map(s => s.precio)), seg };
+    };
+    const phlR = volReal.phl || z7();
+    const tsR = (volReal.tshl || []).slice(0, 7);
+    const cmvUnitR = cmvR.map((x, i) => unit(x, vR[i]));
+    const cmvUnitP = GRUPOS.map((_, i) => p.phl[i] / (1 + (p.margen[i] || 0)));
+    return {
+      volR: S(vR), volP: S(vP),
+      fb: mk(phlR, p.phl),
+      bonCMQ: mk(tsR, p.tsCMQ),
+      cmv: mk(cmvUnitR, cmvUnitP),
+    };
+  }
+
+  // Gastos por renglón: real (de PresupuestoEgresos.repartir().filas) contra presupuesto (p.renglones)
+  function desvioRenglones(filasReal, p, suc) {
+    if (!p || !p.renglones) return [];
+    const k = suc === 'T' ? 'total' : suc;
+    const pre = Object.fromEntries(p.renglones.map(r => [r.fila, r]));
+    const out = [];
+    (filasReal || []).forEach(f => {
+      const R = suc === 'T' ? f.total : f[suc], P = pre[f.fila] ? pre[f.fila][k] : 0;
+      if (Math.abs(R) < 0.5 && Math.abs(P) < 0.5) return;
+      out.push({ fila: f.fila, area: f.area, label: f.label, R, P, D: R - P, pendiente: !!f.pendiente });
+    });
+    return out.sort((a, b) => Math.abs(b.D) - Math.abs(a.D));
+  }
+
+  // Lista de líneas para la vista mes a mes
+  const LINEAS_MES = ['vol', 'fb', 'bonCMQ', 'cmv', 'fn', 'ndcExtra', 'ndcOtras', 'icv', 'wsc', 'cyo', 'segm', 'mo', 'mb', 'gastos', 'ebitda', 'iibb', 'un'];
+
+  const api = { SECCIONES, calcularCargas, GRUPOS, AREAS, resultadoMes, leerPresupuesto, presupuestoMes, efectosVolPrecio, desvioRenglones, LINEAS_MES };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PresupuestoResultado = api;
 })(typeof window !== 'undefined' ? window : this);

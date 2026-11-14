@@ -136,6 +136,25 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
 .info-ex .det{color:#1E6FD9;font-weight:600;cursor:help;text-decoration:underline dotted}
 .info-ex summary{cursor:pointer}
 .real.res td.p{color:#9896A0;font-size:11px;min-width:52px}
+.desvios{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.6rem}
+.desv{border-radius:8px;padding:.6rem .75rem;border-left:4px solid}
+.desv.fav{background:#E7F6EE;border-color:#1F9D55}
+.desv.des{background:#FDF0EE;border-color:#C0392B}
+.desv b{display:block;font-size:12px;margin-bottom:.15rem}
+.desv span{display:block;font-size:15px;font-weight:800}
+.desv.fav span{color:#1F9D55}.desv.des span{color:#C0392B}
+.desv small{display:block;font-size:11px;color:#56555A;margin-top:.15rem}
+.mes-btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-com{background:none;border:none;cursor:pointer;font-size:14px;opacity:.3;filter:grayscale(1)}
+.btn-com.tiene{opacity:1;filter:none}
+.btn-com:hover{opacity:1}
+tr.com-ver td{font-size:12px;color:#56555A;background:#FFFBF5!important;white-space:normal;text-align:left!important}
+tr.com-ver td span{color:#9896A0;font-size:11px}
+tr.com-edit td{background:#FFFBF5!important;text-align:left!important}
+tr.com-edit textarea{width:100%;font-family:inherit;font-size:12px;padding:.45rem .6rem;border:1.5px solid #E8730C;border-radius:6px;resize:vertical}
+.real.mam th,.real.mam td{min-width:84px}
+.real.mam th.sinreal,.real.mam td.sinreal{color:#C9C6BF}
+.real.mam .acum{background:#F8F7F5;font-weight:800;border-left:2px solid #DDDBD6}
 .real.res tr.clic{cursor:pointer}
 .real.res tr.clic:hover td{background:#FAFAF8}
 .real.res .fl{display:inline-block;width:14px;color:#9896A0}
@@ -253,6 +272,15 @@ details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
   <div id="tab-res" hidden>
   <h1>Estado de resultados real</h1>
   <p class="sub">Arma el resultado del mes por sucursal con todo lo cargado en las otras pestañas, con las mismas fórmulas que la hoja <b>RESULTADOS</b> del Excel. Si falta alguna parte, se indica arriba y el resultado queda parcial.</p>
+  <div class="card">
+    <div class="card-title">Presupuesto anual</div>
+    <div class="drop" id="drop-pre" style="padding:1rem">
+      <strong>Subí el Excel del presupuesto (PRESUPUESTO DP)</strong>
+      <span>Se lee una sola vez: volumen, $/HL, TS/HL, margen, ICV, NDC, WSC, Cuenta y Orden y gastos presupuestados de los 12 meses. Si se revisa el presupuesto, volvé a subirlo.</span>
+      <input type="file" id="file-pre" accept=".xlsx,.xlsm,.xls" hidden>
+    </div>
+    <div id="pre-estado" style="margin-top:.75rem;font-size:12px;color:#56555A"></div>
+  </div>
   <div id="res-cuerpo"></div>
   </div>
 </div>
@@ -314,6 +342,10 @@ async function cargarGuardados(){
     Object.keys(d).filter(k => k.startsWith('sue-')).forEach(k => { sueldosGuardados[k.slice(4)] = d[k]; });
     cargasGuardadas = {};
     Object.keys(d).filter(k => k.startsWith('cargas-')).forEach(k => { cargasGuardadas[k.slice(7)] = d[k]; });
+    presupuestoAnual = {};
+    Object.keys(d).filter(k => /^pre-\d{4}$/.test(k)).forEach(k => { presupuestoAnual[k.slice(4)] = d[k]; });
+    comentarios = {};
+    Object.keys(d).filter(k => k.startsWith('coment-')).forEach(k => { comentarios[k.slice(7)] = d[k]; });
     Object.keys(d).filter(k => k.startsWith('egr-')).forEach(k => { egrGuardados[k.slice(4)] = d[k]; });
   } catch(e) {
     codif = JSON.parse(JSON.stringify(PC.CODIF_DEFAULT)); codif.ignorar = [];
@@ -965,6 +997,7 @@ function cargasDe(mes){
 
 function renderRes(){
   const el = $('res-cuerpo'); if (!el) return;
+  renderPreEstado();
   const meses = [...new Set([...Object.keys(guardados), ...Object.keys(egrGuardados), ...Object.keys(cargasGuardadas), ...(resultado ? Object.keys(resultado.meses) : [])])].sort();
   if (!meses.length) { el.innerHTML = '<div class="vacio">Todavía no hay datos de ningún mes.</div>'; return; }
   if (!meses.includes(resMes)) resMes = meses.filter(m => m >= '2026/10')[0] || meses[meses.length - 1];
@@ -973,7 +1006,16 @@ function renderRes(){
   const fnL = L('fn');
   const pct = (v, base) => base ? fmt(v / base * 100, 1) + '%' : '—';
 
-  let h = `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===resMes?'act':''}" onclick="resMes='${m}';renderRes()">${mesTxt(m)}${m < '2026/10' ? '<span class="pill">referencia</span>' : ''}</button>`).join('')}</div>`;
+  const hayPre = Object.keys(presupuestoAnual).length > 0;
+  const sucBtns = `<div style="display:flex;gap:6px">${[['T','Total'],['CC','Casa Central'],['DOL','Dolores']].map(([k,t]) => `<button class="mes-btn ${resSuc===k?'act':''}" onclick="resSuc='${k}';renderRes()">${t}</button>`).join('')}</div>`;
+  let h = `<div class="toolbar"><div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="mes-btn ${resVista==='suc'?'act':''}" onclick="resVista='suc';renderRes()">Un mes por sucursal</button>
+      <button class="mes-btn ${resVista==='pvr'?'act':''}" onclick="resVista='pvr';renderRes()" ${hayPre ? '' : 'disabled title="Subí el Excel del presupuesto"'}>Un mes contra presupuesto</button>
+      <button class="mes-btn ${resVista==='mam'?'act':''}" onclick="resVista='mam';renderRes()" ${hayPre ? '' : 'disabled title="Subí el Excel del presupuesto"'}>Mes a mes</button>
+    </div>${resVista !== 'suc' && hayPre ? sucBtns : ''}</div>`;
+  if (resVista === 'mam' && hayPre) { el.innerHTML = h + vistaMesAMes(); return; }
+
+  h += `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===resMes?'act':''}" onclick="resMes='${m}';renderRes()">${mesTxt(m)}${m < '2026/10' ? '<span class="pill">referencia</span>' : ''}</button>`).join('')}</div>`;
   if (r.faltan.length) h += `<div class="aviso"><div class="aviso-t">Resultado parcial: faltan datos</div><p>${r.faltan.map(esc).join('<br>')}</p></div>`;
   const ros = fnL.T ? L('un').T / fnL.T : 0;
   h += `<div class="kpis">
@@ -982,6 +1024,13 @@ function renderRes(){
     <div class="kpi"><div class="kpi-l">EBITDA</div><div class="kpi-v">$ ${fmt(L('ebitda').T,0)}</div><div class="kpi-s">${pct(L('ebitda').T, fnL.T)} de la fact. neta</div></div>
     <div class="kpi"><div class="kpi-l">Utilidad neta</div><div class="kpi-v" style="color:${L('un').T < 0 ? '#C0392B' : '#1F9D55'}">$ ${fmt(L('un').T,0)}</div><div class="kpi-s">ROS ${fmt(ros*100,1)}%</div></div>
   </div>`;
+
+  // ── Presupuesto contra real ──
+  const pre = presupuestoDe(resMes);
+  if (resVista === 'pvr') {
+    if (!pre) { el.innerHTML = h + '<div class="aviso">El presupuesto cargado no tiene este mes.</div>'; return; }
+    el.innerHTML = h + tablaPvR(r, pre) + analisisDesvio(r, pre); return;
+  }
 
   h += `<div class="card"><div class="tabla-scroll"><table class="real res"><tr><th>Concepto</th><th>Total</th><th>% FN</th><th>Casa Central</th><th>% FN</th><th>Dolores</th><th>% FN</th></tr>`;
   const SEP_ANTES = { mo: true, gastos: true, ebitda: true, un: true };
@@ -1003,6 +1052,201 @@ function renderRes(){
   el.innerHTML = h;
 }
 function resToggle(id){ if (resAbiertas.has(id)) resAbiertas.delete(id); else resAbiertas.add(id); renderRes(); }
+
+// ── Presupuesto anual (Nivel 3) ──
+let presupuestoAnual = {};   // 'AAAA' -> { meses:{'AAAA/MM': p}, archivo, usuario, fecha }
+let resVista = 'suc', resSuc = 'T';
+// Líneas donde un valor mayor al presupuesto es desfavorable
+const LINEA_COSTO = { bonDP: true, cmv: true, segm: true, gastos: true, iibb: true };
+
+function presupuestoDe(mes){
+  const a = presupuestoAnual[mes.slice(0, 4)];
+  const p = a && a.meses && a.meses[mes];
+  return p ? PR.presupuestoMes(p) : null;
+}
+
+const dropP = $('drop-pre'), fileP = $('file-pre');
+dropP.onclick = () => fileP.click();
+fileP.onchange = () => { if (fileP.files[0]) leerPresupuestoArchivo(fileP.files[0]); fileP.value=''; };
+dropP.ondragover = e => { e.preventDefault(); dropP.classList.add('over'); };
+dropP.ondragleave = () => dropP.classList.remove('over');
+dropP.ondrop = e => { e.preventDefault(); dropP.classList.remove('over'); if (e.dataTransfer.files[0]) leerPresupuestoArchivo(e.dataTransfer.files[0]); };
+
+async function leerPresupuestoArchivo(f){
+  $('pre-estado').innerHTML = '<b>Leyendo el presupuesto…</b> puede tardar unos segundos.';
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const hojas = ['Volumen', 'PRESUPUESTO', 'WSC', 'CyO'];
+    const wb = XLSX.read(await f.arrayBuffer(), { type:'array', sheets: hojas });
+    const faltan = hojas.filter(h => !wb.Sheets[h]);
+    if (faltan.length) throw new Error('Al archivo le faltan las hojas: ' + faltan.join(', '));
+    // Año del presupuesto: del nombre del archivo, o el actual
+    const anio = (f.name.match(/20\d\d/) || [String(new Date().getFullYear())])[0];
+    // El presupuesto es el aprobado a comienzo de año: reemplazarlo requiere confirmación
+    const previo = presupuestoAnual[anio];
+    if (previo && !confirm(`Ya está cargado el presupuesto ${anio} (${previo.archivo}, ${new Date(previo.fecha).toLocaleDateString('es-AR')} por ${previo.usuario}).\n\nEl presupuesto es el aprobado a comienzo de año y es contra lo que se comparan todos los meses. ¿Querés reemplazarlo igual?`)) {
+      renderPreEstado(); return;
+    }
+    const get = (h, a) => { const c = wb.Sheets[h][a]; return c ? c.v : 0; };
+    const meses = PR.leerPresupuesto(get, anio);
+    const reg = { meses, archivo: f.name, usuario: userData.username, fecha: new Date().toISOString() };
+    try {
+      if (previo) await guardar('pre-' + anio + '-reemplazado-' + previo.fecha.slice(0, 10), previo); // queda guardada la versión anterior
+      await guardar('pre-' + anio, reg);
+    } catch(e) { toast('No se pudo guardar en el servidor'); }
+    presupuestoAnual[anio] = reg;
+    toast('Presupuesto ' + anio + ' cargado');
+    log('importar presupuesto', f.name);
+    renderRes();
+  } catch(e) {
+    $('pre-estado').innerHTML = `<span style="color:#C0392B">${esc(e.message)}</span>`;
+  }
+}
+
+function renderPreEstado(){
+  const anios = Object.keys(presupuestoAnual).sort();
+  if (!anios.length) { $('pre-estado').innerHTML = 'Todavía no se cargó el presupuesto.'; return; }
+  $('pre-estado').innerHTML = anios.map(a => { const p = presupuestoAnual[a]; return `<span style="color:#1F9D55;font-weight:700">✓ Presupuesto ${a}</span> · ${esc(p.archivo)} · cargado el ${new Date(p.fecha).toLocaleDateString('es-AR')} por ${esc(p.usuario)}`; }).join('<br>');
+}
+
+function tablaPvR(r, pre){
+  const k = resSuc;
+  const val = (l) => l ? (k === 'T' ? l.T : l[k]) : 0;
+  const fnR = val(r.lineas.find(l => l.id === 'fn')), fnP = val(pre.lineas.find(l => l.id === 'fn'));
+  const pct = (v, b) => b ? fmt(v / b * 100, 1) + '%' : '—';
+  const filas = r.lineas.map(l => {
+    const lp = pre.lineas.find(x => x.id === l.id);
+    const R = val(l), P = val(lp), D = R - P;
+    const favorable = LINEA_COSTO[l.id] ? D <= 0 : D >= 0;
+    return { l, lp, R, P, D, Dp: P ? D / Math.abs(P) : null, favorable };
+  });
+  // Principales desvíos (sin volumen ni líneas informativas)
+  const top = filas.filter(f => !f.l.hl && !f.l.info && !f.l.final && Math.abs(f.D) >= 1).sort((a, b) => Math.abs(b.D) - Math.abs(a.D)).slice(0, 5);
+  let h = '';
+  if (top.length) {
+    h += `<div class="card"><div class="card-title">Principales desvíos del mes · ${k === 'T' ? 'Total' : k === 'CC' ? 'Casa Central' : 'Dolores'}</div><div class="desvios">${top.map(f => `<div class="desv ${f.favorable ? 'fav' : 'des'}"><b>${esc(f.l.label)}</b><span>${f.D >= 0 ? '+' : '−'}$ ${fmt(Math.abs(f.D),0)}${f.Dp != null ? ` (${f.D >= 0 ? '+' : '−'}${fmt(Math.abs(f.Dp*100),1)}%)` : ''}</span><small>${f.favorable ? 'favorable' : 'desfavorable'} · real $ ${fmt(f.R,0)} vs presup. $ ${fmt(f.P,0)}</small></div>`).join('')}</div></div>`;
+  }
+  h += `<div class="card"><div class="tabla-scroll"><table class="real res"><tr><th>Concepto</th><th>Real</th><th>% FN</th><th>Presupuesto</th><th>% FN</th><th>Desvío $</th><th>Desvío %</th><th title="Explicación del desvío">¿Por qué?</th></tr>`;
+  const SEP_ANTES = { mo: true, gastos: true, ebitda: true, un: true };
+  filas.forEach(f => {
+    const l = f.l, hl = l.hl;
+    const abierta = resAbiertas.has(l.id);
+    const cls = [l.total ? 'tot2' : '', l.final ? 'fin' : '', l.base ? 'base' : '', l.info ? 'info' : '', SEP_ANTES[l.id] ? 'sep' : '', l.sub ? 'clic' : ''].join(' ');
+    const color = Math.abs(f.D) < 1 ? '' : (f.favorable ? 'color:#1F9D55' : 'color:#C0392B');
+    const tag = l.faltaCarga ? '<span class="tag warn">sin cargar</span>' : '';
+    h += `<tr class="${cls}" ${l.sub ? `onclick="resToggle('${l.id}')"` : ''}><td>${l.sub ? `<span class="fl">${abierta ? '▾' : '▸'}</span>` : ''}${esc(l.label)}${tag}</td>
+      <td>${fmt(f.R,0)}</td><td class="p">${hl || l.base ? '' : pct(f.R, fnR)}</td><td>${fmt(f.P,0)}</td><td class="p">${hl || l.base ? '' : pct(f.P, fnP)}</td>
+      <td style="${l.final ? '' : color};font-weight:700">${f.D >= 0 ? '' : '−'}${fmt(Math.abs(f.D),0)}</td><td class="p" style="${l.final ? '' : color}">${f.Dp == null ? '—' : (f.D >= 0 ? '+' : '−') + fmt(Math.abs(f.Dp*100),1) + '%'}</td>${celdaComent(l.id)}</tr>`;
+    h += filaComent(l.id, 8);
+    if (l.sub && abierta) l.sub.forEach((s, i) => {
+      const ps = f.lp.sub[i]; const Rs = k === 'T' ? s.T : s[k], Ps = k === 'T' ? ps.T : ps[k], Ds = Rs - Ps;
+      const fav = LINEA_COSTO[l.id] ? Ds <= 0 : Ds >= 0;
+      h += `<tr class="subr"><td>${esc(s.label)}</td><td>${fmt(Rs,0)}</td><td class="p"></td><td>${fmt(Ps,0)}</td><td class="p"></td><td style="${Math.abs(Ds) < 1 ? '' : fav ? 'color:#1F9D55' : 'color:#C0392B'}">${Ds >= 0 ? '' : '−'}${fmt(Math.abs(Ds),0)}</td><td class="p">${Ps ? (Ds >= 0 ? '+' : '−') + fmt(Math.abs(Ds/Ps*100),1) + '%' : '—'}</td><td></td></tr>`;
+    });
+  });
+  h += '</table></div><p style="font-size:11px;color:#9896A0;margin-top:.6rem">Verde = favorable, rojo = desfavorable (en costos, gastar más que lo presupuestado es desfavorable). Si el real está incompleto, los desvíos de esas líneas no son definitivos. Con 💬 anotás la explicación del desvío; queda guardada con tu usuario.</p></div>';
+  return h;
+}
+
+// ── Comentarios (explicación de los desvíos) ──
+let comentarios = {};        // 'AAAA/MM' -> { clave: {texto, usuario, fecha} }
+let comentAbierto = null;    // clave abierta en el mes actual
+function celdaComent(clave){
+  const c = (comentarios[resMes] || {})[clave];
+  return `<td style="text-align:center"><button class="btn-com ${c ? 'tiene' : ''}" title="${c ? esc(c.texto) : 'Agregar explicación'}" onclick="event.stopPropagation();comentAbierto=(comentAbierto==='${clave}'?null:'${clave}');renderRes()">💬</button></td>`;
+}
+function filaComent(clave, cols){
+  const c = (comentarios[resMes] || {})[clave];
+  if (comentAbierto !== clave) return c ? `<tr class="com-ver"><td colspan="${cols}">💬 ${esc(c.texto)} <span>— ${esc(c.usuario)}, ${new Date(c.fecha).toLocaleDateString('es-AR')}</span></td></tr>` : '';
+  return `<tr class="com-edit"><td colspan="${cols}"><textarea id="com-${clave}" rows="2" placeholder="¿Por qué se dio este desvío?">${c ? esc(c.texto) : ''}</textarea>
+    <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px"><button class="btn btn-sec" onclick="comentAbierto=null;renderRes()">Cancelar</button><button class="btn" onclick="guardarComent('${clave}')">Guardar</button></div></td></tr>`;
+}
+async function guardarComent(clave){
+  const t = ($('com-' + clave).value || '').trim();
+  const mes = resMes;
+  const del = { ...(comentarios[mes] || {}) };
+  if (t) del[clave] = { texto: t, usuario: userData.nombre || userData.username, fecha: new Date().toISOString() };
+  else delete del[clave];
+  comentarios[mes] = del;
+  comentAbierto = null;
+  try { await guardar('coment-' + mes, del); toast('Explicación guardada'); } catch(e) { toast('No se pudo guardar en el servidor'); }
+  renderRes();
+}
+
+// ── Por qué del desvío: volumen / precio y gastos por renglón ──
+function analisisDesvio(r, pre){
+  const k = resSuc;
+  const volR = volBloquesDe(resMes);
+  const e = PR.efectosVolPrecio(volR, pre.entrada, k);
+  const egr = egresosDe(resMes);
+  const ren = PR.desvioRenglones(egr ? egr.filas : [], pre.entrada, k).filter(x => !x.pendiente || Math.abs(x.P) > 0.5);
+  const signo = v => (v >= 0 ? '+' : '−') + '$ ' + fmt(Math.abs(v), 0);
+  const col = (v, costo) => Math.abs(v) < 1 ? '' : ((costo ? v <= 0 : v >= 0) ? 'color:#1F9D55' : 'color:#C0392B');
+  let h = `<div class="card"><div class="card-title">¿Por qué? · ${mesTxt(resMes)} · ${k === 'T' ? 'Total' : k === 'CC' ? 'Casa Central' : 'Dolores'}</div>`;
+  if (e) {
+    const fila = (titulo, x, costo, explic) => `<tr><td><b>${titulo}</b><div style="font-size:11px;color:#9896A0">${explic}</div></td><td style="${col(x.volumen + x.precio, costo)};font-weight:800">${signo(x.volumen + x.precio)}</td><td style="${col(x.volumen, costo)}">${signo(x.volumen)}</td><td style="${col(x.precio, costo)}">${signo(x.precio)}</td></tr>`;
+    h += `<p style="font-size:12px;color:#56555A;margin-bottom:.6rem">Volumen real <b>${fmt(e.volR,0)} HL</b> contra <b>${fmt(e.volP,0)} HL</b> presupuestados (${e.volP ? (e.volR >= e.volP ? '+' : '−') + fmt(Math.abs(e.volR / e.volP - 1) * 100, 1) + '%' : '—'}). Cada desvío se separa en lo que explica la cantidad vendida (efecto volumen, a precios del presupuesto) y lo que explica el precio unitario (efecto precio, sobre el volumen real).</p>
+      <div class="tabla-scroll"><table class="real res"><tr><th>Línea</th><th>Desvío total</th><th>Efecto volumen</th><th>Efecto precio</th></tr>
+      ${fila('Facturación bruta', e.fb, false, 'precio = $/HL a PNIT')}
+      ${fila('Bonificaciones a cargo de CMQ', e.bonCMQ, false, 'precio = TS/HL de CMQ')}
+      ${fila('CMV', e.cmv, true, 'precio = costo por HL')}
+      </table></div>`;
+  } else h += '<p style="font-size:12px;color:#9896A0">Faltan los reportes CMQ del mes para separar volumen y precio.</p>';
+
+  if (ren.length) {
+    const top = ren.slice(0, 12);
+    h += `<div style="margin-top:1rem;font-size:12px;font-weight:700;color:#56555A">Gastos: renglones con mayor desvío</div>
+      <div class="tabla-scroll"><table class="real res" style="margin-top:.4rem"><tr><th>Renglón</th><th>Real</th><th>Presupuesto</th><th>Desvío $</th><th>¿Por qué?</th></tr>
+      ${top.map(x => `<tr><td><span class="fila">${x.fila}</span>${esc(x.label)}${x.pendiente ? '<span class="tag warn">sin dato real</span>' : ''}</td><td>${fmt(x.R,0)}</td><td>${fmt(x.P,0)}</td><td style="${col(x.D, true)};font-weight:700">${x.D >= 0 ? '' : '−'}${fmt(Math.abs(x.D),0)}</td>${celdaComent('g' + x.fila)}</tr>${filaComent('g' + x.fila, 5)}`).join('')}
+      </table></div>${ren.length > top.length ? `<p style="font-size:11px;color:#9896A0;margin-top:.4rem">Se muestran los ${top.length} renglones con mayor desvío de ${ren.length}.</p>` : ''}`;
+  } else if (!egr) h += '<p style="font-size:12px;color:#9896A0;margin-top:.8rem">Faltan los egresos del mes para comparar los gastos por renglón.</p>';
+  h += '</div>';
+  return h;
+}
+
+// ── Mes a mes ──
+let mamMetrica = 'desv';
+function vistaMesAMes(){
+  const anio = (resMes || '2026/10').slice(0, 4);
+  const pa = presupuestoAnual[anio];
+  const meses = Object.keys(pa.meses).sort();
+  const k = resSuc;
+  const val = l => l ? (k === 'T' ? l.T : l[k]) : 0;
+  // Real: solo meses con algún dato cargado en la app
+  const conReal = new Set([...Object.keys(guardados), ...Object.keys(egrGuardados), ...Object.keys(cargasGuardadas), ...(resultado ? Object.keys(resultado.meses) : [])]);
+  const datos = meses.map(m => {
+    const p = PR.presupuestoMes(pa.meses[m]);
+    const r = conReal.has(m) ? PR.resultadoMes(volBloquesDe(m), egresosDe(m), cargasDe(m)) : null;
+    return { m, p, r, parcial: r && r.faltan.length > 0 };
+  });
+  const lineas = PR.LINEAS_MES.map(id => ({ id, label: datos[0].p.lineas.find(l => l.id === id).label }));
+  const acum = datos.filter(d => d.r);
+  const M = [['desv','Desvío $'],['desvp','Desvío %'],['real','Real'],['pre','Presupuesto']];
+  let h = `<div class="toolbar"><span>Comparativa ${anio}${k === 'T' ? '' : ' · ' + (k === 'CC' ? 'Casa Central' : 'Dolores')}. El acumulado suma solo los meses que tienen real.</span><div style="display:flex;gap:6px">${M.map(([id,t]) => `<button class="mes-btn ${mamMetrica===id?'act':''}" onclick="mamMetrica='${id}';renderRes()">${t}</button>`).join('')}</div></div>`;
+  h += `<div class="card"><div class="tabla-scroll"><table class="real res mam"><tr><th>Concepto</th>${datos.map(d => `<th class="${d.r ? '' : 'sinreal'}" title="${d.r ? (d.parcial ? 'Real incompleto' : 'Real completo') : 'Sin real'}">${MESES_TXT[parseInt(d.m.slice(5),10)-1].slice(0,3)}${d.parcial ? ' *' : ''}</th>`).join('')}<th class="acum">Acumulado</th></tr>`;
+  const SEP = { mo: true, gastos: true, ebitda: true, un: true };
+  lineas.forEach(({ id, label }) => {
+    const costo = LINEA_COSTO[id];
+    const celda = (R, P, tieneR, com) => {
+      if (mamMetrica === 'pre') return `<td>${fmt(P,0)}</td>`;
+      if (!tieneR) return '<td class="sinreal">—</td>';
+      if (mamMetrica === 'real') return `<td>${fmt(R,0)}</td>`;
+      const D = R - P, fav = costo ? D <= 0 : D >= 0;
+      const st = Math.abs(D) < 1 ? '' : (fav ? 'color:#1F9D55' : 'color:#C0392B');
+      const txt = mamMetrica === 'desvp' ? (P ? (D >= 0 ? '+' : '−') + fmt(Math.abs(D / Math.abs(P) * 100), 1) + '%' : '—') : (D >= 0 ? '' : '−') + fmt(Math.abs(D), 0);
+      return `<td style="${st}" ${com ? `title="💬 ${esc(com.texto)}"` : ''}>${txt}${com ? ' 💬' : ''}</td>`;
+    };
+    const cls = [['mo','mb','gastos','ebitda'].includes(id) ? 'tot2' : '', id === 'un' ? 'fin' : '', id === 'fn' ? 'base' : '', SEP[id] ? 'sep' : ''].join(' ');
+    let row = `<tr class="${cls}"><td>${esc(label)}</td>`;
+    datos.forEach(d => { row += celda(d.r ? val(d.r.lineas.find(l => l.id === id)) : 0, val(d.p.lineas.find(l => l.id === id)), !!d.r, (comentarios[d.m] || {})[id]); });
+    const aR = acum.reduce((a, d) => a + val(d.r.lineas.find(l => l.id === id)), 0), aP = acum.reduce((a, d) => a + val(d.p.lineas.find(l => l.id === id)), 0);
+    const totP = datos.reduce((a, d) => a + val(d.p.lineas.find(l => l.id === id)), 0);
+    row += mamMetrica === 'pre' ? `<td class="acum">${fmt(totP,0)}</td>` : celda(aR, aP, acum.length > 0).replace('<td', '<td class="acum"');
+    h += row + '</tr>';
+  });
+  h += `</table></div><p style="font-size:11px;color:#9896A0;margin-top:.6rem">— = mes sin real cargado. * = real incompleto (faltan datos en alguna pestaña). 💬 = tiene explicación cargada (pasá el mouse para leerla). En "Presupuesto", el acumulado es el total del año.</p></div>`;
+  return h;
+}
 
 try { const t = localStorage.getItem('presupuesto-tab'); if (['egr','car','res'].includes(t)) verTab(t); } catch(e) {}
 cargarGuardados();
