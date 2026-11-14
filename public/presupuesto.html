@@ -214,6 +214,16 @@ details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
     <div class="fuentes" id="fuentes-egr"></div>
   </div>
 
+  <div class="card">
+    <div class="card-title">Sueldos</div>
+    <div class="drop" id="drop-sue">
+      <strong>Subí el archivo de sueldos</strong>
+      <span>El cuadro anual de sueldos (mismo formato que la hoja Sueldos + Gente). Se toman todos los meses que tengan importes; si lo volvés a subir, se actualizan.</span>
+      <input type="file" id="file-sue" accept=".xlsx,.xls" hidden>
+    </div>
+    <div id="sue-estado" style="margin-top:.75rem;font-size:12px;color:#56555A"></div>
+  </div>
+
   <div id="egr-cuerpo"></div>
   </div>
 </div>
@@ -269,8 +279,9 @@ async function cargarGuardados(){
     if (!codif.ignorar) codif.ignorar = [];
     guardados = {};
     Object.keys(d).filter(k => k.startsWith('vol-')).forEach(k => { guardados[k.slice(4)] = d[k]; });
-    clavesGuardadas = {}; egrGuardados = {};
+    clavesGuardadas = {}; egrGuardados = {}; sueldosGuardados = {};
     Object.keys(d).filter(k => k.startsWith('claves-')).forEach(k => { clavesGuardadas[k.slice(7)] = d[k]; });
+    Object.keys(d).filter(k => k.startsWith('sue-')).forEach(k => { sueldosGuardados[k.slice(4)] = d[k]; });
     Object.keys(d).filter(k => k.startsWith('egr-')).forEach(k => { egrGuardados[k.slice(4)] = d[k]; });
   } catch(e) {
     codif = JSON.parse(JSON.stringify(PC.CODIF_DEFAULT)); codif.ignorar = [];
@@ -491,7 +502,8 @@ let mostrarCeros = false;
 let clavesGuardadas = {};    // 'AAAA/MM' -> claves cargadas a mano
 let egrGuardados = {};       // 'AAAA/MM' -> resultado guardado
 let egrUltimo = null;
-const NOMBRE_CLAVE = { vol:'Volumen (HL)', camiones:'Camiones', litros:'Litros de combustible', personas:'Personas (total)', personasOper:'Personas de Operaciones', personasDist:'Personas de Distribución', fnTotal:'Facturación neta total' };
+let sueldosGuardados = {};   // 'AAAA/MM' -> {datos, archivo, usuario, fecha}
+const NOMBRE_CLAVE = { sueldos:'Archivo de sueldos', vol:'Volumen (HL)', camiones:'Camiones', litros:'Litros de combustible', personas:'Personas (total)', personasOper:'Personas de Operaciones', personasDist:'Personas de Distribución', fnTotal:'Facturación neta total' };
 
 function verTab(t){
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('act', b.dataset.tab === t));
@@ -531,6 +543,45 @@ async function leerEgresos(files){
   renderEgr();
 }
 function quitarEgr(nombre){ delete egrArchivos[nombre]; renderEgr(); }
+
+// ── Archivo de sueldos ──
+const dropS = $('drop-sue'), fileS = $('file-sue');
+dropS.onclick = () => fileS.click();
+fileS.onchange = () => { if (fileS.files[0]) leerSueldos(fileS.files[0]); fileS.value=''; };
+dropS.ondragover = e => { e.preventDefault(); dropS.classList.add('over'); };
+dropS.ondragleave = () => dropS.classList.remove('over');
+dropS.ondrop = e => { e.preventDefault(); dropS.classList.remove('over'); if (e.dataTransfer.files[0]) leerSueldos(e.dataTransfer.files[0]); };
+
+async function leerSueldos(f){
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type:'array' });
+    let ok = null, err = null;
+    for (const nombre of wb.SheetNames) {
+      try { ok = PE.parsearSueldos(XLSX.utils.sheet_to_json(wb.Sheets[nombre], { header:1, defval:'', raw:true })); break; } catch(e) { err = e; }
+    }
+    if (!ok) { toast((err && err.message) || 'No se reconoce el archivo de sueldos'); $('sue-estado').innerHTML = `<span style="color:#C0392B">${esc((err && err.message) || 'No se reconoce el archivo de sueldos')}</span>`; return; }
+    const meses = Object.keys(ok.meses).sort();
+    if (!meses.length) { toast('El archivo no tiene meses con importes'); return; }
+    const fecha = new Date().toISOString();
+    let fallas = 0;
+    for (const m of meses) {
+      const reg = { datos: ok.meses[m], archivo: f.name, usuario: userData.username, fecha };
+      try { await guardar('sue-' + m, reg); } catch(e) { fallas++; }
+      sueldosGuardados[m] = reg;
+    }
+    if (ok.avisos.length) toast(ok.avisos[0]);
+    else toast('Sueldos cargados: ' + meses.map(mesTxt).join(', '));
+    if (fallas) toast('No se pudieron guardar ' + fallas + ' meses en el servidor');
+    log('importar sueldos', f.name + ' · ' + meses.join(', '));
+    renderEgr();
+  } catch(e) { toast('No se pudo leer el archivo: ' + e.message); }
+}
+function renderSueldosEstado(){
+  const ms = Object.keys(sueldosGuardados).sort();
+  if (!ms.length) { $('sue-estado').innerHTML = 'Todavía no se cargó el archivo de sueldos.'; return; }
+  const ult = ms.map(m => sueldosGuardados[m]).sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''))[0];
+  $('sue-estado').innerHTML = `<span style="color:#1F9D55;font-weight:700">✓ ${ms.length} ${ms.length === 1 ? 'mes' : 'meses'} con sueldos:</span> ${ms.map(m => MESES_TXT[parseInt(m.slice(5),10)-1].slice(0,3) + ' ' + m.slice(2,4)).join(', ')} · último archivo: ${esc(ult.archivo)} (${new Date(ult.fecha).toLocaleDateString('es-AR')})`;
+}
 const registrosEgr = () => Object.values(egrArchivos).filter(a => a.registros).flatMap(a => a.registros);
 
 // Mismo mes y sucursal en dos archivos distintos = probablemente duplicado
@@ -589,6 +640,7 @@ function setClave(id, suc, valor){
 // ── Render ──
 function renderEgr(){
   renderEgrFuentes();
+  renderSueldosEstado();
   const regs = registrosEgr();
   const meses = [...new Set([...regs.map(r => r.mes), ...Object.keys(egrGuardados)])].sort();
   const el = $('egr-cuerpo');
@@ -627,7 +679,9 @@ function renderEgrResultado(){
   const g = egrGuardados[egrMes];
   const agrupado = hayDatos ? PE.agruparMes(registrosEgr(), egrMes, { importe:'neto' }) : (g && g.agrupado);
   if (!agrupado) { cont.innerHTML = ''; contC.innerHTML = '<div class="aviso">Este mes se guardó con una versión anterior. Volvé a subir los exports para recalcularlo.</div>'; return; }
-  const res = PE.repartir(agrupado, claves);
+  const sueReg = sueldosGuardados[egrMes];
+  const sue = sueReg ? PE.sueldosMes(sueReg.datos, claves.vol) : null;
+  const res = PE.repartir(agrupado, claves, sue);
   egrUltimo = res;
 
   // Claves
@@ -637,9 +691,12 @@ function renderEgrResultado(){
   let hc = `<div class="card"><div class="card-title"><span>2 · Claves de prorrateo · ${mesTxt(egrMes)}</span>${res.faltanClaves.length ? `<span style="text-transform:none;letter-spacing:0;color:#B85A00">Faltan ${res.faltanClaves.length}: podés completarlas cuando tengas los datos</span>` : '<span style="text-transform:none;letter-spacing:0;color:#1F9D55">✓ Completas</span>'}</div><div class="claves">`;
   hc += tarjeta('vol', `<div class="par">${inputClave('vol','CC', claves.vol && Math.round(claves.vol.CC*100)/100, claves.volAuto)}${inputClave('vol','DOL', claves.vol && Math.round(claves.vol.DOL*100)/100, claves.volAuto)}</div>`, claves.volAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Se completa solo si cargás los reportes CMQ del mes.</small>');
   ['camiones','litros','personas','personasOper','personasDist'].filter(id => usa.has(id)).forEach(id => {
-    const k = claves[id] || {};
-    hc += tarjeta(id, `<div class="par">${inputClave(id,'CC',k.CC)}${inputClave(id,'DOL',k.DOL)}</div>`);
+    const deSueldos = sue && id.startsWith('personas');
+    const k = (deSueldos ? res.clavesUsadas[id] : claves[id]) || {};
+    const r2 = v => v == null ? v : Math.round(v * 100) / 100;
+    hc += tarjeta(id, `<div class="par">${inputClave(id,'CC',r2(k.CC),deSueldos)}${inputClave(id,'DOL',r2(k.DOL),deSueldos)}</div>`, deSueldos ? '<div class="auto">✓ Tomado del archivo de sueldos</div>' : (id.startsWith('personas') ? '<small>Se completa sola al subir el archivo de sueldos.</small>' : ''));
   });
+  hc += `<div class="clave ${falta.has('sueldos')?'falta':''}"><b>${NOMBRE_CLAVE.sueldos}</b>${sue ? `<div class="auto">✓ ${esc(sueReg.archivo)}</div><small>Variable repartido con el volumen ${sue.volDe === 'cmq' ? 'de los reportes CMQ' : sue.volDe === 'archivo' ? 'del archivo de sueldos (no hay reportes CMQ del mes)' : 'en partes iguales (no hay volumen)'}.</small>` : '<small>Falta el mes en el archivo de sueldos.</small>'}</div>`;
   hc += tarjeta('fnTotal', `<div class="par">${inputClave('fnTotal','T', claves.fnTotal != null ? Math.round(claves.fnTotal) : '', claves.fnAuto)}</div>`, claves.fnAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Para el 0,6% que suma "Otros impuestos".</small>');
   hc += '</div>';
   if (!hayDatos) hc += `<p style="font-size:12px;color:#9896A0;margin-top:.6rem">Mostrando lo guardado el ${new Date(g.fecha).toLocaleDateString('es-AR')}. Podés completar las claves sin volver a subir los exports.</p>`;
@@ -648,7 +705,7 @@ function renderEgrResultado(){
 
   // KPIs
   let h = `<div class="kpis">
-    <div class="kpi"><div class="kpi-l">Egresos del mes</div><div class="kpi-v">$ ${fmt(res.total,0)}</div><div class="kpi-s">sin IVA · sin sueldos ni acarreo</div></div>
+    <div class="kpi"><div class="kpi-l">Egresos del mes</div><div class="kpi-v">$ ${fmt(res.total,0)}</div><div class="kpi-s">sin IVA · ${sue ? 'con sueldos $ ' + fmt(res.sueldosTotal,0) + ' · sin acarreo' : 'sin sueldos ni acarreo'}</div></div>
     <div class="kpi"><div class="kpi-l">Casa Central</div><div class="kpi-v">$ ${fmt(res.CC,0)}</div><div class="kpi-s">${res.total ? fmt(res.CC/res.total*100,1) : 0}%</div></div>
     <div class="kpi"><div class="kpi-l">Dolores</div><div class="kpi-v">$ ${fmt(res.DOL,0)}</div><div class="kpi-s">${res.total ? fmt(res.DOL/res.total*100,1) : 0}%</div></div>
     <div class="kpi"><div class="kpi-l">IVA y percepciones excluidos</div><div class="kpi-v">$ ${fmt(res.ivaExcluido,0)}</div><div class="kpi-s">el Excel los suma como gasto</div></div>
@@ -658,17 +715,19 @@ function renderEgrResultado(){
   // Tabla
   h += `<div class="card"><div class="toolbar"><span>3 · Gastos reales por renglón (hoja REAL)</span><label><input type="checkbox" ${mostrarCeros?'checked':''} onchange="mostrarCeros=this.checked;renderEgrResultado()"> Mostrar renglones en cero</label></div><div class="tabla-scroll"><table class="real"><tr><th>Renglón</th><th>Total</th><th>Casa Central</th><th>Dolores</th></tr>`;
   const areas = [...new Set(res.filas.map(f => f.area))];
-  const PEND = { sueldos:'Sueldos: próximo paso', aportes:'Sueldos: próximo paso', acarreo:'Acarreo: próximo paso', sinDato:'No se carga desde Chess' };
+  const PEND = { sueldos:'Falta el archivo de sueldos', aportes:'Falta el archivo de sueldos', acarreo:'Acarreo: próximo paso', sinDato:'No se carga desde Chess' };
   areas.forEach(a => {
     const fs = res.filas.filter(f => f.area === a);
     const t = fs.reduce((o, f) => ({ total:o.total+f.total, CC:o.CC+f.CC, DOL:o.DOL+f.DOL }), { total:0, CC:0, DOL:0 });
     h += `<tr class="area"><td>${esc(a)}</td><td>${fmt(t.total,0)}</td><td>${fmt(t.CC,0)}</td><td>${fmt(t.DOL,0)}</td></tr>`;
     fs.forEach(f => {
-      const pend = f.fuente !== 'egresos';
+      const pend = !!f.pendiente;
       if (!pend && !mostrarCeros && Math.abs(f.total) < 0.5) return;
       if (pend && f.fuente === 'sinDato' && !mostrarCeros) return;
       let tags = '';
       if (pend) tags += `<span class="tag pend">${PEND[f.fuente]}</span>`;
+      else if (f.fuente === 'sueldos') tags += `<span class="tag pend">archivo de sueldos</span>`;
+      else if (f.fuente === 'aportes') tags += `<span class="tag pend">50% del sueldo</span>`;
       if (f.regla.corrige) tags += `<span class="tag fix" title="${esc(f.regla.corrige)}">corrige el Excel</span>`;
       if (f.sinClave && f.total) tags += `<span class="tag warn">sin repartir</span>`;
       if (f.otrosProveedores && Math.abs(f.otrosProveedores) > 0.5) tags += `<span class="tag warn" title="Proveedores distintos de ${esc(f.regla.proveedores.CC)} y ${esc(f.regla.proveedores.DOL)}">$ ${fmt(f.otrosProveedores,0)} sin repartir</span>`;
@@ -700,7 +759,8 @@ function guardarEgr(agrupado, res, firma, fechaCarga){
     const prev = egrGuardados[mes];
     const datos = { mes, agrupado, total: res.total, CC: res.CC, DOL: res.DOL, sinRepartir: res.sinRepartir,
       ivaExcluido: res.ivaExcluido, faltan: res.faltanClaves,
-      filas: res.filas.filter(f => f.fuente === 'egresos' && (f.total || f.CC || f.DOL)).map(f => ({ fila:f.fila, total:f.total, CC:f.CC, DOL:f.DOL })),
+      sueldosTotal: res.sueldosTotal || 0,
+      filas: res.filas.filter(f => !f.pendiente && (f.total || f.CC || f.DOL)).map(f => ({ fila:f.fila, total:f.total, CC:f.CC, DOL:f.DOL })),
       importe: 'neto', usuario: userData.username, fecha: fechaCarga || new Date().toISOString(), actualizado: new Date().toISOString(), _firma: firma };
     if (prev && prev._firma === firma && JSON.stringify(prev.agrupado) === JSON.stringify(agrupado)) return;
     try {

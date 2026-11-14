@@ -133,11 +133,11 @@
   //  reparto: vol | camiones | litros | personas | personasOper | personasDist | mitad | cc | dol | sucursal | proveedor
   //  fuente: egresos (default) | sueldos | aportes (factor 0.5 = 50% de los sueldos, confirmado; el SOP dice 0,5% por error) | acarreo | sinDato
   const REGLAS = {
-    5:  { reparto: 'personas', corrige: 'En el Excel las partes de Casa Central y Dolores no suman el total (divide por otra cantidad de personas).' },
+    5:  { reparto: 'personas', corrige: 'Se reparte por personas del archivo de sueldos. En el Excel el personal compartido se reparte de más y Casa Central + Dolores no da el total.' },
     15: { fuente: 'sueldos', sector: 'ventas' },
     16: { fuente: 'aportes', de: 15, factor: 0.5 },
     19: { reparto: 'cc' },
-    21: { reparto: 'personasOper', corrige: 'En el Excel da 0 cuando falta la dotación del mes y el gasto se pierde.' },
+    21: { reparto: 'personasOper', corrige: 'Se reparte con la dotación real de Operaciones del archivo de sueldos. El Excel usa la dotación presupuestada y da 0 cuando falta, y ahí el gasto se pierde.' },
     23: { reparto: 'mitad' },
     35: { fuente: 'sueldos', sector: 'operaciones' },
     36: { fuente: 'aportes', de: 35, factor: 0.5 },
@@ -156,7 +156,7 @@
     52: { reparto: 'camiones' },
     53: { reparto: 'camiones', corrige: 'En el Excel la parte de Dolores es un 0 fijo y se pierde.' },
     54: { reparto: 'camiones' },
-    55: { reparto: 'personasDist' },
+    55: { reparto: 'personasDist', corrige: 'Se reparte con la dotación real de Distribución del archivo de sueldos; el Excel usa la dotación presupuestada.' },
     56: { reparto: 'camiones' },
     57: { reparto: 'camiones' },
     58: { reparto: 'dol' },
@@ -313,14 +313,24 @@
 
   // Paso 2: reparte lo agrupado entre Casa Central y Dolores con las claves del mes.
   // Si falta una clave, esos renglones quedan en el total "sin repartir" y se informa en faltanClaves.
-  function repartir(agrupado, claves) {
+  // sueldos: resultado de sueldosMes() para el mes, o null si todavía no se cargó el archivo
+  function repartir(agrupado, clavesIn, sueldos) {
     const por = Object.fromEntries((agrupado.filas || []).map(f => [f.fila, f]));
     const faltanClaves = new Set();
+    // Las cantidades de personas salen del archivo de sueldos cuando está cargado
+    const claves = sueldos ? { ...(clavesIn || {}), ...sueldos.claves } : clavesIn;
     const filas = FILAS.map(([fila, area, label]) => {
       const regla = REGLAS[fila] || {};
       const fuente = regla.fuente || 'egresos';
       const o = { fila, area, label, fuente, regla, total: 0, CC: 0, DOL: 0, ivaExcluido: 0 };
-      if (fuente !== 'egresos') return o;
+      if (fuente === 'sueldos') {
+        if (!sueldos) { faltanClaves.add('sueldos'); o.pendiente = true; return o; }
+        const s = sueldos.filas[fila] || { CC: 0, DOL: 0 };
+        o.CC = s.CC; o.DOL = s.DOL; o.total = s.CC + s.DOL;
+        return o;
+      }
+      if (fuente === 'aportes') { o.pendiente = !sueldos; return o; } // se calcula abajo, sobre el sueldo
+      if (fuente !== 'egresos') { o.pendiente = true; return o; }
       const g = por[fila] || { base: 0, iva: 0, CC: 0, DOL: 0 };
       o.total = g.base; o.ivaExcluido = g.iva;
       if (regla.masFN) {
@@ -341,6 +351,13 @@
       }
       return o;
     });
+    // Aportes = factor × sueldo del mismo sector (50%)
+    if (sueldos) filas.forEach(o => {
+      if (o.fuente !== 'aportes') return;
+      const base = filas.find(f => f.fila === o.regla.de);
+      const k = o.regla.factor || 0;
+      o.CC = base.CC * k; o.DOL = base.DOL * k; o.total = base.total * k;
+    });
     const areas = {};
     filas.forEach(f => {
       const a = areas[f.area] || (areas[f.area] = { area: f.area, total: 0, CC: 0, DOL: 0 });
@@ -348,8 +365,10 @@
     });
     const total = filas.reduce((a, f) => a + f.total, 0);
     const CC = filas.reduce((a, f) => a + f.CC, 0), DOL = filas.reduce((a, f) => a + f.DOL, 0);
+    const sueldosTotal = filas.filter(f => f.fuente === 'sueldos' || f.fuente === 'aportes').reduce((a, f) => a + f.total, 0);
     return {
-      mes: agrupado.mes, filas, areas: Object.values(areas), total, CC, DOL,
+      mes: agrupado.mes, filas, areas: Object.values(areas), total, CC, DOL, sueldosTotal,
+      volSueldos: sueldos ? sueldos.volDe : null, clavesUsadas: claves,
       sinRepartir: total - CC - DOL,
       ivaExcluido: agrupado.importe === 'total' ? 0 : filas.reduce((a, f) => a + f.ivaExcluido, 0),
       sueltos: agrupado.sueltos || [],
@@ -358,12 +377,81 @@
     };
   }
 
-  // Atajo: agrupa y reparte en un paso
-  function calcularMes(registros, mes, claves, opciones) {
-    return repartir(agruparMes(registros, mes, opciones), claves);
+  // ── Sueldos ──
+  // Archivo con el cuadro anual de sueldos (mismo formato que la hoja "Sueldos + Gente"):
+  // una fila por mes con fijo por sucursal, variable compartido y cantidades por sector.
+  // Posición de cada dato en el archivo (columna) y el encabezado que se espera en la fila de títulos.
+  const SUE_COLS = {
+    mes: ['A', 'MES'],
+    distNCC: ['B', 'CANT-MDA'], distCC: ['C', 'MDA'], distNDOL: ['D', 'CANT-DOL'], distDOL: ['E', 'DOL'], distWSC: ['F', 'WSC DISTRIBUCIÓN'],
+    operNComp: ['H', 'CANTIDAD'], operVar: ['I', 'TOTAL VARIABLE'],
+    operNCC: ['J', 'CANT-MDA'], operFijoCC: ['L', 'MDA FIJO'], operNDOL: ['N', 'CANT-DOL'], operFijoDOL: ['P', 'DOL FIJO'],
+    ventNComp: ['S', 'CANTIDAD'], ventVar: ['T', 'VARIABLE'],
+    ventNCC: ['U', 'CANT-MDA'], ventFijoCC: ['W', 'MDA FIJO'], ventNDOL: ['Y', 'CANT-DOL'], ventFijoDOL: ['AA', 'DOL FIJO'], ventWSC: ['AC', 'WSC DISTRIBUCIÓN'],
+    admNComp: ['AE', 'CANTIDAD'], admVar: ['AF', 'VARIABLE'],
+    admNCC: ['AG', 'CANT-MDA'], admFijoCC: ['AI', 'MDA FIJO'], admNDOL: ['AK', 'CANT-DOL'], admFijoDOL: ['AM', 'DOL FIJO'],
+    volCC: ['AS', 'VOL MDA'], volDOL: ['AT', 'VOL DOLORES'],
+  };
+  const colIdx = s => { let n = 0; for (const ch of s) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+
+  // rows: array de arrays. Devuelve { meses: {'2026/01': datos}, avisos: [] }
+  function parsearSueldos(rows) {
+    let hi = -1;
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const r = rows[i] || [];
+      if (norm(r[0]) === 'MES' && norm(r[colIdx('B')]) === 'CANT-MDA') { hi = i; break; }
+    }
+    if (hi < 0) throw new Error('No se reconoce el archivo de sueldos: se espera la fila de títulos con "Mes" y "Cant-MDA" en las primeras columnas.');
+    const H = rows[hi];
+    const mal = Object.entries(SUE_COLS).filter(([, [c, t]]) => norm(H[colIdx(c)]) !== t).map(([, [c, t]]) => c + ' ("' + t + '")');
+    if (mal.length) throw new Error('El archivo de sueldos cambió de formato. No coinciden las columnas: ' + mal.join(', ') + '.');
+    const meses = {}, avisos = [];
+    for (let i = hi + 1; i < rows.length; i++) {
+      const r = rows[i]; if (!r) continue;
+      const mes = mesDe(r[0]); if (!mes) continue;
+      const d = {};
+      Object.entries(SUE_COLS).forEach(([k, [c]]) => { if (k !== 'mes') d[k] = num(r[colIdx(c)]); });
+      const importe = d.distCC + d.distDOL + d.operVar + d.operFijoCC + d.operFijoDOL + d.ventVar + d.ventFijoCC + d.ventFijoDOL + d.admVar + d.admFijoCC + d.admFijoDOL;
+      if (!importe) continue; // mes sin cargar
+      if (d.distWSC || d.ventWSC) avisos.push(mes + ': el archivo tiene importes en "WSC". No se descuentan de los sueldos; el WSC va por separado.');
+      meses[mes] = d;
+    }
+    return { meses, avisos };
   }
 
-  const api = { FILAS, REGLAS, CLAVES, MESES, parsearEgresos, agruparMes, repartir, calcularMes, mesDe };
+  // Sueldos por renglón de la hoja REAL. El variable compartido se reparte por volumen,
+  // igual que el Excel (usa el volumen de los reportes CMQ; si no está, el del archivo).
+  function sueldosMes(d, vol) {
+    let s = share(vol), volDe = 'cmq';
+    if (s == null) { s = share({ CC: d.volCC, DOL: d.volDOL }); volDe = 'archivo'; }
+    if (s == null) { s = 0.5; volDe = null; }
+    const filas = {
+      63: { CC: d.distCC, DOL: d.distDOL },
+      35: { CC: d.operVar * s + d.operFijoCC, DOL: d.operVar * (1 - s) + d.operFijoDOL },
+      15: { CC: d.ventVar * s + d.ventFijoCC, DOL: d.ventVar * (1 - s) + d.ventFijoDOL },
+      125: { CC: d.admVar * s + d.admFijoCC, DOL: d.admVar * (1 - s) + d.admFijoDOL },
+    };
+    const sCC = Object.values(filas).reduce((a, f) => a + f.CC, 0);
+    const sTot = sCC + Object.values(filas).reduce((a, f) => a + f.DOL, 0);
+    // Personas: fijas por sucursal + compartidas repartidas por peso del sueldo (como el Excel, pero sin pasarse del total)
+    const comp = d.operNComp + d.ventNComp + d.admNComp;
+    const pS = sTot ? sCC / sTot : 0.5;
+    const personas = {
+      CC: d.distNCC + d.operNCC + d.ventNCC + d.admNCC + comp * pS,
+      DOL: d.distNDOL + d.operNDOL + d.ventNDOL + d.admNDOL + comp * (1 - pS),
+    };
+    return {
+      filas, volDe,
+      claves: { personas, personasOper: { CC: d.operNCC, DOL: d.operNDOL }, personasDist: { CC: d.distNCC, DOL: d.distNDOL } },
+    };
+  }
+
+  // Atajo: agrupa y reparte en un paso
+  function calcularMes(registros, mes, claves, opciones, sueldos) {
+    return repartir(agruparMes(registros, mes, opciones), claves, sueldos);
+  }
+
+  const api = { FILAS, REGLAS, CLAVES, MESES, parsearEgresos, agruparMes, repartir, calcularMes, mesDe, parsearSueldos, sueldosMes };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PresupuestoEgresos = api;
 })(typeof window !== 'undefined' ? window : this);
