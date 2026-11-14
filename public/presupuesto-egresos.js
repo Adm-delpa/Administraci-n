@@ -166,7 +166,7 @@
     62: { reparto: 'camiones' },
     63: { fuente: 'sueldos', sector: 'distribucion' },
     64: { fuente: 'aportes', de: 63, factor: 0.5 },
-    66: { fuente: 'acarreo' },
+    66: { fuente: 'acarreo', corrige: 'Costo de los viajes menos el descuento CMQ cargado en Transporte. El Excel no descuenta el RDF desde mayo porque le falta la tabla de tarifas.' },
     72: { fuente: 'sinDato' }, 75: { fuente: 'sinDato' }, 76: { fuente: 'sinDato' }, 77: { fuente: 'sinDato' },
     73: { excluirProveedor: 'ARBA - ING. BRUTOS', masFN: 0.006 },
     74: { match: 'egreso', valor: 'ITF' },
@@ -268,9 +268,19 @@
 
   const REPARTO_FIJO = ['sucursal', 'proveedor'];
 
-  // Comprobantes de Chess que no se toman (pedido de la usuaria, 14/11/2026)
+  // Movimientos de Chess que no se toman (pedido de la usuaria, 14/11/2026)
   const EXCLUIR = [{ comprobante: 'ME', letra: 'P' }];
-  const excluido = r => EXCLUIR.some(e => r.comp === e.comprobante && r.letra === e.letra);
+  const EXCLUIR_CONCEPTOS = [
+    'NCR FINANCIERAS', 'ND BANCARIA (14-SUELDOS PERSONAL)', 'ND BANCARIA (10-PAGO PRESTAMO BANCARIO)',
+    'NCR CTA Y ORDEN', 'PERCEPCIONES INGRESOS BRUTOS', 'SICORE-IMPUESTO AL VALOR AGREGADO(767)',
+    'SICORE IMPUESTO A LAS GANANCIAS(217)', 'SUELDO BRUTO', 'CTA SINDICAL CAMIONEROS',
+  ].map(norm);
+  // Devuelve el motivo de exclusión o null
+  const excluido = r => {
+    if (EXCLUIR.some(e => r.comp === e.comprobante && r.letra === e.letra)) return 'ME letra P';
+    if (EXCLUIR_CONCEPTOS.includes(r.concepto)) return r.concepto;
+    return null;
+  };
 
   // Paso 1: agrupa los comprobantes del mes por renglón. No depende de las claves de
   // prorrateo, así que se puede guardar y repartir después sin volver a subir los exports.
@@ -324,14 +334,51 @@
         importe: fuera.reduce((a, r) => a + imp(r), 0),
         enRenglones: Object.values(fueraPorFila).reduce((a, x) => a + x.importe, 0),
         porFila: fueraPorFila,
+        porMotivo: Object.values(fuera.reduce((acc, r) => {
+          const m = excluido(r);
+          const o = acc[m] || (acc[m] = { motivo: m, n: 0, importe: 0 });
+          o.n++; o.importe += imp(r); return acc;
+        }, {})).sort((a, b) => Math.abs(b.importe) - Math.abs(a.importe)),
       },
     };
   }
 
   // Paso 2: reparte lo agrupado entre Casa Central y Dolores con las claves del mes.
   // Si falta una clave, esos renglones quedan en el total "sin repartir" y se informa en faltanClaves.
+  // Acarreo desde los viajes del módulo Transporte: costo − descuento CMQ (RDF), como la hoja ACARREO.
+  // viajes: [{fecha:'AAAA-MM-DD', valor, descuento, chofer}]; choferes: [{nombre, empresa}] (tabla de Transporte).
+  // Devuelve {n, costo, rdf, neto, sinValor, ...} o null si no hay viajes.
+  const TRANSPORTISTAS_SIN_COSTO = ['LAURENZANO']; // sus viajes valen 0 (los abona otro, no Del Palacio)
+  function acarreoMes(viajes, mes, choferes) {
+    const del = (viajes || []).filter(v => String(v.fecha || '').slice(0, 7).replace('-', '/') === mes);
+    if (!del.length) return null;
+    const empresaDe = {};
+    (choferes || []).forEach(c => { empresaDe[norm(c.nombre)] = c.empresa || ''; });
+    const empresa = v => empresaDe[norm(v.chofer)] || '';
+    const sinCosto = v => TRANSPORTISTAS_SIN_COSTO.some(t => norm(empresa(v)).includes(t));
+    // Viajes de Laurenzano: valen 0, no suman costo ni descuento y no son faltantes.
+    // Del resto, el descuento solo se resta si el viaje tiene importe; si no, queda pendiente.
+    // Un viaje de Laurenzano con descuento CMQ es un error de carga: el transportista está mal en Transporte
+    // (si CMQ lo reconoce, lo hizo un transportista que se paga). Queda como faltante hasta corregirlo.
+    const malCargados = del.filter(v => sinCosto(v) && num(v.descuento));
+    const noAbonados = del.filter(v => sinCosto(v) && !num(v.descuento));
+    const resto = del.filter(v => !sinCosto(v));
+    const conValor = resto.filter(v => num(v.valor));
+    const sin = resto.filter(v => !num(v.valor));
+    const costo = conValor.reduce((a, v) => a + num(v.valor), 0);
+    const rdf = conValor.reduce((a, v) => a + num(v.descuento), 0);
+    return {
+      n: del.length, costo, rdf, neto: costo - rdf, noAbonados: noAbonados.length,
+      sinValor: sin.length, rdfPendiente: sin.reduce((a, v) => a + num(v.descuento), 0),
+      sinValorDetalle: sin.map(v => ({ fecha: v.fecha, origen: v.origen, remito: v.remito1 || '', chofer: v.chofer || '', empresa: empresa(v) })),
+      choferesSinEmpresa: [...new Set(sin.filter(v => !empresa(v)).map(v => v.chofer || '(sin chofer)'))],
+      malCargados: malCargados.map(v => ({ fecha: v.fecha, origen: v.origen, remito: v.remito1 || '', chofer: v.chofer || '', descuento: num(v.descuento), valor: num(v.valor) })),
+    };
+  }
+
   // sueldos: resultado de sueldosMes() para el mes, o null si todavía no se cargó el archivo
-  function repartir(agrupado, clavesIn, sueldos) {
+  // acarreo: resultado de acarreoMes(), o null si no hay viajes del mes en Transporte
+  function repartir(agrupado, clavesIn, sueldos, acarreo) {
     const por = Object.fromEntries((agrupado.filas || []).map(f => [f.fila, f]));
     const faltanClaves = new Set();
     // Las cantidades de personas salen del archivo de sueldos cuando está cargado
@@ -347,6 +394,16 @@
         return o;
       }
       if (fuente === 'aportes') { o.pendiente = !sueldos; return o; } // se calcula abajo, sobre el sueldo
+      if (fuente === 'acarreo') {
+        if (!acarreo) { faltanClaves.add('acarreo'); o.pendiente = true; return o; }
+        if (acarreo.sinValor) faltanClaves.add('acarreoSinValor');
+        if (acarreo.malCargados && acarreo.malCargados.length) faltanClaves.add('acarreoMalCargado');
+        o.total = acarreo.neto; o.acarreo = acarreo;
+        const s = share(claves && claves.vol); // la hoja REAL lo reparte por volumen
+        if (s == null) { if (o.total) { faltanClaves.add('vol'); o.sinClave = true; } }
+        else { o.CC = o.total * s; o.DOL = o.total * (1 - s); }
+        return o;
+      }
       if (fuente !== 'egresos') { o.pendiente = true; return o; }
       const g = por[fila] || { base: 0, iva: 0, CC: 0, DOL: 0 };
       o.total = g.base; o.ivaExcluido = g.iva;
@@ -464,11 +521,11 @@
   }
 
   // Atajo: agrupa y reparte en un paso
-  function calcularMes(registros, mes, claves, opciones, sueldos) {
-    return repartir(agruparMes(registros, mes, opciones), claves, sueldos);
+  function calcularMes(registros, mes, claves, opciones, sueldos, acarreo) {
+    return repartir(agruparMes(registros, mes, opciones), claves, sueldos, acarreo);
   }
 
-  const api = { FILAS, REGLAS, CLAVES, MESES, parsearEgresos, agruparMes, repartir, calcularMes, mesDe, parsearSueldos, sueldosMes };
+  const api = { FILAS, REGLAS, CLAVES, MESES, EXCLUIR, EXCLUIR_CONCEPTOS, parsearEgresos, agruparMes, repartir, calcularMes, mesDe, parsearSueldos, sueldosMes, acarreoMes };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PresupuestoEgresos = api;
 })(typeof window !== 'undefined' ? window : this);

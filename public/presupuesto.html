@@ -134,6 +134,7 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
 .toolbar label{display:flex;align-items:center;gap:6px;cursor:pointer}
 .info-ex{font-size:12px;color:#56555A;background:#F8F7F5;border:1px solid #E6E4DF;border-radius:8px;padding:.6rem .85rem;margin-bottom:1rem}
 .info-ex .det{color:#1E6FD9;font-weight:600;cursor:help;text-decoration:underline dotted}
+.info-ex summary{cursor:pointer}
 details.sueltos{margin-top:1rem;font-size:12px}
 details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
 
@@ -178,6 +179,7 @@ details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
   <div class="tabs">
     <button class="tab act" data-tab="vol" onclick="verTab('vol')">Volumen · reportes CMQ</button>
     <button class="tab" data-tab="egr" onclick="verTab('egr')">Egresos · Chess</button>
+    <button class="tab" data-tab="car" onclick="verTab('car')">Cargas del mes</button>
   </div>
 
   <div id="tab-vol">
@@ -228,6 +230,12 @@ details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
 
   <div id="egr-cuerpo"></div>
   </div>
+
+  <div id="tab-car" hidden>
+  <h1>Cargas del mes</h1>
+  <p class="sub">Reconocimientos y notas de crédito de la compañía que hoy se cargan a mano: WSC, Cuenta y Orden, NDC extra margen, otras NDC, ICV y segmentación del canal refrigerado. Un campo vacío queda como <b>faltante</b>; si el valor del mes es cero, cargá 0. Se guarda solo.</p>
+  <div id="car-cuerpo"></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -235,6 +243,7 @@ details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="/presupuesto-calc.js"></script>
 <script src="/presupuesto-egresos.js"></script>
+<script src="/presupuesto-resultado.js"></script>
 <script>
 const userData = JSON.parse(sessionStorage.getItem('user') || 'null');
 if (!userData) { window.location.href = '/'; }
@@ -284,12 +293,21 @@ async function cargarGuardados(){
     clavesGuardadas = {}; egrGuardados = {}; sueldosGuardados = {};
     Object.keys(d).filter(k => k.startsWith('claves-')).forEach(k => { clavesGuardadas[k.slice(7)] = d[k]; });
     Object.keys(d).filter(k => k.startsWith('sue-')).forEach(k => { sueldosGuardados[k.slice(4)] = d[k]; });
+    cargasGuardadas = {};
+    Object.keys(d).filter(k => k.startsWith('cargas-')).forEach(k => { cargasGuardadas[k.slice(7)] = d[k]; });
     Object.keys(d).filter(k => k.startsWith('egr-')).forEach(k => { egrGuardados[k.slice(4)] = d[k]; });
   } catch(e) {
     codif = JSON.parse(JSON.stringify(PC.CODIF_DEFAULT)); codif.ignorar = [];
   }
+  // Viajes del módulo Transporte (para el acarreo)
+  try {
+    const t = await (await fetch('/api/datos/transporte')).json();
+    viajesTransporte = (t && t.registros && t.registros.registros) || [];
+    choferesTransporte = (t && t.tarifas && t.tarifas.choferes) || [];
+  } catch(e) { viajesTransporte = []; choferesTransporte = []; }
   render();
   renderEgr();
+  if (!$('tab-car').hidden) renderCargas();
 }
 async function guardar(periodo, datos){
   const r = await fetch('/api/datos/' + MODULO, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ periodo, datos }) });
@@ -505,14 +523,18 @@ let clavesGuardadas = {};    // 'AAAA/MM' -> claves cargadas a mano
 let egrGuardados = {};       // 'AAAA/MM' -> resultado guardado
 let egrUltimo = null;
 let sueldosGuardados = {};   // 'AAAA/MM' -> {datos, archivo, usuario, fecha}
-const NOMBRE_CLAVE = { sueldos:'Archivo de sueldos', vol:'Volumen (HL)', camiones:'Camiones', litros:'Litros de combustible', personas:'Personas (total)', personasOper:'Personas de Operaciones', personasDist:'Personas de Distribución', fnTotal:'Facturación neta total' };
+let viajesTransporte = [];   // registros del módulo Transporte
+let choferesTransporte = []; // tabla chofer -> empresa del módulo Transporte
+const NOMBRE_CLAVE = { acarreo:'Viajes del mes en Transporte', acarreoSinValor:'Importe de todos los viajes en Transporte', acarreoMalCargado:'Transportista bien cargado en Transporte', sueldos:'Archivo de sueldos', vol:'Volumen (HL)', camiones:'Camiones', litros:'Litros de combustible', personas:'Personas (total)', personasOper:'Personas de Operaciones', personasDist:'Personas de Distribución', fnTotal:'Facturación neta total' };
 
 function verTab(t){
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('act', b.dataset.tab === t));
   $('tab-vol').hidden = t !== 'vol';
   $('tab-egr').hidden = t !== 'egr';
+  $('tab-car').hidden = t !== 'car';
   try { localStorage.setItem('presupuesto-tab', t); } catch(e) {}
   if (t === 'egr') renderEgr();
+  if (t === 'car') renderCargas();
 }
 
 const dropE = $('drop-egr'), fileE = $('file-egr');
@@ -683,7 +705,8 @@ function renderEgrResultado(){
   if (!agrupado) { cont.innerHTML = ''; contC.innerHTML = '<div class="aviso">Este mes se guardó con una versión anterior. Volvé a subir los exports para recalcularlo.</div>'; return; }
   const sueReg = sueldosGuardados[egrMes];
   const sue = sueReg ? PE.sueldosMes(sueReg.datos, claves.vol) : null;
-  const res = PE.repartir(agrupado, claves, sue);
+  const aca = PE.acarreoMes(viajesTransporte, egrMes, choferesTransporte);
+  const res = PE.repartir(agrupado, claves, sue, aca);
   egrUltimo = res;
 
   // Claves
@@ -698,6 +721,9 @@ function renderEgrResultado(){
     const r2 = v => v == null ? v : Math.round(v * 100) / 100;
     hc += tarjeta(id, `<div class="par">${inputClave(id,'CC',r2(k.CC),deSueldos)}${inputClave(id,'DOL',r2(k.DOL),deSueldos)}</div>`, deSueldos ? '<div class="auto">✓ Tomado del archivo de sueldos</div>' : (id.startsWith('personas') ? '<small>Se completa sola al subir el archivo de sueldos.</small>' : ''));
   });
+  hc += `<div class="clave ${falta.has('acarreo') || falta.has('acarreoSinValor') || falta.has('acarreoMalCargado') ? 'falta' : ''}"><b>Acarreo (viajes de Transporte)</b>${aca
+    ? `<div class="auto">✓ ${aca.n} viajes cargados</div><small>Costo $ ${fmt(aca.costo,0)} − descuento CMQ $ ${fmt(aca.rdf,0)} = <b>$ ${fmt(aca.neto,0)}</b></small>${aca.noAbonados ? `<small>${aca.noAbonados} ${aca.noAbonados === 1 ? 'viaje de Laurenzano: vale 0' : 'viajes de Laurenzano: valen 0'}.</small>` : ''}${aca.sinValor ? `<small style="color:#B85A00;font-weight:600" title="${esc(aca.sinValorDetalle.map(v => v.fecha + ' · ' + String(v.origen).split(' - ')[0] + ' · ' + (v.chofer || 'sin chofer') + (v.empresa ? ' (' + v.empresa + ')' : ' (sin empresa)') + (v.remito ? ' · remito ' + v.remito : '')).join('\n'))}">${aca.sinValor} ${aca.sinValor === 1 ? 'viaje no tiene' : 'viajes no tienen'} importe en Transporte: no se cuentan${aca.rdfPendiente ? ` (su descuento CMQ de $ ${fmt(aca.rdfPendiente,0)} queda pendiente)` : ''}. Pasá el mouse para ver cuáles.</small>` : ''}${aca.malCargados.length ? `<small style="color:#C0392B;font-weight:600">${aca.malCargados.length === 1 ? 'Hay 1 viaje' : 'Hay ' + aca.malCargados.length + ' viajes'} de Laurenzano con descuento CMQ: el transportista está mal cargado en Transporte. Corregilo para cerrar el mes:<br>${aca.malCargados.map(v => esc(v.fecha.split('-').reverse().join('/') + ' · ' + String(v.origen).split(' - ')[0] + ' · ' + v.chofer + (v.remito ? ' · remito ' + v.remito : '') + ' · descuento $ ' + fmt(v.descuento,0))).join('<br>')}</small>` : ''}${aca.choferesSinEmpresa.length ? `<small style="color:#B85A00">${aca.choferesSinEmpresa.length === 1 ? 'El chofer' : 'Los choferes'} ${aca.choferesSinEmpresa.map(esc).join(', ')} no ${aca.choferesSinEmpresa.length === 1 ? 'tiene' : 'tienen'} empresa en la tabla de choferes de Transporte. Si es de Laurenzano, asignáselo y el viaje pasa a valer 0.</small>` : ''}`
+    : '<small>No hay viajes de este mes en el módulo Transporte.</small>'}<small><a href="/transporte" style="color:#1E6FD9;font-weight:600">Ir a Transporte</a></small></div>`;
   hc += `<div class="clave ${falta.has('sueldos')?'falta':''}"><b>${NOMBRE_CLAVE.sueldos}</b>${sue ? `<div class="auto">✓ ${esc(sueReg.archivo)}</div><small>Variable repartido con el volumen ${sue.volDe === 'cmq' ? 'de los reportes CMQ' : sue.volDe === 'archivo' ? 'del archivo de sueldos (no hay reportes CMQ del mes)' : 'en partes iguales (no hay volumen)'}.</small>` : '<small>Falta el mes en el archivo de sueldos.</small>'}</div>`;
   hc += tarjeta('fnTotal', `<div class="par">${inputClave('fnTotal','T', claves.fnTotal != null ? Math.round(claves.fnTotal) : '', claves.fnAuto)}</div>`, claves.fnAuto ? '<div class="auto">✓ Tomado de los reportes CMQ</div>' : '<small>Para el 0,6% que suma "Otros impuestos".</small>');
   hc += '</div>';
@@ -707,7 +733,7 @@ function renderEgrResultado(){
 
   // KPIs
   let h = `<div class="kpis">
-    <div class="kpi"><div class="kpi-l">Egresos del mes</div><div class="kpi-v">$ ${fmt(res.total,0)}</div><div class="kpi-s">sin IVA · ${sue ? 'con sueldos $ ' + fmt(res.sueldosTotal,0) + ' · sin acarreo' : 'sin sueldos ni acarreo'}</div></div>
+    <div class="kpi"><div class="kpi-l">Egresos del mes</div><div class="kpi-v">$ ${fmt(res.total,0)}</div><div class="kpi-s">sin IVA · ${sue ? 'con sueldos' : 'sin sueldos'} · ${aca ? 'con acarreo' : 'sin acarreo'}</div></div>
     <div class="kpi"><div class="kpi-l">Casa Central</div><div class="kpi-v">$ ${fmt(res.CC,0)}</div><div class="kpi-s">${res.total ? fmt(res.CC/res.total*100,1) : 0}%</div></div>
     <div class="kpi"><div class="kpi-l">Dolores</div><div class="kpi-v">$ ${fmt(res.DOL,0)}</div><div class="kpi-s">${res.total ? fmt(res.DOL/res.total*100,1) : 0}%</div></div>
     <div class="kpi"><div class="kpi-l">IVA y percepciones excluidos</div><div class="kpi-v">$ ${fmt(res.ivaExcluido,0)}</div><div class="kpi-s">el Excel los suma como gasto</div></div>
@@ -715,14 +741,16 @@ function renderEgrResultado(){
   const ex = agrupado.excluidos;
   if (ex && ex.n) {
     const det = Object.entries(ex.porFila).sort((a,b) => b[1].importe - a[1].importe).map(([f, x]) => { const fl = PE.FILAS.find(y => y[0] === +f); return `${esc(fl ? fl[2] : f)}: $ ${fmt(x.importe,0)}`; });
-    h += `<div class="info-ex">Se dejaron afuera <b>${ex.n} comprobantes ME con letra P</b> ($ ${fmt(ex.importe,0)}).${ex.enRenglones ? ` De ese importe, $ ${fmt(ex.enRenglones,0)} habría ido a renglones del presupuesto <span class="det" title="${esc(det.join('\n'))}">(ver detalle)</span>; el resto no correspondía a ningún renglón.` : ' Ninguno correspondía a un renglón del presupuesto.'}</div>`;
+    const motivos = (ex.porMotivo || []).map(m => `<tr><td>${esc(m.motivo)}</td><td class="n">${m.n}</td><td class="n">$ ${fmt(m.importe,0)}</td></tr>`).join('');
+    h += `<details class="info-ex"><summary>Se dejaron afuera <b>${ex.n} movimientos excluidos</b> (ME con letra P y conceptos que no se suman).${ex.enRenglones ? ` De esos, $ ${fmt(ex.enRenglones,0)} habría ido a renglones del presupuesto <span class="det" title="${esc(det.join('\n'))}">(ver detalle)</span>.` : ' Ninguno correspondía a un renglón del presupuesto.'}</summary>
+      ${motivos ? `<div class="tabla-scroll" style="margin-top:.5rem"><table class="mini"><tr><th>Motivo</th><th style="text-align:right">Comprobantes</th><th style="text-align:right">Importe</th></tr>${motivos}</table></div>` : ''}</details>`;
   }
   if (res.faltanClaves.length) h += `<div class="aviso"><div class="aviso-t">Mes incompleto: faltan claves de prorrateo</div><p>Faltan ${res.faltanClaves.map(k => '<b>' + NOMBRE_CLAVE[k] + '</b>').join(', ')}. El mes queda guardado igual y figura como "faltan claves". Los gastos que dependen de esas claves están en el total, pero <b>$ ${fmt(res.sinRepartir,0)}</b> quedan sin repartir entre sucursales.${res.faltanClaves.includes('fnTotal') ? ' Sin la facturación neta, "Otros impuestos" no incluye el 0,6%.' : ''} Cuando tengas los datos, volvé a este mes y completalos; no hace falta subir los exports otra vez.</p></div>`;
 
   // Tabla
   h += `<div class="card"><div class="toolbar"><span>3 · Gastos reales por renglón (hoja REAL)</span><label><input type="checkbox" ${mostrarCeros?'checked':''} onchange="mostrarCeros=this.checked;renderEgrResultado()"> Mostrar renglones en cero</label></div><div class="tabla-scroll"><table class="real"><tr><th>Renglón</th><th>Total</th><th>Casa Central</th><th>Dolores</th></tr>`;
   const areas = [...new Set(res.filas.map(f => f.area))];
-  const PEND = { sueldos:'Falta el archivo de sueldos', aportes:'Falta el archivo de sueldos', acarreo:'Acarreo: próximo paso', sinDato:'No se carga desde Chess' };
+  const PEND = { sueldos:'Falta el archivo de sueldos', aportes:'Falta el archivo de sueldos', acarreo:'Faltan los viajes en Transporte', sinDato:'No se carga desde Chess' };
   areas.forEach(a => {
     const fs = res.filas.filter(f => f.area === a);
     const t = fs.reduce((o, f) => ({ total:o.total+f.total, CC:o.CC+f.CC, DOL:o.DOL+f.DOL }), { total:0, CC:0, DOL:0 });
@@ -735,6 +763,7 @@ function renderEgrResultado(){
       if (pend) tags += `<span class="tag pend">${PEND[f.fuente]}</span>`;
       else if (f.fuente === 'sueldos') tags += `<span class="tag pend">archivo de sueldos</span>`;
       else if (f.fuente === 'aportes') tags += `<span class="tag pend">50% del sueldo</span>`;
+      else if (f.fuente === 'acarreo') tags += `<span class="tag pend">Transporte: ${f.acarreo.n} viajes</span>${f.acarreo.sinValor ? `<span class="tag warn">${f.acarreo.sinValor} sin importe</span>` : ''}`;
       if (f.regla.corrige) tags += `<span class="tag fix" title="${esc(f.regla.corrige)}">corrige el Excel</span>`;
       if (f.sinClave && f.total) tags += `<span class="tag warn">sin repartir</span>`;
       if (f.otrosProveedores && Math.abs(f.otrosProveedores) > 0.5) tags += `<span class="tag warn" title="Proveedores distintos de ${esc(f.regla.proveedores.CC)} y ${esc(f.regla.proveedores.DOL)}">$ ${fmt(f.otrosProveedores,0)} sin repartir</span>`;
@@ -779,7 +808,111 @@ function guardarEgr(agrupado, res, firma, fechaCarga){
   }, 800);
 }
 
-try { if (localStorage.getItem('presupuesto-tab') === 'egr') verTab('egr'); } catch(e) {}
+// ══════════════ CARGAS DEL MES ══════════════
+const PR = window.PresupuestoResultado;
+let cargasGuardadas = {};   // 'AAAA/MM' -> { valores:{seccion:{campo:n}}, usuario, fecha }
+let carMes = null;
+
+// Facturación neta por sucursal (para repartir NDC y segmentación), de los reportes CMQ
+function fnSucAuto(mes){
+  if (resultado && resultado.meses[mes] && resultado.meses[mes].fuentes.costos) return { CC: resultado.meses[mes].neto.CC, DOL: resultado.meses[mes].neto.DOL };
+  const g = guardados[mes];
+  if (g) { const b = g.bloques.find(x => x.id === 'fn'); if (b) return { CC: b.valores[0], DOL: b.valores[1] }; }
+  return null;
+}
+const mesSiguiente = m => { let [y, mm] = m.split('/').map(Number); mm++; if (mm > 12) { mm = 1; y++; } return y + '/' + String(mm).padStart(2, '0'); };
+
+function renderCargas(){
+  const el = $('car-cuerpo'); if (!el) return;
+  // Meses: los que tienen datos en cualquier pestaña, desde octubre 2026 (los anteriores son referencia)
+  let meses = [...new Set([...Object.keys(guardados), ...Object.keys(egrGuardados), ...Object.keys(cargasGuardadas)])].filter(m => m >= '2026/10').sort();
+  if (!meses.length) meses = ['2026/10'];
+  const ultimo = meses[meses.length - 1];
+  if (!meses.includes(mesSiguiente(ultimo)) && mesSiguiente(ultimo) <= new Date().getFullYear() + '/' + String(new Date().getMonth() + 1).padStart(2, '0')) meses.push(mesSiguiente(ultimo));
+  if (!meses.includes(carMes)) carMes = meses.find(m => !cargasGuardadas[m] || (cargasGuardadas[m].faltan || []).length) || meses[meses.length - 1];
+  const pill = m => { const g = cargasGuardadas[m]; if (!g) return ''; return (g.faltan || []).length ? '<span class="pill falta">faltan datos</span>' : '<span class="pill">completo</span>'; };
+  let h = `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===carMes?'act':''}" onclick="carMes='${m}';renderCargas()">${mesTxt(m)}${pill(m)}</button>`).join('')}</div>`;
+  h += '<div id="car-form"></div><div id="car-res"></div>';
+  el.innerHTML = h;
+  renderCargasForm();
+}
+
+function renderCargasForm(){
+  const vals = (cargasGuardadas[carMes] && cargasGuardadas[carMes].valores) || {};
+  let h = '<div class="claves" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">';
+  PR.SECCIONES.forEach(s => {
+    const v = vals[s.id] || {};
+    const falta = s.campos.some(c => v[c.id] == null || v[c.id] === '');
+    h += `<div class="clave ${falta?'falta':''}"><b>${esc(s.titulo)}</b><small style="margin:0 0 .45rem">${esc(s.ayuda)}</small>`;
+    s.campos.forEach(c => {
+      const val = v[c.id] == null ? '' : String(v[c.id]).replace('.', ',');
+      h += `<label style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;text-transform:none;letter-spacing:0;font-size:12px;color:#56555A;font-weight:600"><span style="flex:1">${esc(c.label)}</span><input style="width:140px;text-align:right" inputmode="decimal" value="${esc(val)}" onchange="setCarga('${s.id}','${c.id}',this.value,this)"></label>`;
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  $('car-form').innerHTML = `<div class="card"><div class="card-title"><span>Datos de ${mesTxt(carMes)}</span></div>${h}</div>`;
+  renderCargasRes();
+}
+
+let _tGuardarCargas = null;
+function setCarga(sec, campo, valor, input){
+  const g = cargasGuardadas[carMes] || { valores: {} };
+  const valores = { ...(g.valores || {}) };
+  const s = { ...(valores[sec] || {}) };
+  const txt = String(valor).trim();
+  if (txt === '') delete s[campo];
+  else {
+    const n = parseFloat(txt.replace(/\$/g, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.'));
+    if (!isFinite(n)) { toast('Número no válido: ' + valor); if (input) input.value = ''; delete s[campo]; }
+    else s[campo] = n;
+  }
+  valores[sec] = s;
+  cargasGuardadas[carMes] = { ...g, valores };
+  // Actualiza solo el estado de la tarjeta y el resultado (sin redibujar los campos, para no perder el foco)
+  if (input) {
+    const sec2 = PR.SECCIONES.find(x => x.id === sec);
+    input.closest('.clave').classList.toggle('falta', sec2.campos.some(c => s[c.id] == null));
+    if (s[campo] != null) input.value = String(s[campo]).replace('.', ',');
+  }
+  renderCargasRes();
+}
+
+function renderCargasRes(){
+  const g = cargasGuardadas[carMes];
+  const claves = { vol: volAuto(carMes), fn: fnSucAuto(carMes) };
+  const r = PR.calcularCargas(g && g.valores, claves);
+  let h = '';
+  if (r.faltan.length) h += `<div class="aviso"><div class="aviso-t">Faltan datos en ${mesTxt(carMes)}</div><p>${r.faltan.map(esc).join(', ')}. El mes queda guardado igual y figura como "faltan datos".</p></div>`;
+  h += `<div class="card"><div class="card-title">Resultado del mes por sucursal</div><div class="tabla-scroll"><table class="real"><tr><th>Concepto</th><th>Total</th><th>Casa Central</th><th>Dolores</th></tr>`;
+  r.secciones.forEach(s => {
+    const tag = s.faltan.length ? `<span class="tag warn">falta ${s.faltan.length === 1 ? '1 dato' : s.faltan.length + ' datos'}</span>` : '';
+    const rep = PR.SECCIONES.find(x => x.id === s.id).reparto;
+    const repTxt = rep === 'cc' ? 'todo a Casa Central' : rep === 'vol' ? 'por volumen' : 'por facturación neta';
+    const sinClave = s.sinClave ? `<span class="tag warn">sin ${s.sinClave === 'vol' ? 'volumen' : 'facturación neta'} del mes</span>` : '';
+    h += `<tr><td>${esc(s.titulo)}<span class="tag pend">${repTxt}</span>${tag}${sinClave}</td><td>${fmt(s.total,0)}</td><td>${fmt(s.CC,0)}</td><td>${fmt(s.DOL,0)}</td></tr>`;
+  });
+  h += '</table></div></div>';
+  $('car-res').innerHTML = h;
+
+  // Guardar (incluso incompleto) si hubo cambios
+  if (!g) return;
+  const firma = JSON.stringify([g.valores, r.faltan]);
+  if (g._firma === firma) return;
+  clearTimeout(_tGuardarCargas);
+  const mes = carMes;
+  _tGuardarCargas = setTimeout(async () => {
+    const datos = { mes, valores: g.valores, faltan: r.faltan, resultado: r.secciones.map(s => ({ id: s.id, total: s.total, CC: s.CC, DOL: s.DOL })), usuario: userData.username, fecha: new Date().toISOString(), _firma: firma };
+    try {
+      await guardar('cargas-' + mes, datos);
+      const cambio = !cargasGuardadas[mes] || !cargasGuardadas[mes]._firma || (cargasGuardadas[mes].faltan || []).length !== r.faltan.length;
+      cargasGuardadas[mes] = datos;
+      if (cambio && mes === carMes) { const b = document.querySelector('#car-cuerpo .mes-btn.act'); if (b) b.innerHTML = mesTxt(mes) + (r.faltan.length ? '<span class="pill falta">faltan datos</span>' : '<span class="pill">completo</span>'); }
+    } catch(e) { toast('No se pudo guardar en el servidor'); }
+  }, 700);
+}
+
+try { const t = localStorage.getItem('presupuesto-tab'); if (t === 'egr' || t === 'car') verTab(t); } catch(e) {}
 cargarGuardados();
 </script>
 </body>
