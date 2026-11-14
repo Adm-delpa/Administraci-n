@@ -135,6 +135,18 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
 .info-ex{font-size:12px;color:#56555A;background:#F8F7F5;border:1px solid #E6E4DF;border-radius:8px;padding:.6rem .85rem;margin-bottom:1rem}
 .info-ex .det{color:#1E6FD9;font-weight:600;cursor:help;text-decoration:underline dotted}
 .info-ex summary{cursor:pointer}
+.real.res td.p{color:#9896A0;font-size:11px;min-width:52px}
+.real.res tr.clic{cursor:pointer}
+.real.res tr.clic:hover td{background:#FAFAF8}
+.real.res .fl{display:inline-block;width:14px;color:#9896A0}
+.real.res tr.sep td{border-top:2px solid #EEECE8}
+.real.res tr.tot2 td{font-weight:800;background:#FFF6EE}
+.real.res tr.base td{font-weight:700;background:#F8F7F5}
+.real.res tr.info td{color:#9896A0}
+.real.res tr.fin td{background:#18181A;color:#fff}
+.real.res tr.fin td.p{color:#C9C6BF}
+.real.res tr.subr td{color:#56555A;font-size:11.5px;background:#FCFCFB}
+.real.res tr.subr td:first-child{padding-left:30px}
 details.sueltos{margin-top:1rem;font-size:12px}
 details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
 
@@ -180,6 +192,7 @@ details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
     <button class="tab act" data-tab="vol" onclick="verTab('vol')">Volumen · reportes CMQ</button>
     <button class="tab" data-tab="egr" onclick="verTab('egr')">Egresos · Chess</button>
     <button class="tab" data-tab="car" onclick="verTab('car')">Cargas del mes</button>
+    <button class="tab" data-tab="res" onclick="verTab('res')">Resultado</button>
   </div>
 
   <div id="tab-vol">
@@ -235,6 +248,12 @@ details.sueltos summary{cursor:pointer;font-weight:700;color:#56555A}
   <h1>Cargas del mes</h1>
   <p class="sub">Reconocimientos y notas de crédito de la compañía que hoy se cargan a mano: WSC, Cuenta y Orden, NDC extra margen, otras NDC, ICV y segmentación del canal refrigerado. Un campo vacío queda como <b>faltante</b>; si el valor del mes es cero, cargá 0. Se guarda solo.</p>
   <div id="car-cuerpo"></div>
+  </div>
+
+  <div id="tab-res" hidden>
+  <h1>Estado de resultados real</h1>
+  <p class="sub">Arma el resultado del mes por sucursal con todo lo cargado en las otras pestañas, con las mismas fórmulas que la hoja <b>RESULTADOS</b> del Excel. Si falta alguna parte, se indica arriba y el resultado queda parcial.</p>
+  <div id="res-cuerpo"></div>
   </div>
 </div>
 
@@ -308,6 +327,7 @@ async function cargarGuardados(){
   render();
   renderEgr();
   if (!$('tab-car').hidden) renderCargas();
+  if (!$('tab-res').hidden) renderRes();
 }
 async function guardar(periodo, datos){
   const r = await fetch('/api/datos/' + MODULO, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ periodo, datos }) });
@@ -532,9 +552,11 @@ function verTab(t){
   $('tab-vol').hidden = t !== 'vol';
   $('tab-egr').hidden = t !== 'egr';
   $('tab-car').hidden = t !== 'car';
+  $('tab-res').hidden = t !== 'res';
   try { localStorage.setItem('presupuesto-tab', t); } catch(e) {}
   if (t === 'egr') renderEgr();
   if (t === 'car') renderCargas();
+  if (t === 'res') renderRes();
 }
 
 const dropE = $('drop-egr'), fileE = $('file-egr');
@@ -912,7 +934,77 @@ function renderCargasRes(){
   }, 700);
 }
 
-try { const t = localStorage.getItem('presupuesto-tab'); if (t === 'egr' || t === 'car') verTab(t); } catch(e) {}
+// ══════════════ RESULTADO ══════════════
+let resMes = null;
+const resAbiertas = new Set();
+
+// Bloques del Nivel 1 del mes: los calculados ahora (si están los 3 reportes) o los guardados
+function volBloquesDe(mes){
+  let bl = null;
+  if (resultado && resultado.meses[mes] && ['gasto','ventas','costos'].every(k => resultado.meses[mes].fuentes[k])) bl = PC.bloquesVolumen(resultado.meses[mes]).map(b => ({ id: b.id, valores: b.valores }));
+  else if (guardados[mes]) bl = guardados[mes].bloques;
+  if (!bl) return null;
+  const b = id => (bl.find(x => x.id === id) || {}).valores || [];
+  return { volCC: b('volCC'), volDOL: b('volDOL'), phl: b('phl'), tshl: b('tshl'), cmv: b('cmv'), fn: b('fn') };
+}
+// Egresos del mes recalculados al momento (Chess agrupado + claves + sueldos + viajes de Transporte)
+function egresosDe(mes){
+  const regs = registrosEgr().filter(r => r.mes === mes);
+  const agrupado = regs.length ? PE.agruparMes(registrosEgr(), mes, { importe:'neto' }) : (egrGuardados[mes] && egrGuardados[mes].agrupado);
+  if (!agrupado) return null;
+  const claves = clavesDe(mes);
+  const sueReg = sueldosGuardados[mes];
+  const sue = sueReg ? PE.sueldosMes(sueReg.datos, claves.vol) : null;
+  return PE.repartir(agrupado, claves, sue, PE.acarreoMes(viajesTransporte, mes, choferesTransporte));
+}
+function cargasDe(mes){
+  const g = cargasGuardadas[mes];
+  if (!g) return null;
+  return PR.calcularCargas(g.valores, { vol: volAuto(mes), fn: fnSucAuto(mes) });
+}
+
+function renderRes(){
+  const el = $('res-cuerpo'); if (!el) return;
+  const meses = [...new Set([...Object.keys(guardados), ...Object.keys(egrGuardados), ...Object.keys(cargasGuardadas), ...(resultado ? Object.keys(resultado.meses) : [])])].sort();
+  if (!meses.length) { el.innerHTML = '<div class="vacio">Todavía no hay datos de ningún mes.</div>'; return; }
+  if (!meses.includes(resMes)) resMes = meses.filter(m => m >= '2026/10')[0] || meses[meses.length - 1];
+  const r = PR.resultadoMes(volBloquesDe(resMes), egresosDe(resMes), cargasDe(resMes));
+  const L = id => r.lineas.find(l => l.id === id);
+  const fnL = L('fn');
+  const pct = (v, base) => base ? fmt(v / base * 100, 1) + '%' : '—';
+
+  let h = `<div class="meses">${meses.map(m => `<button class="mes-btn ${m===resMes?'act':''}" onclick="resMes='${m}';renderRes()">${mesTxt(m)}${m < '2026/10' ? '<span class="pill">referencia</span>' : ''}</button>`).join('')}</div>`;
+  if (r.faltan.length) h += `<div class="aviso"><div class="aviso-t">Resultado parcial: faltan datos</div><p>${r.faltan.map(esc).join('<br>')}</p></div>`;
+  const ros = fnL.T ? L('un').T / fnL.T : 0;
+  h += `<div class="kpis">
+    <div class="kpi"><div class="kpi-l">Facturación neta</div><div class="kpi-v">$ ${fmt(fnL.T,0)}</div><div class="kpi-s">${fmt(L('vol').T,0)} HL</div></div>
+    <div class="kpi"><div class="kpi-l">Margen bruto</div><div class="kpi-v">$ ${fmt(L('mb').T,0)}</div><div class="kpi-s">${pct(L('mb').T, fnL.T)} de la fact. neta</div></div>
+    <div class="kpi"><div class="kpi-l">EBITDA</div><div class="kpi-v">$ ${fmt(L('ebitda').T,0)}</div><div class="kpi-s">${pct(L('ebitda').T, fnL.T)} de la fact. neta</div></div>
+    <div class="kpi"><div class="kpi-l">Utilidad neta</div><div class="kpi-v" style="color:${L('un').T < 0 ? '#C0392B' : '#1F9D55'}">$ ${fmt(L('un').T,0)}</div><div class="kpi-s">ROS ${fmt(ros*100,1)}%</div></div>
+  </div>`;
+
+  h += `<div class="card"><div class="tabla-scroll"><table class="real res"><tr><th>Concepto</th><th>Total</th><th>% FN</th><th>Casa Central</th><th>% FN</th><th>Dolores</th><th>% FN</th></tr>`;
+  const SEP_ANTES = { mo: true, gastos: true, ebitda: true, un: true };
+  r.lineas.forEach(l => {
+    const hl = l.hl, d = hl ? 2 : 0;
+    const celda = (v, base) => `<td>${hl ? fmt(v,0) : fmt(v,0)}</td><td class="p">${hl || l.base ? '' : pct(v, base)}</td>`;
+    const abierta = resAbiertas.has(l.id);
+    const flecha = l.sub ? `<span class="fl">${abierta ? '▾' : '▸'}</span>` : '';
+    const cls = [l.total ? 'tot2' : '', l.final ? 'fin' : '', l.base ? 'base' : '', l.info ? 'info' : '', SEP_ANTES[l.id] ? 'sep' : '', l.sub ? 'clic' : ''].join(' ');
+    const extra = l.sinRepartir ? `<span class="tag warn" title="Gastos que todavía no se pudieron repartir entre sucursales (faltan claves). Están en el total pero no en Casa Central ni Dolores.">$ ${fmt(l.sinRepartir,0)} sin repartir</span>` : '';
+    const info = (l.info ? '<span class="tag pend" title="Ya están descontadas dentro de la facturación neta; se muestran como referencia.">incluidas en la fact. neta</span>' : '')
+      + (l.faltaCarga ? '<span class="tag warn">sin cargar</span>' : '');
+    h += `<tr class="${cls}" ${l.sub ? `onclick="resToggle('${l.id}')"` : ''} ${l.formula ? `title="${esc(l.formula)}"` : ''}><td>${flecha}${esc(l.label)}${info}${extra}</td>${celda(l.T, fnL.T)}${celda(l.CC, fnL.CC)}${celda(l.DOL, fnL.DOL)}</tr>`;
+    if (l.sub && abierta) l.sub.forEach(s => {
+      h += `<tr class="subr"><td>${esc(s.label)}</td><td>${fmt(s.T,0)}</td><td class="p">${hl ? '' : pct(s.T, fnL.T)}</td><td>${fmt(s.CC,0)}</td><td class="p">${hl ? '' : pct(s.CC, fnL.CC)}</td><td>${fmt(s.DOL,0)}</td><td class="p">${hl ? '' : pct(s.DOL, fnL.DOL)}</td></tr>`;
+    });
+  });
+  h += '</table></div><p style="font-size:11px;color:#9896A0;margin-top:.6rem">Hacé clic en las líneas con ▸ para ver el detalle. Pasá el mouse por los márgenes para ver cómo se calculan.</p></div>';
+  el.innerHTML = h;
+}
+function resToggle(id){ if (resAbiertas.has(id)) resAbiertas.delete(id); else resAbiertas.add(id); renderRes(); }
+
+try { const t = localStorage.getItem('presupuesto-tab'); if (['egr','car','res'].includes(t)) verTab(t); } catch(e) {}
 cargarGuardados();
 </script>
 </body>

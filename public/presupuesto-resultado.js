@@ -72,7 +72,91 @@
     return { secciones: out, faltan: [...new Set(faltanGlobal)] };
   }
 
-  const api = { SECCIONES, calcularCargas };
+  // ── Estado de resultados (hoja RESULTADOS) ──
+  const GRUPOS = ['CERVEZAS ABOVE CORE', 'CERVEZAS CORE + VALUE', 'UNG PREMIUM', 'UNG SIN PREMIUM', 'AGUAS', 'VINOS Y ADY', 'MARKETPLACE ALIMENTOS'];
+  const AREAS = [
+    ['VENTAS', 'Ventas'], ['OPERACIONES', 'Operaciones'], ['INFRAESTRUCTURA', 'Infraestructura'],
+    ['DISTRIBUCION', 'Distribución'], ['ACARREO', 'Acarreo'], ['ADMIN Y FINANZAS', 'Administración y finanzas'],
+  ];
+  // Percepciones IIBB: 5% sobre (bruta − bonificaciones), con coeficiente 1,16 en cerveza y 1,06 en UNG
+  const IIBB = { tasa: 0.05, coef: [1.16, 1.16, 1.06, 1.06, 1, 1, 1] };
+  const z7 = () => [0, 0, 0, 0, 0, 0, 0];
+  const S = a => a.reduce((x, y) => x + (+y || 0), 0);
+
+  // vol: bloques del Nivel 1 { volCC[7], volDOL[7], phl[7], tshl[14] (CMQ 7 + DP 7), cmv[14] (CC 7 + DOL 7), fn[2] }
+  // egresos: resultado de PresupuestoEgresos.repartir() (con .areas) o null
+  // cargas: resultado de calcularCargas() o null
+  // Devuelve { lineas: [{id, label, nivel, T, CC, DOL, sub?:[...]}], faltan: [...] }
+  function resultadoMes(vol, egresos, cargas) {
+    const faltan = [];
+    const L = [];
+    const suc = ['CC', 'DOL'];
+    const linea = (id, label, CC, DOL, extra) => { const o = { id, label, CC, DOL, T: CC + DOL, ...(extra || {}) }; L.push(o); return o; };
+    const porGrupo = f => { // f(suc, i) -> valor; devuelve {CC,DOL,sub}
+      const sub = GRUPOS.map((g, i) => ({ label: g, CC: f('CC', i), DOL: f('DOL', i) }));
+      sub.forEach(s => { s.T = s.CC + s.DOL; });
+      return { CC: S(sub.map(s => s.CC)), DOL: S(sub.map(s => s.DOL)), sub };
+    };
+
+    if (!vol) faltan.push('Reportes CMQ del mes (volumen, facturación, CMV)');
+    const v = vol || {};
+    const volS = { CC: v.volCC || z7(), DOL: v.volDOL || z7() };
+    const phl = v.phl || z7(), tsC = (v.tshl || []).slice(0, 7), tsD = (v.tshl || []).slice(7, 14);
+    const cmv = { CC: (v.cmv || []).slice(0, 7), DOL: (v.cmv || []).slice(7, 14) };
+
+    const vV = porGrupo((s, i) => +volS[s][i] || 0);
+    linea('vol', 'Volumen (HL)', vV.CC, vV.DOL, { sub: vV.sub, hl: true });
+    const fb = porGrupo((s, i) => (+phl[i] || 0) * (+volS[s][i] || 0));
+    linea('fb', 'Facturación bruta', fb.CC, fb.DOL, { sub: fb.sub });
+    const bDP = porGrupo((s, i) => (+tsD[i] || 0) * (+volS[s][i] || 0));
+    linea('bonDP', 'Bonificaciones a cargo de Del Palacio', bDP.CC, bDP.DOL, { sub: bDP.sub, info: true });
+    const bCMQ = porGrupo((s, i) => (+tsC[i] || 0) * (+volS[s][i] || 0));
+    linea('bonCMQ', 'Bonificaciones a cargo de CMQ', bCMQ.CC, bCMQ.DOL, { sub: bCMQ.sub });
+    const cm = porGrupo((s, i) => +cmv[s][i] || 0);
+    linea('cmv', 'CMV', cm.CC, cm.DOL, { sub: cm.sub });
+
+    const c = id => { const x = cargas && cargas.secciones.find(s => s.id === id); return x || { CC: 0, DOL: 0, faltan: ['sin cargar'] }; };
+    if (!cargas) faltan.push('Cargas del mes');
+    else if (cargas.faltan.length) faltan.push('Cargas del mes: ' + cargas.faltan.join(', '));
+    const ndc = c('ndcExtra'), otras = c('ndcOtras'), icv = c('icv'), wsc = c('wsc'), cyo = c('cyo'), seg = c('segm');
+    const fc = x => (x.faltan && x.faltan.length) ? { faltaCarga: true } : {};
+    linea('ndcExtra', 'NDC CMQ extra margen', ndc.CC, ndc.DOL, fc(ndc));
+    linea('ndcOtras', 'Otras NDC CMQ', otras.CC, otras.DOL, fc(otras));
+    linea('icv', 'ICV', icv.CC, icv.DOL, fc(icv));
+    const fn = { CC: +(v.fn || [])[0] || 0, DOL: +(v.fn || [])[1] || 0 };
+    linea('fn', 'Facturación neta', fn.CC, fn.DOL, { base: true });
+    linea('wsc', 'WSC', wsc.CC, wsc.DOL, fc(wsc));
+    linea('cyo', 'Facturación remota (Cuenta y Orden)', cyo.CC, cyo.DOL, fc(cyo));
+    linea('segm', 'Segmentación canal refrigerado', seg.CC, seg.DOL, fc(seg));
+
+    const mo = s => fn[s] - cm[s] + bCMQ[s] + icv[s] + ndc[s] + otras[s] - seg[s];
+    linea('mo', 'MARGEN OPERATIVO', mo('CC'), mo('DOL'), { total: true, formula: 'Fact. neta − CMV + Bonif. CMQ + ICV + NDC extra margen + Otras NDC − Segmentación' });
+    const mb = s => mo(s) + wsc[s] + cyo[s];
+    linea('mb', 'MARGEN BRUTO', mb('CC'), mb('DOL'), { total: true, formula: 'Margen operativo + WSC + Facturación remota' });
+
+    if (!egresos) faltan.push('Egresos del mes (exports de Chess)');
+    else if (egresos.faltanClaves && egresos.faltanClaves.length) faltan.push('Egresos: faltan ' + egresos.faltanClaves.length + ' datos (ver pestaña Egresos)');
+    const areas = AREAS.map(([id, label]) => {
+      const a = egresos && egresos.areas.find(x => x.area === id);
+      return { label, CC: a ? a.CC : 0, DOL: a ? a.DOL : 0, T: a ? a.total : 0 };
+    });
+    const sinRep = egresos ? (egresos.sinRepartir || 0) : 0;
+    const gCC = S(areas.map(a => a.CC)), gDOL = S(areas.map(a => a.DOL));
+    const gT = S(areas.map(a => a.T));
+    const g = linea('gastos', 'GASTOS OPERATIVOS', gCC, gDOL, { sub: areas, total: true });
+    g.T = gT; // incluye lo que todavía no se pudo repartir entre sucursales
+    if (sinRep > 0.5) g.sinRepartir = sinRep;
+
+    const ebitda = linea('ebitda', 'EBITDA', mb('CC') - gCC, mb('DOL') - gDOL, { total: true });
+    ebitda.T = mb('CC') + mb('DOL') - gT;
+    const iibb = s => IIBB.tasa * fb.sub.reduce((a, x, i) => a + ((x[s] - bCMQ.sub[i][s] - bDP.sub[i][s]) * IIBB.coef[i]), 0);
+    linea('iibb', 'Percepciones Ingresos Brutos', iibb('CC'), iibb('DOL'), { formula: '5% de (bruta − bonificaciones), × 1,16 cerveza y × 1,06 UNG' });
+    const un = linea('un', 'UTILIDAD NETA', ebitda.CC - iibb('CC'), ebitda.DOL - iibb('DOL'), { total: true, final: true });
+    un.T = ebitda.T - iibb('CC') - iibb('DOL');
+    return { lineas: L, faltan, fn };
+  }
+
+  const api = { SECCIONES, calcularCargas, GRUPOS, AREAS, resultadoMes };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PresupuestoResultado = api;
 })(typeof window !== 'undefined' ? window : this);
