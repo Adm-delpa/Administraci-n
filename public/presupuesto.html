@@ -136,6 +136,32 @@ h1{font-size:20px;font-weight:700;margin-bottom:.25rem}
 .info-ex .det{color:#1E6FD9;font-weight:600;cursor:help;text-decoration:underline dotted}
 .info-ex summary{cursor:pointer}
 .real.res td.p{color:#9896A0;font-size:11px;min-width:52px}
+/* Resultado: formato de lectura */
+.unidad{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;font-size:12px;color:#56555A;margin-bottom:.75rem}
+.unidad .mes-btn{padding:3px 10px;font-size:11px}
+.real.lectura{font-size:13px}
+.real.lectura th{font-size:11px;text-align:right}
+.real.lectura td{padding:7px 12px;vertical-align:top}
+.real.lectura td:first-child{min-width:300px}
+.real.lectura tr.secc td{background:#F0EEEB;color:#56555A;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;border-top:10px solid #fff}
+.real.lectura .sg{display:inline-block;width:16px;color:#9896A0;font-weight:800;text-align:center;margin-right:4px}
+.real.lectura .fl{display:inline-block;width:14px;color:#9896A0}
+.real.lectura small.pc{display:block;font-size:10.5px;color:#9896A0;font-weight:500;margin-top:1px}
+.real.lectura .neg{color:#C0392B}
+.real.lectura .nota{display:block;font-size:10.5px;color:#9896A0;font-weight:500;margin-left:34px}
+.real.lectura tr.info td{color:#9896A0}
+.real.lectura tr.tot2 td{background:#FFF6EE;font-weight:800;border-top:1px solid #F3D9C2}
+.real.lectura tr.base td{background:#F8F7F5;font-weight:800}
+.real.lectura tr.fin td{background:#18181A;color:#fff;font-weight:800;font-size:14px}
+.real.lectura tr.fin small.pc,.real.lectura tr.fin .sg{color:#C9C6BF}
+.real.lectura tr.fin .neg{color:#FF8A7A}
+.real.lectura td.desv-c.fav{color:#1F9D55}.real.lectura td.desv-c.des{color:#C0392B}
+.real.lectura td.desv-c small.pc{color:inherit;opacity:.75}
+.real.lectura tr.subr td{font-size:12px}
+.real.lectura tr.subr td:first-child{padding-left:46px}
+.real.mam.lectura td:first-child{min-width:240px}
+p.pie{font-size:11px;color:#9896A0;margin-top:.6rem}
+.real.lectura .sinreal{color:#C9C6BF}
 .desvios{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.6rem}
 .desv{border-radius:8px;padding:.6rem .75rem;border-left:4px solid}
 .desv.fav{background:#E7F6EE;border-color:#1F9D55}
@@ -1122,10 +1148,10 @@ function renderRes(){
   if (r.faltan.length) h += `<div class="aviso"><div class="aviso-t">Resultado parcial: faltan datos</div><p>${r.faltan.map(esc).join('<br>')}</p></div>`;
   const ros = fnL.T ? L('un').T / fnL.T : 0;
   h += `<div class="kpis">
-    <div class="kpi"><div class="kpi-l">Facturación neta</div><div class="kpi-v">$ ${fmt(fnL.T,0)}</div><div class="kpi-s">${fmt(L('vol').T,0)} HL</div></div>
-    <div class="kpi"><div class="kpi-l">Margen bruto</div><div class="kpi-v">$ ${fmt(L('mb').T,0)}</div><div class="kpi-s">${pct(L('mb').T, fnL.T)} de la fact. neta</div></div>
-    <div class="kpi"><div class="kpi-l">EBITDA</div><div class="kpi-v">$ ${fmt(L('ebitda').T,0)}</div><div class="kpi-s">${pct(L('ebitda').T, fnL.T)} de la fact. neta</div></div>
-    <div class="kpi"><div class="kpi-l">Utilidad neta</div><div class="kpi-v" style="color:${L('un').T < 0 ? '#C0392B' : '#1F9D55'}">$ ${fmt(L('un').T,0)}</div><div class="kpi-s">ROS ${fmt(ros*100,1)}%</div></div>
+    <div class="kpi"><div class="kpi-l">Ventas netas</div><div class="kpi-v">${fmtM(fnL.T)}</div><div class="kpi-s">${fmt(L('vol').T,0)} HL</div></div>
+    <div class="kpi"><div class="kpi-l">Margen bruto</div><div class="kpi-v">${fmtM(L('mb').T)}</div><div class="kpi-s">${pct(L('mb').T, fnL.T)} de las ventas netas</div></div>
+    <div class="kpi"><div class="kpi-l">EBITDA</div><div class="kpi-v">${fmtM(L('ebitda').T)}</div><div class="kpi-s">${pct(L('ebitda').T, fnL.T)} de las ventas netas</div></div>
+    <div class="kpi"><div class="kpi-l">Utilidad neta</div><div class="kpi-v" style="color:${L('un').T < 0 ? '#C0392B' : '#1F9D55'}">${fmtM(L('un').T)}</div><div class="kpi-s">ROS ${fmt(ros*100,1)}%</div></div>
   </div>`;
 
   // ── Presupuesto contra real ──
@@ -1135,24 +1161,61 @@ function renderRes(){
     el.innerHTML = h + tablaPvR(r, pre) + analisisDesvio(r, pre); return;
   }
 
-  h += `<div class="card"><div class="tabla-scroll"><table class="real res"><tr><th>Concepto</th><th>Total</th><th>% FN</th><th>Casa Central</th><th>% FN</th><th>Dolores</th><th>% FN</th></tr>`;
-  const SEP_ANTES = { mo: true, gastos: true, ebitda: true, un: true };
-  r.lineas.forEach(l => {
-    const hl = l.hl, d = hl ? 2 : 0;
-    const celda = (v, base) => `<td>${hl ? fmt(v,0) : fmt(v,0)}</td><td class="p">${hl || l.base ? '' : pct(v, base)}</td>`;
+  h += `<div class="card">${cabeceraUnidad()}<div class="tabla-scroll"><table class="real res lectura"><tr><th>Concepto</th><th>Total</th><th>Casa Central</th><th>Dolores</th></tr>`;
+  filasVista(r).forEach(x => {
+    if (x.sec) { h += `<tr class="secc"><td colspan="4">${x.sec}</td></tr>`; return; }
+    const l = x.l, hl = l.hl;
     const abierta = resAbiertas.has(l.id);
-    const flecha = l.sub ? `<span class="fl">${abierta ? '▾' : '▸'}</span>` : '';
-    const cls = [l.total ? 'tot2' : '', l.final ? 'fin' : '', l.base ? 'base' : '', l.info ? 'info' : '', SEP_ANTES[l.id] ? 'sep' : '', l.sub ? 'clic' : ''].join(' ');
-    const extra = l.sinRepartir ? `<span class="tag warn" title="Gastos que todavía no se pudieron repartir entre sucursales (faltan claves). Están en el total pero no en Casa Central ni Dolores.">$ ${fmt(l.sinRepartir,0)} sin repartir</span>` : '';
-    const info = (l.info ? '<span class="tag pend" title="Ya están descontadas dentro de la facturación neta; se muestran como referencia.">incluidas en la fact. neta</span>' : '')
-      + (l.faltaCarga ? '<span class="tag warn">sin cargar</span>' : '');
-    h += `<tr class="${cls}" ${l.sub ? `onclick="resToggle('${l.id}')"` : ''} ${l.formula ? `title="${esc(l.formula)}"` : ''}><td>${flecha}${esc(l.label)}${info}${extra}</td>${celda(l.T, fnL.T)}${celda(l.CC, fnL.CC)}${celda(l.DOL, fnL.DOL)}</tr>`;
+    const extra = l.sinRepartir ? `<span class="tag warn" title="Gastos que todavía no se pudieron repartir entre sucursales (faltan claves). Están en el total pero no en Casa Central ni Dolores.">${fmtM(l.sinRepartir)} sin repartir</span>` : '';
+    const info = (l.nota ? `<span class="nota">${esc(l.nota)}</span>` : '') + (l.faltaCarga ? '<span class="tag warn">sin cargar</span>' : '');
+    const celda = (v, base) => l.faltaCarga ? '<td class="sinreal">—</td>' : `<td>${montoM(v, hl)}${hl || l.base ? '' : `<small class="pc">${pct(v, base)}</small>`}</td>`;
+    h += `<tr class="${clsFila(l, x.signo)}" ${l.sub ? `onclick="resToggle('${l.id}')"` : ''} ${l.formula ? `title="${esc(l.formula)}"` : ''}><td>${etiquetaFila(l, x.signo, abierta)}${info}${extra}</td>${celda(l.T, fnL.T)}${celda(l.CC, fnL.CC)}${celda(l.DOL, fnL.DOL)}</tr>`;
     if (l.sub && abierta) l.sub.forEach(s => {
-      h += `<tr class="subr"><td>${esc(s.label)}</td><td>${fmt(s.T,0)}</td><td class="p">${hl ? '' : pct(s.T, fnL.T)}</td><td>${fmt(s.CC,0)}</td><td class="p">${hl ? '' : pct(s.CC, fnL.CC)}</td><td>${fmt(s.DOL,0)}</td><td class="p">${hl ? '' : pct(s.DOL, fnL.DOL)}</td></tr>`;
+      h += `<tr class="subr"><td>${esc(s.label)}</td><td>${montoM(s.T, hl)}</td><td>${montoM(s.CC, hl)}</td><td>${montoM(s.DOL, hl)}</td></tr>`;
     });
   });
-  h += '</table></div><p style="font-size:11px;color:#9896A0;margin-top:.6rem">Hacé clic en las líneas con ▸ para ver el detalle. Pasá el mouse por los márgenes para ver cómo se calculan.</p></div>';
+  h += '</table></div><p class="pie">Hacé clic en las líneas con ▸ para ver el detalle. Pasá el mouse por los márgenes para ver cómo se calculan.</p></div>';
   el.innerHTML = h;
+}
+
+// ── Formato de lectura del resultado ──
+let resUnidad = 'M';   // 'M' = millones, '$' = pesos completos
+const LABEL_VISTA = {
+  fn: 'Facturación neta (ventas netas)', bonCMQ: 'Bonificaciones que reintegra CMQ', cmv: 'Costo de la mercadería vendida (CMV)',
+  cyo: 'Facturación remota (Cuenta y Orden)', gastos: 'Gastos operativos', iibb: 'Percepciones Ingresos Brutos',
+};
+// Orden de lectura: cómo se arma el resultado, por bloques y con el signo de cada línea
+const BLOQUES_VISTA = [
+  ['Ventas', [['vol',''], ['fb',''], ['bonTot',''], ['fn','']]],
+  ['Margen', [['cmv','−'], ['bonCMQ','+'], ['icv','+'], ['ndcExtra','+'], ['ndcOtras','+'], ['segm','−'], ['mo','='], ['wsc','+'], ['cyo','+'], ['mb','=']]],
+  ['Gastos y resultado', [['gastos','−'], ['ebitda','='], ['iibb','−'], ['un','=']]],
+];
+// Línea por id; 'bonTot' es virtual: bonificaciones de Del Palacio + CMQ (ya descontadas de la facturación neta)
+function lineaVista(res, id){
+  if (id === 'bonTot') {
+    const a = res.lineas.find(l => l.id === 'bonDP'), b = res.lineas.find(l => l.id === 'bonCMQ');
+    return { id:'bonTot', label:'Bonificaciones al cliente', T: a.T + b.T, CC: a.CC + b.CC, DOL: a.DOL + b.DOL, nota:'ya descontadas de la facturación neta', info:true,
+      sub: [{ label:'A cargo de Del Palacio', T:a.T, CC:a.CC, DOL:a.DOL }, { label:'A cargo de CMQ', T:b.T, CC:b.CC, DOL:b.DOL }] };
+  }
+  const l = res.lineas.find(x => x.id === id);
+  return l ? { ...l, label: LABEL_VISTA[id] || l.label } : null;
+}
+function filasVista(res){
+  const out = [];
+  BLOQUES_VISTA.forEach(([sec, ids]) => { out.push({ sec }); ids.forEach(([id, signo]) => { const l = lineaVista(res, id); if (l) out.push({ l, signo }); }); });
+  return out;
+}
+const fmtM = (v, hl) => hl ? fmt(v, 0) : resUnidad === 'M' ? fmt(v / 1e6, 1) + ' M' : '$ ' + fmt(v, 0);
+const montoM = (v, hl) => `<span class="${v < -0.5 ? 'neg' : ''}">${fmtM(v, hl)}</span>`;
+function etiquetaFila(l, signo, abierta){
+  return `${l.sub ? `<span class="fl">${abierta ? '▾' : '▸'}</span>` : '<span class="fl"></span>'}${signo ? `<span class="sg">${signo}</span>` : '<span class="sg"></span>'}${esc(l.label)}`;
+}
+function clsFila(l, signo){
+  return [signo === '=' ? (l.final ? 'fin' : 'tot2') : '', l.base ? 'base' : '', l.info ? 'info' : '', l.sub ? 'clic' : ''].join(' ');
+}
+function cabeceraUnidad(){
+  return `<div class="unidad no-print"><span>Importes en ${resUnidad === 'M' ? '<b>millones de pesos</b>' : '<b>pesos</b>'}; volumen en HL. Debajo de cada importe, en gris: <b>% sobre las ventas netas</b> del mes.</span>
+    <span><button class="mes-btn ${resUnidad==='M'?'act':''}" onclick="resUnidad='M';renderRes()">Millones</button> <button class="mes-btn ${resUnidad==='$'?'act':''}" onclick="resUnidad='$';renderRes()">Pesos</button></span></div>`;
 }
 function resToggle(id){ if (resAbiertas.has(id)) resAbiertas.delete(id); else resAbiertas.add(id); renderRes(); }
 
@@ -1227,27 +1290,31 @@ function tablaPvR(r, pre){
   const top = filas.filter(f => !f.l.hl && !f.l.info && !f.l.final && Math.abs(f.D) >= 1).sort((a, b) => Math.abs(b.D) - Math.abs(a.D)).slice(0, 5);
   let h = '';
   if (top.length) {
-    h += `<div class="card"><div class="card-title">Principales desvíos del mes · ${k === 'T' ? 'Total' : k === 'CC' ? 'Casa Central' : 'Dolores'}</div><div class="desvios">${top.map(f => `<div class="desv ${f.favorable ? 'fav' : 'des'}"><b>${esc(f.l.label)}</b><span>${f.D >= 0 ? '+' : '−'}$ ${fmt(Math.abs(f.D),0)}${f.Dp != null ? ` (${f.D >= 0 ? '+' : '−'}${fmt(Math.abs(f.Dp*100),1)}%)` : ''}</span><small>${f.favorable ? 'favorable' : 'desfavorable'} · real $ ${fmt(f.R,0)} vs presup. $ ${fmt(f.P,0)}</small></div>`).join('')}</div></div>`;
+    h += `<div class="card"><div class="card-title">Principales desvíos del mes · ${k === 'T' ? 'Total' : k === 'CC' ? 'Casa Central' : 'Dolores'}</div><div class="desvios">${top.map(f => `<div class="desv ${f.favorable ? 'fav' : 'des'}"><b>${esc(LABEL_VISTA[f.l.id] || f.l.label)}</b><span>${f.D >= 0 ? '+' : '−'}${fmtM(Math.abs(f.D))}${f.Dp != null ? ` (${f.D >= 0 ? '+' : '−'}${fmt(Math.abs(f.Dp*100),1)}%)` : ''}</span><small>${f.favorable ? 'favorable' : 'desfavorable'} · real ${fmtM(f.R)} vs presup. ${fmtM(f.P)}</small></div>`).join('')}</div></div>`;
   }
-  h += `<div class="card"><div class="tabla-scroll"><table class="real res"><tr><th>Concepto</th><th>Real</th><th>% FN</th><th>Presupuesto</th><th>% FN</th><th>Desvío $</th><th>Desvío %</th><th title="Explicación del desvío">¿Por qué?</th></tr>`;
-  const SEP_ANTES = { mo: true, gastos: true, ebitda: true, un: true };
-  filas.forEach(f => {
-    const l = f.l, hl = l.hl;
+  h += `<div class="card">${cabeceraUnidad()}<div class="tabla-scroll"><table class="real res lectura"><tr><th>Concepto</th><th>Real</th><th>Presupuesto</th><th>Desvío</th><th title="Explicación del desvío">¿Por qué?</th></tr>`;
+  const desvTxt = (D, Dp, fav, final, hl) => {
+    const color = Math.abs(D) < 1 || final ? '' : (fav ? 'fav' : 'des');
+    return `<td class="desv-c ${color}"><b>${D >= 0 ? '+' : '−'}${fmtM(Math.abs(D), hl).replace('$ ', '')}</b>${Dp == null ? '' : `<small class="pc">${D >= 0 ? '+' : '−'}${fmt(Math.abs(Dp*100),1)}%</small>`}</td>`;
+  };
+  filasVista(r).forEach(x => {
+    if (x.sec) { h += `<tr class="secc"><td colspan="5">${x.sec}</td></tr>`; return; }
+    const l = x.l, lp = lineaVista(pre, l.id), hl = l.hl;
+    const R = val(l), P = val(lp), D = R - P, Dp = P ? D / Math.abs(P) : null;
+    const fav = LINEA_COSTO[l.id] ? D <= 0 : D >= 0;
     const abierta = resAbiertas.has(l.id);
-    const cls = [l.total ? 'tot2' : '', l.final ? 'fin' : '', l.base ? 'base' : '', l.info ? 'info' : '', SEP_ANTES[l.id] ? 'sep' : '', l.sub ? 'clic' : ''].join(' ');
-    const color = Math.abs(f.D) < 1 ? '' : (f.favorable ? 'color:#1F9D55' : 'color:#C0392B');
-    const tag = l.faltaCarga ? '<span class="tag warn">sin cargar</span>' : '';
-    h += `<tr class="${cls}" ${l.sub ? `onclick="resToggle('${l.id}')"` : ''}><td>${l.sub ? `<span class="fl">${abierta ? '▾' : '▸'}</span>` : ''}${esc(l.label)}${tag}</td>
-      <td>${fmt(f.R,0)}</td><td class="p">${hl || l.base ? '' : pct(f.R, fnR)}</td><td>${fmt(f.P,0)}</td><td class="p">${hl || l.base ? '' : pct(f.P, fnP)}</td>
-      <td style="${l.final ? '' : color};font-weight:700">${f.D >= 0 ? '' : '−'}${fmt(Math.abs(f.D),0)}</td><td class="p" style="${l.final ? '' : color}">${f.Dp == null ? '—' : (f.D >= 0 ? '+' : '−') + fmt(Math.abs(f.Dp*100),1) + '%'}</td>${celdaComent(l.id)}</tr>`;
-    h += filaComent(l.id, 8);
+    const info = (l.nota ? `<span class="nota">${esc(l.nota)}</span>` : '') + (l.faltaCarga ? '<span class="tag warn">sin cargar</span>' : '');
+    h += `<tr class="${clsFila(l, x.signo)}" ${l.sub ? `onclick="resToggle('${l.id}')"` : ''}><td>${etiquetaFila(l, x.signo, abierta)}${info}</td>
+      <td>${l.faltaCarga ? '<span class="sinreal">—</span>' : montoM(R, hl) + (hl || l.base ? '' : `<small class="pc">${pct(R, fnR)}</small>`)}</td><td>${montoM(P, hl)}${hl || l.base ? '' : `<small class="pc">${pct(P, fnP)}</small>`}</td>
+      ${l.info ? '<td></td>' : l.faltaCarga ? '<td class="sinreal">—</td>' : desvTxt(D, Dp, fav, l.final, hl)}${l.info ? '<td></td>' : celdaComent(l.id)}</tr>`;
+    if (!l.info) h += filaComent(l.id, 5);
     if (l.sub && abierta) l.sub.forEach((s, i) => {
-      const ps = f.lp.sub[i]; const Rs = k === 'T' ? s.T : s[k], Ps = k === 'T' ? ps.T : ps[k], Ds = Rs - Ps;
-      const fav = LINEA_COSTO[l.id] ? Ds <= 0 : Ds >= 0;
-      h += `<tr class="subr"><td>${esc(s.label)}</td><td>${fmt(Rs,0)}</td><td class="p"></td><td>${fmt(Ps,0)}</td><td class="p"></td><td style="${Math.abs(Ds) < 1 ? '' : fav ? 'color:#1F9D55' : 'color:#C0392B'}">${Ds >= 0 ? '' : '−'}${fmt(Math.abs(Ds),0)}</td><td class="p">${Ps ? (Ds >= 0 ? '+' : '−') + fmt(Math.abs(Ds/Ps*100),1) + '%' : '—'}</td><td></td></tr>`;
+      const ps = lp.sub[i]; const Rs = k === 'T' ? s.T : s[k], Ps = k === 'T' ? ps.T : ps[k], Ds = Rs - Ps;
+      const favS = LINEA_COSTO[l.id] ? Ds <= 0 : Ds >= 0;
+      h += `<tr class="subr"><td>${esc(s.label)}</td><td>${montoM(Rs, hl)}</td><td>${montoM(Ps, hl)}</td>${desvTxt(Ds, Ps ? Ds / Math.abs(Ps) : null, favS, false, hl)}<td></td></tr>`;
     });
   });
-  h += '</table></div><p style="font-size:11px;color:#9896A0;margin-top:.6rem">Verde = favorable, rojo = desfavorable (en costos, gastar más que lo presupuestado es desfavorable). Si el real está incompleto, los desvíos de esas líneas no son definitivos. Con 💬 anotás la explicación del desvío; queda guardada con tu usuario.</p></div>';
+  h += '</table></div><p class="pie">Verde = favorable, rojo = desfavorable (en costos, gastar más que lo presupuestado es desfavorable). Si el real está incompleto, los desvíos de esas líneas no son definitivos. Con 💬 anotás la explicación del desvío; queda guardada con tu usuario.</p></div>';
   return h;
 }
 
@@ -1323,32 +1390,32 @@ function vistaMesAMes(){
     const r = conReal.has(m) ? PR.resultadoMes(volBloquesDe(m), egresosDe(m), cargasDe(m)) : null;
     return { m, p, r, parcial: r && r.faltan.length > 0 };
   });
-  const lineas = PR.LINEAS_MES.map(id => ({ id, label: datos[0].p.lineas.find(l => l.id === id).label }));
   const acum = datos.filter(d => d.r);
-  const M = [['desv','Desvío $'],['desvp','Desvío %'],['real','Real'],['pre','Presupuesto']];
+  const M = [['desv','Desvío'],['desvp','Desvío %'],['real','Real'],['pre','Presupuesto']];
   let h = `<div class="toolbar"><span>Comparativa ${anio}${k === 'T' ? '' : ' · ' + (k === 'CC' ? 'Casa Central' : 'Dolores')}. El acumulado suma solo los meses que tienen real.</span><div style="display:flex;gap:6px">${M.map(([id,t]) => `<button class="mes-btn ${mamMetrica===id?'act':''}" onclick="mamMetrica='${id}';renderRes()">${t}</button>`).join('')}</div></div>`;
-  h += `<div class="card"><div class="tabla-scroll"><table class="real res mam"><tr><th>Concepto</th>${datos.map(d => `<th class="${d.r ? '' : 'sinreal'}" title="${d.r ? (d.parcial ? 'Real incompleto' : 'Real completo') : 'Sin real'}">${MESES_TXT[parseInt(d.m.slice(5),10)-1].slice(0,3)}${d.parcial ? ' *' : ''}</th>`).join('')}<th class="acum">Acumulado</th></tr>`;
-  const SEP = { mo: true, gastos: true, ebitda: true, un: true };
-  lineas.forEach(({ id, label }) => {
-    const costo = LINEA_COSTO[id];
+  h += `<div class="card">${cabeceraUnidad().replace('Debajo de cada importe, en gris: <b>% sobre las ventas netas</b> del mes.', mamMetrica === 'desvp' ? 'Desvío en % sobre el presupuesto de cada mes.' : 'Verde = favorable, rojo = desfavorable.')}<div class="tabla-scroll"><table class="real res mam lectura"><tr><th>Concepto</th>${datos.map(d => `<th class="${d.r ? '' : 'sinreal'}" title="${d.r ? (d.parcial ? 'Real incompleto' : 'Real completo') : 'Sin real'}">${MESES_TXT[parseInt(d.m.slice(5),10)-1].slice(0,3)}${d.parcial ? ' *' : ''}</th>`).join('')}<th class="acum">Acumulado</th></tr>`;
+  const lin = (res, id) => lineaVista(res, id);
+  filasVista(datos[0].p).forEach(x => {
+    if (x.sec) { h += `<tr class="secc"><td colspan="${datos.length + 2}">${x.sec}</td></tr>`; return; }
+    const id = x.l.id, hl = x.l.hl;
+    const costo = LINEA_COSTO[id] || id === 'bonTot';
     const celda = (R, P, tieneR, com) => {
-      if (mamMetrica === 'pre') return `<td>${fmt(P,0)}</td>`;
+      if (mamMetrica === 'pre') return `<td>${montoM(P, hl)}</td>`;
       if (!tieneR) return '<td class="sinreal">—</td>';
-      if (mamMetrica === 'real') return `<td>${fmt(R,0)}</td>`;
+      if (mamMetrica === 'real') return `<td>${montoM(R, hl)}</td>`;
       const D = R - P, fav = costo ? D <= 0 : D >= 0;
-      const st = Math.abs(D) < 1 ? '' : (fav ? 'color:#1F9D55' : 'color:#C0392B');
-      const txt = mamMetrica === 'desvp' ? (P ? (D >= 0 ? '+' : '−') + fmt(Math.abs(D / Math.abs(P) * 100), 1) + '%' : '—') : (D >= 0 ? '' : '−') + fmt(Math.abs(D), 0);
+      const st = Math.abs(D) < 1 || id === 'un' ? '' : (fav ? 'color:#1F9D55' : 'color:#C0392B');
+      const txt = mamMetrica === 'desvp' ? (P ? (D >= 0 ? '+' : '−') + fmt(Math.abs(D / Math.abs(P) * 100), 1) + '%' : '—') : (D >= 0 ? '+' : '−') + fmtM(Math.abs(D), hl).replace('$ ', '');
       return `<td style="${st}" ${com ? `title="💬 ${esc(com.texto)}"` : ''}>${txt}${com ? ' 💬' : ''}</td>`;
     };
-    const cls = [['mo','mb','gastos','ebitda'].includes(id) ? 'tot2' : '', id === 'un' ? 'fin' : '', id === 'fn' ? 'base' : '', SEP[id] ? 'sep' : ''].join(' ');
-    let row = `<tr class="${cls}"><td>${esc(label)}</td>`;
-    datos.forEach(d => { row += celda(d.r ? val(d.r.lineas.find(l => l.id === id)) : 0, val(d.p.lineas.find(l => l.id === id)), !!d.r, (comentarios[d.m] || {})[id]); });
-    const aR = acum.reduce((a, d) => a + val(d.r.lineas.find(l => l.id === id)), 0), aP = acum.reduce((a, d) => a + val(d.p.lineas.find(l => l.id === id)), 0);
-    const totP = datos.reduce((a, d) => a + val(d.p.lineas.find(l => l.id === id)), 0);
-    row += mamMetrica === 'pre' ? `<td class="acum">${fmt(totP,0)}</td>` : celda(aR, aP, acum.length > 0).replace('<td', '<td class="acum"');
+    let row = `<tr class="${clsFila(x.l, x.signo)}"><td>${x.signo ? `<span class="sg">${x.signo}</span>` : '<span class="sg"></span>'}${esc(x.l.label)}${x.l.nota ? `<span class="nota">${esc(x.l.nota)}</span>` : ''}</td>`;
+    datos.forEach(d => { row += celda(d.r ? val(lin(d.r, id)) : 0, val(lin(d.p, id)), !!d.r, (comentarios[d.m] || {})[id]); });
+    const aR = acum.reduce((a, d) => a + val(lin(d.r, id)), 0), aP = acum.reduce((a, d) => a + val(lin(d.p, id)), 0);
+    const totP = datos.reduce((a, d) => a + val(lin(d.p, id)), 0);
+    row += mamMetrica === 'pre' ? `<td class="acum">${montoM(totP, hl)}</td>` : celda(aR, aP, acum.length > 0).replace('<td', '<td class="acum"');
     h += row + '</tr>';
   });
-  h += `</table></div><p style="font-size:11px;color:#9896A0;margin-top:.6rem">— = mes sin real cargado. * = real incompleto (faltan datos en alguna pestaña). 💬 = tiene explicación cargada (pasá el mouse para leerla). En "Presupuesto", el acumulado es el total del año.</p></div>`;
+  h += `</table></div><p class="pie">— = mes sin real cargado. * = real incompleto (faltan datos en alguna pestaña). 💬 = tiene explicación cargada (pasá el mouse para leerla). En "Presupuesto", el acumulado es el total del año.</p></div>`;
   return h;
 }
 
